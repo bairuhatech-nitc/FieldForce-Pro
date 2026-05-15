@@ -1,0 +1,13 @@
+# Environment secrets
+.env
+.env.docker
+
+# Docker
+.playwright-mcp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (root-level Playwright)
+node_modules/

@@ -1,0 +1,256 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Req,
+  Res,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
+import { Request, Response } from 'express';
+import { AuthService } from './auth.service';
+import {
+  RegisterDto,
+  LoginDto,
+  RefreshTokenDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ChangePasswordDto,
+  VerifyMFALoginDto,
+} from './dto/auth.dto';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { Public } from '../shared/decorator/public.decorator';
+import { CurrentUser } from '../shared/decorator/current-user.decorator';
+import { DataResponseDto } from '../shared/dto/data-response.dto';
+
+@ApiTags('Auth')
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) { }
+
+  @Public()
+  @Post('register')
+  @ApiOperation({ summary: 'Register a new user and tenant' })
+  async register(@Body() dto: RegisterDto) {
+    const result = await this.authService.register(dto);
+    return DataResponseDto.created(result, 'Registration successful');
+  }
+
+  @Public()
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiBody({ type: LoginDto })
+  async login(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() loginDto: LoginDto) {
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const result = await this.authService.login(req.user as never, loginDto, ip, userAgent);
+
+    // Check if MFA is required (no tokens in this case)
+    if ('mfa_required' in result && result.mfa_required) {
+      return DataResponseDto.success(result, 'MFA verification required');
+    }
+
+    // Set tokens in HTTP-only cookies
+    if ('access_token' in result && result.access_token) {
+      res.cookie('access_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Only HTTPS in production
+        sameSite: 'lax', // Use 'lax' to allow cookies in development
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        path: '/',
+      });
+    }
+
+    if ('refresh_token' in result && result.refresh_token) {
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // Use 'lax' to allow cookies in development
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+      });
+    }
+
+    // Remove tokens from response body
+    if ('access_token' in result) {
+      const { access_token, refresh_token, ...userDataWithoutTokens } = result as any;
+      return DataResponseDto.success(userDataWithoutTokens, 'Login successful');
+    }
+
+    return DataResponseDto.success(result, 'Login successful');
+  }
+
+  @Public()
+  @Post('verify-mfa')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify MFA code during login' })
+  async verifyMFA(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() dto: VerifyMFALoginDto) {
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const result = await this.authService.verifyMFALogin(dto, ip, userAgent);
+
+    // Set tokens in HTTP-only cookies
+    if ('access_token' in result && result.access_token) {
+      res.cookie('access_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // Use 'lax' to allow cookies in development
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        path: '/',
+      });
+    }
+
+    if ('refresh_token' in result && result.refresh_token) {
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // Use 'lax' to allow cookies in development
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+      });
+    }
+
+    // Remove tokens from response body
+    const { access_token, refresh_token, ...userDataWithoutTokens } = result as any;
+    return DataResponseDto.success(userDataWithoutTokens, 'MFA verification successful');
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() dto: RefreshTokenDto) {
+    // If refresh_token not in body, try to get it from cookie
+    const refreshToken = dto.refresh_token || req.cookies?.refresh_token;
+    if (!refreshToken) {
+      throw new HttpException('Refresh token is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await this.authService.refreshTokens({ refresh_token: refreshToken });
+
+    // Set new tokens in HTTP-only cookies
+    if (result.access_token) {
+      res.cookie('access_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // Use 'lax' to allow cookies in development
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        path: '/',
+      });
+    }
+
+    if (result.refresh_token) {
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax', // Use 'lax' to allow cookies in development
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/',
+      });
+    }
+
+    // Remove tokens from response body
+    const { access_token, refresh_token, ...dataWithoutTokens } = result;
+    return DataResponseDto.success(dataWithoutTokens, 'Tokens refreshed successfully');
+  }
+
+  @ApiBearerAuth()
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout current session' })
+  async logout(@CurrentUser() user: { id: string; session_id: string }, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.logout(user.id, user.session_id);
+
+    // Clear authentication cookies
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('refresh_token', { path: '/' });
+
+    return DataResponseDto.success(result, 'Logout successful');
+  }
+
+  @ApiBearerAuth()
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Terminate all active sessions' })
+  async logoutAll(@CurrentUser('id') userId: string, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.logoutAll(userId);
+
+    // Clear authentication cookies
+    res.clearCookie('access_token', { path: '/' });
+    res.clearCookie('refresh_token', { path: '/' });
+
+    return DataResponseDto.success(result, 'All sessions terminated');
+  }
+
+  @ApiBearerAuth()
+  @Post('terminate-session/:sessionId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Terminate a specific session' })
+  async terminateSession(
+    @CurrentUser('id') userId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    const result = await this.authService.terminateSession(userId, sessionId);
+    return DataResponseDto.success(result);
+  }
+
+  @ApiBearerAuth()
+  @Get('sessions')
+  @ApiOperation({ summary: 'List all active login sessions/devices' })
+  async getSessions(@CurrentUser('id') userId: string) {
+    const sessions = await this.authService.getActiveSessions(userId);
+    return DataResponseDto.success(sessions);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send password reset email' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const result = await this.authService.forgotPassword(dto);
+    return DataResponseDto.success(result);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password using token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const result = await this.authService.resetPassword(dto);
+    return DataResponseDto.success(result);
+  }
+
+  @ApiBearerAuth()
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password (authenticated)' })
+  async changePassword(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordDto) {
+    const result = await this.authService.changePassword(userId, dto);
+    return DataResponseDto.success(result);
+  }
+
+  @ApiBearerAuth()
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user profile with roles and permissions' })
+  async getMe(@CurrentUser('id') userId: string) {
+    const result = await this.authService.getMe(userId);
+    return DataResponseDto.success(result);
+  }
+
+  @ApiBearerAuth()
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile (e.g. fcm token)' })
+  async updateMe(@CurrentUser('id') userId: string, @Body() dto: Partial<typeof RegisterDto.prototype>) {
+    // using authService to pass down to usersService
+    const result = await this.authService.updateMe(userId, dto);
+    return DataResponseDto.success(result, 'Profile updated successfully');
+  }
+}

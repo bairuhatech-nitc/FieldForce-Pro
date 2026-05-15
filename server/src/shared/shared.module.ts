@@ -1,0 +1,31 @@
+import { Global, Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AppConfigService } from './config/config.service';
+import { PdfService } from './services/pdf.service';
+import { SchedulerService } from './services/scheduler.service';
+import { DatabaseModule } from '../database/database.module';
+import { estimatesProviders } from '../ESTIMATES/estimates.provider';
+import { invoicesProviders } from '../INVOICES/invoices.provider';
+import { workOrdersProviders } from '../WORK_ORDERS/work_orders.provider';
+
+import { StripeService } from './services/stripe.service';
+import { RazorpayService } from './services/razorpay.service';
+import { PushNotificationService } from './services/push-notification.service';
+
+@Global()
+@Module({
+  imports: [ConfigModule, DatabaseModule],
+  providers: [
+    AppConfigService,
+    PdfService,
+    SchedulerService,
+    StripeService,
+    RazorpayService,
+    PushNotificationService,
+    ...estimatesProviders,
+    ...invoicesProviders,
+    ...workOrdersProviders,
+  ],
+  exports: [AppConfigService, PdfService, SchedulerService, StripeService, RazorpayService, PushNotificationService],
+})
+export class SharedModule { }

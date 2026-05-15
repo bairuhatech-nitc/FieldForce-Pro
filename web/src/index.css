@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --primary-color: #2563eb;
+    --text-color: #1f2937;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;
+}
+
+body.dark {
+    --text-color: #e5e7eb;
+    --bg-color: #141414;
+    --card-bg: #1f1f1f;
+    --border-color: #303030;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+body.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Utility Classes */
+.card-shadow {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.text-primary {
+    color: var(--primary-color);
+}
+
+.bg-white {
+    background-color: var(--card-bg);
+}
+
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ant Design Overrides */
+/* Allow Ant Design to handle layout background via ConfigProvider, but fallback to CSS var if needed */
+.ant-layout {
+    background: var(--bg-color) !important;
+}
+
+.ant-menu-item-selected {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.ant-menu-item-selected .anticon {
+    color: white !important;
+}
+
+.ant-menu-submenu-title:hover {
+    color: var(--primary-color) !important;
+}
+
+.ant-card {
+    border-radius: 12px !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color) !important;
+}
+
+.ant-btn-primary {
+    box-shadow: 0 1px 2px 0 rgba(37, 99, 235, 0.5);
+}

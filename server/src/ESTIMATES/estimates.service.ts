@@ -1,0 +1,701 @@
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  GoneException,
+  Logger,
+} from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { Estimate } from './estimates.entity';
+import { CreateEstimateDto } from './dto/estimates_create.dto';
+import { UpdateEstimateDto } from './dto/estimates_update.dto';
+import { PageOptionsDto } from '../shared/dto/page-options.dto';
+import { PageDto } from '../shared/dto/page.dto';
+import { PageMetaDto } from '../shared/dto/page-meta.dto';
+import { KEYNAMES } from '../shared/constants/keynames';
+import { Contact } from '../CONTACTS/contacts.entity';
+import { EstimateLineItem } from '../ESTIMATE_LINE_ITEMS/estimate_line_items.entity';
+import { Op } from 'sequelize';
+import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templates.entity';
+import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
+import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.service';
+import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
+import { WorkOrdersService } from '../WORK_ORDERS/work_orders.service';
+import { WorkOrderLineItemsService } from '../WORK_ORDER_LINE_ITEMS/work_order_line_items.service';
+
+const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+  draft: ['sent'],
+  sent: ['viewed', 'approved', 'rejected', 'expired'],
+  viewed: ['approved', 'rejected', 'expired'],
+  approved: ['converted_to_wo'],
+  rejected: ['draft'],
+  expired: ['draft'],
+  converted_to_wo: [],
+};
+
+@Injectable()
+export class EstimatesService {
+  private readonly logger = new Logger(EstimatesService.name);
+
+  constructor(
+    @Inject(KEYNAMES.ESTIMATES)
+    private readonly estimateRepository: typeof Estimate,
+    @Inject(KEYNAMES.WORKFLOW_TEMPLATES)
+    private readonly templateRepository: typeof WorkflowTemplate,
+    private readonly documentApprovalsService: DocumentApprovalsService,
+    private readonly workOrdersService: WorkOrdersService,
+    private readonly workOrderLineItemsService: WorkOrderLineItemsService,
+  ) {}
+
+  async findAllPaginated(
+    tenantId: string,
+    pageOptionsDto: PageOptionsDto,
+    status?: string,
+    excludeStatus?: string,
+    createdBy?: string,
+  ): Promise<PageDto<Estimate>> {
+    const where: Record<string, unknown> = {
+      tenant_id: tenantId,
+      is_deleted: false,
+    };
+
+    // Filter by status (supports comma-separated list)
+    if (status) {
+      const statuses = status.split(',').map((s) => s.trim()).filter(Boolean);
+      where.status = statuses.length === 1 ? statuses[0] : { [Op.in]: statuses };
+    }
+
+    // Exclude specific statuses (supports comma-separated list)
+    if (excludeStatus) {
+      const excluded = excludeStatus.split(',').map((s) => s.trim()).filter(Boolean);
+      where.status = {
+        ...(where.status && typeof where.status === 'object' ? where.status as Record<symbol, unknown> : {}),
+        [Op.notIn]: excluded,
+      };
+    }
+
+    // Filter by creator (used for draft ownership — only the assigned creator sees their drafts)
+    if (createdBy) {
+      where.created_by = createdBy;
+    }
+
+    if (pageOptionsDto.search) {
+      where[Op.or as unknown as string] = [
+        { estimate_number: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+        { notes: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.estimateRepository.findAndCountAll({
+      where,
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+      ],
+      order: [['created_at', pageOptionsDto.order]],
+      limit: pageOptionsDto.take,
+      offset: pageOptionsDto.skip,
+      distinct: true,
+    });
+
+    const meta = new PageMetaDto({ pageOptionsDto, itemCount: count });
+    return new PageDto(rows, meta);
+  }
+
+  async findMyDrafts(
+    tenantId: string,
+    userId: string,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<PageDto<Estimate>> {
+    // Find draft estimates where the current user is the assigned creator
+    // (either via created_by field OR via pending ESTIMATE approval assigned to them)
+    const documentIds = await this.estimateRepository.sequelize!.query(
+      `SELECT DISTINCT da.document_id
+       FROM workflow_document_approvals da
+       WHERE da.tenant_id = :tenantId
+         AND da.approver_id = :userId
+         AND da.is_deleted = false
+         AND da.document_type = 'ESTIMATE'
+         AND da.status = 'PENDING'`,
+      {
+        replacements: { tenantId, userId },
+        type: 'SELECT' as unknown as undefined,
+      },
+    ) as unknown as Array<{ document_id: string }>;
+
+    const approvalIds = documentIds.map((r) => r.document_id);
+
+    const where: Record<string, unknown> = {
+      tenant_id: tenantId,
+      is_deleted: false,
+      status: 'draft',
+      [Op.or as unknown as string]: [
+        { created_by: userId },
+        ...(approvalIds.length > 0 ? [{ id: { [Op.in]: approvalIds } }] : []),
+      ],
+    };
+
+    if (pageOptionsDto.search) {
+      where[Op.and as unknown as string] = [
+        {
+          [Op.or as unknown as string]: [
+            { estimate_number: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+            { notes: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+          ],
+        },
+      ];
+    }
+
+    const { count, rows } = await this.estimateRepository.findAndCountAll({
+      where,
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+      ],
+      order: [['created_at', pageOptionsDto.order]],
+      limit: pageOptionsDto.take,
+      offset: pageOptionsDto.skip,
+    });
+
+    const meta = new PageMetaDto({ pageOptionsDto, itemCount: count });
+    return new PageDto(rows, meta);
+  }
+
+  async findMyPendingApprovals(
+    tenantId: string,
+    userId: string,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<PageDto<Estimate>> {
+    const documentIds = await this.estimateRepository.sequelize!.query(
+      `SELECT DISTINCT da.document_id
+       FROM workflow_document_approvals da
+       WHERE da.tenant_id = :tenantId
+         AND da.approver_id = :userId
+         AND da.is_deleted = false
+         AND da.document_type = 'ESTIMATE_APPROVAL'
+         AND da.status = 'PENDING'
+         AND NOT EXISTS (
+           SELECT 1 FROM workflow_document_approvals prev
+           WHERE prev.document_id = da.document_id
+             AND prev.tenant_id = da.tenant_id
+             AND prev.order_no < da.order_no
+             AND prev.status = 'PENDING'
+             AND prev.is_deleted = false
+         )`,
+      {
+        replacements: { tenantId, userId },
+        type: 'SELECT' as unknown as undefined,
+      },
+    ) as unknown as Array<{ document_id: string }>;
+
+    const ids = documentIds.map((r) => r.document_id);
+
+    if (ids.length === 0) {
+      const meta = new PageMetaDto({ pageOptionsDto, itemCount: 0 });
+      return new PageDto([], meta);
+    }
+
+    const where: Record<string, unknown> = {
+      id: { [Op.in]: ids },
+      tenant_id: tenantId,
+      is_deleted: false,
+    };
+
+    if (pageOptionsDto.search) {
+      where[Op.or as unknown as string] = [
+        { estimate_number: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+        { notes: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.estimateRepository.findAndCountAll({
+      where,
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+      ],
+      order: [['created_at', pageOptionsDto.order]],
+      limit: pageOptionsDto.take,
+      offset: pageOptionsDto.skip,
+    });
+
+    const meta = new PageMetaDto({ pageOptionsDto, itemCount: count });
+    return new PageDto(rows, meta);
+  }
+
+  async findAll(tenantId: string): Promise<Estimate[]> {
+    return this.estimateRepository.findAll({
+      where: { tenant_id: tenantId, is_deleted: false },
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+  }
+
+  async findById(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.estimateRepository.findOne({
+      where: { id, tenant_id: tenantId, is_deleted: false },
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+        {
+          model: EstimateLineItem,
+          as: 'line_items',
+          where: { is_deleted: false },
+          required: false,
+        },
+      ],
+      order: [
+        [{ model: EstimateLineItem, as: 'line_items' }, 'sort_order', 'ASC'],
+      ],
+    });
+    if (!estimate) {
+      throw new NotFoundException('Estimate not found');
+    }
+    return estimate;
+  }
+
+  private generateEstimateNumber(): string {
+    const year = new Date().getFullYear();
+    const random = Math.floor(100000 + Math.random() * 900000);
+    return `EST-${year}-${random}`;
+  }
+
+  async create(tenantId: string, dto: CreateEstimateDto, userId?: string): Promise<Estimate> {
+    const estimate = await this.estimateRepository.create({
+      tenant_id: tenantId,
+      estimate_number: this.generateEstimateNumber(),
+      created_by: userId || null,
+      ...dto,
+    });
+
+    // Auto-trigger ESTIMATE_APPROVAL workflow on creation
+    await this.autoStartApprovalWorkflow(tenantId, estimate);
+
+    return estimate;
+  }
+
+  private async autoStartApprovalWorkflow(tenantId: string, estimate: Estimate): Promise<void> {
+    try {
+      const template = await this.templateRepository.findOne({
+        where: {
+          tenant_id: tenantId,
+          document_type: DocumentTypeEnum.ESTIMATE_APPROVAL,
+          is_active: true,
+          is_deleted: false,
+        },
+        include: [
+          {
+            model: WorkflowApprover,
+            where: { is_deleted: false, is_active: true },
+            required: false,
+          },
+        ],
+        order: [['created_at', 'DESC']],
+      });
+
+      if (!template) {
+        this.logger.warn(`No active ESTIMATE_APPROVAL template found for tenant ${tenantId} — skipping approval chain`);
+        return;
+      }
+
+      if (!template.approvers || template.approvers.length === 0) {
+        this.logger.warn(`ESTIMATE_APPROVAL template "${template.name}" has no active approvers — skipping`);
+        return;
+      }
+
+      // createDocumentApprovals also notifies the first approver automatically
+      await this.documentApprovalsService.createDocumentApprovals(tenantId, {
+        document_id: estimate.id,
+        document_type: DocumentTypeEnum.ESTIMATE_APPROVAL,
+        workflow_id: template.id,
+      });
+
+      this.logger.log(`Started ESTIMATE_APPROVAL workflow for estimate ${estimate.id}`);
+    } catch (error) {
+      this.logger.error(`Failed to start approval workflow for estimate ${estimate.id}: ${error.message}`);
+    }
+  }
+
+  async update(
+    id: string,
+    tenantId: string,
+    dto: UpdateEstimateDto,
+    userId?: string,
+  ): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    await estimate.update(dto);
+
+    // Auto-complete any ESTIMATE type approvals (the "create estimate" task)
+    // so it shows as completed in Document Approvals page
+    if (userId) {
+      await this.documentApprovalsService.completeEstimateApprovals(id, tenantId, userId);
+    }
+
+    // Start ESTIMATE_APPROVAL workflow if not already started
+    // (covers estimates auto-created from SR that are now being saved by the creator)
+    const existingApprovals = await this.documentApprovalsService.getApprovalsByDocument(id, tenantId);
+    const hasApprovalWorkflow = existingApprovals.some(
+      (a) => a.document_type === 'ESTIMATE_APPROVAL',
+    );
+    if (!hasApprovalWorkflow) {
+      await this.autoStartApprovalWorkflow(tenantId, estimate);
+    }
+
+    return estimate;
+  }
+
+  async updateStatus(
+    id: string,
+    tenantId: string,
+    newStatus: string,
+  ): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    const currentStatus = estimate.status;
+
+    const allowedTransitions = VALID_STATUS_TRANSITIONS[currentStatus];
+    if (!allowedTransitions) {
+      throw new BadRequestException(
+        `No transitions allowed from status '${currentStatus}'`,
+      );
+    }
+
+    if (!allowedTransitions.includes(newStatus)) {
+      throw new BadRequestException(
+        `Invalid status transition from '${currentStatus}' to '${newStatus}'. Allowed transitions: ${allowedTransitions.join(', ')}`,
+      );
+    }
+
+    await estimate.update({ status: newStatus });
+    return estimate;
+  }
+
+  async sendToCustomer(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (estimate.status !== 'draft') {
+      throw new BadRequestException('Only draft estimates can be sent to customers');
+    }
+
+    const token = randomUUID();
+    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await estimate.update({ status: 'sent', public_token: token, public_token_expires_at: expires });
+
+    return estimate;
+  }
+
+  async generatePublicLink(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    const terminalStatuses = ['rejected', 'expired', 'converted_to_wo'];
+    if (terminalStatuses.includes(estimate.status)) {
+      throw new BadRequestException(
+        `Cannot generate a sign link for an estimate with status '${estimate.status}'`,
+      );
+    }
+
+    const token = randomUUID();
+    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const updatePayload: Record<string, unknown> = {
+      public_token: token,
+      public_token_expires_at: expires,
+    };
+
+    // If still draft, also mark as sent
+    if (estimate.status === 'draft') {
+      updatePayload.status = 'sent';
+    }
+
+    await estimate.update(updatePayload);
+    return estimate;
+  }
+
+  async getByPublicToken(token: string): Promise<Estimate> {
+    const estimate = await this.estimateRepository.findOne({
+      where: { public_token: token, is_deleted: false },
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+        {
+          model: EstimateLineItem,
+          as: 'line_items',
+          where: { is_deleted: false },
+          required: false,
+        },
+      ],
+      order: [[{ model: EstimateLineItem, as: 'line_items' }, 'sort_order', 'ASC']],
+    });
+
+    if (!estimate) {
+      throw new NotFoundException('Link not found or expired');
+    }
+    if (estimate.public_token_expires_at < new Date()) {
+      throw new GoneException('This link has expired');
+    }
+    return estimate;
+  }
+
+  async signByToken(token: string, signatureDataUrl: string): Promise<Estimate> {
+    const estimate = await this.getByPublicToken(token);
+
+    if (!['sent', 'viewed', 'approved'].includes(estimate.status)) {
+      throw new BadRequestException('This estimate has already been processed');
+    }
+
+    // If already signed, don't allow re-signing
+    if (estimate.signature_url) {
+      throw new BadRequestException('This estimate has already been signed');
+    }
+
+    const customFields = { ...(estimate.custom_fields || {}) };
+    customFields['signed_at'] = new Date().toISOString();
+    customFields['signer_contact_id'] = estimate.contact_id;
+
+    await estimate.update({
+      signature_url: signatureDataUrl,
+      status: 'approved',
+      custom_fields: customFields,
+    });
+
+    // Auto-convert to work order after customer signs
+    try {
+      await this.convertToWorkOrder(estimate.id, estimate.tenant_id, {
+        locationId: (customFields['location_id'] as string) || undefined,
+      });
+      this.logger.log(`Estimate ${estimate.id} auto-converted to work order after customer signature`);
+    } catch (err) {
+      this.logger.warn(`Auto-convert to WO failed for estimate ${estimate.id}: ${(err as Error).message}`);
+    }
+
+    return estimate;
+  }
+
+  async revertToDraft(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    const revertableStatuses = ['sent', 'viewed', 'approved', 'rejected'];
+    if (!revertableStatuses.includes(estimate.status)) {
+      throw new BadRequestException(
+        `Cannot revert an estimate with status '${estimate.status}' back to draft`,
+      );
+    }
+
+    // Remove sign/rejection metadata from custom_fields
+    const customFields = { ...(estimate.custom_fields || {}) };
+    delete customFields['signed_at'];
+    delete customFields['signer_contact_id'];
+    delete customFields['rejection_reason'];
+    delete customFields['rejected_at'];
+    delete customFields['rejected_by'];
+
+    await estimate.update({
+      status: 'draft',
+      public_token: null,
+      public_token_expires_at: null,
+      signature_url: null,
+      custom_fields: customFields,
+    });
+
+    return estimate;
+  }
+
+  async rejectByToken(token: string, reason?: string): Promise<Estimate> {
+    const estimate = await this.getByPublicToken(token);
+
+    if (!['sent', 'viewed', 'approved'].includes(estimate.status)) {
+      throw new BadRequestException('This estimate has already been processed');
+    }
+
+    // If already signed, don't allow rejection
+    if (estimate.signature_url) {
+      throw new BadRequestException('This estimate has already been signed and cannot be declined');
+    }
+
+    const customFields = { ...(estimate.custom_fields || {}) };
+    customFields['rejection_reason'] = reason || null;
+    customFields['rejected_at'] = new Date().toISOString();
+    customFields['rejected_by'] = 'customer';
+
+    await estimate.update({ status: 'rejected', custom_fields: customFields });
+    return estimate;
+  }
+
+  async recordApproval(
+    id: string,
+    tenantId: string,
+    signatureUrl?: string,
+  ): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (!['sent', 'viewed'].includes(estimate.status)) {
+      throw new BadRequestException('Only sent or viewed estimates can be approved');
+    }
+
+    await estimate.update({
+      status: 'approved',
+      signature_url: signatureUrl || null,
+    });
+
+    return estimate;
+  }
+
+  async recordRejection(
+    id: string,
+    tenantId: string,
+    reason?: string,
+  ): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (!['sent', 'viewed'].includes(estimate.status)) {
+      throw new BadRequestException('Only sent or viewed estimates can be rejected');
+    }
+
+    // Store rejection reason in custom_fields
+    const customFields = estimate.custom_fields || {};
+    customFields['rejection_reason'] = reason;
+
+    await estimate.update({
+      status: 'rejected',
+      custom_fields: customFields,
+    });
+
+    return estimate;
+  }
+
+  async convertToWorkOrder(
+    id: string,
+    tenantId: string,
+    options?: {
+      assignedTo?: string;
+      scheduledDate?: string;
+      priority?: string;
+      category?: string;
+      locationId?: string;
+    },
+  ) {
+    const estimate = await this.findById(id, tenantId);
+
+    if (estimate.status !== 'approved') {
+      throw new BadRequestException('Only approved estimates can be converted to work orders');
+    }
+
+    // Create the work order
+    const workOrder = await this.workOrdersService.create(tenantId, {
+      estimate_id: estimate.id,
+      contact_id: estimate.contact_id,
+      location_id: options?.locationId,
+      summary: `Work Order from Estimate ${estimate.estimate_number || estimate.id.slice(0, 8)}`,
+      description: estimate.notes || undefined,
+      status: 'new',
+      priority: (options?.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+      category: options?.category,
+      assigned_to: options?.assignedTo,
+      scheduled_start: estimate.scheduled_start ? estimate.scheduled_start.toISOString() : options?.scheduledDate,
+      custom_fields: {
+        converted_from_estimate: estimate.id,
+        estimate_number: estimate.estimate_number,
+        estimate_total: estimate.total,
+      },
+    });
+
+    // Copy estimate line items → work order line items
+    if (estimate.line_items && estimate.line_items.length > 0) {
+      await Promise.all(
+        estimate.line_items.map((item) =>
+          this.workOrderLineItemsService.create(tenantId, {
+            work_order_id: workOrder.id,
+            type: item.type as 'service' | 'part' | 'travel',
+            name: item.name,
+            description: item.description || undefined,
+            quantity: Number(item.quantity),
+            unit_price: Number(item.unit_price),
+            tax_rate: Number(item.tax_rate),
+            discount: Number(item.discount),
+            total: Number(item.total),
+            sort_order: item.sort_order ?? 0,
+          }),
+        ),
+      );
+    }
+
+    // Mark the estimate as converted
+    await estimate.update({ status: 'converted_to_wo' });
+
+    // Auto-start WORK_ORDER approval workflow — notifies the first approver
+    await this.autoStartWOApprovalWorkflow(tenantId, workOrder.id);
+
+    return workOrder;
+  }
+
+  private async autoStartWOApprovalWorkflow(tenantId: string, workOrderId: string): Promise<void> {
+    try {
+      const template = await this.templateRepository.findOne({
+        where: {
+          tenant_id: tenantId,
+          document_type: DocumentTypeEnum.WORK_ORDER,
+          is_active: true,
+          is_deleted: false,
+        },
+        include: [
+          {
+            model: WorkflowApprover,
+            where: { is_deleted: false, is_active: true },
+            required: false,
+          },
+        ],
+        order: [['created_at', 'DESC']],
+      });
+
+      if (!template) {
+        this.logger.warn(`No active WORK_ORDER workflow template found for tenant ${tenantId} — skipping WO approval notification`);
+        return;
+      }
+
+      if (!template.approvers || template.approvers.length === 0) {
+        this.logger.warn(`WORK_ORDER template "${template.name}" has no active approvers — skipping`);
+        return;
+      }
+
+      // createDocumentApprovals automatically notifies the first approver
+      await this.documentApprovalsService.createDocumentApprovals(tenantId, {
+        document_id: workOrderId,
+        document_type: DocumentTypeEnum.WORK_ORDER,
+        workflow_id: template.id,
+      });
+
+      this.logger.log(`Started WORK_ORDER approval workflow for WO ${workOrderId}`);
+    } catch (error) {
+      this.logger.error(`Failed to start approval workflow for WO ${workOrderId}: ${error.message}`);
+    }
+  }
+
+  async getAssignedCreatorId(tenantId: string): Promise<string | null> {
+    const template = await this.templateRepository.findOne({
+      where: {
+        tenant_id: tenantId,
+        document_type: DocumentTypeEnum.ESTIMATE_APPROVAL,
+        is_active: true,
+        is_deleted: false,
+      },
+      include: [
+        {
+          model: WorkflowApprover,
+          where: { is_deleted: false, is_active: true },
+          required: false,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    if (!template || !template.approvers || template.approvers.length === 0) {
+      return null;
+    }
+
+    // Return the first approver's ID as the designated estimate creator
+    const sorted = [...template.approvers].sort((a, b) => (a.order_no ?? 0) - (b.order_no ?? 0));
+    return sorted[0].approver_id;
+  }
+
+  async delete(id: string, tenantId: string): Promise<void> {
+    const estimate = await this.findById(id, tenantId);
+    await estimate.update({ is_deleted: true });
+  }
+}
