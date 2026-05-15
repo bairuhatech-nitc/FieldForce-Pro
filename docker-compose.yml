@@ -1,0 +1,80 @@
+services:
+  # ── Redis (cache + Celery broker) ──────────────────────────
+  fsm-redis:
+    image: redis:7-alpine
+    container_name: fsm-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - fsm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── NestJS Backend API ─────────────────────────────────────
+  fsm-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: fsm-server
+    restart: unless-stopped
+    depends_on:
+      fsm-redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=fsm-redis
+      - REDIS_PORT=6379
+    networks:
+      - fsm-network
+    # No ports exposed to host — only accessible via fsm-web proxy
+
+  # ── FastAPI AI/ML Service ──────────────────────────────────
+  fsm-ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: fsm-ai
+    restart: unless-stopped
+    depends_on:
+      fsm-redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=fsm-redis
+      - REDIS_PORT=6379
+      - CELERY_BROKER_URL=redis://fsm-redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://fsm-redis:6379/2
+    networks:
+      - fsm-network
+    # No ports exposed to host — only accessible via fsm-server
+
+  # ── React Frontend + Nginx Proxy ───────────────────────────
+  fsm-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_APP_NAME: ${VITE_APP_NAME:-FieldForce Pro}
+    container_name: fsm-web
+    restart: unless-stopped
+    depends_on:
+      fsm-server:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3123}:80"
+    networks:
+      - fsm-network
+
+networks:
+  fsm-network:
+    driver: bridge
+
+volumes:
+  redis-data:

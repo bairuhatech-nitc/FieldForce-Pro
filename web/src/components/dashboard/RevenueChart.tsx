@@ -1,0 +1,80 @@
+import { Card, Select } from 'antd';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
+const { Option } = Select;
+
+interface RevenueChartProps {
+  data?: Array<{ name: string; value: number }>;
+}
+
+const defaultData = [
+  { name: 'Mon', value: 2400 },
+  { name: 'Tue', value: 3200 },
+  { name: 'Wed', value: 2800 },
+  { name: 'Thu', value: 3800 },
+  { name: 'Fri', value: 4200 },
+  { name: 'Sat', value: 3600 },
+  { name: 'Sun', value: 4000 },
+];
+
+export default function RevenueChart({ data = defaultData }: RevenueChartProps) {
+  return (
+    <Card
+      title={
+        <span style={{ fontSize: 16, fontWeight: 600, color: '#262626' }}>Revenue Overview</span>
+      }
+      extra={
+        <Select defaultValue="weekly" style={{ width: 120 }} bordered={false}>
+          <Option value="daily">Daily</Option>
+          <Option value="weekly">Weekly</Option>
+          <Option value="monthly">Monthly</Option>
+          <Option value="yearly">Yearly</Option>
+        </Select>
+      }
+      style={{
+        borderRadius: 12,
+        border: '1px solid #f0f0f0',
+      }}
+      bodyStyle={{ padding: '24px' }}
+    >
+      <ResponsiveContainer width="100%" height={300}>
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#4CAF50" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="name"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: '#8c8c8c', fontSize: 12 }}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: '#8c8c8c', fontSize: 12 }}
+            tickFormatter={(value) => `${value / 1000}k`}
+          />
+          <Tooltip
+            contentStyle={{
+              borderRadius: 8,
+              border: '1px solid #f0f0f0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+            formatter={(value: number | undefined) => [`$${value?.toLocaleString() || '0'}`, 'Revenue']}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#4CAF50"
+            strokeWidth={2}
+            fillOpacity={1}
+            fill="url(#colorRevenue)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+}
