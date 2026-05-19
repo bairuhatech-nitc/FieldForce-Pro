@@ -212,6 +212,9 @@ export interface ServiceRequest {
   scheduled_start: string | null;
   scheduled_end: string | null;
   custom_fields: Record<string, unknown>;
+  is_spam?: boolean;
+  spam_reason?: string | null;
+  spam_confidence?: number | null;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;

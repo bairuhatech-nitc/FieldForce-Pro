@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ServiceRequestsController } from './service_requests.controller';
+import { QueueController } from './queue.controller';
 import { ServiceRequestsService } from './service_requests.service';
 import { serviceRequestsProviders } from './service_requests.provider';
 import { workflowTemplatesProviders } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templates.provider';
@@ -8,7 +9,7 @@ import { WorkflowModule } from '../WORKFLOW/workflow.module';
 
 @Module({
   imports: [DatabaseModule, WorkflowModule],
-  controllers: [ServiceRequestsController],
+  controllers: [ServiceRequestsController, QueueController],
   providers: [
     ServiceRequestsService,
     ...serviceRequestsProviders,

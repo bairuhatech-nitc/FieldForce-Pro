@@ -14,6 +14,9 @@ import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PermissionGuard } from '@/components/permissions';
 import { formatDateTime } from '@/utils/format-date';
 import { formatCurrency } from '@/utils/format-currency';
+import TechnicianFeedbackModal from '@/components/feedback/TechnicianFeedbackModal';
+import { useWorkOrderFeedback } from '@/hooks/use-feedback';
+import { Alert, Rate } from 'antd';
 
 const { TextArea } = Input;
 
@@ -58,8 +61,10 @@ export default function WorkOrderDetailPage() {
   const navigate = useNavigate();
   const [noteForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState('details');
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   const { data: workOrder, isLoading } = useWorkOrder(id!);
+  const { data: feedbackData, isLoading: feedbackLoading } = useWorkOrderFeedback(id!);
   const { data: lineItems, isLoading: lineItemsLoading } = useWorkOrderLineItems(id!);
   const { data: notes, isLoading: notesLoading } = useWorkOrderNotes(id!);
   const { data: attachments, isLoading: attachmentsLoading } = useWorkOrderAttachments(id!);
@@ -543,12 +548,49 @@ export default function WorkOrderDetailPage() {
         </Card>
       )}
 
+      {feedbackData && feedbackData.length > 0 && (
+        <Card style={{ marginBottom: 16 }} title="Feedback">
+          {feedbackData.map((fb: any) => (
+            <Alert
+              key={fb.id}
+              message={
+                <Space>
+                  <span>Rating:</span>
+                  <Rate disabled defaultValue={Number(fb.rating)} allowHalf />
+                  {fb.is_customer_facing && <Tag color="blue">Shared with Customer</Tag>}
+                </Space>
+              }
+              description={fb.comments || 'No comments provided.'}
+              type="info"
+              style={{ marginBottom: 8 }}
+            />
+          ))}
+        </Card>
+      )}
+
+      {workOrder.status === 'completed' && (!feedbackData || feedbackData.length === 0) && (
+        <Card style={{ marginBottom: 16, backgroundColor: '#f6ffed', borderColor: '#b7eb8f' }}>
+          <Space>
+            <span>Great job completing this work order! Please provide some feedback.</span>
+            <Button type="primary" onClick={() => setIsFeedbackModalOpen(true)}>
+              Submit Feedback
+            </Button>
+          </Space>
+        </Card>
+      )}
+
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         items={tabItems}
       />
 
+      <TechnicianFeedbackModal
+        workOrderId={workOrder.id}
+        open={isFeedbackModalOpen}
+        onCancel={() => setIsFeedbackModalOpen(false)}
+        onSuccess={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

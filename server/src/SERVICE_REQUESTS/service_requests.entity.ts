@@ -73,10 +73,11 @@ export class ServiceRequest extends Model {
   })
   description: string;
 
+  // ── Feature 4: Priority-Based Queue ──
   @Column({
-    type: DataType.ENUM('low', 'medium', 'high', 'urgent'),
+    type: DataType.STRING(10),
     allowNull: false,
-    defaultValue: 'medium',
+    defaultValue: 'MEDIUM',
   })
   priority: string;
 
@@ -157,6 +158,19 @@ export class ServiceRequest extends Model {
     allowNull: true,
   })
   scheduled_end: Date;
+
+  // ── Feature 5: Spam Prevention ──
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  is_spam_flagged: boolean;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
+  spam_reason: string;
 
   @Column({
     type: DataType.BOOLEAN,

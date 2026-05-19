@@ -70,4 +70,12 @@ export const serviceRequestsApi = {
   processApproval(serviceRequestId: string, approvalId: string, payload: { action: string; comments?: string }) {
     return api.post<ApiResponse<unknown>>(`/service-requests/${serviceRequestId}/approvals/${approvalId}/process`, payload);
   },
+
+  getQueue() {
+    return api.get<ApiResponse<ServiceRequest[]>>('/queue');
+  },
+
+  updatePriority(id: string, priority: string) {
+    return api.patch<ApiResponse<ServiceRequest>>(`/queue/${id}/priority`, { priority });
+  },
 };

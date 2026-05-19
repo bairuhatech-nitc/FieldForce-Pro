@@ -83,3 +83,33 @@ export function useDeleteDashboard() {
     },
   });
 }
+
+export function useDashboardStats() {
+  return useQuery({
+    queryKey: ['dashboards', 'stats'],
+    queryFn: async () => {
+      const response = await dashboardsApi.getStats();
+      return response.data.data;
+    },
+  });
+}
+
+export function useDashboardActivityFeed() {
+  return useQuery({
+    queryKey: ['dashboards', 'activityFeed'],
+    queryFn: async () => {
+      const response = await dashboardsApi.getActivityFeed();
+      return response.data.data;
+    },
+  });
+}
+
+export function useDashboardPrioritySummary() {
+  return useQuery({
+    queryKey: ['dashboards', 'prioritySummary'],
+    queryFn: async () => {
+      const response = await dashboardsApi.getPrioritySummary();
+      return response.data.data;
+    },
+  });
+}

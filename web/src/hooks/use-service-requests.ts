@@ -150,3 +150,29 @@ export function useProcessServiceRequestApproval() {
     },
   });
 }
+
+export function useQueue() {
+  return useQuery({
+    queryKey: ['service-requests', 'queue'],
+    queryFn: async () => {
+      const response = await serviceRequestsApi.getQueue();
+      return response.data.data;
+    },
+  });
+}
+
+export function useUpdatePriority() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ id, priority }: { id: string; priority: string }) => serviceRequestsApi.updatePriority(id, priority),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      addNotification({ type: 'success', message: 'Priority updated successfully' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to update priority' });
+    },
+  });
+}

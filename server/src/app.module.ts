@@ -73,6 +73,10 @@ import { CustomerPortalModule } from './CUSTOMER_PORTAL/customer-portal.module';
 import { WorkflowModule } from './WORKFLOW/workflow.module';
 import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.module';
 
+import { OnboardingModule } from './ONBOARDING/onboarding.module';
+import { AttachmentsModule } from './ATTACHMENTS/attachments.module';
+import { FeedbackModule } from './FEEDBACK/feedback.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -144,6 +148,9 @@ import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSI
     CustomerPortalModule,
     WorkflowModule,
     WorkOrderTechnicianSessionsModule,
+    OnboardingModule,
+    AttachmentsModule,
+    FeedbackModule,
   ],
   providers: [
     {

@@ -60,6 +60,10 @@ import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/docume
 import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_history.entity';
 import { IPWhitelist } from '../IP_WHITELIST/ip-whitelist.entity';
 import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.entity';
+import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
+import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
+import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
 
 @Module({
   imports: [
@@ -92,6 +96,7 @@ import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/wo
           WorkflowTemplate, WorkflowApprover, DocumentApproval, ApprovalHistory,
           IPWhitelist,
           WorkOrderTechnicianSession,
+          RequestAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

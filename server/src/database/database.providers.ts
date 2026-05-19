@@ -54,6 +54,10 @@ import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templa
 import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
 import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.entity';
 import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_history.entity';
+import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
+import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
+import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -111,4 +115,8 @@ export const databaseProviders = [
   { provide: REPOSITORY.WORKFLOW_APPROVERS, useValue: WorkflowApprover },
   { provide: REPOSITORY.WORKFLOW_DOCUMENT_APPROVALS, useValue: DocumentApproval },
   { provide: REPOSITORY.WORKFLOW_APPROVAL_HISTORY, useValue: ApprovalHistory },
+  { provide: REPOSITORY.REQUEST_ATTACHMENTS, useValue: RequestAttachment },
+  { provide: REPOSITORY.REQUEST_AUDIT_LOGS, useValue: RequestAuditLog },
+  { provide: REPOSITORY.TECHNICIAN_FEEDBACK, useValue: TechnicianFeedback },
+  { provide: REPOSITORY.CUSTOMER_SATISFACTION, useValue: CustomerSatisfaction },
 ];

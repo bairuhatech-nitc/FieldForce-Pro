@@ -11,6 +11,7 @@ import { workOrdersProviders } from '../WORK_ORDERS/work_orders.provider';
 import { StripeService } from './services/stripe.service';
 import { RazorpayService } from './services/razorpay.service';
 import { PushNotificationService } from './services/push-notification.service';
+import { RedisCacheService } from './services/redis-cache.service';
 
 @Global()
 @Module({
@@ -22,10 +23,11 @@ import { PushNotificationService } from './services/push-notification.service';
     StripeService,
     RazorpayService,
     PushNotificationService,
+    RedisCacheService,
     ...estimatesProviders,
     ...invoicesProviders,
     ...workOrdersProviders,
   ],
-  exports: [AppConfigService, PdfService, SchedulerService, StripeService, RazorpayService, PushNotificationService],
+  exports: [AppConfigService, PdfService, SchedulerService, StripeService, RazorpayService, PushNotificationService, RedisCacheService],
 })
 export class SharedModule { }
