@@ -7,6 +7,8 @@ Users are now **automatically signed in after registration**, without being take
 
 # 👉[Video Demo](video-demo.mp4)
 
+<video src="https://github.com/user-attachments/assets/6481e860-afe1-410b-a6b7-c7c9276f12c4"></video>
+
 ---
 
 ## Problem (Before)
