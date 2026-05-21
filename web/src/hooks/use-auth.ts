@@ -63,6 +63,14 @@ export function useRegister() {
     onSuccess: (response) => {
       const data = response.data.data!;
       // Tokens are now in HTTP-only cookies, only store user data
+      if (!data.user) {
+        addNotification({
+          type: 'error',
+          message: 'Registration failed',
+          description: 'Account was created but sign-in could not be completed. Please log in.',
+        });
+        return;
+      }
       login(data.user as unknown as User);
       addNotification({ type: 'success', message: 'Account created successfully' });
     },

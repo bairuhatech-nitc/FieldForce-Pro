@@ -101,7 +101,7 @@ export class AuthService {
     return user;
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, ip: string, userAgent: string) {
     // Check if user already exists
     const existingUser = await this.usersService.findByEmail(dto.email);
     if (existingUser) {
@@ -142,12 +142,17 @@ export class AuthService {
     // Assign admin role to user
     await this.userRolesService.assignRole(user.id, adminRole.id);
 
-    // Return sanitized user
-    const { password_hash, password_reset_token, password_reset_expires, ...safeUser } =
-      user.toJSON();
+    // Auto-login: complete login process (same as successful login)
+    const userWithRoles = await this.usersService.findById(user.id);
+    const loginDto: LoginDto = {
+      email: dto.email,
+      password: '',
+      device_type: 'web',
+    };
+    const session = await this.completeLogin(userWithRoles, loginDto, ip, userAgent);
 
     return {
-      user: safeUser,
+      ...session,
       tenant: tenant.toJSON(),
     };
   }
