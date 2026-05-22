@@ -31,13 +31,13 @@
 }
 
 body.dark {
-    --text-color: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --bg-color: #0c1222;
-    --card-bg: #162032;
-    --border-color: #1e3050;
-    --sidebar-bg: #080e1a;
+    --text-color: rgba(255, 255, 255, 0.85);
+    --text-secondary: rgba(255, 255, 255, 0.65);
+    --text-muted: rgba(255, 255, 255, 0.45);
+    --bg-color: #141414;
+    --card-bg: #1f1f1f;
+    --border-color: #303030;
+    --sidebar-bg: #141414;
     --primary-light: rgba(37, 99, 235, 0.12);
     --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.15);
     --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);

@@ -4,7 +4,6 @@ import {
   DashboardOutlined,
   UserOutlined,
   CompassOutlined,
-  TeamOutlined,
   ContactsOutlined,
   BankOutlined,
   EnvironmentOutlined,
@@ -20,16 +19,9 @@ import {
   MenuUnfoldOutlined,
   CalendarOutlined,
   ThunderboltFilled,
-  TagsOutlined,
-  FileDoneOutlined,
   StarOutlined,
-  MessageOutlined,
   FormOutlined,
-  ApartmentOutlined,
-  ApiOutlined,
-  CustomerServiceOutlined,
   SafetyOutlined,
-  ClockCircleOutlined,
   AuditOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -300,7 +292,7 @@ export default function Sidebar() {
             <ThunderboltFilled style={{ fontSize: 24 }} />
           </div>
           {!collapsed && (
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#111827', fontFamily: 'Inter, sans-serif' }}>
+            <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-color)', fontFamily: 'Inter, sans-serif' }}>
               FieldForce Pro
             </span>
           )}

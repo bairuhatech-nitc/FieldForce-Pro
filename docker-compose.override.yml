@@ -15,7 +15,7 @@ services:
     networks:
       - fsm-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d fieldforce_pro_dev"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d fieldforce_pro_dev" ]
       interval: 10s
       timeout: 5s
       retries: 5

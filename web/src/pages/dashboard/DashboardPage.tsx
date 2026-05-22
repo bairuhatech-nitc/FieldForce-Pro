@@ -286,7 +286,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Total Revenue</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.totalRevenue)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Payments Collected</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.paymentsCollected)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -418,7 +418,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Active Jobs</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : opsStats.activeWOs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -449,7 +449,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Completion Rate</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : `${opsStats.completionRate}%`}
                 </div>
                 <Progress
@@ -484,7 +484,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Today's Appointments</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
                   {apptLoading ? <Spin size="small" /> : opsStats.todayAppointments}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -515,7 +515,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Pending Requests</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
                   {srLoading ? <Spin size="small" /> : opsStats.pendingSRs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
