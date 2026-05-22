@@ -57,7 +57,12 @@ export class CreateEstimateLineItemDto {
   @IsOptional()
   tax_rate?: number;
 
-  @ApiPropertyOptional({ description: 'Discount amount', example: 10.0 })
+  @ApiPropertyOptional({ description: 'Discount type', enum: ['fixed', 'percentage'], default: 'fixed' })
+  @IsEnum(['fixed', 'percentage'])
+  @IsOptional()
+  discount_type?: string;
+
+  @ApiPropertyOptional({ description: 'Discount amount or percentage', example: 10.0 })
   @IsNumber()
   @IsOptional()
   discount?: number;

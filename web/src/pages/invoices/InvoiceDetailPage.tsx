@@ -131,7 +131,11 @@ export default function InvoiceDetailPage() {
       title: 'Discount',
       dataIndex: 'discount',
       key: 'discount',
-      render: (discount: number) => formatCurrency(discount || 0, currency),
+      render: (discount: number, record: InvoiceLineItem) => {
+        if (!discount) return <span style={{ opacity: 0.5 }}>-</span>;
+        if (record.discount_type === 'percentage') return `${discount}%`;
+        return formatCurrency(discount, currency);
+      },
     },
     {
       title: 'Total',
