@@ -1,118 +1,145 @@
 import { Injectable, Logger } from '@nestjs/common';
-// import { Cron, CronExpression } from '@nestjs/schedule';
-// TODO: Install @nestjs/schedule package: npm install @nestjs/schedule
-// TODO: Import ScheduleModule in app.module.ts
+import { Cron } from '@nestjs/schedule';
+import { SlaTimersService } from '../../SLA_TIMERS/sla_timers.service';
+import { NotificationsService } from '../../NOTIFICATIONS/notifications.service';
 
 @Injectable()
 export class SchedulerService {
   private readonly logger = new Logger(SchedulerService.name);
 
-  /**
-   * Check for SLA breaches
-   * Runs every hour
-   * TODO: Enable when @nestjs/schedule is installed
-   */
-  // @Cron('0 * * * *')
-  async checkSLABreaches(): Promise<void> {
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('🔍 SLA BREACH CHECK (PLACEHOLDER)');
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('Actions to perform:');
-    this.logger.log('1. Query service_appointments where scheduled_start is past SLA threshold');
-    this.logger.log('2. Query work_orders where scheduled_start is past SLA threshold');
-    this.logger.log('3. Send notifications for SLA breaches');
-    this.logger.log('4. Update records with sla_breach flag');
-    this.logger.log('═══════════════════════════════════════════════════');
+  constructor(
+    private readonly slaTimersService: SlaTimersService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
-    // TODO: Implement actual SLA breach detection
-    // Example logic:
-    // 1. Find all service appointments where:
-    //    - scheduled_start < NOW - SLA_THRESHOLD
-    //    - status not in ['completed', 'cancelled']
-    // 2. Find all work orders where:
-    //    - scheduled_start < NOW - SLA_THRESHOLD
-    //    - status not in ['completed', 'closed', 'cancelled']
-    // 3. Create notifications for each breach
-    // 4. Send emails to relevant parties
+  /**
+   * Check for SLA breaches and send warnings
+   * Runs every 5 minutes
+   */
+  @Cron('*/5 * * * *')
+  async checkSLABreaches(): Promise<void> {
+    this.logger.log('🔍 SLA breach check started');
+
+    try {
+      const { breached, warning90, warning75 } =
+        await this.slaTimersService.findTimersNeedingAttention();
+
+      // Process breached timers
+      if (breached.length > 0) {
+        this.logger.warn(`🚨 ${breached.length} SLA timer(s) BREACHED`);
+        for (const timer of breached) {
+          try {
+            await this.notificationsService.create(timer.tenant_id, {
+              user_id: timer.technician_id,
+              type: 'sla_breach',
+              title: '🚨 SLA Timer Breached',
+              body: `The SLA deadline for this work order has passed. Please complete the job as soon as possible.`,
+              data: {
+                work_order_id: timer.work_order_id,
+                sla_timer_id: timer.id,
+                document_type: 'SLA_BREACH',
+                entity_id: timer.work_order_id,
+                link: `/work-orders?wo_id=${timer.work_order_id}`,
+              },
+              channel: 'in_app',
+            });
+          } catch (err) {
+            this.logger.error(`Failed to send breach notification for timer ${timer.id}: ${err.message}`);
+          }
+        }
+        await this.slaTimersService.markBreached(breached.map((t) => t.id));
+      }
+
+      // Process 90% warning timers
+      if (warning90.length > 0) {
+        this.logger.warn(`⚠️ ${warning90.length} SLA timer(s) at 90% threshold`);
+        for (const timer of warning90) {
+          try {
+            const remainingMs = new Date(timer.deadline_at).getTime() - Date.now();
+            const remainingMin = Math.max(0, Math.round(remainingMs / 60000));
+            await this.notificationsService.create(timer.tenant_id, {
+              user_id: timer.technician_id,
+              type: 'sla_warning_critical',
+              title: '⚠️ SLA Deadline Critical',
+              body: `Only ${remainingMin} minute(s) remaining before SLA breach. Wrap up your work.`,
+              data: {
+                work_order_id: timer.work_order_id,
+                sla_timer_id: timer.id,
+                document_type: 'SLA_WARNING',
+                entity_id: timer.work_order_id,
+                link: `/work-orders?wo_id=${timer.work_order_id}`,
+              },
+              channel: 'in_app',
+            });
+          } catch (err) {
+            this.logger.error(`Failed to send 90% warning for timer ${timer.id}: ${err.message}`);
+          }
+        }
+        await this.slaTimersService.markWarning90(warning90.map((t) => t.id));
+      }
+
+      // Process 75% warning timers
+      if (warning75.length > 0) {
+        this.logger.log(`⏰ ${warning75.length} SLA timer(s) at 75% threshold`);
+        for (const timer of warning75) {
+          try {
+            const remainingMs = new Date(timer.deadline_at).getTime() - Date.now();
+            const remainingMin = Math.max(0, Math.round(remainingMs / 60000));
+            await this.notificationsService.create(timer.tenant_id, {
+              user_id: timer.technician_id,
+              type: 'sla_warning',
+              title: '⏰ SLA Deadline Approaching',
+              body: `${remainingMin} minute(s) remaining before SLA deadline. Please plan accordingly.`,
+              data: {
+                work_order_id: timer.work_order_id,
+                sla_timer_id: timer.id,
+                document_type: 'SLA_WARNING',
+                entity_id: timer.work_order_id,
+                link: `/work-orders?wo_id=${timer.work_order_id}`,
+              },
+              channel: 'in_app',
+            });
+          } catch (err) {
+            this.logger.error(`Failed to send 75% warning for timer ${timer.id}: ${err.message}`);
+          }
+        }
+        await this.slaTimersService.markWarning75(warning75.map((t) => t.id));
+      }
+
+      const totalProcessed = breached.length + warning90.length + warning75.length;
+      if (totalProcessed > 0) {
+        this.logger.log(`SLA check complete: ${breached.length} breached, ${warning90.length} critical, ${warning75.length} warning`);
+      }
+    } catch (error) {
+      this.logger.error(`SLA breach check failed: ${error.message}`, error.stack);
+    }
   }
 
   /**
    * Check for overdue invoices and mark them as overdue
    * Runs daily at midnight
-   * TODO: Enable when @nestjs/schedule is installed
    */
-  // @Cron('0 0 * * *')
+  @Cron('0 0 * * *')
   async checkOverdueInvoices(): Promise<void> {
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('💰 OVERDUE INVOICE CHECK (PLACEHOLDER)');
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('Actions to perform:');
-    this.logger.log('1. Query invoices where due_date < NOW and status != "paid"');
-    this.logger.log('2. Update status to "overdue"');
-    this.logger.log('3. Send reminder emails to customers');
-    this.logger.log('4. Create notifications for finance team');
-    this.logger.log('═══════════════════════════════════════════════════');
-
-    // TODO: Implement actual overdue invoice detection
-    // Example logic:
-    // 1. Find all invoices where:
-    //    - due_date < NOW
-    //    - status in ['sent', 'viewed', 'partially_paid']
-    //    - is_deleted = false
-    // 2. Update status to 'overdue'
-    // 3. Send reminder emails
-    // 4. Create notifications
+    this.logger.log('💰 OVERDUE INVOICE CHECK — placeholder (not yet implemented)');
   }
 
   /**
    * Mark expired estimates
    * Runs daily at midnight
-   * TODO: Enable when @nestjs/schedule is installed
    */
-  // @Cron('0 0 * * *')
+  @Cron('0 0 * * *')
   async markExpiredEstimates(): Promise<void> {
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('📋 EXPIRED ESTIMATE CHECK (PLACEHOLDER)');
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('Actions to perform:');
-    this.logger.log('1. Query estimates where valid_until < NOW and status != "expired"');
-    this.logger.log('2. Update status to "expired"');
-    this.logger.log('3. Send notifications to sales team');
-    this.logger.log('═══════════════════════════════════════════════════');
-
-    // TODO: Implement actual expired estimate detection
-    // Example logic:
-    // 1. Find all estimates where:
-    //    - valid_until < NOW
-    //    - status in ['draft', 'sent', 'viewed']
-    //    - is_deleted = false
-    // 2. Update status to 'expired'
-    // 3. Create notifications
+    this.logger.log('📋 EXPIRED ESTIMATE CHECK — placeholder (not yet implemented)');
   }
 
   /**
    * Send reminder notifications
    * Runs every 4 hours
-   * TODO: Enable when @nestjs/schedule is installed
    */
-  // @Cron('0 */4 * * *')
+  @Cron('0 */4 * * *')
   async sendReminders(): Promise<void> {
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('🔔 REMINDER NOTIFICATIONS (PLACEHOLDER)');
-    this.logger.log('═══════════════════════════════════════════════════');
-    this.logger.log('Actions to perform:');
-    this.logger.log('1. Check for upcoming appointments (next 24 hours)');
-    this.logger.log('2. Send appointment reminders to customers');
-    this.logger.log('3. Send appointment reminders to technicians');
-    this.logger.log('4. Check for pending tasks and send reminders');
-    this.logger.log('═══════════════════════════════════════════════════');
-
-    // TODO: Implement actual reminder logic
-    // Example logic:
-    // 1. Find appointments scheduled in next 24 hours
-    // 2. Send email/SMS reminders
-    // 3. Find work orders due soon
-    // 4. Send reminders to assigned technicians
+    this.logger.log('🔔 REMINDER NOTIFICATIONS — placeholder (not yet implemented)');
   }
 
   /**

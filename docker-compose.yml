@@ -14,6 +14,25 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── PostgreSQL Database ────────────────────────────────────
+  fsm-postgres:
+    image: postgres:16-alpine
+    container_name: fsm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-fieldforce_pro_dev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - fsm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-fieldforce_pro_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── NestJS Backend API ─────────────────────────────────────
   fsm-server:
     build:
@@ -23,6 +42,8 @@ services:
     restart: unless-stopped
     depends_on:
       fsm-redis:
+        condition: service_healthy
+      fsm-postgres:
         condition: service_healthy
     env_file:
       - .env
@@ -78,3 +99,4 @@ networks:
 
 volumes:
   redis-data:
+  postgres-data:

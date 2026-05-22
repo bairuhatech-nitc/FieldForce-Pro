@@ -8,9 +8,10 @@ import { WorkOrdersModule } from '../WORK_ORDERS/work_orders.module';
 import { NotificationsModule } from '../NOTIFICATIONS/notifications.module';
 import { UsersModule } from '../USERS/users.module';
 import { TripsModule } from '../TRIPS/trips.module';
+import { SlaTimersModule } from '../SLA_TIMERS/sla_timers.module';
 
 @Module({
-  imports: [DatabaseModule, WorkOrdersModule, NotificationsModule, UsersModule, TripsModule],
+  imports: [DatabaseModule, WorkOrdersModule, NotificationsModule, UsersModule, TripsModule, SlaTimersModule],
   controllers: [WorkOrderTechnicianSessionsController],
   providers: [WorkOrderTechnicianSessionsService, ...workOrderTechnicianSessionsProviders, ...serviceAppointmentsProviders],
   exports: [WorkOrderTechnicianSessionsService],

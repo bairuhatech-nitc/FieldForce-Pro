@@ -225,7 +225,7 @@ const menuSections: MenuSection[] = [
 ];
 
 export default function Sidebar() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
@@ -251,6 +251,8 @@ export default function Sidebar() {
       return { ...section, items: filteredItems };
     })
     .filter(Boolean) as MenuSection[];
+
+  if (!i18n.isInitialized) return null;
 
   return (
     <Sider

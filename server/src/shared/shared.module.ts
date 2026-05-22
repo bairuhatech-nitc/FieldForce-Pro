@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppConfigService } from './config/config.service';
 import { PdfService } from './services/pdf.service';
 import { SchedulerService } from './services/scheduler.service';
@@ -11,10 +12,12 @@ import { workOrdersProviders } from '../WORK_ORDERS/work_orders.provider';
 import { StripeService } from './services/stripe.service';
 import { RazorpayService } from './services/razorpay.service';
 import { PushNotificationService } from './services/push-notification.service';
+import { SlaTimersModule } from '../SLA_TIMERS/sla_timers.module';
+import { NotificationsModule } from '../NOTIFICATIONS/notifications.module';
 
 @Global()
 @Module({
-  imports: [ConfigModule, DatabaseModule],
+  imports: [ConfigModule, DatabaseModule, ScheduleModule.forRoot(), SlaTimersModule, NotificationsModule],
   providers: [
     AppConfigService,
     PdfService,

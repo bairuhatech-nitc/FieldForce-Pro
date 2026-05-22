@@ -54,6 +54,7 @@ import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templa
 import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
 import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.entity';
 import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_history.entity';
+import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -111,4 +112,5 @@ export const databaseProviders = [
   { provide: REPOSITORY.WORKFLOW_APPROVERS, useValue: WorkflowApprover },
   { provide: REPOSITORY.WORKFLOW_DOCUMENT_APPROVALS, useValue: DocumentApproval },
   { provide: REPOSITORY.WORKFLOW_APPROVAL_HISTORY, useValue: ApprovalHistory },
+  { provide: REPOSITORY.SLA_TIMERS, useValue: SlaTimer },
 ];

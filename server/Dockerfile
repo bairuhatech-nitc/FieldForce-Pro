@@ -1,16 +1,19 @@
-# ── Stage 1: Install dependencies ──────────────────────────
+# syntax=docker/dockerfile:1
+# ── Stage 1: Install dependencies (production only) ────────
 FROM node:20-alpine AS deps
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev
 
 # ── Stage 2: Build TypeScript ──────────────────────────────
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 COPY . .
 RUN npm run build
 

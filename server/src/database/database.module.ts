@@ -60,6 +60,7 @@ import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/docume
 import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_history.entity';
 import { IPWhitelist } from '../IP_WHITELIST/ip-whitelist.entity';
 import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.entity';
+import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/wo
           WorkflowTemplate, WorkflowApprover, DocumentApproval, ApprovalHistory,
           IPWhitelist,
           WorkOrderTechnicianSession,
+          SlaTimer,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

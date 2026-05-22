@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Table, Space, Tooltip, Tag, Select, Tabs, Modal, Input, Form, Avatar, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, TeamOutlined, UserOutlined, CarOutlined, CalendarOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, TeamOutlined, UserOutlined, CarOutlined, CalendarOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useWorkOrders, useDeleteWorkOrder } from '@/hooks/use-work-orders';
 import { useMyPendingApprovals, useProcessApproval } from '@/hooks/use-workflow';
 import { useMyAppointments } from '@/hooks/use-appointments';
+import { useSlaTimer } from '@/hooks/use-sla-timers';
+import { SlaTimerBadge } from '@/components/work-orders/SlaTimerBadge';
 import FieldWorkflowCard from '@/components/work-orders/FieldWorkflowCard';
 import type { WorkOrder } from '@/types/models.types';
 import type { DocumentApproval } from '@/types/workflow.types';
@@ -74,6 +76,12 @@ const approvalStatusLabels: Record<string, string> = {
   PENDING: 'Awaiting Review',
   SKIPPED: 'Skipped',
 };
+
+function SlaTimerCell({ workOrderId }: { workOrderId: string }) {
+  const { data: slaTimer } = useSlaTimer(workOrderId);
+  if (!slaTimer) return <span style={{ color: '#999' }}>-</span>;
+  return <SlaTimerBadge timer={slaTimer} compact />;
+}
 
 export default function WorkOrderListPage() {
   const { t } = useTranslation();
@@ -256,6 +264,11 @@ export default function WorkOrderListPage() {
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
+      title: 'SLA',
+      key: 'sla',
+      render: (_, record) => <SlaTimerCell workOrderId={record.id} />,
+    },
+    {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
@@ -388,10 +401,21 @@ export default function WorkOrderListPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t('nav.workOrders')}
-        subtitle="Manage work orders"
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <PageHeader
+          title={t('nav.workOrders')}
+          subtitle="Manage work orders"
+        />
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
+          onClick={() => navigate('/work-orders/new')}
+          style={{ marginTop: 16 }}
+        >
+          Create Work Order
+        </Button>
+      </div>
 
       <Tabs
         activeKey={activeTab}
