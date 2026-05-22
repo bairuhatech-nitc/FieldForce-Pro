@@ -79,6 +79,13 @@ export class InvoiceLineItem extends Model {
   tax_rate: number;
 
   @Column({
+    type: DataType.ENUM('fixed', 'percentage'),
+    allowNull: false,
+    defaultValue: 'fixed',
+  })
+  discount_type: string;
+
+  @Column({
     type: DataType.DECIMAL(12, 2),
     allowNull: false,
     defaultValue: 0,

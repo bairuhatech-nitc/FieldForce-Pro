@@ -255,6 +255,7 @@ export interface EstimateLineItem {
   quantity: number;
   unit_price: number;
   tax_rate: number;
+  discount_type: 'fixed' | 'percentage';
   discount: number;
   total: number;
   sort_order: number;
@@ -304,6 +305,7 @@ export interface WorkOrderLineItem {
   quantity: number;
   unit_price: number;
   tax_rate: number;
+  discount_type: 'fixed' | 'percentage';
   discount: number;
   total: number;
   sort_order: number;
@@ -505,6 +507,7 @@ export interface InvoiceLineItem {
   quantity: number;
   unit_price: number;
   tax_rate: number;
+  discount_type: 'fixed' | 'percentage';
   discount: number;
   total: number;
   is_deleted: boolean;

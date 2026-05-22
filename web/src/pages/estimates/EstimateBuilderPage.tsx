@@ -139,9 +139,11 @@ function SortableLineItemRow({
 
   const qty      = Number(item.quantity)   || 0;
   const price    = Number(item.unit_price) || 0;
-  const disc     = Number(item.discount)   || 0;
+  const discType = item.discount_type || 'fixed';
+  const discVal  = Number(item.discount)   || 0;
+  const discAmt  = discType === 'percentage' ? (qty * price) * (discVal / 100) : discVal;
   const tax      = Number(item.tax_rate)   || 0;
-  const lineBase = qty * price - disc;
+  const lineBase = qty * price - discAmt;
   const lineTotal = lineBase + lineBase * (tax / 100);
   const typeMeta = LINE_ITEM_TYPE_META[item.type || 'other'] || LINE_ITEM_TYPE_META['other'];
 
@@ -173,7 +175,7 @@ function SortableLineItemRow({
         {tax > 0 ? `${tax}%` : <Text type="secondary">—</Text>}
       </td>
       <td style={{ padding: '10px 8px', textAlign: 'right', width: 90, fontSize: 13 }}>
-        {disc > 0 ? <Text style={{ color: '#ef4444' }}>-${disc.toFixed(2)}</Text> : <Text type="secondary">—</Text>}
+        {discAmt > 0 ? <Text style={{ color: '#ef4444' }}>{discType === 'percentage' ? `${discVal}%` : `-$${discAmt.toFixed(2)}`}</Text> : <Text type="secondary">—</Text>}
       </td>
       <td style={{ padding: '10px 8px', textAlign: 'right', width: 105, fontWeight: 600, fontSize: 13 }}>
         ${lineTotal.toFixed(2)}
@@ -306,14 +308,31 @@ export default function EstimateBuilderPage() {
     }
   }, [existingLineItems, estimate?.line_items, isEdit]);
 
-  const subtotal = lineItems.reduce(
-    (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unit_price) || 0) - (Number(item.discount) || 0), 0,
-  );
+  const subtotal = lineItems.reduce((sum, item) => {
+    const qty   = Number(item.quantity)   || 0;
+    const price = Number(item.unit_price) || 0;
+    const discType = item.discount_type || 'fixed';
+    const discVal  = Number(item.discount) || 0;
+    const discAmt  = discType === 'percentage' ? (qty * price) * (discVal / 100) : discVal;
+    return sum + (qty * price) - discAmt;
+  }, 0);
   const totalTax = lineItems.reduce((sum, item) => {
-    const base = (Number(item.quantity) || 0) * (Number(item.unit_price) || 0) - (Number(item.discount) || 0);
+    const qty   = Number(item.quantity)   || 0;
+    const price = Number(item.unit_price) || 0;
+    const discType = item.discount_type || 'fixed';
+    const discVal  = Number(item.discount) || 0;
+    const discAmt  = discType === 'percentage' ? (qty * price) * (discVal / 100) : discVal;
+    const base = (qty * price) - discAmt;
     return sum + base * ((Number(item.tax_rate) || 0) / 100);
   }, 0);
-  const totalDiscount = lineItems.reduce((sum, item) => sum + (Number(item.discount) || 0), 0);
+  const totalDiscount = lineItems.reduce((sum, item) => {
+    const qty   = Number(item.quantity)   || 0;
+    const price = Number(item.unit_price) || 0;
+    const discType = item.discount_type || 'fixed';
+    const discVal  = Number(item.discount) || 0;
+    const discAmt  = discType === 'percentage' ? (qty * price) * (discVal / 100) : discVal;
+    return sum + discAmt;
+  }, 0);
   const grandTotal    = subtotal + totalTax;
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -331,7 +350,7 @@ export default function EstimateBuilderPage() {
     setEditingIndex(null);
     setItemSource('service');
     lineItemForm.resetFields();
-    lineItemForm.setFieldsValue({ quantity: 1, unit: 'each', unit_price: 0, tax_rate: 0, discount: 0 });
+    lineItemForm.setFieldsValue({ quantity: 1, unit: 'each', unit_price: 0, tax_rate: 0, discount_type: 'fixed', discount: 0 });
     setModalVisible(true);
   };
 
@@ -369,14 +388,17 @@ export default function EstimateBuilderPage() {
 
         const qty   = Number(values.quantity)   || 0;
         const price = Number(values.unit_price) || 0;
-        const disc  = Number(values.discount)   || 0;
+        const discType = values.discount_type || 'fixed';
+        const discVal  = Number(values.discount)   || 0;
+        const discAmt  = discType === 'percentage' ? (qty * price) * (discVal / 100) : discVal;
 
         const entry: LineItemFormData = {
           ...values,
           type:       resolvedType,
+          discount_type: discType,
           tempId:     editingIndex !== null ? lineItems[editingIndex].tempId : `temp-${Date.now()}`,
           sort_order: editingIndex !== null ? lineItems[editingIndex].sort_order : lineItems.length,
-          total:      qty * price - disc,
+          total:      qty * price - discAmt,
         };
 
         if (editingIndex !== null) {
@@ -431,9 +453,11 @@ export default function EstimateBuilderPage() {
         for (const item of lineItems.filter((i) => !i.id)) {
           const qty      = Number(item.quantity)   || 1;
           const price    = Number(item.unit_price) || 0;
-          const disc     = Number(item.discount)   || 0;
+          const discType = item.discount_type || 'fixed';
+          const discVal  = Number(item.discount)   || 0;
+          const discAmt  = discType === 'percentage' ? (qty * price) * (discVal / 100) : discVal;
           const taxRate  = Number(item.tax_rate)   || 0;
-          const lineBase = qty * price - disc;
+          const lineBase = qty * price - discAmt;
           await createLineItem.mutateAsync({
             estimate_id: estimateId,
             type:        (String(item.type || 'service')) as LineItemType,
@@ -443,7 +467,8 @@ export default function EstimateBuilderPage() {
             unit:        item.unit,
             unit_price:  price,
             tax_rate:    taxRate,
-            discount:    disc,
+            discount_type: discType,
+            discount:    discVal,
             total:       lineBase + lineBase * (taxRate / 100),
             sort_order:  item.sort_order || 0,
           });
@@ -873,9 +898,41 @@ export default function EstimateBuilderPage() {
             </Col>
           </Row>
 
-          <Form.Item name="discount" label="Discount ($)" style={{ marginBottom: 0 }}>
-            <InputNumber min={0} step={0.01} prefix="$" style={{ width: '100%' }} precision={2} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="discount_type" label="Discount Type" initialValue="fixed">
+                <Select
+                  options={[
+                    { value: 'fixed', label: 'Fixed Amount ($)' },
+                    { value: 'percentage', label: 'Percentage (%)' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                noStyle
+                shouldUpdate={(prev, curr) => prev?.discount_type !== curr?.discount_type}
+              >
+                {({ getFieldValue }) => {
+                  const dType = getFieldValue('discount_type') || 'fixed';
+                  return (
+                    <Form.Item name="discount" label={dType === 'percentage' ? 'Discount (%)' : 'Discount ($)'} style={{ marginBottom: 0 }}>
+                      <InputNumber
+                        min={0}
+                        max={dType === 'percentage' ? 100 : undefined}
+                        step={dType === 'percentage' ? 1 : 0.01}
+                        prefix={dType === 'percentage' ? undefined : '$'}
+                        suffix={dType === 'percentage' ? '%' : undefined}
+                        style={{ width: '100%' }}
+                        precision={2}
+                      />
+                    </Form.Item>
+                  );
+                }}
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </div>
