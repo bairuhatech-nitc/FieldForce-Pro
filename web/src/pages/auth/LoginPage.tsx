@@ -87,10 +87,20 @@ export default function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f5f5f5',
+          background: 'linear-gradient(135deg, #f0f5ff 0%, #ffffff 100%)',
+          fontFamily: "'Inter', sans-serif",
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <Card style={{ width: 420, padding: 8 }}>
+        <Card style={{ 
+          width: 460, 
+          padding: '40px 32px', 
+          borderRadius: 24,
+          border: '1px solid rgba(59, 130, 246, 0.1)',
+          background: '#ffffff',
+          boxShadow: '0 20px 40px -10px rgba(37, 99, 235, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.05)',
+        }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             {useRecoveryCode ? (
               <KeyOutlined style={{ fontSize: 48, color: '#faad14', marginBottom: 16 }} />
@@ -199,15 +209,38 @@ export default function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f5f5f5',
+          background: 'linear-gradient(135deg, #f0f5ff 0%, #ffffff 100%)',
+          fontFamily: "'Inter', sans-serif",
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <Card style={{ width: 420, padding: 8 }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Title level={2} style={{ marginBottom: 4 }}>
+        {/* Background decorative orbs */}
+        <div style={{
+          position: 'absolute', top: '-20%', right: '-10%',
+          width: 700, height: 700, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-15%', left: '-10%',
+          width: 600, height: 600, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(6, 182, 212, 0.04) 0%, transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+        <Card style={{
+          width: 460,
+          padding: '40px 32px',
+          borderRadius: 24,
+          border: '1px solid rgba(59, 130, 246, 0.1)',
+          background: '#ffffff',
+          boxShadow: '0 20px 40px -10px rgba(37, 99, 235, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.05)',
+        }}>
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <Title level={2} style={{ marginBottom: 4, letterSpacing: '-0.03em', fontWeight: 700, color: '#1e293b' }}>
             FieldForce Pro
           </Title>
-          <Text type="secondary">{t('auth.login')}</Text>
+          <Text type="secondary" style={{ fontSize: 14 }}>{t('auth.login')}</Text>
         </div>
 
         <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>

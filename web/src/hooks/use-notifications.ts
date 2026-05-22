@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi, CreateNotificationPayload } from '@/api/notifications.api';
 import type { PageOptions } from '@/types/api.types';
-import { useNotificationStore } from '@/store/notification.store';
+
 
 export function useNotifications(params?: PageOptions) {
   return useQuery({

@@ -166,7 +166,7 @@ export function useTerminateSession() {
 
   return useMutation({
     mutationFn: (sessionId: string) => authApi.terminateSession(sessionId),
-    onSuccess: (_, sessionId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth', 'sessions'] });
 
       // If user terminated their current session, logout locally

@@ -10,7 +10,7 @@ const SUB:     RGB = [71,  85,  105];   // secondary text
 const MUTED:   RGB = [148, 163, 184];   // muted / labels
 const BORDER:  RGB = [226, 232, 240];   // light dividers
 const ROWALT:  RGB = [248, 250, 252];   // alternating table row
-const WHITE:   RGB = [255, 255, 255];
+
 
 const fill  = (doc: jsPDF, c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
 const draw  = (doc: jsPDF, c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
@@ -59,18 +59,12 @@ export function downloadEstimatePdf(
   const title       = (cf.title as string) || 'Service Estimate';
   const termsText   = (cf.terms_and_conditions as string) || '';
   const isApproved  = estimate.status === 'approved' || estimate.status === 'converted_to_wo';
-  const isConverted = estimate.status === 'converted_to_wo';
+
   const hasSig      = isApproved && !!estimate.signature_url;
   const contactName = estimate.contact
     ? `${estimate.contact.first_name} ${estimate.contact.last_name}` : '—';
 
-  const statusLabel = isConverted        ? 'Converted to WO'
-    : estimate.status === 'approved'     ? 'Approved'
-    : estimate.status === 'sent'         ? 'Sent'
-    : estimate.status === 'viewed'       ? 'Viewed'
-    : estimate.status === 'rejected'     ? 'Rejected'
-    : estimate.status === 'expired'      ? 'Expired'
-    : 'Draft';
+
 
   // ── 1. HEADER ───────────────────────────────────────────────────────────────
   // Blue top accent bar
@@ -116,7 +110,7 @@ export function downloadEstimatePdf(
   y += 7;
 
   // ── 2. BILL TO  +  ESTIMATE DETAILS ─────────────────────────────────────────
-  const col2X = M + CW * 0.58;   // start x of right column
+
   const lineH = 5.2;
 
   // — Left column header —

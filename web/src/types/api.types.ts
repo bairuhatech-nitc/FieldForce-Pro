@@ -8,6 +8,14 @@ export interface ApiResponse<T> {
   meta?: PageMeta;
 }
 
+export interface PagedResponse<T> {
+  data: T[];
+  meta: PageMeta;
+  statusCode: number;
+  status: boolean;
+  message: string;
+}
+
 export interface PageMeta {
   page: number;
   take: number;

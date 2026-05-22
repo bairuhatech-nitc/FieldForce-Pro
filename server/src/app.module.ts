@@ -72,6 +72,7 @@ import { DocumentsModule } from './DOCUMENTS/documents.module';
 import { CustomerPortalModule } from './CUSTOMER_PORTAL/customer-portal.module';
 import { WorkflowModule } from './WORKFLOW/workflow.module';
 import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.module';
+import { AiModule } from './AI/ai.module';
 
 @Module({
   imports: [
@@ -144,6 +145,7 @@ import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSI
     CustomerPortalModule,
     WorkflowModule,
     WorkOrderTechnicianSessionsModule,
+    AiModule,
   ],
   providers: [
     {

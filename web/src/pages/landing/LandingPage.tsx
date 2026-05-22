@@ -986,7 +986,7 @@ export default function LandingPage() {
                   <a href="#" className="lp-footer-social-link" aria-label="Twitter">
                     <GlobalOutlined />
                   </a>
-                  <a href="#" className="lp-footer-social-link" aria-label="LinkedIn">
+                  <a href="#" className="lp-footer-social-link" aria-label="Team">
                     <TeamOutlined />
                   </a>
                   <a href="#" className="lp-footer-social-link" aria-label="GitHub">
