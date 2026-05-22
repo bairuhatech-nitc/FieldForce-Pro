@@ -70,6 +70,24 @@ export class Company extends Model {
   notes: string;
 
   @Column({
+    type: DataType.STRING(50),
+    allowNull: true,
+  })
+  status: string;
+
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+  })
+  phone_number: string;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  shipping_address: string;
+
+  @Column({
     type: DataType.JSONB,
     allowNull: true,
     defaultValue: {},

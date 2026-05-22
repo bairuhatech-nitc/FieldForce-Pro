@@ -36,6 +36,23 @@ import { useAllAppointments } from '@/hooks/use-appointments';
 import { useUsers } from '@/hooks/use-users';
 import PageHeader from '@/components/common/PageHeader';
 import { formatDateTime, formatRelative } from '@/utils/format-date';
+import { useAuthStore } from '@/store/auth.store';
+import { io, Socket } from 'socket.io-client';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon in react-leaflet
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 const { Text, Title } = Typography;
 
@@ -79,6 +96,10 @@ export default function LiveAgentTrackingPage() {
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(undefined);
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [liveLocations, setLiveLocations] = useState<Record<string, { lat: number; lng: number }>>({});
+
+  const user = useAuthStore((s) => s.user);
+  const tenantId = user?.tenant_id;
 
   const { data: appointments = [], isLoading: appointmentsLoading, refetch: refetchAppointments } = useAllAppointments();
   const { data: usersData, isLoading: usersLoading } = useUsers({ page: 1, take: 100 });
@@ -94,6 +115,40 @@ export default function LiveAgentTrackingPage() {
     }, 15000);
     return () => clearInterval(interval);
   }, [autoRefresh, refetchAppointments]);
+
+  // WebSocket Connection for Live GPS Tracking
+  useEffect(() => {
+    if (!tenantId) return;
+
+    // Connect to the WebSocket namespace
+    const socket: Socket = io('http://localhost:3000/agent-locations');
+
+    socket.on('connect', () => {
+      socket.emit('join_tenant_room', { tenantId });
+    });
+
+    socket.on('agent_location_updated', (data: any) => {
+      // Handle both single update and batch update
+      const updates = Array.isArray(data) ? data : [data];
+      
+      setLiveLocations((prev) => {
+        const newLocs = { ...prev };
+        let changed = false;
+        updates.forEach((loc) => {
+          if (loc.user_id && loc.lat && loc.lng) {
+            newLocs[loc.user_id] = { lat: Number(loc.lat), lng: Number(loc.lng) };
+            changed = true;
+          }
+        });
+        return changed ? newLocs : prev;
+      });
+    });
+
+    return () => {
+      socket.emit('leave_tenant_room', { tenantId });
+      socket.disconnect();
+    };
+  }, [tenantId]);
 
   // Mock agent status data (in production, this would come from real-time GPS data)
   const agentStatuses: AgentStatus[] = users.map((user, index) => {
@@ -116,7 +171,7 @@ export default function LiveAgentTrackingPage() {
       id: user.id,
       name: `${user.first_name} ${user.last_name}`,
       status,
-      currentLocation: {
+      currentLocation: liveLocations[user.id] || {
         lat: 37.7749 + (Math.random() - 0.5) * 0.1,
         lng: -122.4194 + (Math.random() - 0.5) * 0.1,
         address: `${Math.floor(Math.random() * 9999)} Market St, San Francisco, CA`,
@@ -274,64 +329,43 @@ export default function LiveAgentTrackingPage() {
               </Space>
             }
           >
-            <Alert
-              message="Map Integration Pending"
-              description={
-                <div>
-                  <p>
-                    The interactive live tracking map will be integrated here using Mapbox GL or Google Maps.
-                    Features:
-                  </p>
-                  <ul style={{ marginTop: 8 }}>
-                    <li>Real-time agent location pins with status colors</li>
-                    <li>Current route visualization</li>
-                    <li>Traffic overlay (Google Maps)</li>
-                    <li>Geofencing for service areas</li>
-                    <li>Heat map for agent density</li>
-                    <li>Click agents to view details</li>
-                    <li>Auto-center on selected agent</li>
-                  </ul>
-                </div>
-              }
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-
-            <div
-              style={{
-                border: '2px dashed #d9d9d9',
-                borderRadius: 8,
-                height: 500,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#fafafa',
-                flexDirection: 'column',
-                gap: 12,
-              }}
-            >
-              <EnvironmentOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />
-              <Title level={4} style={{ color: '#999', margin: 0 }}>
-                Live Agent Map
-              </Title>
-              <Text type="secondary">
-                {activeAgents} agents currently being tracked
-              </Text>
-              <Space wrap style={{ marginTop: 12 }}>
-                <Tag color={statusColors.available}>
-                  <Badge color={statusColors.available} /> Available
-                </Tag>
-                <Tag color={statusColors.on_route}>
-                  <Badge color={statusColors.on_route} /> En Route
-                </Tag>
-                <Tag color={statusColors.on_site}>
-                  <Badge color={statusColors.on_site} /> On Site
-                </Tag>
-                <Tag color={statusColors.offline}>
-                  <Badge color={statusColors.offline} /> Offline
-                </Tag>
-              </Space>
+            {/* Live Map Interface */}
+            <div style={{ height: 500, borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
+              <MapContainer 
+                center={[37.7749, -122.4194]} 
+                zoom={11} 
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                {filteredAgents.map((agent) => (
+                  <Marker
+                    key={agent.id}
+                    position={[agent.currentLocation!.lat, agent.currentLocation!.lng]}
+                  >
+                    <Popup>
+                      <Space direction="vertical" size="small">
+                        <Text strong>{agent.name}</Text>
+                        <Tag color={statusColors[agent.status]} style={{ margin: 0 }}>
+                          {statusLabels[agent.status]}
+                        </Tag>
+                        {agent.currentAppointment && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Current: {agent.currentAppointment.wo_number}
+                          </Text>
+                        )}
+                        {agent.batteryLevel !== undefined && (
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Battery: {agent.batteryLevel}%
+                          </Text>
+                        )}
+                      </Space>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
             </div>
           </Card>
 

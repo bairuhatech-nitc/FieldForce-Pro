@@ -1,5 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { AgentLocation } from './agent_locations.entity';
+import { AgentLocationsGateway } from './agent_locations.gateway';
 import { CreateAgentLocationDto, BatchCreateAgentLocationDto } from './dto/agent_locations_create.dto';
 import { PageOptionsDto } from '../shared/dto/page-options.dto';
 import { PageDto } from '../shared/dto/page.dto';
@@ -12,6 +13,7 @@ export class AgentLocationsService {
   constructor(
     @Inject(KEYNAMES.AGENT_LOCATIONS)
     private readonly agentLocationRepository: typeof AgentLocation,
+    private readonly gateway: AgentLocationsGateway,
   ) {}
 
   async findAllPaginated(
@@ -100,10 +102,13 @@ export class AgentLocationsService {
     tenantId: string,
     dto: CreateAgentLocationDto,
   ): Promise<AgentLocation> {
-    return this.agentLocationRepository.create({
+    const location = await this.agentLocationRepository.create({
       tenant_id: tenantId,
       ...dto,
     });
+    
+    this.gateway.broadcastLocationUpdate(tenantId, location);
+    return location;
   }
 
   async createBatch(
@@ -114,6 +119,9 @@ export class AgentLocationsService {
       tenant_id: tenantId,
       ...location,
     }));
-    return this.agentLocationRepository.bulkCreate(records);
+    const created = await this.agentLocationRepository.bulkCreate(records);
+    
+    this.gateway.broadcastLocationUpdate(tenantId, created);
+    return created;
   }
 }
