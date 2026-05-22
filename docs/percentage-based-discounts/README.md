@@ -4,6 +4,16 @@ Users can now apply discounts as either a fixed amount ($) or a percentage (%) f
 
 ---
 
+## Example Screenshots (for Estimates)
+
+| BEFORE | AFTER |
+|---------|-------|
+| <img width="830" height="175" alt="Screenshot 2026-05-22 203125" src="https://github.com/user-attachments/assets/1900dc1e-4ecb-4b56-b121-07eba5c0cba5"/> | <img width="841" height="193" alt="Screenshot 2026-05-22 202928" src="https://github.com/user-attachments/assets/e07dbf09-e9cc-4d4d-976c-00918d66ec2a"/> |
+| <img width="992" height="499" alt="Screenshot 2026-05-22 203107" src="https://github.com/user-attachments/assets/aff6991d-dd2a-4365-aa61-6258a6a30f6a"/> | <img width="1003" height="503" alt="Screenshot 2026-05-22 203101" src="https://github.com/user-attachments/assets/e377be86-08e8-4995-9f9a-8f6a284d8d1c"/> |
+
+
+---
+
 ## Problem (Before)
 
 The web app only allowed fixed amount discounts on line items:
