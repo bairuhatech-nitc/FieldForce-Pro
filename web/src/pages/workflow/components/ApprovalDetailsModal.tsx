@@ -40,7 +40,7 @@ const actionIcons: Record<string, React.ReactNode> = {
   APPROVE: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
   REJECT: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
   REQUEST_CORRECTION: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
-  SKIP: <ClockCircleOutlined style={{ color: '#999' }} />,
+  SKIP: <ClockCircleOutlined style={{ opacity: 0.5 }} />,
   DELEGATE: <SwapOutlined style={{ color: '#1890ff' }} />,
   ESCALATE: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
 };
@@ -130,7 +130,7 @@ export default function ApprovalDetailsModal({
                 children: (
                   <div>
                     <Text strong>{h.action.replace(/_/g, ' ')}</Text>
-                    <span style={{ marginLeft: 8, color: '#999' }}>
+                    <span style={{ marginLeft: 8, opacity: 0.5 }}>
                       {h.actor
                         ? `by ${h.actor.first_name} ${h.actor.last_name}`
                         : h.actor_id}

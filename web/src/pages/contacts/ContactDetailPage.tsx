@@ -82,7 +82,7 @@ export default function ContactDetailPage() {
                 <a href={`mailto:${contact.email}`}>{contact.email}</a>
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 
@@ -93,7 +93,7 @@ export default function ContactDetailPage() {
                 <a href={`tel:${contact.phone}`}>{contact.phone}</a>
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 
@@ -104,7 +104,7 @@ export default function ContactDetailPage() {
                 {contact.address}
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 

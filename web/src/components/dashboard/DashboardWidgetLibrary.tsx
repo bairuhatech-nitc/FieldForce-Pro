@@ -126,7 +126,7 @@ export interface ChartWidgetProps {
 export function ChartWidget({ title, type, data, height = 300 }: ChartWidgetProps) {
   return (
     <Card title={title}>
-      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+      <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
         <Text type="secondary">
           {type.toUpperCase()} Chart Placeholder
           <div style={{ fontSize: 12, marginTop: 8 }}>Install react-chartjs-2 for full functionality</div>

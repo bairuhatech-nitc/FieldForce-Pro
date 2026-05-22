@@ -223,7 +223,7 @@ export default function RequestListPage() {
         channel ? (
           <Tag>{channel.charAt(0).toUpperCase() + channel.slice(1)}</Tag>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {
@@ -232,7 +232,7 @@ export default function RequestListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Created',

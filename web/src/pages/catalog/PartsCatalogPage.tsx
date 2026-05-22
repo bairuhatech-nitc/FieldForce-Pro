@@ -56,20 +56,20 @@ export default function PartsCatalogPage() {
       title: 'SKU',
       dataIndex: 'sku',
       key: 'sku',
-      render: (sku: string) => sku || <span style={{ color: '#999' }}>-</span>,
+      render: (sku: string) => sku || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ color: '#999' }}>-</span>,
+      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Price',
       dataIndex: 'unit_price',
       key: 'unit_price',
       render: (price: number | null) =>
-        price !== null && price !== undefined ? formatCurrency(price) : <span style={{ color: '#999' }}>-</span>,
+        price !== null && price !== undefined ? formatCurrency(price) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => (a.unit_price || 0) - (b.unit_price || 0),
     },
     {
@@ -90,7 +90,7 @@ export default function PartsCatalogPage() {
       title: 'Supplier',
       dataIndex: 'supplier',
       key: 'supplier',
-      render: (supplier: string) => supplier || <span style={{ color: '#999' }}>-</span>,
+      render: (supplier: string) => supplier || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Active',

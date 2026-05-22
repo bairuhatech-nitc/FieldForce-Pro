@@ -278,7 +278,7 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/invoices')}
@@ -286,7 +286,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Total Revenue</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.totalRevenue)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -296,7 +296,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f6ffed', display: 'flex',
+                  backgroundColor: 'rgba(82, 196, 26, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#52c41a', fontSize: 22,
                 }}
@@ -309,7 +309,7 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/invoices')}
@@ -317,7 +317,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Payments Collected</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.paymentsCollected)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -327,7 +327,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#e6f4ff', display: 'flex',
+                  backgroundColor: 'rgba(22, 119, 255, 0.08)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#1677ff', fontSize: 22,
                 }}
@@ -340,7 +340,7 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/invoices')}
@@ -358,7 +358,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#fff7e6', display: 'flex',
+                  backgroundColor: 'rgba(250, 173, 20, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#fa8c16', fontSize: 22,
                 }}
@@ -373,9 +373,9 @@ export default function DashboardPage() {
           <Card
             style={{
               borderRadius: 12,
-              border: financialStats.overdueAmount > 0 ? '1px solid #ffccc7' : '1px solid #f0f0f0',
+              border: financialStats.overdueAmount > 0 ? '1px solid rgba(255, 77, 79, 0.25)' : undefined,
               cursor: 'pointer',
-              background: financialStats.overdueAmount > 0 ? '#fff2f0' : undefined,
+              background: financialStats.overdueAmount > 0 ? 'rgba(255, 77, 79, 0.1)' : undefined,
             }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
@@ -394,7 +394,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: financialStats.overdueAmount > 0 ? '#fff1f0' : '#fff2f0',
+                  backgroundColor: 'rgba(255, 77, 79, 0.1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#f5222d', fontSize: 22,
                 }}
@@ -410,7 +410,7 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/work-orders')}
@@ -418,7 +418,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Active Jobs</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : opsStats.activeWOs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -428,7 +428,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#e6f4ff', display: 'flex',
+                  backgroundColor: 'rgba(22, 119, 255, 0.08)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#1677ff', fontSize: 22,
                 }}
@@ -441,7 +441,7 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/work-orders')}
@@ -449,7 +449,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Completion Rate</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : `${opsStats.completionRate}%`}
                 </div>
                 <Progress
@@ -463,7 +463,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f6ffed', display: 'flex',
+                  backgroundColor: 'rgba(82, 196, 26, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#52c41a', fontSize: 22,
                 }}
@@ -476,7 +476,7 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/scheduling')}
@@ -484,7 +484,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Today's Appointments</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {apptLoading ? <Spin size="small" /> : opsStats.todayAppointments}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -494,7 +494,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f0f5ff', display: 'flex',
+                  backgroundColor: 'rgba(47, 84, 235, 0.08)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#2f54eb', fontSize: 22,
                 }}
@@ -507,7 +507,7 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/service-requests?status=new')}
@@ -515,7 +515,7 @@ export default function DashboardPage() {
             <Flex justify="space-between" align="flex-start">
               <div>
                 <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Pending Requests</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#262626', marginTop: 4, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {srLoading ? <Spin size="small" /> : opsStats.pendingSRs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
@@ -525,7 +525,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f9f0ff', display: 'flex',
+                  backgroundColor: 'rgba(114, 46, 209, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#722ed1', fontSize: 22,
                 }}
@@ -717,19 +717,19 @@ export default function DashboardPage() {
               <div style={{ marginTop: 12, marginBottom: 20 }}>
                 <Row gutter={[12, 12]}>
                   <Col span={8}>
-                    <div style={{ background: '#f6ffed', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <div style={{ background: 'rgba(82, 196, 26, 0.1)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#52c41a' }}>{estimatePipeline.winRate}%</div>
                       <Text type="secondary" style={{ fontSize: 11 }}>Win Rate</Text>
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div style={{ background: '#e6f4ff', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <div style={{ background: 'rgba(22, 119, 255, 0.08)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#1677ff' }}>{estimatePipeline.totalEstimates}</div>
                       <Text type="secondary" style={{ fontSize: 11 }}>Total</Text>
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div style={{ background: '#f9f0ff', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <div style={{ background: 'rgba(114, 46, 209, 0.1)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#722ed1' }}>{formatCurrency(estimatePipeline.pipelineValue)}</div>
                       <Text type="secondary" style={{ fontSize: 11 }}>Pipeline</Text>
                     </div>

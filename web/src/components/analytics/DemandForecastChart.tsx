@@ -263,7 +263,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
 
         {/* Seasonality Information */}
         {forecast.seasonality && Object.keys(forecast.seasonality).length > 0 && (
-          <Card size="small" style={{ backgroundColor: '#fafafa' }}>
+          <Card size="small" style={{ backgroundColor: 'var(--bg-color)' }}>
             <Title level={5}>Seasonality Patterns</Title>
             <Space wrap>
               {forecast.seasonality.weekly && (
@@ -281,7 +281,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
         )}
 
         {/* Capacity Recommendations */}
-        <Card size="small" style={{ backgroundColor: '#e6f7ff' }}>
+        <Card size="small" style={{ backgroundColor: 'rgba(22, 119, 255, 0.08)' }}>
           <Title level={5}>AI Recommendations</Title>
           <Space direction="vertical">
             <Text>

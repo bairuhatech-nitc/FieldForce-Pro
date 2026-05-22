@@ -244,7 +244,7 @@ export default function MFASetupWizard() {
                 </Button>
               </Space>
               {recoveryCodes.length > 0 && (
-                <Card size="small" style={{ marginTop: 16, background: '#fffbe6', borderColor: '#ffe58f' }}>
+                <Card size="small" style={{ marginTop: 16, background: 'rgba(250, 173, 20, 0.1)', borderColor: 'rgba(250, 173, 20, 0.25)' }}>
                   <Alert
                     message="Save your recovery codes"
                     description="These codes can be used to access your account if you lose your MFA device. Each code can only be used once. You won't see these again."
@@ -258,7 +258,7 @@ export default function MFASetupWizard() {
                       gridTemplateColumns: '1fr 1fr',
                       gap: 8,
                       padding: 16,
-                      background: '#fff',
+                      background: 'var(--card-bg)',
                       borderRadius: 4,
                       fontFamily: 'monospace',
                       fontSize: 16,
@@ -315,7 +315,7 @@ export default function MFASetupWizard() {
                     hoverable
                     size="small"
                     style={{
-                      border: selectedMethod === 'email' ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                      border: selectedMethod === 'email' ? '2px solid #1890ff' : '1px solid var(--border-color)',
                       cursor: 'pointer',
                     }}
                     onClick={() => setSelectedMethod('email')}
@@ -338,7 +338,7 @@ export default function MFASetupWizard() {
                     hoverable
                     size="small"
                     style={{
-                      border: selectedMethod === 'totp' ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                      border: selectedMethod === 'totp' ? '2px solid #1890ff' : '1px solid var(--border-color)',
                       cursor: 'pointer',
                     }}
                     onClick={() => setSelectedMethod('totp')}
@@ -462,7 +462,7 @@ export default function MFASetupWizard() {
                           style={{
                             marginTop: 8,
                             padding: '8px 12px',
-                            background: '#f5f5f5',
+                            background: 'var(--bg-color)',
                             borderRadius: 4,
                             fontFamily: 'monospace',
                             fontSize: 14,
@@ -535,7 +535,7 @@ export default function MFASetupWizard() {
               </div>
 
               {recoveryCodes.length > 0 && (
-                <Card size="small" style={{ marginBottom: 24, background: '#fffbe6', borderColor: '#ffe58f' }}>
+                <Card size="small" style={{ marginBottom: 24, background: 'rgba(250, 173, 20, 0.1)', borderColor: 'rgba(250, 173, 20, 0.25)' }}>
                   <Alert
                     message="Save your recovery codes"
                     description="These codes can be used to access your account if you lose your MFA device. Each code can only be used once. You won't see these again."
@@ -549,7 +549,7 @@ export default function MFASetupWizard() {
                       gridTemplateColumns: '1fr 1fr',
                       gap: 8,
                       padding: 16,
-                      background: '#fff',
+                      background: 'var(--card-bg)',
                       borderRadius: 4,
                       fontFamily: 'monospace',
                       fontSize: 16,

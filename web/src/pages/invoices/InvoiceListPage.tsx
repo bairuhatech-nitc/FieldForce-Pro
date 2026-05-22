@@ -90,7 +90,7 @@ export default function InvoiceListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Status',
@@ -127,7 +127,7 @@ export default function InvoiceListPage() {
       title: 'Due Date',
       dataIndex: 'due_date',
       key: 'due_date',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => {
         if (!a.due_date) return 1;
         if (!b.due_date) return -1;

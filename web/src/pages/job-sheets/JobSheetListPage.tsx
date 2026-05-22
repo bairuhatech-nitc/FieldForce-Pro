@@ -109,7 +109,7 @@ export default function JobSheetListPage() {
       render: (_, record) =>
         record.work_order?.wo_number
           ? <span>{record.work_order.wo_number}</span>
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Status',

@@ -87,7 +87,7 @@ export default function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f5f5f5',
+          background: 'var(--bg-color)',
         }}
       >
         <Card style={{ width: 420, padding: 8 }}>
@@ -199,7 +199,7 @@ export default function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f5f5f5',
+          background: 'var(--bg-color)',
         }}
       >
         <Card style={{ width: 420, padding: 8 }}>

@@ -77,11 +77,11 @@ export default function CompanyDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Industry">
-            {company.industry || <span style={{ color: '#999' }}>-</span>}
+            {company.industry || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Tax ID">
-            {company.tax_id || <span style={{ color: '#999' }}>-</span>}
+            {company.tax_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Website" span={2}>
@@ -93,16 +93,16 @@ export default function CompanyDetailPage() {
                 </a>
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 
           <Descriptions.Item label="Billing Address" span={2}>
-            {company.billing_address || <span style={{ color: '#999' }}>-</span>}
+            {company.billing_address || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Notes" span={2}>
-            {company.notes || <span style={{ color: '#999' }}>-</span>}
+            {company.notes || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Created At">

@@ -48,7 +48,7 @@ export default function CookieConsentModal() {
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--card-bg)',
           borderRadius: '20px',
           maxWidth: '600px',
           width: '100%',
@@ -76,7 +76,6 @@ export default function CookieConsentModal() {
             style={{
               marginBottom: '16px',
               fontSize: '26px',
-              color: '#262626',
               fontWeight: 600,
             }}
           >
@@ -86,7 +85,7 @@ export default function CookieConsentModal() {
           <Paragraph
             style={{
               fontSize: '15px',
-              color: '#595959',
+              opacity: 0.8,
               marginBottom: '40px',
               maxWidth: '480px',
               margin: '0 auto 40px',
@@ -130,8 +129,8 @@ export default function CookieConsentModal() {
             onClick={handleClose}
             size="large"
             style={{
-              border: '1px solid #e8e8e8',
-              color: '#8c8c8c',
+              border: '1px solid var(--border-color)',
+              opacity: 0.6,
             }}
           />
         </div>
@@ -141,7 +140,7 @@ export default function CookieConsentModal() {
           <Paragraph
             style={{
               fontSize: '12px',
-              color: '#8c8c8c',
+              opacity: 0.5,
               margin: 0,
             }}
           >

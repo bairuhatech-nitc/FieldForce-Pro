@@ -73,7 +73,7 @@ export default function ContactListPage() {
             <a href={`mailto:${email}`}>{email}</a>
           </Space>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {
@@ -87,7 +87,7 @@ export default function ContactListPage() {
             <a href={`tel:${phone}`}>{phone}</a>
           </Space>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {
@@ -104,7 +104,7 @@ export default function ContactListPage() {
             ))}
           </>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {

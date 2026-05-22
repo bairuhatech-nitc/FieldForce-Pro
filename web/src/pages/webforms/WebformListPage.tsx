@@ -71,7 +71,7 @@ export default function WebformListPage() {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => desc || <span style={{ color: '#999' }}>-</span>,
+      render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Submissions',
