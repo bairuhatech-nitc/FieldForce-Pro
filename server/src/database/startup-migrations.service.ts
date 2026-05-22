@@ -216,26 +216,6 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
         name: 'service_appointments: restore default on status',
         sql: `ALTER TABLE service_appointments ALTER COLUMN status SET DEFAULT 'scheduled';`,
       },
-
-      // ── companies: add new columns ─────────────────────────────────────────
-      {
-        name: 'companies: add status, phone_number, and shipping_address',
-        sql: `
-          ALTER TABLE companies ADD COLUMN IF NOT EXISTS status VARCHAR(50);
-          ALTER TABLE companies ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20);
-          ALTER TABLE companies ADD COLUMN IF NOT EXISTS shipping_address TEXT;
-        `,
-      },
-
-      // ── contacts: add new columns ──────────────────────────────────────────
-      {
-        name: 'contacts: add job_title, mobile_phone, and is_primary',
-        sql: `
-          ALTER TABLE contacts ADD COLUMN IF NOT EXISTS job_title VARCHAR(100);
-          ALTER TABLE contacts ADD COLUMN IF NOT EXISTS mobile_phone VARCHAR(20);
-          ALTER TABLE contacts ADD COLUMN IF NOT EXISTS is_primary BOOLEAN DEFAULT false;
-        `,
-      },
     ];
 
     for (const migration of migrations) {

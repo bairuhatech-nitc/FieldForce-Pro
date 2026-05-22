@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, Space, Select, Skeleton, Switch } from 'antd';
+import { Card, Form, Input, Button, Space, Select, Skeleton } from 'antd';
 import { useContact, useCreateContact, useUpdateContact } from '@/hooks/use-contacts';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -21,13 +21,10 @@ export default function ContactFormPage() {
       form.setFieldsValue({
         first_name: contact.first_name,
         last_name: contact.last_name,
-        job_title: contact.job_title,
         email: contact.email,
         phone: contact.phone,
-        mobile_phone: contact.mobile_phone,
         address: contact.address,
         tags: contact.tags || [],
-        is_primary: contact.is_primary,
       });
     }
   }, [contact, form]);
@@ -86,10 +83,6 @@ export default function ContactFormPage() {
             <Input placeholder="Doe" />
           </Form.Item>
 
-          <Form.Item name="job_title" label="Job Title">
-            <Input placeholder="Facility Manager" />
-          </Form.Item>
-
           <Form.Item
             name="email"
             label="Email"
@@ -102,10 +95,6 @@ export default function ContactFormPage() {
             <Input placeholder="+1234567890" />
           </Form.Item>
 
-          <Form.Item name="mobile_phone" label="Mobile Phone">
-            <Input placeholder="+0987654321" />
-          </Form.Item>
-
           <Form.Item name="address" label="Address">
             <TextArea rows={3} placeholder="123 Main St, City, State, 12345" />
           </Form.Item>
@@ -116,10 +105,6 @@ export default function ContactFormPage() {
               placeholder="Add tags (press Enter to add)"
               style={{ width: '100%' }}
             />
-          </Form.Item>
-
-          <Form.Item name="is_primary" label="Primary Contact" valuePropName="checked">
-            <Switch />
           </Form.Item>
 
           <Form.Item>
