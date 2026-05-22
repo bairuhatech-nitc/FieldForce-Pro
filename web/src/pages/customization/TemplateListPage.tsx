@@ -88,7 +88,7 @@ export default function TemplateListPage() {
       title: 'Subject',
       dataIndex: 'subject',
       key: 'subject',
-      render: (subject: string) => subject || <span style={{ color: '#999' }}>-</span>,
+      render: (subject: string) => subject || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Default',

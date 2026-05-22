@@ -71,21 +71,21 @@ const STEP_KEYS = WORKFLOW_STEPS.map((s) => s.key);
 // ── Step header color schemes ─────────────────────────────────────────────────
 
 const STEP_THEME: Record<string, { bg: string; border: string; iconColor: string; label: string }> = {
-  pending_approval:  { bg: '#fffbe6', border: '#ffe58f',  iconColor: '#d48806', label: 'Step 1 — Review Assignment' },
-  approved:          { bg: '#e6f4ff', border: '#91caff',  iconColor: '#1677ff', label: 'Step 2 — Head to Site' },
-  trip_started:      { bg: '#e6f4ff', border: '#91caff',  iconColor: '#1677ff', label: 'Step 3 — In Transit' },
-  reached:           { bg: '#f6ffed', border: '#b7eb8f',  iconColor: '#389e0d', label: 'Step 4 — Arrived on Site' },
-  items_confirmed:   { bg: '#f9f0ff', border: '#d3adf7',  iconColor: '#531dab', label: 'Step 5 — Verify Parts & Materials' },
-  call_confirmed:    { bg: '#e6fffb', border: '#87e8de',  iconColor: '#08979c', label: 'Step 6 — Client Communication' },
-  work_started:      { bg: '#f6ffed', border: '#b7eb8f',  iconColor: '#389e0d', label: 'Step 7 — Work in Progress' },
-  after_photos:      { bg: '#e6f4ff', border: '#91caff',  iconColor: '#1677ff', label: 'Step 8 — Document Your Work' },
-  finished:          { bg: '#f6ffed', border: '#b7eb8f',  iconColor: '#389e0d', label: 'Job Complete' },
-  rejected:          { bg: '#fff2f0', border: '#ffccc7',  iconColor: '#cf1322', label: 'Job Rejected' },
-  paused:            { bg: '#fffbe6', border: '#ffe58f',  iconColor: '#d48806', label: 'Work Paused' },
+  pending_approval:  { bg: 'rgba(250, 173, 20, 0.1)', border: 'rgba(250, 173, 20, 0.25)',  iconColor: '#faad14', label: 'Step 1 — Review Assignment' },
+  approved:          { bg: 'rgba(22, 119, 255, 0.08)', border: 'rgba(22, 119, 255, 0.25)',  iconColor: '#1677ff', label: 'Step 2 — Head to Site' },
+  trip_started:      { bg: 'rgba(22, 119, 255, 0.08)', border: 'rgba(22, 119, 255, 0.25)',  iconColor: '#1677ff', label: 'Step 3 — In Transit' },
+  reached:           { bg: 'rgba(82, 196, 26, 0.1)', border: 'rgba(82, 196, 26, 0.25)',  iconColor: '#52c41a', label: 'Step 4 — Arrived on Site' },
+  items_confirmed:   { bg: 'rgba(114, 46, 209, 0.1)', border: 'rgba(114, 46, 209, 0.25)',  iconColor: '#722ed1', label: 'Step 5 — Verify Parts & Materials' },
+  call_confirmed:    { bg: 'rgba(19, 194, 194, 0.1)', border: 'rgba(19, 194, 194, 0.25)',  iconColor: '#13c2c2', label: 'Step 6 — Client Communication' },
+  work_started:      { bg: 'rgba(82, 196, 26, 0.1)', border: 'rgba(82, 196, 26, 0.25)',  iconColor: '#52c41a', label: 'Step 7 — Work in Progress' },
+  after_photos:      { bg: 'rgba(22, 119, 255, 0.08)', border: 'rgba(22, 119, 255, 0.25)',  iconColor: '#1677ff', label: 'Step 8 — Document Your Work' },
+  finished:          { bg: 'rgba(82, 196, 26, 0.1)', border: 'rgba(82, 196, 26, 0.25)',  iconColor: '#52c41a', label: 'Job Complete' },
+  rejected:          { bg: 'rgba(255, 77, 79, 0.1)', border: 'rgba(255, 77, 79, 0.25)',  iconColor: '#ff4d4f', label: 'Job Rejected' },
+  paused:            { bg: 'rgba(250, 173, 20, 0.1)', border: 'rgba(250, 173, 20, 0.25)',  iconColor: '#faad14', label: 'Work Paused' },
 };
 
 function getTheme(step: string | null) {
-  return STEP_THEME[step ?? ''] ?? { bg: '#fafafa', border: '#f0f0f0', iconColor: '#8c8c8c', label: 'Field Workflow' };
+  return STEP_THEME[step ?? ''] ?? { bg: 'var(--bg-color)', border: 'var(--border-color)', iconColor: '#8c8c8c', label: 'Field Workflow' };
 }
 
 // ── Mini step progress bar ────────────────────────────────────────────────────
@@ -114,8 +114,9 @@ function MiniStepProgress({ currentStep }: { currentStep: string | null }) {
               justifyContent: 'center',
               fontSize: 11,
               fontWeight: isActive ? 700 : 400,
-              background: isDone ? '#52c41a' : isActive ? '#1677ff' : '#f0f0f0',
-              color: isDone || isActive ? '#fff' : '#bfbfbf',
+              background: isDone ? '#52c41a' : isActive ? '#1677ff' : 'var(--border-color)',
+              color: isDone || isActive ? '#fff' : 'inherit',
+              opacity: isDone || isActive ? 1 : 0.5,
               transition: 'all 0.2s',
               cursor: 'default',
               flexShrink: 0,
@@ -160,7 +161,7 @@ function StepHeader({ step, icon }: { step: string | null; icon: React.ReactNode
         {icon}
       </div>
       <div>
-        <Text strong style={{ fontSize: 14, color: '#262626', display: 'block', lineHeight: '20px' }}>
+        <Text strong style={{ fontSize: 14, display: 'block', lineHeight: '20px' }}>
           {theme.label}
         </Text>
       </div>
@@ -185,7 +186,7 @@ function StepCard({
       border: `1px solid ${theme.border}`,
       borderRadius: 10,
       overflow: 'hidden',
-      background: '#fff',
+      background: 'var(--card-bg)',
       boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
     }}>
       <StepHeader step={step} icon={icon} />
@@ -220,7 +221,7 @@ function PrimaryAction({
       style={{
         width: '100%',
         padding: '14px 20px',
-        background: disabled ? '#f5f5f5' : (color ?? '#1677ff'),
+        background: disabled ? 'rgba(128, 128, 128, 0.08)' : (color ?? '#1677ff'),
         border: 'none',
         borderRadius: 10,
         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -236,14 +237,14 @@ function PrimaryAction({
       {loading ? (
         <Spin size="small" style={{ filter: 'brightness(10)' }} />
       ) : (
-        <span style={{ color: disabled ? '#8c8c8c' : '#fff', fontSize: 18 }}>{icon}</span>
+        <span style={{ color: disabled ? 'inherit' : '#fff', opacity: disabled ? 0.5 : 1, fontSize: 18 }}>{icon}</span>
       )}
       <div style={{ textAlign: 'left' }}>
-        <div style={{ color: disabled ? '#8c8c8c' : '#fff', fontSize: 15, fontWeight: 600, lineHeight: '20px' }}>
+        <div style={{ color: disabled ? 'inherit' : '#fff', opacity: disabled ? 0.5 : 1, fontSize: 15, fontWeight: 600, lineHeight: '20px' }}>
           {label}
         </div>
         {sublabel && (
-          <div style={{ color: disabled ? '#bfbfbf' : 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: '16px', marginTop: 1 }}>
+          <div style={{ color: disabled ? 'inherit' : 'rgba(255,255,255,0.8)', opacity: disabled ? 0.3 : 1, fontSize: 12, lineHeight: '16px', marginTop: 1 }}>
             {sublabel}
           </div>
         )}
@@ -429,12 +430,12 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       <div style={{
         textAlign: 'center',
         padding: '32px 16px',
-        background: '#fafafa',
+        background: 'transparent',
         borderRadius: 10,
-        border: '1px dashed #d9d9d9',
+        border: '1px dashed var(--border-color)',
       }}>
-        <ClockCircleOutlined style={{ fontSize: 36, color: '#d9d9d9', display: 'block', margin: '0 auto 12px' }} />
-        <Text style={{ display: 'block', color: '#8c8c8c', fontSize: 14 }}>Awaiting session initialization</Text>
+        <ClockCircleOutlined style={{ fontSize: 36, opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
+        <Text style={{ display: 'block', opacity: 0.5, fontSize: 14 }}>Awaiting session initialization</Text>
         <Text type="secondary" style={{ fontSize: 12 }}>
           The field workflow will appear here once the session is started.
         </Text>
@@ -447,7 +448,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
   const stepHeader = (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <Text strong style={{ fontSize: 12, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        <Text strong style={{ fontSize: 12, opacity: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           Your Progress
         </Text>
         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -510,11 +511,11 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       {step === 'pending_approval' && (
         <StepCard step={step} icon={<ClockCircleOutlined />}>
           <div style={{
-            background: '#fffbe6',
+            background: 'rgba(250, 173, 20, 0.1)',
             borderRadius: 8,
             padding: '12px 14px',
             marginBottom: 16,
-            border: '1px solid #ffe58f',
+            border: '1px solid rgba(250, 173, 20, 0.25)',
           }}>
             <Text strong style={{ fontSize: 15, display: 'block', marginBottom: 4 }}>
               {workOrder.wo_number}
@@ -526,7 +527,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             )}
             {serviceAddress && (
               <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                <EnvironmentOutlined style={{ color: '#d48806', marginTop: 2, flexShrink: 0 }} />
+                <EnvironmentOutlined style={{ color: '#faad14', marginTop: 2, flexShrink: 0 }} />
                 <Text style={{ fontSize: 13 }}>{serviceAddress}</Text>
               </div>
             )}
@@ -544,8 +545,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
               onClick={() => setRejectModalOpen(true)}
               style={{
                 padding: '14px 12px',
-                background: '#fff2f0',
-                border: '1px solid #ffccc7',
+                background: 'rgba(255, 77, 79, 0.1)',
+                border: '1px solid rgba(255, 77, 79, 0.25)',
                 borderRadius: 10,
                 cursor: 'pointer',
                 display: 'flex',
@@ -554,10 +555,10 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
                 gap: 8,
               }}
             >
-              <CloseOutlined style={{ color: '#cf1322', fontSize: 16 }} />
+              <CloseOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
               <div style={{ textAlign: 'left' }}>
-                <div style={{ color: '#cf1322', fontSize: 14, fontWeight: 600 }}>Reject</div>
-                <div style={{ color: '#ff7875', fontSize: 11 }}>Can't take this job</div>
+                <div style={{ color: '#ff4d4f', fontSize: 14, fontWeight: 600 }}>Reject</div>
+                <div style={{ color: '#ff4d4f', opacity: 0.6, fontSize: 11 }}>Can't take this job</div>
               </div>
             </button>
           </div>
@@ -604,7 +605,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
         <StepCard step={step} icon={<CloseOutlined />}>
           <Text>You rejected this work order.</Text>
           {session.rejection_reason && (
-            <div style={{ marginTop: 12, padding: '10px 12px', background: '#fff2f0', borderRadius: 8, border: '1px solid #ffccc7' }}>
+            <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(255, 77, 79, 0.1)', borderRadius: 8, border: '1px solid rgba(255, 77, 79, 0.25)' }}>
               <Text strong style={{ fontSize: 13 }}>Reason: </Text>
               <Text style={{ fontSize: 13 }}>{session.rejection_reason}</Text>
             </div>
@@ -624,7 +625,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             gap: 8,
             marginBottom: 14,
           }}>
-            <div style={{ background: '#f9fafb', borderRadius: 8, padding: '10px 12px', border: '1px solid #e5e7eb' }}>
+            <div style={{ background: 'var(--bg-color)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border-color)' }}>
               <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>Started</Text>
               <Text strong style={{ fontSize: 14 }}>
                 {session?.trip_started_at
@@ -632,12 +633,12 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
                   : '—'}
               </Text>
             </div>
-            <div style={{ background: '#fff7e6', borderRadius: 8, padding: '10px 12px', border: '1px solid #ffd591' }}>
+            <div style={{ background: 'rgba(250, 173, 20, 0.1)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(250, 173, 20, 0.25)' }}>
               <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>Duration</Text>
               <Text strong style={{ fontSize: 14, color: '#fa8c16' }}>{tripElapsed || '—'}</Text>
             </div>
             {hasValidTripOrigin && serviceLat && serviceLng && (
-              <div style={{ background: '#e6f4ff', borderRadius: 8, padding: '10px 12px', border: '1px solid #91caff' }}>
+              <div style={{ background: 'rgba(22, 119, 255, 0.08)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(22, 119, 255, 0.25)' }}>
                 <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>Distance</Text>
                 <Text strong style={{ fontSize: 14, color: '#1677ff' }}>
                   {haversineKm(tripStartLat!, tripStartLng!, serviceLat, serviceLng).toFixed(1)} km
@@ -647,7 +648,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
           </div>
 
           {/* Route: FROM → TO */}
-          <div style={{ background: '#fafafa', borderRadius: 8, padding: '12px 14px', marginBottom: 14, border: '1px solid #f0f0f0' }}>
+          <div style={{ background: 'var(--bg-color)', borderRadius: 8, padding: '12px 14px', marginBottom: 14, border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8 }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#52c41a', marginTop: 4, flexShrink: 0 }} />
               <div>
@@ -660,7 +661,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, margin: '0 4px 8px', alignItems: 'center' }}>
-              <div style={{ width: 2, height: 16, background: '#d9d9d9' }} />
+              <div style={{ width: 2, height: 16, background: 'var(--border-color)' }} />
               <Tag color={session?.trip_start_type === 'auto_gps' ? 'blue' : 'green'} style={{ margin: 0, fontSize: 11 }}>
                 {session?.trip_start_type === 'auto_gps' ? '📡 Auto GPS' : '✋ Manual'}
               </Tag>
@@ -727,8 +728,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
                         gap: 10,
                         padding: '10px 12px',
                         borderRadius: 8,
-                        border: `1px solid ${isChecked ? '#b7eb8f' : '#e5e7eb'}`,
-                        background: isChecked ? '#f6ffed' : '#fafafa',
+                        border: '1px solid ' + (isChecked ? 'rgba(82, 196, 26, 0.25)' : 'var(--border-color)'),
+                        background: isChecked ? 'rgba(82, 196, 26, 0.1)' : 'var(--bg-color)',
                         cursor: 'pointer',
                         transition: 'all 0.15s',
                       }}
@@ -736,7 +737,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
                       <Checkbox checked={isChecked} onChange={() => {}} style={{ marginTop: 2 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <Text strong style={{ textDecoration: isChecked ? 'line-through' : 'none', color: isChecked ? '#8c8c8c' : undefined, fontSize: 14 }}>
+                          <Text strong style={{ textDecoration: isChecked ? 'line-through' : 'none', opacity: isChecked ? 0.5 : 1, fontSize: 14 }}>
                             {item.name}
                           </Text>
                           {item.type && <Tag style={{ fontSize: 11 }}>{item.type}</Tag>}
@@ -795,7 +796,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       {step === 'items_confirmed' && (
         <StepCard step={step} icon={<PhoneOutlined />}>
           {workOrder.contact ? (
-            <div style={{ padding: '12px 14px', background: '#e6fffb', borderRadius: 8, marginBottom: 14, border: '1px solid #87e8de' }}>
+            <div style={{ padding: '12px 14px', background: 'rgba(19, 194, 194, 0.1)', borderRadius: 8, marginBottom: 14, border: '1px solid rgba(19, 194, 194, 0.25)' }}>
               <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 4 }}>
                 {(workOrder.contact as unknown as { first_name?: string; last_name?: string })?.first_name}{' '}
                 {(workOrder.contact as unknown as { last_name?: string })?.last_name}
@@ -838,14 +839,14 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             showUploadList={false}
             disabled={uploadingPhotos}
             beforeUpload={(file) => { handleUploadPhotos([file], 'before_work'); return false; }}
-            style={{ borderRadius: 8, marginBottom: 12, border: '1px dashed #91caff', background: '#e6f4ff' }}
+            style={{ borderRadius: 8, marginBottom: 12, border: '1px dashed rgba(22, 119, 255, 0.25)', background: 'rgba(22, 119, 255, 0.08)' }}
           >
             <div style={{ padding: '16px 0' }}>
               {uploadingPhotos ? <Spin size="large" /> : <CameraOutlined style={{ fontSize: 40, color: '#1677ff' }} />}
               <div style={{ marginTop: 8, fontSize: 14, color: '#1677ff', fontWeight: 500 }}>
                 {uploadingPhotos ? 'Uploading…' : 'Tap to add before-work photos'}
               </div>
-              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>
                 JPG · PNG · HEIC · Multiple files
               </div>
             </div>
@@ -872,10 +873,10 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       {/* ── Step 7: Work started ─────────────────────────────────────────────── */}
       {step === 'work_started' && (
         <StepCard step={step} icon={<ToolOutlined />}>
-          <div style={{ padding: '10px 12px', background: '#f6ffed', borderRadius: 8, marginBottom: 12, border: '1px solid #b7eb8f', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ padding: '10px 12px', background: 'rgba(82, 196, 26, 0.1)', borderRadius: 8, marginBottom: 12, border: '1px solid rgba(82, 196, 26, 0.25)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <ToolOutlined style={{ color: '#52c41a', fontSize: 20 }} />
             <div>
-              <Text strong style={{ color: '#135200', fontSize: 14 }}>Work is in progress</Text>
+              <Text strong style={{ color: '#52c41a', fontSize: 14 }}>Work is in progress</Text>
               {session.work_started_at && (
                 <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
                   Started {new Date(session.work_started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -892,7 +893,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             showUploadList={false}
             disabled={uploadingPhotos}
             beforeUpload={(file) => { handleUploadPhotos([file], 'after_work'); return false; }}
-            style={{ borderRadius: 8, marginBottom: 12, border: '1px dashed #b7eb8f', background: '#f6ffed' }}
+            style={{ borderRadius: 8, marginBottom: 12, border: '1px dashed rgba(82, 196, 26, 0.25)', background: 'rgba(82, 196, 26, 0.1)' }}
           >
             <div style={{ padding: '14px 0' }}>
               {uploadingPhotos ? <Spin size="large" /> : <CameraOutlined style={{ fontSize: 36, color: '#52c41a' }} />}
@@ -932,14 +933,14 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             showUploadList={false}
             disabled={uploadingPhotos}
             beforeUpload={(file) => { handleUploadPhotos([file], 'after_work'); return false; }}
-            style={{ borderRadius: 8, marginBottom: 12, border: '1px dashed #91caff', background: '#e6f4ff' }}
+            style={{ borderRadius: 8, marginBottom: 12, border: '1px dashed rgba(22, 119, 255, 0.25)', background: 'rgba(22, 119, 255, 0.08)' }}
           >
             <div style={{ padding: '16px 0' }}>
               {uploadingPhotos ? <Spin size="large" /> : <CameraOutlined style={{ fontSize: 40, color: '#1677ff' }} />}
               <div style={{ marginTop: 8, fontSize: 14, color: '#1677ff', fontWeight: 500 }}>
                 {uploadingPhotos ? 'Uploading…' : 'Tap to add after-work photos'}
               </div>
-              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+              <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>
                 JPG · PNG · HEIC · Multiple files
               </div>
             </div>
@@ -968,9 +969,9 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
         <div style={{
           textAlign: 'center',
           padding: '32px 20px',
-          background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)',
+          background: 'linear-gradient(135deg, rgba(82, 196, 26, 0.1) 0%, rgba(82, 196, 26, 0.2) 100%)',
           borderRadius: 12,
-          border: '1px solid #b7eb8f',
+          border: '1px solid rgba(82, 196, 26, 0.25)',
           boxShadow: '0 2px 12px rgba(82,196,26,0.15)',
         }}>
           <div style={{
@@ -986,8 +987,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
           }}>
             <TrophyOutlined style={{ fontSize: 32, color: '#fff' }} />
           </div>
-          <Title level={3} style={{ color: '#135200', margin: '0 0 8px' }}>Job Complete!</Title>
-          <Text style={{ fontSize: 15, color: '#389e0d', display: 'block', marginBottom: 16 }}>
+          <Title level={3} style={{ color: '#52c41a', margin: '0 0 8px' }}>Job Complete!</Title>
+          <Text style={{ fontSize: 15, color: '#52c41a', display: 'block', marginBottom: 16 }}>
             Work order <strong>{workOrder.wo_number}</strong> has been finished.
           </Text>
           {session.finished_at && (

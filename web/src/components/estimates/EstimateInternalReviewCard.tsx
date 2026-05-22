@@ -122,7 +122,7 @@ export default function EstimateInternalReviewCard({
                   {approvedCount}/{totalCount}
                 </Tag>
               )}
-              <span style={{ fontSize: 12, color: '#999' }}>{collapsed ? '+ Expand' : '- Collapse'}</span>
+              <span style={{ fontSize: 12, opacity: 0.5 }}>{collapsed ? '+ Expand' : '- Collapse'}</span>
             </Space>
           </div>
         }
@@ -130,7 +130,7 @@ export default function EstimateInternalReviewCard({
         {collapsed ? null : approvalsLoading ? (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <Spin indicator={<LoadingOutlined />} />
-            <div style={{ marginTop: 8, color: '#999', fontSize: 13 }}>Loading approvers...</div>
+            <div style={{ marginTop: 8, opacity: 0.5, fontSize: 13 }}>Loading approvers...</div>
           </div>
         ) : (
           <Space direction="vertical" style={{ width: '100%' }} size={12}>
@@ -198,23 +198,23 @@ export default function EstimateInternalReviewCard({
                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: dotColor, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
                         {a.status === 'APPROVED' ? '✓' : a.status === 'REJECTED' ? '✗' : a.status === 'SKIPPED' ? '—' : index + 1}
                       </div>
-                      {!isLast && <div style={{ width: 2, flex: 1, minHeight: 12, background: '#e8e8e8', marginTop: 3, marginBottom: 3 }} />}
+                      {!isLast && <div style={{ width: 2, flex: 1, minHeight: 12, background: 'var(--border-color)', marginTop: 3, marginBottom: 3 }} />}
                     </div>
-                    <div style={{ flex: 1, marginBottom: isLast ? 0 : 6, padding: '8px 12px', borderRadius: 8, border: `1px solid ${isPending ? '#91caff' : '#f0f0f0'}`, background: isPending ? '#f0f7ff' : '#fafafa' }}>
+                    <div style={{ flex: 1, marginBottom: isLast ? 0 : 6, padding: '8px 12px', borderRadius: 8, border: '1px solid ' + (isPending ? 'rgba(22, 119, 255, 0.25)' : 'var(--border-color)'), background: isPending ? 'rgba(22, 119, 255, 0.08)' : 'var(--bg-color)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Avatar size={28} style={{ background: dotColor, flexShrink: 0, fontSize: 11 }}>{initials || <UserOutlined />}</Avatar>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 600, fontSize: 13 }}>{firstName} {lastName}</div>
-                          <div style={{ fontSize: 12, color: '#aaa' }}>{email}</div>
+                          <div style={{ fontSize: 12, opacity: 0.5 }}>{email}</div>
                         </div>
                         <Tag color={a.status === 'APPROVED' ? 'success' : a.status === 'REJECTED' ? 'error' : a.status === 'PENDING' ? 'processing' : 'default'} style={{ marginRight: 0, flexShrink: 0 }}>
                           {getApprovalStatusLabel(a.status)}
                         </Tag>
                       </div>
-                      {a.action_date && <div style={{ fontSize: 12, color: '#aaa', marginTop: 4, paddingLeft: 36 }}>{formatDateTime(a.action_date)}</div>}
-                      {'comments' in a && !!(a as unknown as Record<string, unknown>).comments && <div style={{ fontSize: 12, color: '#666', marginTop: 4, paddingLeft: 36, fontStyle: 'italic' }}>&quot;{String((a as unknown as Record<string, unknown>).comments)}&quot;</div>}
+                      {a.action_date && <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4, paddingLeft: 36 }}>{formatDateTime(a.action_date)}</div>}
+                      {'comments' in a && !!(a as unknown as Record<string, unknown>).comments && <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4, paddingLeft: 36, fontStyle: 'italic' }}>&quot;{String((a as unknown as Record<string, unknown>).comments)}&quot;</div>}
                       {isMyPending && (
-                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #c8e1fb', display: 'flex', gap: 6, paddingLeft: 36 }}>
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(22, 119, 255, 0.25)', display: 'flex', gap: 6, paddingLeft: 36 }}>
                           <Button
                             type="primary"
                             size="small"

@@ -21,7 +21,7 @@ export default function RevenueChart({ data = defaultData }: RevenueChartProps) 
   return (
     <Card
       title={
-        <span style={{ fontSize: 16, fontWeight: 600, color: '#262626' }}>Revenue Overview</span>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>Revenue Overview</span>
       }
       extra={
         <Select defaultValue="weekly" style={{ width: 120 }} bordered={false}>
@@ -33,7 +33,6 @@ export default function RevenueChart({ data = defaultData }: RevenueChartProps) 
       }
       style={{
         borderRadius: 12,
-        border: '1px solid #f0f0f0',
       }}
       bodyStyle={{ padding: '24px' }}
     >

@@ -133,7 +133,7 @@ export default function EstimateListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Status',
@@ -169,7 +169,7 @@ export default function EstimateListPage() {
       title: 'Expiry Date',
       dataIndex: 'expiry_date',
       key: 'expiry_date',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Created',

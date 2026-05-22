@@ -62,7 +62,7 @@ export default function RegisterPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f5f5f5',
+        background: 'var(--bg-color)',
       }}
     >
       <Card style={{ width: 480, padding: 8 }}>

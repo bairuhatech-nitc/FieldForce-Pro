@@ -85,11 +85,11 @@ export default function ReviewDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Work Order">
-            {review.work_order_id || <span style={{ color: '#999' }}>-</span>}
+            {review.work_order_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Customer">
-            {review.contact_id || <span style={{ color: '#999' }}>-</span>}
+            {review.contact_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Platform">
@@ -103,7 +103,7 @@ export default function ReviewDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Comment" span={2}>
-            {review.comment || <span style={{ color: '#999' }}>-</span>}
+            {review.comment || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Created At">

@@ -131,7 +131,7 @@ export default function WebformDetailPage() {
                 {webform.redirect_url}
               </a>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 

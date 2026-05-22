@@ -104,14 +104,14 @@ export default function TimesheetListPage() {
       title: 'Clock In',
       dataIndex: 'clock_in',
       key: 'clock_in',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.clock_in).getTime() - new Date(b.clock_in).getTime(),
     },
     {
       title: 'Clock Out',
       dataIndex: 'clock_out',
       key: 'clock_out',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Travel (min)',

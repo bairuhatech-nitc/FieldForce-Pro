@@ -68,7 +68,7 @@ export default function ServiceLocationListPage() {
       title: 'Access Notes',
       dataIndex: 'access_notes',
       key: 'access_notes',
-      render: (notes: string | null) => notes || <span style={{ color: '#999' }}>-</span>,
+      render: (notes: string | null) => notes || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Gate Code',
@@ -76,7 +76,7 @@ export default function ServiceLocationListPage() {
       key: 'gate_code',
       render: (code: string | null) => code ? (
         <Badge count={code} style={{ backgroundColor: '#52c41a' }} />
-      ) : <span style={{ color: '#999' }}>-</span>,
+      ) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Coordinates',

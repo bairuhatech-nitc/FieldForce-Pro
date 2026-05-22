@@ -227,7 +227,7 @@ export default function PaymentDetailPage() {
               </Descriptions.Item>
 
               <Descriptions.Item label="Reference Number">
-                {payment.reference_number || <span style={{ color: '#999' }}>-</span>}
+                {payment.reference_number || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
 
               <Descriptions.Item label="Notes" span={2}>

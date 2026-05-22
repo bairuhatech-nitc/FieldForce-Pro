@@ -67,26 +67,26 @@ export default function AssetListPage() {
       title: 'Serial Number',
       dataIndex: 'serial_number',
       key: 'serial_number',
-      render: (sn: string) => sn || <span style={{ color: '#999' }}>-</span>,
+      render: (sn: string) => sn || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Manufacturer',
       dataIndex: 'manufacturer',
       key: 'manufacturer',
-      render: (m: string) => m || <span style={{ color: '#999' }}>-</span>,
+      render: (m: string) => m || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ color: '#999' }}>-</span>,
+      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Health',
       dataIndex: 'health_score',
       key: 'health_score',
       render: (score: number | null) => {
-        if (score === null || score === undefined) return <span style={{ color: '#999' }}>-</span>;
+        if (score === null || score === undefined) return <span style={{ opacity: 0.5 }}>-</span>;
         const color = score >= 80 ? 'green' : score >= 50 ? 'orange' : 'red';
         return <Tag color={color}>{score}%</Tag>;
       },
@@ -107,7 +107,7 @@ export default function AssetListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Created',

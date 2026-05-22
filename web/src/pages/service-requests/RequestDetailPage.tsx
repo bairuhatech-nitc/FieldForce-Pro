@@ -258,34 +258,34 @@ export default function RequestDetailPage() {
             {request.channel ? (
               <Tag>{request.channel.charAt(0).toUpperCase() + request.channel.slice(1)}</Tag>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 
           <Descriptions.Item label="Category">
-            {request.category ? <Tag>{request.category}</Tag> : <span style={{ color: '#999' }}>-</span>}
+            {request.category ? <Tag>{request.category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Customer">
             {request.contact
               ? `${request.contact.first_name} ${request.contact.last_name}`
-              : <span style={{ color: '#999' }}>-</span>}
+              : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Location">
-            {request.location?.address || <span style={{ color: '#999' }}>-</span>}
+            {request.location?.address || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Description" span={2}>
-            {request.description || <span style={{ color: '#999' }}>-</span>}
+            {request.description || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Scheduled Date">
-            {request.scheduled_start ? formatDateTime(request.scheduled_start) : <span style={{ color: '#999' }}>-</span>}
+            {request.scheduled_start ? formatDateTime(request.scheduled_start) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Assigned To">
-            {request.assigned_to || <span style={{ color: '#999' }}>-</span>}
+            {request.assigned_to || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Created At">

@@ -163,7 +163,7 @@ export default function WorkflowTemplateFormPage() {
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, ...restField }) => (
-                  <div key={key} style={{ background: '#fafafa', padding: 16, borderRadius: 8, marginBottom: 12 }}>
+                  <div key={key} style={{ background: 'var(--bg-color)', padding: 16, borderRadius: 8, marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontWeight: 500 }}>Step {name + 1}</span>
                       {fields.length > 1 && (

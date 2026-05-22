@@ -63,7 +63,7 @@ export default function CommunicationListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Type',
@@ -93,7 +93,7 @@ export default function CommunicationListPage() {
       key: 'body',
       render: (body: string) => (
         <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {body || <span style={{ color: '#999' }}>-</span>}
+          {body || <span style={{ opacity: 0.5 }}>-</span>}
         </div>
       ),
     },
@@ -101,7 +101,7 @@ export default function CommunicationListPage() {
       title: 'Sent At',
       dataIndex: 'sent_at',
       key: 'sent_at',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => {
         if (!a.sent_at) return -1;
         if (!b.sent_at) return 1;

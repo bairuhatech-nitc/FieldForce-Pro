@@ -64,7 +64,7 @@ export default function ReviewListPage() {
       render: (_, record) =>
         record.work_order
           ? <span style={{ fontWeight: 500 }}>{record.work_order.wo_number}</span>
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Customer',
@@ -72,7 +72,7 @@ export default function ReviewListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Rating',
@@ -87,7 +87,7 @@ export default function ReviewListPage() {
       key: 'comment',
       render: (comment: string) => (
         <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {comment || <span style={{ color: '#999' }}>-</span>}
+          {comment || <span style={{ opacity: 0.5 }}>-</span>}
         </div>
       ),
     },

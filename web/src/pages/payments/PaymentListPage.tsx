@@ -78,7 +78,7 @@ export default function PaymentListPage() {
       render: (_, record) =>
         record.invoice?.invoice_number
           ? <span style={{ fontWeight: 500 }}>{record.invoice.invoice_number}</span>
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Amount',
@@ -109,13 +109,13 @@ export default function PaymentListPage() {
       title: 'Transaction ID',
       dataIndex: 'gateway_transaction_id',
       key: 'gateway_transaction_id',
-      render: (txId: string) => txId || <span style={{ color: '#999' }}>-</span>,
+      render: (txId: string) => txId || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Paid At',
       dataIndex: 'paid_at',
       key: 'paid_at',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => {
         if (!a.paid_at) return 1;
         if (!b.paid_at) return -1;

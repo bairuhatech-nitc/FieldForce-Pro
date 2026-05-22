@@ -211,21 +211,21 @@ export default function DispatchBoardPage() {
       title: 'Scheduled Start',
       dataIndex: 'scheduled_start',
       key: 'scheduled_start',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime(),
     },
     {
       title: 'Scheduled End',
       dataIndex: 'scheduled_end',
       key: 'scheduled_end',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.scheduled_end).getTime() - new Date(b.scheduled_end).getTime(),
     },
     {
       title: 'Created At',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       defaultSortOrder: 'descend',
     },
@@ -483,31 +483,31 @@ export default function DispatchBoardPage() {
               <Descriptions.Item label="Work Order">
                 {selectedAppointment.work_order
                   ? selectedAppointment.work_order.wo_number || selectedAppointment.work_order.summary
-                  : selectedAppointment.work_order_id || <span style={{ color: '#999' }}>-</span>}
+                  : selectedAppointment.work_order_id || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Crew ID">
-                {selectedAppointment.crew_id || <span style={{ color: '#999' }}>-</span>}
+                {selectedAppointment.crew_id || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Scheduled Start">
-                {selectedAppointment.scheduled_start ? formatDateTime(selectedAppointment.scheduled_start) : <span style={{ color: '#999' }}>-</span>}
+                {selectedAppointment.scheduled_start ? formatDateTime(selectedAppointment.scheduled_start) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Scheduled End">
-                {selectedAppointment.scheduled_end ? formatDateTime(selectedAppointment.scheduled_end) : <span style={{ color: '#999' }}>-</span>}
+                {selectedAppointment.scheduled_end ? formatDateTime(selectedAppointment.scheduled_end) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Actual Start">
-                {selectedAppointment.actual_start ? formatDateTime(selectedAppointment.actual_start) : <span style={{ color: '#999' }}>-</span>}
+                {selectedAppointment.actual_start ? formatDateTime(selectedAppointment.actual_start) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Actual End">
-                {selectedAppointment.actual_end ? formatDateTime(selectedAppointment.actual_end) : <span style={{ color: '#999' }}>-</span>}
+                {selectedAppointment.actual_end ? formatDateTime(selectedAppointment.actual_end) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Recurring">
                 {selectedAppointment.is_recurring ? <Tag color="blue">Yes</Tag> : <Tag>No</Tag>}
               </Descriptions.Item>
               <Descriptions.Item label="Recurrence Rule">
-                {selectedAppointment.recurrence_rule || <span style={{ color: '#999' }}>-</span>}
+                {selectedAppointment.recurrence_rule || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Notes" span={2}>
-                {selectedAppointment.notes || <span style={{ color: '#999' }}>-</span>}
+                {selectedAppointment.notes || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
               <Descriptions.Item label="Created At">
                 {formatDateTime(selectedAppointment.created_at)}

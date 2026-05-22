@@ -169,7 +169,7 @@ export default function WorkOrderDetailPage() {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => desc || <span style={{ color: '#999' }}>-</span>,
+      render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Quantity',
@@ -279,14 +279,14 @@ export default function WorkOrderDetailPage() {
       title: 'Type',
       dataIndex: 'file_type',
       key: 'file_type',
-      render: (type: string) => type || <span style={{ color: '#999' }}>-</span>,
+      render: (type: string) => type || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Size',
       dataIndex: 'file_size',
       key: 'file_size',
       render: (size: number | null) => {
-        if (!size) return <span style={{ color: '#999' }}>-</span>;
+        if (!size) return <span style={{ opacity: 0.5 }}>-</span>;
         if (size < 1024) return `${size} B`;
         if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
         return `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -331,7 +331,7 @@ export default function WorkOrderDetailPage() {
         <Card>
           <Descriptions column={2} bordered>
             <Descriptions.Item label="WO Number">
-              {workOrder.wo_number || <span style={{ color: '#999' }}>-</span>}
+              {workOrder.wo_number || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Status">
@@ -351,47 +351,47 @@ export default function WorkOrderDetailPage() {
             </Descriptions.Item>
 
             <Descriptions.Item label="Category">
-              {workOrder.category ? <Tag>{workOrder.category}</Tag> : <span style={{ color: '#999' }}>-</span>}
+              {workOrder.category ? <Tag>{workOrder.category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Customer">
               {workOrder.contact
                 ? `${workOrder.contact.first_name} ${workOrder.contact.last_name}`
-                : <span style={{ color: '#999' }}>-</span>}
+                : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Location">
-              {workOrder.location?.address || <span style={{ color: '#999' }}>-</span>}
+              {workOrder.location?.address || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Asset">
-              {workOrder.asset?.name || <span style={{ color: '#999' }}>-</span>}
+              {workOrder.asset?.name || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Assigned To">
-              {workOrder.assigned_to || <span style={{ color: '#999' }}>-</span>}
+              {workOrder.assigned_to || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Scheduled Date">
-              {workOrder.scheduled_start ? formatDateTime(workOrder.scheduled_start) : <span style={{ color: '#999' }}>-</span>}
+              {workOrder.scheduled_start ? formatDateTime(workOrder.scheduled_start) : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Actual Start">
-              {workOrder.actual_start ? formatDateTime(workOrder.actual_start) : <span style={{ color: '#999' }}>-</span>}
+              {workOrder.actual_start ? formatDateTime(workOrder.actual_start) : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Actual End">
-              {workOrder.actual_end ? formatDateTime(workOrder.actual_end) : <span style={{ color: '#999' }}>-</span>}
+              {workOrder.actual_end ? formatDateTime(workOrder.actual_end) : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Description" span={2}>
-              {workOrder.description || <span style={{ color: '#999' }}>-</span>}
+              {workOrder.description || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Tags" span={2}>
               {workOrder.tags && workOrder.tags.length > 0
                 ? workOrder.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)
-                : <span style={{ color: '#999' }}>-</span>}
+                : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Recurring">
@@ -399,7 +399,7 @@ export default function WorkOrderDetailPage() {
             </Descriptions.Item>
 
             <Descriptions.Item label="Recurrence Rule">
-              {workOrder.recurrence_rule || <span style={{ color: '#999' }}>-</span>}
+              {workOrder.recurrence_rule || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
             <Descriptions.Item label="Created At">

@@ -118,7 +118,7 @@ export default function AgreementDetailPage() {
       <Card title="Agreement Information">
         <Descriptions column={2} bordered>
           <Descriptions.Item label="Name" span={2}>{agreement.name}</Descriptions.Item>
-          <Descriptions.Item label="Type">{agreement.type || <span style={{ color: '#999' }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label="Type">{agreement.type || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
           <Descriptions.Item label="Status">
             <Tag color={STATUS_COLORS[status] || 'default'}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -127,21 +127,21 @@ export default function AgreementDetailPage() {
           <Descriptions.Item label="Contact">
             {agreement.contact
               ? `${agreement.contact.first_name} ${agreement.contact.last_name}`
-              : <span style={{ color: '#999' }}>-</span>}
+              : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Value">
-            {agreement.value != null ? `$${Number(agreement.value).toLocaleString()}` : <span style={{ color: '#999' }}>-</span>}
+            {agreement.value != null ? `$${Number(agreement.value).toLocaleString()}` : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Start Date">{formatDate(agreement.start_date)}</Descriptions.Item>
           <Descriptions.Item label="End Date">{formatDate(agreement.end_date)}</Descriptions.Item>
           <Descriptions.Item label="SLA Response Hours">
-            {agreement.sla_response_hours != null ? `${agreement.sla_response_hours}h` : <span style={{ color: '#999' }}>-</span>}
+            {agreement.sla_response_hours != null ? `${agreement.sla_response_hours}h` : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="SLA Resolution Hours">
-            {agreement.sla_resolution_hours != null ? `${agreement.sla_resolution_hours}h` : <span style={{ color: '#999' }}>-</span>}
+            {agreement.sla_resolution_hours != null ? `${agreement.sla_resolution_hours}h` : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Description" span={2}>
-            {agreement.description || <span style={{ color: '#999' }}>-</span>}
+            {agreement.description || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Created At">{formatDateTime(agreement.created_at)}</Descriptions.Item>
           <Descriptions.Item label="Updated At">{formatDateTime(agreement.updated_at)}</Descriptions.Item>
