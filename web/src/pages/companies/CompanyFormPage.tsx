@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, Space, Skeleton } from 'antd';
+import { Card, Form, Input, Button, Space, Skeleton, Select } from 'antd';
 import { useCompany, useCreateCompany, useUpdateCompany } from '@/hooks/use-companies';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -21,7 +21,10 @@ export default function CompanyFormPage() {
       form.setFieldsValue({
         name: company.name,
         industry: company.industry,
+        status: company.status,
+        phone_number: company.phone_number,
         billing_address: company.billing_address,
+        shipping_address: company.shipping_address,
         tax_id: company.tax_id,
         website: company.website,
         notes: company.notes,
@@ -82,6 +85,19 @@ export default function CompanyFormPage() {
             <Input placeholder="Technology, Healthcare, Manufacturing, etc." />
           </Form.Item>
 
+          <Form.Item name="status" label="Status">
+            <Select placeholder="Select a status">
+              <Select.Option value="Active">Active</Select.Option>
+              <Select.Option value="Inactive">Inactive</Select.Option>
+              <Select.Option value="Lead">Lead</Select.Option>
+              <Select.Option value="Churned">Churned</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="phone_number" label="Phone Number">
+            <Input placeholder="+1234567890" />
+          </Form.Item>
+
           <Form.Item
             name="tax_id"
             label="Tax ID / EIN"
@@ -102,6 +118,10 @@ export default function CompanyFormPage() {
             label="Billing Address"
           >
             <TextArea rows={3} placeholder="123 Main St, City, State, 12345" />
+          </Form.Item>
+
+          <Form.Item name="shipping_address" label="Shipping Address">
+            <TextArea rows={3} placeholder="456 Delivery St, City, State, 12345" />
           </Form.Item>
 
           <Form.Item name="notes" label="Notes">

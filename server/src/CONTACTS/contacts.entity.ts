@@ -79,6 +79,24 @@ export class Contact extends Model {
   tags: string[];
 
   @Column({
+    type: DataType.STRING(100),
+    allowNull: true,
+  })
+  job_title: string;
+
+  @Column({
+    type: DataType.STRING(20),
+    allowNull: true,
+  })
+  mobile_phone: string;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  is_primary: boolean;
+
+  @Column({
     type: DataType.JSONB,
     allowNull: true,
     defaultValue: {},
