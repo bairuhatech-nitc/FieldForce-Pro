@@ -1,7 +1,6 @@
 # Fix: Auto-Login after Registration (Hanin)
 
 Users are now **automatically signed in after registration**, without being taken back to the login page again.
-*Some **local development fixes** were also made for Vite & Docker to reach the API, which aren't mentioned in the changelog.*
 
 ---
 
