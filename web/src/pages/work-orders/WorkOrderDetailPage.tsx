@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Descriptions, Button, Space, Skeleton, Tag, Table, Tabs, Form, Input, Switch, Upload } from 'antd';
+import { Card, Descriptions, Button, Space, Skeleton, Tag, Table, Tabs, Form, Input, Switch, Upload, Modal, Select, DatePicker, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { EditOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, FileTextOutlined, UploadOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, FileTextOutlined, UploadOutlined, UserAddOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { useWorkOrder, useDeleteWorkOrder, useUpdateWorkOrderStatus } from '@/hooks/use-work-orders';
 import { useWorkOrderLineItems, useDeleteWorkOrderLineItem } from '@/hooks/use-work-order-line-items';
 import { useWorkOrderNotes, useCreateWorkOrderNote, useDeleteWorkOrderNote } from '@/hooks/use-work-order-notes';
 import { useWorkOrderAttachments, useUploadWorkOrderAttachment, useDeleteWorkOrderAttachment } from '@/hooks/use-work-order-attachments';
+import { useCreateAppointment } from '@/hooks/use-appointments';
+import { useUsers } from '@/hooks/use-users';
 import type { WorkOrderLineItem, WorkOrderNote, WorkOrderAttachment } from '@/types/models.types';
+import { useSlaTimer } from '@/hooks/use-sla-timers';
+import { SlaTimerBadge } from '@/components/work-orders/SlaTimerBadge';
 import PageHeader from '@/components/common/PageHeader';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PermissionGuard } from '@/components/permissions';
@@ -57,12 +62,16 @@ export default function WorkOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [noteForm] = Form.useForm();
+  const [assignForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState('details');
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
 
   const { data: workOrder, isLoading } = useWorkOrder(id!);
+  const { data: slaTimer } = useSlaTimer(id!);
   const { data: lineItems, isLoading: lineItemsLoading } = useWorkOrderLineItems(id!);
   const { data: notes, isLoading: notesLoading } = useWorkOrderNotes(id!);
   const { data: attachments, isLoading: attachmentsLoading } = useWorkOrderAttachments(id!);
+  const { data: usersData } = useUsers();
   const deleteWorkOrder = useDeleteWorkOrder();
   const updateStatus = useUpdateWorkOrderStatus();
   const deleteLineItem = useDeleteWorkOrderLineItem();
@@ -70,7 +79,25 @@ export default function WorkOrderDetailPage() {
   const deleteNote = useDeleteWorkOrderNote();
   const uploadAttachment = useUploadWorkOrderAttachment();
   const deleteAttachment = useDeleteWorkOrderAttachment();
+  const createAppointment = useCreateAppointment();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+
+  const handleAssignTechnician = async (values: { agent_id: string; scheduled_start: dayjs.Dayjs; scheduled_end: dayjs.Dayjs }) => {
+    if (!workOrder) return;
+    try {
+      await createAppointment.mutateAsync({
+        work_order_id: workOrder.id,
+        agent_id: values.agent_id,
+        scheduled_start: values.scheduled_start.toISOString(),
+        scheduled_end: values.scheduled_end.toISOString(),
+      });
+      message.success('Technician assigned successfully!');
+      setAssignModalOpen(false);
+      assignForm.resetFields();
+    } catch {
+      message.error('Failed to assign technician');
+    }
+  };
 
   const handleDelete = () => {
     if (!workOrder) return;
@@ -510,6 +537,15 @@ export default function WorkOrderDetailPage() {
         onBack={() => navigate('/work-orders')}
         extra={
           <Space>
+            <PermissionGuard permission="service_appointments:create">
+              <Button
+                type="primary"
+                icon={<UserAddOutlined />}
+                onClick={() => setAssignModalOpen(true)}
+              >
+                Assign Technician
+              </Button>
+            </PermissionGuard>
             <PermissionGuard permission="work-orders:update">
               <Button icon={<EditOutlined />} onClick={() => navigate(`/work-orders/${workOrder.id}/edit`)}>
                 Edit
@@ -543,11 +579,46 @@ export default function WorkOrderDetailPage() {
         </Card>
       )}
 
+      {slaTimer && (
+        <div style={{ marginBottom: 16 }}>
+          <SlaTimerBadge timer={slaTimer} />
+        </div>
+      )}
+
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         items={tabItems}
       />
+
+      <Modal
+        title="Assign Technician"
+        open={assignModalOpen}
+        onCancel={() => { setAssignModalOpen(false); assignForm.resetFields(); }}
+        onOk={() => assignForm.submit()}
+        okText="Assign"
+        confirmLoading={createAppointment.isPending}
+      >
+        <Form form={assignForm} layout="vertical" onFinish={handleAssignTechnician}>
+          <Form.Item name="agent_id" label="Technician" rules={[{ required: true, message: 'Please select a technician' }]}>
+            <Select
+              showSearch
+              placeholder="Select a technician"
+              optionFilterProp="label"
+              options={(usersData?.data || []).map((u: any) => ({
+                value: u.id,
+                label: `${u.first_name} ${u.last_name} (${u.email})`,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item name="scheduled_start" label="Scheduled Start" rules={[{ required: true, message: 'Required' }]}>
+            <DatePicker showTime style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="scheduled_end" label="Scheduled End" rules={[{ required: true, message: 'Required' }]}>
+            <DatePicker showTime style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
 
     </div>
   );

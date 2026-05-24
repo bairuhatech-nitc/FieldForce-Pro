@@ -48,6 +48,8 @@ import { useWorkOrderLineItems } from '@/hooks/use-work-order-line-items';
 import { ServiceLocationMap } from './ServiceLocationMap';
 import { workOrderAttachmentsApi } from '@/api/work-order-attachments.api';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSlaTimer } from '@/hooks/use-sla-timers';
+import { SlaTimerBadge } from './SlaTimerBadge';
 
 const { Text, Title } = Typography;
 
@@ -90,13 +92,15 @@ function getTheme(step: string | null) {
 
 function MiniStepProgress({ currentStep }: { currentStep: string | null }) {
   const currentIdx = STEP_KEYS.indexOf(currentStep ?? '');
+  const isFinished = currentStep === 'finished';
 
   return (
     <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap' }}>
       {WORKFLOW_STEPS.map((s, i) => {
-        const isDone    = i < currentIdx;
-        const isActive  = i === currentIdx;
-        const isPending = i > currentIdx;
+        const isDone    = isFinished || i < currentIdx;
+        const isActive  = !isFinished && i === currentIdx;
+        const isPending = !isFinished && i > currentIdx;
+        void isPending;
         return (
           <div
             key={s.key}
@@ -283,6 +287,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
   const markBeforePhotosMutation = useMarkBeforePhotos(workOrderId);
   const finishJobMutation      = useFinishJob(workOrderId);
 
+  const { data: slaTimer } = useSlaTimer(workOrderId);
+
   // Line items: WO items first, fall back to estimate items
   const { data: woLineItems }       = useWorkOrderLineItems(workOrderId);
   const { data: estimateLineItems } = useEstimateLineItems(workOrder.estimate_id ?? '');
@@ -445,7 +451,10 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
           Your Progress
         </Text>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Step {Math.max(STEP_KEYS.indexOf(step ?? '') + 1, 1)} / {WORKFLOW_STEPS.length}
+          {step === 'finished'
+            ? <span style={{ color: '#52c41a', fontWeight: 600 }}>✓ Complete</span>
+            : `Step ${Math.max(STEP_KEYS.indexOf(step ?? '') + 1, 1)} / ${WORKFLOW_STEPS.length}`
+          }
         </Text>
       </div>
       <MiniStepProgress currentStep={step} />
@@ -455,6 +464,12 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
   return (
     <div>
       {stepHeader}
+      
+      {slaTimer && (
+        <div style={{ marginBottom: 16 }}>
+          <SlaTimerBadge timer={slaTimer} />
+        </div>
+      )}
 
       {/* Pause/Resume overlay — shown during work_started */}
       {step === 'work_started' && (

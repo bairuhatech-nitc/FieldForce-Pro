@@ -16,6 +16,7 @@ import { UsersService } from '../USERS/users.service';
 import { TripsService } from '../TRIPS/trips.service';
 import { CreateTripDto } from '../TRIPS/dto/trips_create.dto';
 import { ServiceAppointment } from '../SERVICE_APPOINTMENTS/service_appointments.entity';
+import { SlaTimersService } from '../SLA_TIMERS/sla_timers.service';
 
 @Injectable()
 export class WorkOrderTechnicianSessionsService {
@@ -30,6 +31,7 @@ export class WorkOrderTechnicianSessionsService {
     private readonly notificationsService: NotificationsService,
     private readonly usersService: UsersService,
     private readonly tripsService: TripsService,
+    private readonly slaTimersService: SlaTimersService,
   ) {}
 
   async getSession(
@@ -89,6 +91,19 @@ export class WorkOrderTechnicianSessionsService {
 
     const workOrder = await this.workOrdersService.findById(workOrderId, tenantId);
     const technician = await this.usersService.findById(userId);
+
+    // Start SLA timer when technician accepts the job
+    try {
+      await this.slaTimersService.createTimerForSession(
+        tenantId,
+        workOrderId,
+        userId,
+        session.id,
+      );
+    } catch (err) {
+      this.logger.error(`[approve] Failed to create SLA timer for WO ${workOrderId}: ${err.message}`);
+    }
+
     await this.notifyTenantUsers(tenantId, workOrderId, {
       type: 'technician_session_approved',
       title: 'Technician Approved Work Order',
@@ -282,6 +297,13 @@ export class WorkOrderTechnicianSessionsService {
 
     await session.update({ step: 'paused', paused_at: new Date() });
 
+    // Pause the SLA timer
+    try {
+      await this.slaTimersService.pauseTimer(workOrderId);
+    } catch (err) {
+      this.logger.error(`[pauseWork] Failed to pause SLA timer for WO ${workOrderId}: ${err.message}`);
+    }
+
     try {
       await this.workOrdersService.updateStatus(workOrderId, tenantId, { status: 'on_hold' });
     } catch {
@@ -304,6 +326,13 @@ export class WorkOrderTechnicianSessionsService {
     }
 
     await session.update({ step: 'work_started', resumed_at: new Date() });
+
+    // Resume the SLA timer
+    try {
+      await this.slaTimersService.resumeTimer(workOrderId);
+    } catch (err) {
+      this.logger.error(`[resumeWork] Failed to resume SLA timer for WO ${workOrderId}: ${err.message}`);
+    }
 
     try {
       await this.workOrdersService.updateStatus(workOrderId, tenantId, { status: 'in_progress' });
@@ -374,6 +403,13 @@ export class WorkOrderTechnicianSessionsService {
 
     // Sync linked appointment(s) to completed
     await this.syncAppointmentStatus(tenantId, workOrderId, 'completed');
+
+    // Complete the SLA timer
+    try {
+      await this.slaTimersService.completeTimer(workOrderId);
+    } catch (err) {
+      this.logger.error(`[finish] Failed to complete SLA timer for WO ${workOrderId}: ${err.message}`);
+    }
 
     const workOrder = await this.workOrdersService.findById(workOrderId, tenantId);
     const technician = await this.usersService.findById(userId);
