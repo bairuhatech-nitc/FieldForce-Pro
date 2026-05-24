@@ -4,6 +4,12 @@ Users can now also register or log in using a "Magic Link" sent to their email.
 
 ---
 
+# 👉[Video Demo](video-demo.mp4)
+
+<video src="https://github.com/user-attachments/assets/206a0e9e-6dbf-4fa6-9494-b60300f7e32e"></video>
+
+---
+
 ## How to Test
 
 **Login Flow:**
