@@ -1,4 +1,23 @@
 services:
+  # ── PostgreSQL Database ────────────────────────────────────
+  fsm-db:
+    image: postgres:15.3
+    container_name: fsm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: fieldforce_pro
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - fsm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # ── Redis (cache + Celery broker) ──────────────────────────
   fsm-redis:
     image: redis:7-alpine
@@ -41,6 +60,8 @@ services:
     container_name: fsm-server
     restart: unless-stopped
     depends_on:
+      fsm-db:
+        condition: service_healthy
       fsm-redis:
         condition: service_healthy
       fsm-postgres:
@@ -52,7 +73,6 @@ services:
       - REDIS_PORT=6379
     networks:
       - fsm-network
-    # No ports exposed to host — only accessible via fsm-web proxy
 
   # ── FastAPI AI/ML Service ──────────────────────────────────
   fsm-ai:
@@ -73,7 +93,6 @@ services:
       - CELERY_RESULT_BACKEND=redis://fsm-redis:6379/2
     networks:
       - fsm-network
-    # No ports exposed to host — only accessible via fsm-server
 
   # ── React Frontend + Nginx Proxy ───────────────────────────
   fsm-web:

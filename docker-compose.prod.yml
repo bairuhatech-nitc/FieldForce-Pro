@@ -1,7 +1,15 @@
 # Production resource limits overlay
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
 services:
+  fsm-db:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          memory: 512M
+
   fsm-redis:
     deploy:
       resources:

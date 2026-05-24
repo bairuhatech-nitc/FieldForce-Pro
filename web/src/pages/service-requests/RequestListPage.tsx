@@ -4,7 +4,7 @@ import { Button, Table, Space, Tooltip, Tag, Select, Tabs, Modal, Input, message
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useServiceRequests, useDeleteServiceRequest, useMyPendingApprovals, useProcessServiceRequestApproval } from '@/hooks/use-service-requests';
+import { useServiceRequests, useDeleteServiceRequest, useMyPendingApprovals, useProcessServiceRequestApproval, useQueue, useUpdatePriority } from '@/hooks/use-service-requests';
 import { serviceRequestsApi } from '@/api/service-requests.api';
 import { usePermission } from '@/components/permissions/usePermission';
 import { useAuthStore } from '@/store/auth.store';
@@ -76,12 +76,22 @@ export default function RequestListPage() {
   const deleteRequest = useDeleteServiceRequest();
   const processApproval = useProcessServiceRequestApproval();
 
-  const currentQuery = activeTab === 'all' ? allRequestsQuery : myApprovalsQuery;
-  const requests = currentQuery.data?.data || [];
-  const meta = currentQuery.data?.meta;
-  const isLoading = currentQuery.isLoading;
+  const { data: queueData = [], isLoading: queueLoading } = useQueue();
+  const updatePriority = useUpdatePriority();
+
+  const currentQuery = activeTab === 'all' || activeTab === 'spam' ? allRequestsQuery : myApprovalsQuery;
+  const requests = activeTab === 'queue' ? queueData : currentQuery.data?.data || [];
+  const meta = activeTab === 'queue' ? { itemCount: queueData.length } : currentQuery.data?.meta;
+  const isLoading = activeTab === 'queue' ? queueLoading : currentQuery.isLoading;
 
   // Status filter is now handled server-side via the API query param
+  useEffect(() => {
+    if (activeTab === 'spam') {
+      setStatusFilter('spam');
+    } else if (activeTab === 'all') {
+      setStatusFilter(searchParams.get('status') || undefined);
+    }
+  }, [activeTab, searchParams]);
 
   // Debounce search input
   useEffect(() => {
@@ -271,6 +281,24 @@ export default function RequestListPage() {
     },
   ];
 
+  // "Flagged (Spam)" tab actions — View, Restore (admin)
+  const spamRequestsColumns: ColumnsType<ServiceRequest> = [
+    ...sharedColumns,
+    {
+      title: 'Actions',
+      key: 'actions',
+      fixed: 'right',
+      width: 150,
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="View Details">
+            <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
   // "My Approvals" tab actions — View, Approve, Reject
   const myApprovalsColumns: ColumnsType<ServiceRequest> = [
     ...sharedColumns,
@@ -307,8 +335,6 @@ export default function RequestListPage() {
     },
   ];
 
-  const columns = activeTab === 'my-approvals' ? myApprovalsColumns : allRequestsColumns;
-
   const tabItems = [
     {
       key: 'all',
@@ -318,7 +344,92 @@ export default function RequestListPage() {
       key: 'my-approvals',
       label: 'My Approvals',
     },
+    {
+      key: 'queue',
+      label: 'Priority Queue',
+    }
   ];
+
+  if (isAdmin) {
+    tabItems.push({
+      key: 'spam',
+      label: 'Flagged Requests',
+    });
+  }
+
+  const handlePriorityChange = (id: string, priority: string) => {
+    updatePriority.mutate({ id, priority });
+  };
+
+  const queueColumns: ColumnsType<ServiceRequest> = [
+    {
+      title: 'Request ID',
+      dataIndex: 'request_number',
+      key: 'request_number',
+      width: 140,
+      render: (num: string) => (
+        <span style={{ fontWeight: 600, fontFamily: 'monospace', color: '#1890ff' }}>
+          {num || '-'}
+        </span>
+      ),
+    },
+    {
+      title: 'Subject',
+      dataIndex: 'subject',
+      key: 'subject',
+      render: (subject: string) => <span style={{ fontWeight: 500 }}>{subject}</span>,
+    },
+    {
+      title: 'Priority',
+      dataIndex: 'priority',
+      key: 'priority',
+      render: (priority: string, record: ServiceRequest) => (
+        <Select
+          value={priority}
+          onChange={(value) => handlePriorityChange(record.id, value)}
+          style={{ width: 120 }}
+          loading={updatePriority.isPending}
+          options={[
+            { value: 'low', label: 'Low' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'high', label: 'High' },
+            { value: 'urgent', label: 'Urgent' },
+          ]}
+        />
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => (
+        <Tag color={statusColors[status] || 'default'}>
+          {status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Created',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string) => formatDateTime(date),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      fixed: 'right',
+      width: 100,
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="View">
+            <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
+  const columns = activeTab === 'queue' ? queueColumns : activeTab === 'spam' ? spamRequestsColumns : activeTab === 'my-approvals' ? myApprovalsColumns : allRequestsColumns;
 
   return (
     <div>

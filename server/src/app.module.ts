@@ -74,6 +74,10 @@ import { WorkflowModule } from './WORKFLOW/workflow.module';
 import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.module';
 import { SlaTimersModule } from './SLA_TIMERS/sla_timers.module';
 
+import { OnboardingModule } from './ONBOARDING/onboarding.module';
+import { AttachmentsModule } from './ATTACHMENTS/attachments.module';
+import { FeedbackModule } from './FEEDBACK/feedback.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -146,6 +150,9 @@ import { SlaTimersModule } from './SLA_TIMERS/sla_timers.module';
     WorkflowModule,
     WorkOrderTechnicianSessionsModule,
     SlaTimersModule,
+    OnboardingModule,
+    AttachmentsModule,
+    FeedbackModule,
   ],
   providers: [
     {

@@ -111,6 +111,21 @@ export class User extends Model {
   @Column({ type: DataType.JSONB, allowNull: true, defaultValue: null })
   recovery_codes: Array<{ code: string; used: boolean }> | null;
 
+  // ── Feature 1: Onboarding ──
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  onboarding_completed: boolean;
+
+  // ── Feature 5: Spam Prevention ──
+  @Default(0)
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  spam_flag_count: number;
+
+  @Default('ACTIVE')
+  @Column({ type: DataType.STRING(20), allowNull: false })
+  status: string;
+
+
   @CreatedAt
   created_at: Date;
 

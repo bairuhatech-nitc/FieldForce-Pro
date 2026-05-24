@@ -20,6 +20,8 @@ import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVAL
 import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templates.entity';
 import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
+import { RequestAuditLog } from './request_audit_log.entity';
+import axios from 'axios';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   new: ['triaged', 'rejected', 'closed', 'spam'],
@@ -41,6 +43,8 @@ export class ServiceRequestsService {
     private readonly serviceRequestRepository: typeof ServiceRequest,
     @Inject(KEYNAMES.WORKFLOW_TEMPLATES)
     private readonly templateRepository: typeof WorkflowTemplate,
+    @Inject(KEYNAMES.REQUEST_AUDIT_LOGS)
+    private readonly requestAuditLogRepository: typeof RequestAuditLog,
     private readonly documentApprovalsService: DocumentApprovalsService,
   ) {}
 
@@ -183,6 +187,27 @@ export class ServiceRequestsService {
     dto: CreateServiceRequestDto,
     creatorUserId?: string,
   ): Promise<ServiceRequest> {
+    // Spam / Duplicate Detection
+    let isSpamFlagged = false;
+    let spamReason = null;
+    let finalStatus = 'new';
+    
+    try {
+      const response = await axios.post(`${process.env.AI_ENGINE_URL || 'http://localhost:8000'}/nlp/similarity`, {
+        tenant_id: tenantId,
+        subject: dto.subject,
+        description: dto.description || '',
+      });
+      
+      if (response.data.is_duplicate) {
+        isSpamFlagged = true;
+        spamReason = `High similarity (${(response.data.similarity_score * 100).toFixed(1)}%) with recent request.`;
+        finalStatus = 'spam';
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to call AI engine for spam detection: ${error.message}`);
+    }
+
     // Auto-generate request_number: SR-YYYYMMDD-001 (resets daily)
     const today = new Date();
     const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
@@ -199,6 +224,9 @@ export class ServiceRequestsService {
     const serviceRequest = await this.serviceRequestRepository.create({
       tenant_id: tenantId,
       request_number: requestNumber,
+      status: finalStatus,
+      is_spam_flagged: isSpamFlagged,
+      spam_reason: spamReason,
       ...dto,
     });
 
@@ -305,5 +333,72 @@ export class ServiceRequestsService {
   async delete(id: string, tenantId: string): Promise<void> {
     const serviceRequest = await this.findById(id, tenantId);
     await serviceRequest.update({ is_deleted: true });
+  }
+
+  async getQueue(tenantId: string): Promise<ServiceRequest[]> {
+    // Custom sort: CRITICAL > HIGH > MEDIUM > LOW, then by created_at DESC
+    return this.serviceRequestRepository.findAll({
+      where: {
+        tenant_id: tenantId,
+        is_deleted: false,
+        status: { [Op.notIn]: ['closed', 'rejected', 'spam'] },
+      },
+      order: [
+        [
+          Sequelize.literal(`
+            CASE priority 
+              WHEN 'CRITICAL' THEN 1 
+              WHEN 'HIGH' THEN 2 
+              WHEN 'MEDIUM' THEN 3 
+              WHEN 'LOW' THEN 4 
+              ELSE 5 
+            END
+          `),
+          'ASC',
+        ],
+        ['created_at', 'ASC'],
+      ],
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name'] },
+        { model: ServiceLocation, attributes: ['id', 'address'] },
+      ],
+    });
+  }
+
+  async updatePriority(
+    id: string,
+    tenantId: string,
+    userId: string,
+    priority: string,
+  ): Promise<ServiceRequest> {
+    const request = await this.findById(id, tenantId);
+    const oldPriority = request.priority;
+
+    if (oldPriority === priority) {
+      return request;
+    }
+
+    const transaction = await this.serviceRequestRepository.sequelize!.transaction();
+    try {
+      await request.update({ priority }, { transaction });
+
+      await this.requestAuditLogRepository.create(
+        {
+          request_id: id,
+          tenant_id: tenantId,
+          changed_by: userId,
+          field_changed: 'priority',
+          old_value: oldPriority,
+          new_value: priority,
+        },
+        { transaction },
+      );
+
+      await transaction.commit();
+      return request;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 }

@@ -56,6 +56,8 @@ class PageErrorBoundary extends Component<
   }
 }
 
+import OnboardingWizard from '../onboarding/OnboardingWizard';
+
 export default function AppLayout() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
 
@@ -73,6 +75,7 @@ export default function AppLayout() {
           </div>
         </Content>
       </Layout>
+      <OnboardingWizard />
     </Layout>
   );
 }

@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import analytics, chatbot, documents, estimates, predictions, scheduling, service_requests, vision, voice
+from app.api import analytics, chatbot, documents, estimates, predictions, scheduling, service_requests, vision, voice, nlp
 from app.config import Settings
 
 
@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
     application.include_router(voice.router, prefix="/api/voice", tags=["Voice"])
     application.include_router(service_requests.router, prefix="/api/service-requests", tags=["Service Requests"])
     application.include_router(estimates.router, prefix="/api/estimates", tags=["Estimates"])
+    application.include_router(nlp.router, prefix="/nlp", tags=["NLP"])
 
     @application.get("/health")
     async def health_check() -> dict[str, str]:

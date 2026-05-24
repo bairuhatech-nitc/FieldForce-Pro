@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Descriptions, Button, Space, Skeleton, Tag, Steps, Modal, Input } from 'antd';
+import { Card, Descriptions, Button, Space, Skeleton, Tag, Steps, Modal, Input, Alert } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import {
   useServiceRequest,
@@ -14,6 +14,7 @@ import { usePermission } from '@/components/permissions/usePermission';
 import PageHeader from '@/components/common/PageHeader';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatDateTime } from '@/utils/format-date';
+import FileUploadZone from '@/components/service-requests/FileUploadZone';
 
 const priorityColors: Record<string, string> = {
   urgent: 'red',
@@ -168,6 +169,21 @@ export default function RequestDetailPage() {
           ) : undefined
         }
       />
+
+      {request.is_spam && (
+        <Alert
+          message="This request was flagged as potential spam/duplicate"
+          description={
+            <div>
+              <strong>Reason:</strong> {request.spam_reason || 'Similarity detected'}<br/>
+              <strong>Confidence:</strong> {request.spam_confidence ? `${(request.spam_confidence * 100).toFixed(1)}%` : 'N/A'}
+            </div>
+          }
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       {isAdmin && availableTransitions.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
@@ -338,6 +354,10 @@ export default function RequestDetailPage() {
           />
         </Card>
       )}
+
+      <Card title="Attachments" style={{ marginTop: 16 }}>
+        <FileUploadZone requestId={request.id} />
+      </Card>
 
       {/* Approval Action Modal */}
       <Modal

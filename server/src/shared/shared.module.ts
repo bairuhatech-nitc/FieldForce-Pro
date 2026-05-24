@@ -14,6 +14,7 @@ import { RazorpayService } from './services/razorpay.service';
 import { PushNotificationService } from './services/push-notification.service';
 import { SlaTimersModule } from '../SLA_TIMERS/sla_timers.module';
 import { NotificationsModule } from '../NOTIFICATIONS/notifications.module';
+import { RedisCacheService } from './services/redis-cache.service';
 
 @Global()
 @Module({
@@ -25,10 +26,11 @@ import { NotificationsModule } from '../NOTIFICATIONS/notifications.module';
     StripeService,
     RazorpayService,
     PushNotificationService,
+    RedisCacheService,
     ...estimatesProviders,
     ...invoicesProviders,
     ...workOrdersProviders,
   ],
-  exports: [AppConfigService, PdfService, SchedulerService, StripeService, RazorpayService, PushNotificationService],
+  exports: [AppConfigService, PdfService, SchedulerService, StripeService, RazorpayService, PushNotificationService, RedisCacheService],
 })
 export class SharedModule { }

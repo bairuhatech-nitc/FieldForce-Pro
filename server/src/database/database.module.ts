@@ -61,6 +61,10 @@ import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_
 import { IPWhitelist } from '../IP_WHITELIST/ip-whitelist.entity';
 import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.entity';
 import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
+import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
+import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
+import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
 
 @Module({
   imports: [
@@ -94,6 +98,7 @@ import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
           IPWhitelist,
           WorkOrderTechnicianSession,
           SlaTimer,
+          RequestAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, Space, Skeleton, Select, Row, Col, Typography, message, Alert, Divider, AutoComplete, DatePicker } from 'antd';
-import { EnvironmentOutlined, CheckCircleOutlined, WarningOutlined, SaveOutlined, CloseOutlined, AimOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, Form, Input, Button, Space, Skeleton, Select, Row, Col, Typography, message, Alert, Divider, AutoComplete, DatePicker,upload } from 'antd';
+import { EnvironmentOutlined, CheckCircleOutlined, WarningOutlined, SaveOutlined, CloseOutlined, AimOutlined, LoadingOutlined, PlusOutlined , InboxOutlined, InboxOutlined} from '@ant-design/icons';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents, CircleMarker, Tooltip, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -166,6 +166,7 @@ export default function RequestFormPage() {
   const { data: locations } = useAllServiceLocations();
 
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [fileList, setFileList] = useState([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const [searchText, setSearchText] = useState('');
@@ -574,6 +575,19 @@ export default function RequestFormPage() {
                 </Col>
               </Row>
 
+<Form.Item label="Attachments (optional)">
+  <Upload.Dragger
+    multiple
+    fileList={fileList}
+    beforeUpload={() => false}
+    onChange={({ fileList: newList }) => setFileList(newList)}
+    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+  >
+    <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+    <p className="ant-upload-text">Click or drag files to attach</p>
+    <p className="ant-upload-hint">Supports images, PDF, Word, Excel</p>
+  </Upload.Dragger>
+</Form.Item>
               <Form.Item name="channel" label="Channel" style={{ marginBottom: 0 }}>
                 <Select placeholder="Select channel">
                   <Select.Option value="phone">Phone</Select.Option>

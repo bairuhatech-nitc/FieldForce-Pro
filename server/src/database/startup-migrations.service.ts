@@ -216,6 +216,126 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
         name: 'service_appointments: restore default on status',
         sql: `ALTER TABLE service_appointments ALTER COLUMN status SET DEFAULT 'scheduled';`,
       },
+      // ── FEATURE 1: Onboarding ─────────────────────────────────────────────
+      {
+        name: 'users: add onboarding_completed column',
+        sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;`,
+      },
+
+      // ── FEATURE 3: File Attachments ───────────────────────────────────────
+      {
+        name: 'request_attachments: create table',
+        sql: `CREATE TABLE IF NOT EXISTS request_attachments (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            request_id UUID REFERENCES service_requests(id) ON DELETE CASCADE,
+            tenant_id UUID NOT NULL,
+            file_name VARCHAR(255),
+            file_url TEXT,
+            file_type VARCHAR(50),
+            file_size INTEGER,
+            uploaded_by UUID REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT NOW()
+        );`,
+      },
+
+      // ── FEATURE 4: Priority-Based Queue System ────────────────────────────
+      {
+        name: 'service_requests: drop ENUM default on priority',
+        sql: `ALTER TABLE service_requests ALTER COLUMN priority DROP DEFAULT;`,
+      },
+      {
+        name: 'service_requests: convert priority ENUM to VARCHAR',
+        sql: `DO $$ BEGIN
+                IF EXISTS (
+                  SELECT 1 FROM information_schema.columns
+                  WHERE table_name = 'service_requests'
+                  AND column_name = 'priority'
+                  AND data_type = 'USER-DEFINED'
+                ) THEN
+                  ALTER TABLE service_requests
+                    ALTER COLUMN priority TYPE VARCHAR(10) USING priority::text;
+                END IF;
+              END $$;`,
+      },
+      {
+        name: 'service_requests: update priority values to new enum spec',
+        sql: `UPDATE service_requests SET priority = 'CRITICAL' WHERE priority = 'urgent';
+              UPDATE service_requests SET priority = UPPER(priority) WHERE priority IN ('low', 'medium', 'high');`,
+      },
+      {
+        name: 'service_requests: add check constraint on priority',
+        sql: `DO $$ BEGIN
+                IF NOT EXISTS (
+                  SELECT 1 FROM information_schema.constraint_column_usage
+                  WHERE table_name = 'service_requests' AND constraint_name = 'check_priority'
+                ) THEN
+                  ALTER TABLE service_requests ADD CONSTRAINT check_priority CHECK (priority IN ('CRITICAL','HIGH','MEDIUM','LOW'));
+                END IF;
+              END $$;`,
+      },
+      {
+        name: 'service_requests: restore default on priority',
+        sql: `ALTER TABLE service_requests ALTER COLUMN priority SET DEFAULT 'MEDIUM';`,
+      },
+      {
+        name: 'request_audit_log: create table',
+        sql: `CREATE TABLE IF NOT EXISTS request_audit_log (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            request_id UUID REFERENCES service_requests(id),
+            tenant_id UUID NOT NULL,
+            changed_by UUID REFERENCES users(id),
+            field_changed VARCHAR(50),
+            old_value TEXT,
+            new_value TEXT,
+            changed_at TIMESTAMP DEFAULT NOW()
+        );`,
+      },
+
+      // ── FEATURE 5: Duplicate & Spam Prevention ────────────────────────────
+      {
+        name: 'service_requests: add is_spam_flagged column',
+        sql: `ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS is_spam_flagged BOOLEAN DEFAULT FALSE;`,
+      },
+      {
+        name: 'service_requests: add spam_reason column',
+        sql: `ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS spam_reason VARCHAR(255);`,
+      },
+      {
+        name: 'users: add spam_flag_count column',
+        sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS spam_flag_count INTEGER DEFAULT 0;`,
+      },
+      {
+        name: 'users: add status column',
+        sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','SUSPENDED','WARNED'));`,
+      },
+
+      // ── FEATURE 6: Technician Feedback Section ────────────────────────────
+      {
+        name: 'technician_feedback: create table',
+        sql: `CREATE TABLE IF NOT EXISTS technician_feedback (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            request_id UUID REFERENCES service_requests(id) ON DELETE CASCADE,
+            technician_id UUID REFERENCES users(id),
+            tenant_id UUID NOT NULL,
+            difficulty_rating INTEGER CHECK (difficulty_rating BETWEEN 1 AND 5),
+            time_taken_minutes INTEGER,
+            work_summary TEXT,
+            flags TEXT[],
+            created_at TIMESTAMP DEFAULT NOW()
+        );`,
+      },
+      {
+        name: 'customer_satisfaction: create table',
+        sql: `CREATE TABLE IF NOT EXISTS customer_satisfaction (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            request_id UUID REFERENCES service_requests(id) ON DELETE CASCADE,
+            customer_id UUID REFERENCES users(id),
+            tenant_id UUID NOT NULL,
+            rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+            comment TEXT,
+            submitted_at TIMESTAMP DEFAULT NOW()
+        );`,
+      },
     ];
 
     for (const migration of migrations) {
