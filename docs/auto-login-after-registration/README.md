@@ -1,4 +1,4 @@
-# Fix: Auto-Login after Registration (Hanin)
+# Auto-Login after Registration (Hanin)
 
 Users are now **automatically signed in after registration**, without being taken back to the login page again.
 
