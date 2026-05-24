@@ -54,6 +54,36 @@ export const ChatbotWidget: React.FC = () => {
 
     return (
         <>
+            <style>{`
+        .chatbot-message-content {
+          max-width: 100%;
+        }
+        .chatbot-message-content pre {
+          max-width: 100%;
+          overflow-x: auto;
+          white-space: pre-wrap;
+          word-break: break-word;
+          background-color: rgba(0, 0, 0, 0.05);
+          padding: 8px;
+          border-radius: 4px;
+        }
+        .chatbot-message-content p {
+          margin-bottom: 8px;
+        }
+        .chatbot-message-content p:last-child {
+          margin-bottom: 0;
+        }
+        .chatbot-message-content table {
+          max-width: 100%;
+          overflow-x: auto;
+          display: block;
+        }
+        .chatbot-message-content img {
+          max-width: 100%;
+          height: auto;
+        }
+      `}</style>
+
             {/* Floating Chat Button */}
             {!isOpen && (
                 <Button
@@ -137,6 +167,7 @@ export const ChatbotWidget: React.FC = () => {
                         style={{
                             flex: 1,
                             overflowY: 'auto',
+                            overflowX: 'hidden',
                             padding: '20px',
                             display: 'flex',
                             flexDirection: 'column',
@@ -172,6 +203,7 @@ export const ChatbotWidget: React.FC = () => {
                                     }}
                                 />
                                 <div
+                                    className="chatbot-message-content"
                                     style={{
                                         backgroundColor: msg.role === 'user' ? '#1e293b' : '#ffffff',
                                         color: msg.role === 'user' ? '#ffffff' : '#334155',
@@ -182,6 +214,9 @@ export const ChatbotWidget: React.FC = () => {
                                         boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                                         fontSize: 14,
                                         lineHeight: 1.5,
+                                        overflowX: 'auto',
+                                        wordBreak: 'break-word',
+                                        minWidth: 0,
                                     }}
                                     dangerouslySetInnerHTML={renderMarkdown(msg.content)}
                                 />

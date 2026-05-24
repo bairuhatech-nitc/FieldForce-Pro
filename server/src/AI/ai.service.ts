@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PROJECT_FLOW_KNOWLEDGE } from './knowledge';
 
 @Injectable()
 export class AiService {
@@ -40,7 +41,13 @@ Guidelines:
 1. Be concise, direct, helpful, and professional.
 2. If the user is asking about pricing or features, adopt a sales-oriented tone.
 3. If the user is asking how to do something in the dashboard (like "how do I approve a request"), provide exact step-by-step instructions from the workflows above.
-4. If you don't know the answer or they need deep technical DB support, advise them to contact support@fieldforcepro.com.
+4. STRICT RESTRICTION: You MUST ONLY answer questions related to FieldForce Pro, its features, workflows, and pricing. Do NOT answer general knowledge questions, do NOT write code, and do NOT provide assistance outside the scope of the FieldForce Pro software. If asked an unrelated question or asked to write code, politely decline and state that you are only configured to assist with FieldForce Pro.
+5. If you don't know the answer or they need deep technical DB support, advise them to contact support@fieldforcepro.com.
+
+--- OFFICIAL FIELD FORCE PRO KNOWLEDGE BASE ---
+The following documentation contains the complete step-by-step processes, UI workflows, API endpoints, and project architecture. Use this detailed knowledge base to answer any specific query the user has about how to perform actions in the system.
+${PROJECT_FLOW_KNOWLEDGE}
+--- END OFFICIAL KNOWLEDGE BASE ---
 `;
 
     constructor(private configService: ConfigService) {
