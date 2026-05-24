@@ -1,19 +1,32 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
+import { Controller, Post, Body } from '@nestjs/common';
+import { AiService } from './ai.service';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Public } from '../shared/decorator/public.decorator';
+import { IsString, IsArray, IsOptional } from 'class-validator';
 
-async function bootstrap() {
-    const app = await NestFactory.createApplicationContext(AppModule);
+export class ChatRequestDto {
+    @IsString()
+    message: string;
 
-    try {
-        const { ServiceRequest } = require('../src/SERVICE_REQUESTS/service_requests.entity');
-        const srs = await ServiceRequest.findAll({ attributes: ['id', 'request_number', 'is_deleted', 'created_at'] });
-        console.log('All Service Requests:');
-        srs.forEach((sr: any) => console.log(sr.request_number, sr.is_deleted, sr.created_at));
-    } catch (err: any) {
-        console.error('FAILED:', err);
-    }
-
-    await app.close();
+    @IsOptional()
+    @IsArray()
+    history?: any[];
 }
 
-bootstrap();
+@ApiTags('Public AI')
+@Controller('ai')
+export class AiController {
+    constructor(private readonly aiService: AiService) { }
+
+    @Public()
+    @Post('chat')
+    @ApiOperation({ summary: 'Chat with FieldForce AI' })
+    async chat(@Body() body: ChatRequestDto) {
+        const history = body.history || [];
+        const reply = await this.aiService.generateChatResponse(history, body.message);
+
+        return {
+            reply,
+        };
+    }
+}
