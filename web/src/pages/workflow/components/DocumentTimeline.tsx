@@ -28,7 +28,7 @@ const actionIcons: Record<string, React.ReactNode> = {
   APPROVE: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
   REJECT: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
   REQUEST_CORRECTION: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
-  SKIP: <MinusCircleOutlined style={{ color: '#999' }} />,
+  SKIP: <MinusCircleOutlined style={{ opacity: 0.5 }} />,
   DELEGATE: <SwapOutlined style={{ color: '#1890ff' }} />,
   ESCALATE: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
 };
@@ -37,7 +37,7 @@ const statusIcons: Record<string, React.ReactNode> = {
   APPROVED: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
   REJECTED: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
   PENDING: <ClockCircleOutlined style={{ color: '#faad14' }} />,
-  SKIPPED: <MinusCircleOutlined style={{ color: '#999' }} />,
+  SKIPPED: <MinusCircleOutlined style={{ opacity: 0.5 }} />,
   CORRECTION_REQUIRED: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
 };
 
@@ -181,7 +181,7 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
                 <div>
                   <div>
                     <Text strong>{actionLabel}</Text>
-                    <span style={{ marginLeft: 8, color: '#666' }}>by {actorName}</span>
+                    <span style={{ marginLeft: 8, opacity: 0.5 }}>by {actorName}</span>
                     <Tag
                       color={statusColors[h.new_status] || 'default'}
                       style={{ marginLeft: 8 }}
@@ -194,7 +194,7 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
                   </Text>
                   {h.comments && (
                     <div>
-                      <Text italic style={{ fontSize: 12, color: '#666' }}>
+                      <Text italic style={{ fontSize: 12, opacity: 0.5 }}>
                         &ldquo;{h.comments}&rdquo;
                       </Text>
                     </div>

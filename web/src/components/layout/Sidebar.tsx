@@ -300,7 +300,7 @@ export default function Sidebar() {
             <ThunderboltFilled style={{ fontSize: 24 }} />
           </div>
           {!collapsed && (
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#111827', fontFamily: 'Inter, sans-serif' }}>
+            <span style={{ fontSize: 18, fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>
               FieldForce Pro
             </span>
           )}

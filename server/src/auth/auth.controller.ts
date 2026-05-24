@@ -23,6 +23,9 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
   VerifyMFALoginDto,
+  RequestMagicLinkDto,
+  RegisterMagicLinkDto,
+  VerifyMagicLinkDto,
 } from './dto/auth.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from '../shared/decorator/public.decorator';
@@ -36,10 +39,20 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user and tenant' })
-  async register(@Body() dto: RegisterDto) {
-    const result = await this.authService.register(dto);
-    return DataResponseDto.created(result, 'Registration successful');
+  async register(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto: RegisterDto,
+  ) {
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const result = await this.authService.register(dto, ip, userAgent);
+
+    this.setAuthCookies(res, result);
+    const body = this.stripTokensFromAuthResult(result);
+    return DataResponseDto.created(body, 'Registration successful');
   }
 
   @Public()
@@ -58,31 +71,9 @@ export class AuthController {
       return DataResponseDto.success(result, 'MFA verification required');
     }
 
-    // Set tokens in HTTP-only cookies
     if ('access_token' in result && result.access_token) {
-      res.cookie('access_token', result.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Only HTTPS in production
-        sameSite: 'lax', // Use 'lax' to allow cookies in development
-        maxAge: 15 * 60 * 1000, // 15 minutes
-        path: '/',
-      });
-    }
-
-    if ('refresh_token' in result && result.refresh_token) {
-      res.cookie('refresh_token', result.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // Use 'lax' to allow cookies in development
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/',
-      });
-    }
-
-    // Remove tokens from response body
-    if ('access_token' in result) {
-      const { access_token, refresh_token, ...userDataWithoutTokens } = result as any;
-      return DataResponseDto.success(userDataWithoutTokens, 'Login successful');
+      this.setAuthCookies(res, result);
+      return DataResponseDto.success(this.stripTokensFromAuthResult(result), 'Login successful');
     }
 
     return DataResponseDto.success(result, 'Login successful');
@@ -97,30 +88,39 @@ export class AuthController {
     const userAgent = req.headers['user-agent'] || '';
     const result = await this.authService.verifyMFALogin(dto, ip, userAgent);
 
-    // Set tokens in HTTP-only cookies
-    if ('access_token' in result && result.access_token) {
-      res.cookie('access_token', result.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // Use 'lax' to allow cookies in development
-        maxAge: 15 * 60 * 1000, // 15 minutes
-        path: '/',
-      });
-    }
+    this.setAuthCookies(res, result);
+    return DataResponseDto.success(this.stripTokensFromAuthResult(result), 'MFA verification successful');
+  }
 
-    if ('refresh_token' in result && result.refresh_token) {
-      res.cookie('refresh_token', result.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // Use 'lax' to allow cookies in development
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/',
-      });
-    }
+  @Public()
+  @Post('magic-link/request')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a magic link for login' })
+  async requestMagicLink(@Body() dto: RequestMagicLinkDto) {
+    const result = await this.authService.requestMagicLink(dto);
+    return DataResponseDto.success(result, 'Magic link requested');
+  }
 
-    // Remove tokens from response body
-    const { access_token, refresh_token, ...userDataWithoutTokens } = result as any;
-    return DataResponseDto.success(userDataWithoutTokens, 'MFA verification successful');
+  @Public()
+  @Post('magic-link/register')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Register and request a magic link' })
+  async requestMagicLinkRegister(@Body() dto: RegisterMagicLinkDto) {
+    const result = await this.authService.requestMagicLinkRegister(dto);
+    return DataResponseDto.success(result, 'Magic link registration requested');
+  }
+
+  @Public()
+  @Post('magic-link/verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify magic link and login' })
+  async verifyMagicLink(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() dto: VerifyMagicLinkDto) {
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const result = await this.authService.verifyMagicLink(dto, ip, userAgent);
+
+    this.setAuthCookies(res, result);
+    return DataResponseDto.success(this.stripTokensFromAuthResult(result), 'Magic link verification successful');
   }
 
   @Public()
@@ -252,5 +252,37 @@ export class AuthController {
     // using authService to pass down to usersService
     const result = await this.authService.updateMe(userId, dto);
     return DataResponseDto.success(result, 'Profile updated successfully');
+  }
+
+  private setAuthCookies(
+    res: Response,
+    result: { access_token?: string; refresh_token?: string },
+  ): void {
+    if (result.access_token) {
+      res.cookie('access_token', result.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000,
+        path: '/',
+      });
+    }
+
+    if (result.refresh_token) {
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      });
+    }
+  }
+
+  private stripTokensFromAuthResult<T extends { access_token?: string; refresh_token?: string }>(
+    result: T,
+  ): Omit<T, 'access_token' | 'refresh_token'> {
+    const { access_token: _a, refresh_token: _r, ...rest } = result;
+    return rest;
   }
 }

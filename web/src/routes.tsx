@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router-dom';
-import { Spin } from 'antd';
+
 import { useAuthStore } from '@/store/auth.store';
 import { useMe } from '@/hooks/use-auth';
 import AppLayout from '@/components/layout/AppLayout';
@@ -10,6 +10,7 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
+const VerifyMagicLinkPage = lazy(() => import('@/pages/auth/VerifyMagicLinkPage'));
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const LiveMapDashboard = lazy(() => import('@/pages/dashboard/LiveMapDashboard'));
 const DashboardBuilderPage = lazy(() => import('@/pages/dashboard/DashboardBuilderPage'));
@@ -195,6 +196,16 @@ export const routes: RouteObject[] = [
       <PublicRoute>
         <SuspenseWrapper>
           <ResetPasswordPage />
+        </SuspenseWrapper>
+      </PublicRoute>
+    ),
+  },
+  {
+    path: '/auth/verify',
+    element: (
+      <PublicRoute>
+        <SuspenseWrapper>
+          <VerifyMagicLinkPage />
         </SuspenseWrapper>
       </PublicRoute>
     ),

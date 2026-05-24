@@ -88,7 +88,7 @@ export default function CommunicationDetailPage() {
       <Card title="Communication Information">
         <Descriptions column={2} bordered>
           <Descriptions.Item label="Contact">
-            {communication.contact_id || <span style={{ color: '#999' }}>-</span>}
+            {communication.contact_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Status">
@@ -110,12 +110,12 @@ export default function CommunicationDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Subject" span={2}>
-            {communication.subject || <span style={{ color: '#999' }}>-</span>}
+            {communication.subject || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Body" span={2}>
             <div style={{ whiteSpace: 'pre-wrap', maxHeight: 300, overflow: 'auto' }}>
-              {communication.body || <span style={{ color: '#999' }}>-</span>}
+              {communication.body || <span style={{ opacity: 0.5 }}>-</span>}
             </div>
           </Descriptions.Item>
 

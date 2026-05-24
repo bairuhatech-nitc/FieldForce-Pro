@@ -108,7 +108,7 @@ export default function InvoiceDetailPage() {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => desc || <span style={{ color: '#999' }}>-</span>,
+      render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Quantity',
@@ -131,7 +131,11 @@ export default function InvoiceDetailPage() {
       title: 'Discount',
       dataIndex: 'discount',
       key: 'discount',
-      render: (discount: number) => formatCurrency(discount || 0, currency),
+      render: (discount: number, record: InvoiceLineItem) => {
+        if (!discount) return <span style={{ opacity: 0.5 }}>-</span>;
+        if (record.discount_type === 'percentage') return `${discount}%`;
+        return formatCurrency(discount, currency);
+      },
     },
     {
       title: 'Total',
@@ -168,19 +172,19 @@ export default function InvoiceDetailPage() {
       title: 'Transaction ID',
       dataIndex: 'gateway_transaction_id',
       key: 'gateway_transaction_id',
-      render: (txId: string) => txId || <span style={{ color: '#999' }}>-</span>,
+      render: (txId: string) => txId || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Paid At',
       dataIndex: 'paid_at',
       key: 'paid_at',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Notes',
       dataIndex: 'notes',
       key: 'notes',
-      render: (notes: string) => notes || <span style={{ color: '#999' }}>-</span>,
+      render: (notes: string) => notes || <span style={{ opacity: 0.5 }}>-</span>,
     },
   ];
 
@@ -227,7 +231,7 @@ export default function InvoiceDetailPage() {
       <Card title="Invoice Information">
         <Descriptions column={2} bordered>
           <Descriptions.Item label="Invoice Number">
-            {invoice.invoice_number || <span style={{ color: '#999' }}>-</span>}
+            {invoice.invoice_number || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Status">
@@ -239,17 +243,17 @@ export default function InvoiceDetailPage() {
           <Descriptions.Item label="Customer">
             {invoice.contact
               ? `${invoice.contact.first_name} ${invoice.contact.last_name}`
-              : <span style={{ color: '#999' }}>-</span>}
+              : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Work Order">
             {invoice.work_order
               ? invoice.work_order.wo_number || invoice.work_order.summary
-              : <span style={{ color: '#999' }}>-</span>}
+              : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Due Date">
-            {invoice.due_date ? formatDateTime(invoice.due_date) : <span style={{ color: '#999' }}>-</span>}
+            {invoice.due_date ? formatDateTime(invoice.due_date) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Currency">
@@ -285,7 +289,7 @@ export default function InvoiceDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Notes" span={2}>
-            {invoice.notes || <span style={{ color: '#999' }}>-</span>}
+            {invoice.notes || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Created At">

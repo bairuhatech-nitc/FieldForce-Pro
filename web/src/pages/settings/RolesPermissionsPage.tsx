@@ -175,9 +175,9 @@ function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions
     !isModuleAllChecked(module);
 
   return (
-    <div style={{ border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden' }}>
+    <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden' }}>
       {/* Toolbar */}
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-color)' }}>
         <Input
           placeholder="Search modules..."
           value={search}
@@ -187,24 +187,24 @@ function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions
           size="small"
         />
         <Space size={6}>
-          <span style={{ fontSize: 12, color: '#999' }}>{value.length} selected</span>
+          <span style={{ fontSize: 12, opacity: 0.5 }}>{value.length} selected</span>
           <Button size="small" onClick={() => toggleAll(true)}>Select All</Button>
           <Button size="small" onClick={() => toggleAll(false)}>Clear All</Button>
         </Space>
       </div>
 
       {/* Column headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: '180px repeat(5, 1fr)', padding: '8px 14px', background: '#f5f5f5', borderBottom: '1px solid #f0f0f0' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>Module</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '180px repeat(5, 1fr)', padding: '8px 14px', background: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
+        <span style={{ fontSize: 12, fontWeight: 600 }}>Module</span>
         {ACTIONS.map((a) => (
-          <span key={a} style={{ fontSize: 12, fontWeight: 600, color: '#555', textAlign: 'center', textTransform: 'capitalize' }}>{a}</span>
+          <span key={a} style={{ fontSize: 12, fontWeight: 600, textAlign: 'center', textTransform: 'capitalize' }}>{a}</span>
         ))}
       </div>
 
       {/* Rows */}
       <div style={{ maxHeight: 420, overflowY: 'auto' }}>
         {filteredModules.length === 0 && (
-          <div style={{ padding: '24px', textAlign: 'center', color: '#bbb' }}>No modules found</div>
+          <div style={{ padding: '24px', textAlign: 'center', opacity: 0.5 }}>No modules found</div>
         )}
         {filteredModules.map((module, idx) => {
           const moduleLabel = moduleOptions.find((o) => o.value === module)?.label || module;
@@ -217,9 +217,9 @@ function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions
                 display: 'grid',
                 gridTemplateColumns: '180px repeat(5, 1fr)',
                 padding: '9px 14px',
-                borderBottom: idx < filteredModules.length - 1 ? '1px solid #f5f5f5' : 'none',
+                borderBottom: idx < filteredModules.length - 1 ? '1px solid var(--border-color)' : 'none',
                 alignItems: 'center',
-                background: idx % 2 === 0 ? '#fff' : '#fafcff',
+                background: idx % 2 === 0 ? 'var(--card-bg)' : 'var(--bg-color)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -228,7 +228,7 @@ function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions
                   indeterminate={partial}
                   onChange={(e) => toggleModule(module, e.target.checked)}
                 />
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>{moduleLabel}</span>
+                <span style={{ fontSize: 13, fontWeight: 500 }}>{moduleLabel}</span>
               </div>
               {ACTIONS.map((action) => {
                 const permId = grouped[module][action];
@@ -240,7 +240,7 @@ function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions
                         onChange={() => toggle(permId)}
                       />
                     ) : (
-                      <span style={{ color: '#e0e0e0', fontSize: 16 }}>—</span>
+                      <span style={{ opacity: 0.3, fontSize: 16 }}>—</span>
                     )}
                   </div>
                 );

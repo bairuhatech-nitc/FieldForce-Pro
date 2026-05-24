@@ -99,7 +99,7 @@ export default function PricebookListPage() {
       key: 'description',
       render: (desc: string) => (
         <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {desc || <span style={{ color: '#999' }}>-</span>}
+          {desc || <span style={{ opacity: 0.5 }}>-</span>}
         </div>
       ),
     },

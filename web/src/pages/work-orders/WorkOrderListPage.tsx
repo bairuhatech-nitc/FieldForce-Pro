@@ -223,19 +223,19 @@ export default function WorkOrderListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ color: '#999' }}>-</span>,
+      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Scheduled Date',
       dataIndex: 'scheduled_start',
       key: 'scheduled_start',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => {
         if (!a.scheduled_start) return 1;
         if (!b.scheduled_start) return -1;
@@ -246,7 +246,7 @@ export default function WorkOrderListPage() {
       title: 'Assigned To',
       dataIndex: 'assigned_to',
       key: 'assigned_to',
-      render: (assignee: string) => assignee || <span style={{ color: '#999' }}>-</span>,
+      render: (assignee: string) => assignee || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Created',
@@ -298,7 +298,7 @@ export default function WorkOrderListPage() {
       key: 'approver',
       render: (_, record) => {
         const approver = record.approver;
-        if (!approver) return <span style={{ color: '#999' }}>-</span>;
+        if (!approver) return <span style={{ opacity: 0.5 }}>-</span>;
         const initials = `${(approver.first_name || '').charAt(0)}${(approver.last_name || '').charAt(0)}`.toUpperCase();
         return (
           <Space size={8}>
@@ -316,7 +316,7 @@ export default function WorkOrderListPage() {
     {
       title: 'Workflow',
       key: 'workflow',
-      render: (_, record) => record.workflow_template?.name || <span style={{ color: '#999' }}>-</span>,
+      render: (_, record) => record.workflow_template?.name || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Step',

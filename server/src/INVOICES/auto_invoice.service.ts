@@ -62,6 +62,7 @@ export class AutoInvoiceService {
       quantity: number;
       unit_price: number;
       tax_rate: number;
+      discount_type: string;
       discount: number;
       total: number;
     }> = [];
@@ -74,6 +75,7 @@ export class AutoInvoiceService {
         quantity: Number(item.quantity) || 1,
         unit_price: Number(item.unit_price) || 0,
         tax_rate: Number(item.tax_rate) || 0,
+        discount_type: item.discount_type || 'fixed',
         discount: Number(item.discount) || 0,
         total: Number(item.total) || 0,
       }));
@@ -90,6 +92,7 @@ export class AutoInvoiceService {
         quantity: Number(item.quantity) || 1,
         unit_price: Number(item.unit_price) || 0,
         tax_rate: Number(item.tax_rate) || 0,
+        discount_type: item.discount_type || 'fixed',
         discount: Number(item.discount) || 0,
         total: Number(item.total) || 0,
       }));
@@ -148,6 +151,7 @@ export class AutoInvoiceService {
         quantity: item.quantity,
         unit_price: item.unit_price,
         tax_rate: item.tax_rate,
+        discount_type: item.discount_type,
         discount: item.discount,
         total: item.total,
       });

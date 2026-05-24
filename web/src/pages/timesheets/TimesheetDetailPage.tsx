@@ -124,7 +124,7 @@ export default function TimesheetDetailPage() {
           <Descriptions.Item label="User">
             {timesheet.user
               ? `${timesheet.user.first_name} ${timesheet.user.last_name}`
-              : timesheet.user_id || <span style={{ color: '#999' }}>-</span>}
+              : timesheet.user_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Status">
@@ -134,11 +134,11 @@ export default function TimesheetDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Clock In">
-            {timesheet.clock_in ? formatDateTime(timesheet.clock_in) : <span style={{ color: '#999' }}>-</span>}
+            {timesheet.clock_in ? formatDateTime(timesheet.clock_in) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Clock Out">
-            {timesheet.clock_out ? formatDateTime(timesheet.clock_out) : <span style={{ color: '#999' }}>-</span>}
+            {timesheet.clock_out ? formatDateTime(timesheet.clock_out) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Travel Time">
@@ -158,19 +158,19 @@ export default function TimesheetDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Appointment ID">
-            {timesheet.appointment_id || <span style={{ color: '#999' }}>-</span>}
+            {timesheet.appointment_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Work Order ID">
-            {timesheet.work_order_id || <span style={{ color: '#999' }}>-</span>}
+            {timesheet.work_order_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Approved By">
-            {timesheet.approved_by || <span style={{ color: '#999' }}>-</span>}
+            {timesheet.approved_by || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Notes" span={2}>
-            {timesheet.notes || <span style={{ color: '#999' }}>-</span>}
+            {timesheet.notes || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Created At">

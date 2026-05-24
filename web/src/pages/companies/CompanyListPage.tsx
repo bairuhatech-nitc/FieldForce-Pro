@@ -59,13 +59,13 @@ export default function CompanyListPage() {
       title: 'Industry',
       dataIndex: 'industry',
       key: 'industry',
-      render: (industry: string) => industry || <span style={{ color: '#999' }}>-</span>,
+      render: (industry: string) => industry || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Tax ID',
       dataIndex: 'tax_id',
       key: 'tax_id',
-      render: (tax_id: string) => tax_id || <span style={{ color: '#999' }}>-</span>,
+      render: (tax_id: string) => tax_id || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Website',
@@ -80,7 +80,7 @@ export default function CompanyListPage() {
             </a>
           </Space>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {

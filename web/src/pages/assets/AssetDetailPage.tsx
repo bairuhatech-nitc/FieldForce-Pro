@@ -79,31 +79,31 @@ export default function AssetDetailPage() {
       <Card title="Asset Information">
         <Descriptions column={2} bordered>
           <Descriptions.Item label="Asset Name" span={2}>{asset.name}</Descriptions.Item>
-          <Descriptions.Item label="Model">{asset.model || <span style={{ color: '#999' }}>-</span>}</Descriptions.Item>
-          <Descriptions.Item label="Serial Number">{asset.serial_number || <span style={{ color: '#999' }}>-</span>}</Descriptions.Item>
-          <Descriptions.Item label="Manufacturer">{asset.manufacturer || <span style={{ color: '#999' }}>-</span>}</Descriptions.Item>
-          <Descriptions.Item label="Category">{asset.category ? <Tag>{asset.category}</Tag> : <span style={{ color: '#999' }}>-</span>}</Descriptions.Item>
-          <Descriptions.Item label="Install Date">{asset.install_date || <span style={{ color: '#999' }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label="Model">{asset.model || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label="Serial Number">{asset.serial_number || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label="Manufacturer">{asset.manufacturer || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label="Category">{asset.category ? <Tag>{asset.category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label="Install Date">{asset.install_date || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
           <Descriptions.Item label="Warranty Expiry">
             {asset.warranty_expiry ? (
               <Space>
                 {asset.warranty_expiry}
                 <Tag color={isWarrantyActive ? 'green' : 'red'}>{isWarrantyActive ? 'Active' : 'Expired'}</Tag>
               </Space>
-            ) : <span style={{ color: '#999' }}>-</span>}
+            ) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Health Score">
             {asset.health_score !== null ? (
               <Tag color={asset.health_score >= 80 ? 'green' : asset.health_score >= 50 ? 'orange' : 'red'}>{asset.health_score}%</Tag>
-            ) : <span style={{ color: '#999' }}>-</span>}
+            ) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Customer">
-            {asset.contact ? `${asset.contact.first_name} ${asset.contact.last_name}` : <span style={{ color: '#999' }}>-</span>}
+            {asset.contact ? `${asset.contact.first_name} ${asset.contact.last_name}` : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
           <Descriptions.Item label="Location" span={2}>
-            {asset.location?.address || <span style={{ color: '#999' }}>-</span>}
+            {asset.location?.address || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
-          <Descriptions.Item label="Notes" span={2}>{asset.notes || <span style={{ color: '#999' }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label="Notes" span={2}>{asset.notes || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
           <Descriptions.Item label="Created At">{formatDateTime(asset.created_at)}</Descriptions.Item>
           <Descriptions.Item label="Updated At">{formatDateTime(asset.updated_at)}</Descriptions.Item>
         </Descriptions>

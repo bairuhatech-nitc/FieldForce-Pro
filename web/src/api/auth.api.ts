@@ -1,5 +1,5 @@
 import api from './axios-instance';
-import type { ApiResponse, LoginResponse, RegisterPayload, LoginPayload, ForgotPasswordPayload, ResetPasswordPayload, ChangePasswordPayload, RefreshTokenPayload, VerifyMFAPayload, MFAStatusResponse, SetupEmailMFAResponse, SetupTOTPResponse, EnableMFAResponse } from '@/types/api.types';
+import type { ApiResponse, LoginResponse, RegisterPayload, LoginPayload, ForgotPasswordPayload, ResetPasswordPayload, ChangePasswordPayload, RefreshTokenPayload, VerifyMFAPayload, MFAStatusResponse, SetupEmailMFAResponse, SetupTOTPResponse, EnableMFAResponse, RequestMagicLinkPayload, RegisterMagicLinkPayload, VerifyMagicLinkPayload } from '@/types/api.types';
 import type { User, LoginSession } from '@/types/models.types';
 
 export const authApi = {
@@ -46,6 +46,19 @@ export const authApi = {
 
   terminateSession(sessionId: string) {
     return api.post<ApiResponse<null>>(`/auth/terminate-session/${sessionId}`);
+  },
+
+  // Magic Link
+  requestMagicLink(payload: RequestMagicLinkPayload) {
+    return api.post<ApiResponse<null>>('/auth/magic-link/request', payload);
+  },
+
+  requestMagicLinkRegister(payload: RegisterMagicLinkPayload) {
+    return api.post<ApiResponse<null>>('/auth/magic-link/register', payload);
+  },
+
+  verifyMagicLink(payload: VerifyMagicLinkPayload) {
+    return api.post<ApiResponse<LoginResponse>>('/auth/magic-link/verify', payload);
   },
 
   // MFA

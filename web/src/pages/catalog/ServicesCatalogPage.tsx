@@ -56,14 +56,14 @@ export default function ServicesCatalogPage() {
       title: 'Category',
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ color: '#999' }}>-</span>,
+      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Price',
       dataIndex: 'default_price',
       key: 'default_price',
       render: (price: number | null) =>
-        price !== null && price !== undefined ? formatCurrency(price) : <span style={{ color: '#999' }}>-</span>,
+        price !== null && price !== undefined ? formatCurrency(price) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => (a.default_price || 0) - (b.default_price || 0),
     },
     {
@@ -71,14 +71,14 @@ export default function ServicesCatalogPage() {
       dataIndex: 'duration_minutes',
       key: 'duration_minutes',
       render: (duration: number | null) =>
-        duration !== null && duration !== undefined ? `${duration} min` : <span style={{ color: '#999' }}>-</span>,
+        duration !== null && duration !== undefined ? `${duration} min` : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Tax Rate',
       dataIndex: 'tax_rate',
       key: 'tax_rate',
       render: (rate: number | null) =>
-        rate !== null && rate !== undefined ? `${rate}%` : <span style={{ color: '#999' }}>-</span>,
+        rate !== null && rate !== undefined ? `${rate}%` : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Active',

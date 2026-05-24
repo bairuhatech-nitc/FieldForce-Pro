@@ -87,7 +87,7 @@ export default function AgreementListPage() {
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: 'Start Date',
@@ -107,7 +107,7 @@ export default function AgreementListPage() {
       title: 'Value',
       dataIndex: 'value',
       key: 'value',
-      render: (value: number) => value != null ? `$${value.toLocaleString()}` : <span style={{ color: '#999' }}>-</span>,
+      render: (value: number) => value != null ? `$${value.toLocaleString()}` : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => (a.value || 0) - (b.value || 0),
     },
     {

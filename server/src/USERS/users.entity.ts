@@ -31,7 +31,7 @@ export class User extends Model {
   @Column({ type: DataType.STRING(255), allowNull: false })
   email: string;
 
-  @Column({ type: DataType.STRING(255), allowNull: false })
+  @Column({ type: DataType.STRING(255), allowNull: true })
   password_hash: string;
 
   @Column({ type: DataType.STRING(100), allowNull: false })
@@ -110,6 +110,12 @@ export class User extends Model {
 
   @Column({ type: DataType.JSONB, allowNull: true, defaultValue: null })
   recovery_codes: Array<{ code: string; used: boolean }> | null;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  magic_link_token: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  magic_link_expires: Date;
 
   @CreatedAt
   created_at: Date;

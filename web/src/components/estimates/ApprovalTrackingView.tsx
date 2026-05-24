@@ -162,10 +162,10 @@ export default function ApprovalTrackingView({ estimate }: ApprovalTrackingViewP
       title: 'Customer Signature', width: 480, icon: <SignatureOutlined />, okText: 'Close',
       content: (
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
-          <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, background: '#fafafa', padding: 12, display: 'inline-block' }}>
+          <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, background: 'var(--bg-color)', padding: 12, display: 'inline-block' }}>
             <img src={estimate.signature_url!} alt="Customer Signature" style={{ maxWidth: 380, maxHeight: 160, display: 'block' }} />
           </div>
-          {isCustomerSigned && signedAt && <div style={{ marginTop: 12, color: '#666', fontSize: 13 }}>Signed on {formatDateTime(signedAt)}</div>}
+          {isCustomerSigned && signedAt && <div style={{ marginTop: 12, opacity: 0.5, fontSize: 13 }}>Signed on {formatDateTime(signedAt)}</div>}
           {estimate.contact && <div style={{ marginTop: 4, fontWeight: 600, fontSize: 13 }}>{estimate.contact.first_name} {estimate.contact.last_name}</div>}
         </div>
       ),
@@ -176,8 +176,8 @@ export default function ApprovalTrackingView({ estimate }: ApprovalTrackingViewP
   const panelStyle: React.CSSProperties = {
     marginBottom: 8,
     borderRadius: 8,
-    border: '1px solid #f0f0f0',
-    background: '#fff',
+    border: '1px solid var(--border-color)',
+    background: 'var(--card-bg)',
     overflow: 'hidden',
   };
 
@@ -215,18 +215,18 @@ export default function ApprovalTrackingView({ estimate }: ApprovalTrackingViewP
               <div style={{ padding: '4px 0 8px' }}>
                 {/* Expiry row */}
                 {estimate.expiry_date && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, padding: '6px 10px', background: '#fafafa', borderRadius: 6 }}>
-                    <span style={{ fontSize: 12, color: '#aaa' }}>Expiry Date</span>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: isExpired ? '#ff4d4f' : '#333' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, padding: '6px 10px', background: 'var(--bg-color)', borderRadius: 6 }}>
+                    <span style={{ fontSize: 12, opacity: 0.5 }}>Expiry Date</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: isExpired ? '#ff4d4f' : 'inherit' }}>
                       {isExpired && '⚠ '}{formatDateTime(estimate.expiry_date)}
                     </span>
                   </div>
                 )}
                 {/* Signed row */}
                 {isCustomerSigned && signedAt && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, padding: '6px 10px', background: '#f6ffed', borderRadius: 6 }}>
-                    <span style={{ fontSize: 12, color: '#aaa' }}>Signed On</span>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: '#389e0d' }}>{formatDateTime(signedAt)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, padding: '6px 10px', background: 'rgba(82, 196, 26, 0.1)', borderRadius: 6 }}>
+                    <span style={{ fontSize: 12, opacity: 0.5 }}>Signed On</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: '#52c41a' }}>{formatDateTime(signedAt)}</span>
                   </div>
                 )}
                 {/* Expired alert */}
@@ -235,12 +235,12 @@ export default function ApprovalTrackingView({ estimate }: ApprovalTrackingViewP
                 )}
                 {/* Signature thumbnail */}
                 {estimate.signature_url && (
-                  <div style={{ border: '1px solid #e8e8e8', borderRadius: 8, overflow: 'hidden', cursor: 'pointer' }} onClick={openSignatureModal}>
-                    <div style={{ padding: '7px 12px', background: '#fafafa', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#555' }}>
+                  <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden', cursor: 'pointer' }} onClick={openSignatureModal}>
+                    <div style={{ padding: '7px 12px', background: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'inherit' }}>
                       <SignatureOutlined /><span>Customer Signature</span>
                       <span style={{ marginLeft: 'auto', color: '#1677ff', fontSize: 11 }}>View →</span>
                     </div>
-                    <div style={{ padding: '8px 12px', background: '#fff', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ padding: '8px 12px', background: 'var(--card-bg)', display: 'flex', justifyContent: 'center' }}>
                       <img src={estimate.signature_url} alt="Signature" style={{ maxWidth: '100%', maxHeight: 48, display: 'block' }} />
                     </div>
                   </div>
@@ -325,7 +325,7 @@ export default function ApprovalTrackingView({ estimate }: ApprovalTrackingViewP
 
                   {/* Record decision */}
                   {['sent', 'viewed'].includes(estimate.status) && (
-                    <div style={{ background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 8, padding: '12px 14px' }}>
+                    <div style={{ background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '12px 14px' }}>
                       <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>Record Customer Decision</Text>
                       <Space wrap size={8}>
                         {!isCustomerSigned && (
@@ -343,13 +343,13 @@ export default function ApprovalTrackingView({ estimate }: ApprovalTrackingViewP
                   {/* Approved state */}
                   {estimate.status === 'approved' && (
                     <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                      <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ background: 'rgba(82, 196, 26, 0.1)', border: '1px solid rgba(82, 196, 26, 0.25)', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#52c41a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           {isCustomerSigned ? <SafetyCertificateOutlined style={{ color: '#fff', fontSize: 16 }} /> : <CheckCircleOutlined style={{ color: '#fff', fontSize: 16 }} />}
                         </div>
                         <div>
-                          <Text strong style={{ fontSize: 13, color: '#389e0d', display: 'block' }}>{isCustomerSigned ? 'Digitally Signed & Approved' : 'Customer Approved'}</Text>
-                          <Text style={{ fontSize: 11, color: '#52c41a' }}>{isCustomerSigned && signedAt ? `Signed on ${formatDateTime(signedAt)}` : 'Ready to convert into a Work Order.'}</Text>
+                          <Text strong style={{ fontSize: 13, color: '#52c41a', display: 'block' }}>{isCustomerSigned ? 'Digitally Signed & Approved' : 'Customer Approved'}</Text>
+                          <Text style={{ fontSize: 11, color: '#52c41a', opacity: 0.8 }}>{isCustomerSigned && signedAt ? `Signed on ${formatDateTime(signedAt)}` : 'Ready to convert into a Work Order.'}</Text>
                         </div>
                       </div>
                       <Button type="primary" icon={<FileTextOutlined />} onClick={() => setConvertModalVisible(true)} loading={convertToWorkOrder.isPending} block style={{ height: 40, fontWeight: 600 }}>
@@ -360,30 +360,30 @@ export default function ApprovalTrackingView({ estimate }: ApprovalTrackingViewP
 
                   {/* Rejected state */}
                   {estimate.status === 'rejected' && (
-                    <div style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 8, padding: '12px 14px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <div style={{ background: 'rgba(255, 77, 79, 0.1)', border: '1px solid rgba(255, 77, 79, 0.25)', borderRadius: 8, padding: '12px 14px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                       <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: 16, marginTop: 2, flexShrink: 0 }} />
                       <div>
-                        <Text strong style={{ color: '#cf1322', display: 'block', marginBottom: 2, fontSize: 13 }}>Customer Rejected</Text>
-                        <Text style={{ fontSize: 12, color: '#666' }}>{cf?.rejection_reason ? `Reason: ${String(cf.rejection_reason)}` : 'Revert to draft to revise and re-send.'}</Text>
+                        <Text strong style={{ color: '#ff4d4f', display: 'block', marginBottom: 2, fontSize: 13 }}>Customer Rejected</Text>
+                        <Text style={{ fontSize: 12, opacity: 0.5 }}>{cf?.rejection_reason ? `Reason: ${String(cf.rejection_reason)}` : 'Revert to draft to revise and re-send.'}</Text>
                       </div>
                     </div>
                   )}
 
                   {/* Converted state */}
                   {estimate.status === 'converted_to_wo' && (
-                    <div style={{ background: '#f9f0ff', border: '1px solid #d3adf7', borderRadius: 8, padding: '12px 14px', display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <FileTextOutlined style={{ color: '#722ed1', fontSize: 16, flexShrink: 0 }} />
+                    <div style={{ background: 'rgba(114, 46, 209, 0.1)', border: '1px solid rgba(114, 46, 209, 0.25)', borderRadius: 8, padding: '12px 14px', display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <FileTextOutlined style={{ color: '#9254de', fontSize: 16, flexShrink: 0 }} />
                       <div>
-                        <Text strong style={{ color: '#531dab', display: 'block', marginBottom: 2, fontSize: 13 }}>Converted to Work Order</Text>
-                        <Text style={{ fontSize: 12, color: '#666' }}>Successfully converted.</Text>
+                        <Text strong style={{ color: '#9254de', display: 'block', marginBottom: 2, fontSize: 13 }}>Converted to Work Order</Text>
+                        <Text style={{ fontSize: 12, opacity: 0.5 }}>Successfully converted.</Text>
                       </div>
                     </div>
                   )}
 
                   {/* Revert to Draft */}
                   {canRevertToDraft && estimate.status !== 'converted_to_wo' && (
-                    <div style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8, padding: '10px 14px' }}>
-                      <Text strong style={{ fontSize: 12, color: '#874d00', display: 'block', marginBottom: 6 }}>Need to revise this estimate?</Text>
+                    <div style={{ background: 'rgba(250, 173, 20, 0.1)', border: '1px solid rgba(250, 173, 20, 0.25)', borderRadius: 8, padding: '10px 14px' }}>
+                      <Text strong style={{ fontSize: 12, color: '#faad14', display: 'block', marginBottom: 6 }}>Need to revise this estimate?</Text>
                       <Button icon={<RollbackOutlined />} size="small" onClick={() => setRevertModalVisible(true)} loading={revertToDraft.isPending}>
                         Revert to Draft
                       </Button>
