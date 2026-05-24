@@ -73,10 +73,10 @@ import { CustomerPortalModule } from './CUSTOMER_PORTAL/customer-portal.module';
 import { WorkflowModule } from './WORKFLOW/workflow.module';
 import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.module';
 import { SlaTimersModule } from './SLA_TIMERS/sla_timers.module';
-
 import { OnboardingModule } from './ONBOARDING/onboarding.module';
 import { AttachmentsModule } from './ATTACHMENTS/attachments.module';
 import { FeedbackModule } from './FEEDBACK/feedback.module';
+import { AiModule } from './AI/ai.module';
 
 @Module({
   imports: [
@@ -153,6 +153,7 @@ import { FeedbackModule } from './FEEDBACK/feedback.module';
     OnboardingModule,
     AttachmentsModule,
     FeedbackModule,
+    AiModule,
   ],
   providers: [
     {

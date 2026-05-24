@@ -42,7 +42,7 @@ api.interceptors.response.use(
     // In both cases, attempt a token refresh — the refresh endpoint re-reads permissions from DB.
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then(() => {
           return api(originalRequest);

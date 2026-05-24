@@ -219,16 +219,26 @@ export class ServiceRequestsService {
         created_at: { [Op.gte]: todayStart, [Op.lt]: todayEnd },
       },
     });
-    const requestNumber = `SR-${dateStr}-${String(todayCount + 1).padStart(3, '0')}`;
+    const shortTenant = tenantId.split('-')[0].toUpperCase();
+    const requestNumber = `SR-${shortTenant}-${dateStr}-${String(todayCount + 1).padStart(3, '0')}`;
 
-    const serviceRequest = await this.serviceRequestRepository.create({
-      tenant_id: tenantId,
-      request_number: requestNumber,
-      status: finalStatus,
-      is_spam_flagged: isSpamFlagged,
-      spam_reason: spamReason,
-      ...dto,
-    });
+    let serviceRequest;
+    try {
+      serviceRequest = await this.serviceRequestRepository.create({
+        tenant_id: tenantId,
+        request_number: requestNumber,
+        status: finalStatus,
+        is_spam_flagged: isSpamFlagged,
+        spam_reason: spamReason,
+        ...dto,
+      });
+    } catch (error: any) {
+      this.logger.error('Full Error during creation:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      if (error.errors) {
+        this.logger.error('Error Details:', JSON.stringify(error.errors, null, 2));
+      }
+      throw error;
+    }
 
     // Auto-trigger approval chain if an active template exists for SERVICE_REQUEST
     try {

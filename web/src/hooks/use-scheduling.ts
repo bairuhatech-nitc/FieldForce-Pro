@@ -5,13 +5,6 @@ import {
   OptimizeScheduleRequest,
   DemandForecastRequest,
   RouteOptimizationRequest,
-  OptimizedSchedule,
-  DemandForecastResponse,
-  RouteOptimizationResponse,
-  SchedulingOptimization,
-  AvailabilityResult,
-  ConflictResult,
-  AutoAssignResult,
 } from '../api/scheduling.api';
 
 // Query keys
@@ -135,7 +128,7 @@ export function useRealtimeOptimization() {
       pending_jobs: Array<any>;
       use_traffic?: boolean;
     }) => schedulingApi.realtimeOptimization(data),
-    onSuccess: (response) => {
+    onSuccess: () => {
       message.success('Real-time routes optimized successfully');
     },
     onError: (error: any) => {

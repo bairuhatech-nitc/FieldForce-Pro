@@ -1,6 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router-dom';
-import { Spin } from 'antd';
 import { useAuthStore } from '@/store/auth.store';
 import { useMe } from '@/hooks/use-auth';
 import AppLayout from '@/components/layout/AppLayout';
@@ -49,7 +48,6 @@ const WorkOrderFormPage = lazy(() => import('@/pages/work-orders/WorkOrderFormPa
 const DispatchBoardPage = lazy(() => import('@/pages/scheduling/DispatchBoardPage'));
 const AppointmentFormPage = lazy(() => import('@/pages/scheduling/AppointmentFormPage'));
 const JobSheetTemplateListPage = lazy(() => import('@/pages/job-sheets/JobSheetTemplateListPage'));
-const JobSheetTemplateFormPage = lazy(() => import('@/pages/job-sheets/JobSheetTemplateFormPage'));
 const JobSheetBuilderPage = lazy(() => import('@/pages/job-sheets/JobSheetBuilderPage'));
 const JobSheetDashboardPage = lazy(() => import('@/pages/job-sheets/JobSheetDashboardPage'));
 const JobSheetListPage = lazy(() => import('@/pages/job-sheets/JobSheetListPage'));
@@ -90,7 +88,6 @@ const WebformDetailPage = lazy(() => import('@/pages/webforms/WebformDetailPage'
 const WebformFormPage = lazy(() => import('@/pages/webforms/WebformFormPage'));
 const PricebookFormPage = lazy(() => import('@/pages/pricebook/PricebookFormPage'));
 const CustomFieldFormPage = lazy(() => import('@/pages/customization/CustomFieldFormPage'));
-const TemplateFormPage = lazy(() => import('@/pages/customization/TemplateFormPage'));
 const TemplateBuilderPage = lazy(() => import('@/pages/customization/TemplateBuilderPage'));
 const WorkflowRuleFormPage = lazy(() => import('@/pages/customization/WorkflowRuleFormPage'));
 const WebhookFormPage = lazy(() => import('@/pages/customization/WebhookFormPage'));
