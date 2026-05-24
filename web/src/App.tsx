@@ -4,6 +4,7 @@ import { ConfigProvider, theme as antTheme, App as AntApp } from 'antd';
 import { useUiStore } from '@/store/ui.store';
 import { routes } from '@/routes';
 import NotificationToast from '@/components/common/NotificationToast';
+import { ChatbotWidget } from '@/components/chat/ChatbotWidget';
 import './index.css';
 
 export default function App() {
@@ -36,7 +37,6 @@ export default function App() {
           Button: {
             controlHeight: 40,
             borderRadius: 8,
-            fontWeight: 500,
           },
           Input: {
             controlHeight: 40,
@@ -57,6 +57,7 @@ export default function App() {
       <AntApp>
         <NotificationToast />
         {element}
+        <ChatbotWidget />
       </AntApp>
     </ConfigProvider>
   );
