@@ -23,6 +23,9 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
   VerifyMFALoginDto,
+  RequestMagicLinkDto,
+  RegisterMagicLinkDto,
+  VerifyMagicLinkDto,
 } from './dto/auth.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from '../shared/decorator/public.decorator';
@@ -121,6 +124,37 @@ export class AuthController {
     // Remove tokens from response body
     const { access_token, refresh_token, ...userDataWithoutTokens } = result as any;
     return DataResponseDto.success(userDataWithoutTokens, 'MFA verification successful');
+  }
+
+  @Public()
+  @Post('magic-link/request')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a magic link for login' })
+  async requestMagicLink(@Body() dto: RequestMagicLinkDto) {
+    const result = await this.authService.requestMagicLink(dto);
+    return DataResponseDto.success(result, 'Magic link requested');
+  }
+
+  @Public()
+  @Post('magic-link/register')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Register and request a magic link' })
+  async requestMagicLinkRegister(@Body() dto: RegisterMagicLinkDto) {
+    const result = await this.authService.requestMagicLinkRegister(dto);
+    return DataResponseDto.success(result, 'Magic link registration requested');
+  }
+
+  @Public()
+  @Post('magic-link/verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify magic link and login' })
+  async verifyMagicLink(@Req() req: Request, @Res({ passthrough: true }) res: Response, @Body() dto: VerifyMagicLinkDto) {
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const result = await this.authService.verifyMagicLink(dto, ip, userAgent);
+
+    this.setAuthCookies(res, result);
+    return DataResponseDto.success(this.stripTokensFromAuthResult(result), 'Magic link verification successful');
   }
 
   @Public()
