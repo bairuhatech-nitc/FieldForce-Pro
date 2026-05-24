@@ -1,4 +1,4 @@
-# Feature: Percentage-based Discounts
+# Percentage-based Discounts (Hanin)
 
 Users can now apply discounts as either a fixed amount ($) or a percentage (%) for Estimate, Invoice, and Work Order line items. The totals correctly calculate dynamically based on the selected discount type.
 
