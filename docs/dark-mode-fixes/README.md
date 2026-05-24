@@ -1,4 +1,4 @@
-# Fix: Dark Mode Fixes (Hanin)
+# Dark Mode Fixes (Hanin)
 
 The fix resolved readability and accessibility issues in Dark Mode caused by hardcoded inline colors, borders, and backgrounds overriding the active theme's CSS variables and Ant Design's dark algorithm.
 
