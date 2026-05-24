@@ -30,6 +30,9 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
   VerifyMFALoginDto,
+  RequestMagicLinkDto,
+  RegisterMagicLinkDto,
+  VerifyMagicLinkDto,
 } from './dto/auth.dto';
 import { MFAService } from '../MFA/mfa.service';
 import { EmailService } from '../shared/services/email.service';
@@ -225,6 +228,131 @@ export class AuthService {
     };
 
     return this.completeLogin(user, loginDto, ip, userAgent);
+  }
+
+  async requestMagicLink(dto: RequestMagicLinkDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) {
+      // Return generic success to prevent email enumeration
+      return { message: 'If an account exists, a magic link has been sent to your email.' };
+    }
+
+    if (!user.is_active) {
+      throw new UnauthorizedException('Account is deactivated. Please contact your administrator.');
+    }
+
+    const token = uuidv4();
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15); // 15 mins expiry
+
+    await user.update({
+      magic_link_token: tokenHash,
+      magic_link_expires: expires,
+    });
+
+    const userName = user.first_name || 'User';
+    await this.emailService.sendMagicLinkEmail(user.email, userName, token);
+
+    return { message: 'If an account exists, a magic link has been sent to your email.' };
+  }
+
+  async requestMagicLinkRegister(dto: RegisterMagicLinkDto) {
+    const existingUser = await this.usersService.findByEmail(dto.email);
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Create tenant
+    const tenant = await this.tenantsService.create({ name: dto.company_name });
+
+    // Create user (inactive until they click the link, optional but good practice, keeping it active for simplicity based on original flow)
+    const user = await User.create({
+      tenant_id: tenant.id,
+      email: dto.email,
+      password_hash: null, // No password for magic link
+      first_name: dto.first_name,
+      last_name: dto.last_name,
+      phone: dto.phone,
+    });
+
+    // Create default admin role for tenant
+    const adminRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Admin',
+      description: 'Full system administrator',
+      is_system: true,
+    });
+
+    // Assign ALL existing permissions to the Admin role
+    const allPermissions = await this.permissionRepository.findAll();
+    for (const permission of allPermissions) {
+      await this.rolePermissionRepository.create({
+        role_id: adminRole.id,
+        permission_id: permission.id,
+      });
+    }
+
+    // Assign admin role to user
+    await this.userRolesService.assignRole(user.id, adminRole.id);
+
+    const token = uuidv4();
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15);
+
+    await user.update({
+      magic_link_token: tokenHash,
+      magic_link_expires: expires,
+    });
+
+    const userName = user.first_name || 'User';
+    await this.emailService.sendMagicLinkEmail(user.email, userName, token);
+
+    return { message: 'A magic link has been sent to your email to complete registration.' };
+  }
+
+  async verifyMagicLink(dto: VerifyMagicLinkDto, ip: string, userAgent: string) {
+    // Find users with non-expired magic link tokens and check bcrypt match
+    const users = await User.findAll({
+      where: {
+        magic_link_token: { [require('sequelize').Op.ne]: null },
+      },
+    });
+
+    let matchedUser: User | null = null;
+    for (const user of users) {
+      if (user.magic_link_token) {
+        const isMatch = await bcrypt.compare(dto.token, user.magic_link_token);
+        if (isMatch && user.magic_link_expires && new Date(user.magic_link_expires) > new Date()) {
+          matchedUser = user;
+          break;
+        }
+      }
+    }
+
+    if (!matchedUser) {
+      throw new BadRequestException('Invalid or expired magic link');
+    }
+
+    if (!matchedUser.is_active) {
+      throw new UnauthorizedException('Account is deactivated. Please contact your administrator.');
+    }
+
+    // Clear the token
+    await matchedUser.update({
+      magic_link_token: null,
+      magic_link_expires: null,
+    });
+
+    const loginDto: LoginDto = {
+      email: matchedUser.email,
+      password: '',
+      device_name: dto.device_name,
+      device_type: dto.device_type,
+    };
+
+    return this.completeLogin(matchedUser, loginDto, ip, userAgent);
   }
 
   private async completeLogin(user: User, loginDto: LoginDto, ip: string, userAgent: string) {

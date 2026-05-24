@@ -86,9 +86,16 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(to: string, name: string, resetToken: string): Promise<boolean> {
-    const resetUrl = `${this.configService.frontendUrl}/reset-password?token=${resetToken}`;
-    const subject = `${this.configService.appName} — Reset Your Password`;
-    const body = `Hi ${name},\n\nWe received a request to reset your password. Click the link below to set a new password:\n\n${resetUrl}\n\nThis link expires in ${this.configService.passwordResetTokenExpiresMinutes} minutes.\n\nIf you did not request a password reset, please ignore this email. Your password will remain unchanged.\n\n— ${this.configService.appName}`;
+    const subject = 'Password Reset Request - FieldForce Pro';
+    const resetUrl = `${this.configService.frontendUrl}/auth/reset-password?token=${resetToken}`;
+    const body = `Hi ${name},\n\nYou requested to reset your password. Click the link below to set a new password:\n${resetUrl}\n\nIf you did not request this, please ignore this email.`;
+    return this.sendEmail(to, subject, body);
+  }
+
+  async sendMagicLinkEmail(to: string, name: string, token: string): Promise<boolean> {
+    const subject = 'Your Magic Link - FieldForce Pro';
+    const magicLinkUrl = `${this.configService.frontendUrl}/auth/verify?token=${token}`;
+    const body = `Hi ${name},\n\nClick the link below to sign in or complete your registration to FieldForce Pro:\n\n${magicLinkUrl}\n\nThis link will expire in 15 minutes. If you did not request this, please ignore this email.`;
     return this.sendEmail(to, subject, body);
   }
 

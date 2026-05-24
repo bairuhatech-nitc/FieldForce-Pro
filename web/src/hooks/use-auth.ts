@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/api/auth.api';
 import { useAuthStore } from '@/store/auth.store';
-import type { LoginPayload, RegisterPayload, ForgotPasswordPayload, ResetPasswordPayload, ChangePasswordPayload, VerifyMFAPayload } from '@/types/api.types';
+import type { LoginPayload, RegisterPayload, ForgotPasswordPayload, ResetPasswordPayload, ChangePasswordPayload, VerifyMFAPayload, RequestMagicLinkPayload, RegisterMagicLinkPayload, VerifyMagicLinkPayload } from '@/types/api.types';
 import type { User } from '@/types/models.types';
 import { useNotificationStore } from '@/store/notification.store';
 import { getApiErrorMessage } from '@/utils/get-api-error';
@@ -76,6 +76,51 @@ export function useRegister() {
     },
     onError: (error) => {
       addNotification({ type: 'error', message: 'Registration failed', description: getApiErrorMessage(error) });
+    },
+  });
+}
+
+export function useRequestMagicLink() {
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (payload: RequestMagicLinkPayload) => authApi.requestMagicLink(payload),
+    onSuccess: () => {
+      addNotification({ type: 'success', message: 'Magic link requested', description: 'If an account exists, a link has been sent to your email.' });
+    },
+    onError: (error) => {
+      addNotification({ type: 'error', message: 'Failed to request magic link', description: getApiErrorMessage(error) });
+    },
+  });
+}
+
+export function useRegisterMagicLink() {
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (payload: RegisterMagicLinkPayload) => authApi.requestMagicLinkRegister(payload),
+    onSuccess: () => {
+      addNotification({ type: 'success', message: 'Registration initiated', description: 'A magic link has been sent to your email to complete registration.' });
+    },
+    onError: (error) => {
+      addNotification({ type: 'error', message: 'Registration failed', description: getApiErrorMessage(error) });
+    },
+  });
+}
+
+export function useVerifyMagicLink() {
+  const login = useAuthStore((s) => s.login);
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (payload: VerifyMagicLinkPayload) => authApi.verifyMagicLink(payload),
+    onSuccess: (response) => {
+      const data = response.data.data!;
+      login(data.user as unknown as User);
+      addNotification({ type: 'success', message: 'Logged in successfully' });
+    },
+    onError: (error) => {
+      addNotification({ type: 'error', message: 'Verification failed', description: getApiErrorMessage(error) });
     },
   });
 }

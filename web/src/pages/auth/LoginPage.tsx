@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useLogin, useVerifyMFA } from '@/hooks/use-auth';
+import { useLogin, useVerifyMFA, useRequestMagicLink } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 import CookieConsentModal from '@/components/auth/CookieConsentModal';
 
@@ -16,12 +16,18 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const magicLinkSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
 type LoginForm = z.infer<typeof loginSchema>;
+type MagicLinkForm = z.infer<typeof magicLinkSchema>;
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const [useMagicLink, setUseMagicLink] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
   const [mfaMethod, setMfaMethod] = useState<'email' | 'totp'>('email');
@@ -37,14 +43,26 @@ export default function LoginPage() {
 
   const loginMutation = useLogin(handleMFARequired);
   const verifyMFAMutation = useVerifyMFA();
+  const requestMagicLinkMutation = useRequestMagicLink();
 
   const {
     control,
     handleSubmit,
     formState: { errors },
+    reset: resetLogin
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
+  });
+
+  const {
+    control: controlMagicLink,
+    handleSubmit: handleMagicLinkSubmit,
+    formState: { errors: magicLinkErrors },
+    reset: resetMagicLink
+  } = useForm<MagicLinkForm>({
+    resolver: zodResolver(magicLinkSchema),
+    defaultValues: { email: '' },
   });
 
   const onSubmit = (data: LoginForm) => {
@@ -58,6 +76,17 @@ export default function LoginPage() {
           }
         },
       },
+    );
+  };
+
+  const onMagicLinkSubmit = (data: MagicLinkForm) => {
+    requestMagicLinkMutation.mutate(
+      { email: data.email },
+      {
+        onSuccess: () => {
+          // Success is handled by notification
+        }
+      }
     );
   };
 
@@ -210,61 +239,114 @@ export default function LoginPage() {
           <Text type="secondary">{t('auth.login')}</Text>
         </div>
 
-        <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
-          <Form.Item
-            label={t('auth.email')}
-            validateStatus={errors.email ? 'error' : ''}
-            help={errors.email?.message}
-          >
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  prefix={<MailOutlined />}
-                  placeholder="you@example.com"
-                  size="large"
-                />
-              )}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label={t('auth.password')}
-            validateStatus={errors.password ? 'error' : ''}
-            help={errors.password?.message}
-          >
-            <Controller
-              name="password"
-              control={control}
-              render={({ field }) => (
-                <Input.Password
-                  {...field}
-                  prefix={<LockOutlined />}
-                  placeholder="Password"
-                  size="large"
-                />
-              )}
-            />
-          </Form.Item>
-
-          <div style={{ textAlign: 'right', marginBottom: 16 }}>
-            <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
-          </div>
-
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loginMutation.isPending}
-              block
-              size="large"
+        {useMagicLink ? (
+          <Form key="magic-link-form" layout="vertical" onFinish={handleMagicLinkSubmit(onMagicLinkSubmit)}>
+            <Form.Item
+              label={t('auth.email')}
+              validateStatus={magicLinkErrors.email ? 'error' : ''}
+              help={magicLinkErrors.email?.message}
             >
-              {t('auth.login')}
-            </Button>
-          </Form.Item>
-        </Form>
+              <Controller
+                name="email"
+                control={controlMagicLink}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    prefix={<MailOutlined />}
+                    placeholder="you@example.com"
+                    size="large"
+                  />
+                )}
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={requestMagicLinkMutation.isPending}
+                block
+                size="large"
+              >
+                Send Magic Link
+              </Button>
+            </Form.Item>
+
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <Button type="link" onClick={() => {
+                setUseMagicLink(false);
+                resetMagicLink();
+              }}>
+                Sign in with Password
+              </Button>
+            </div>
+          </Form>
+        ) : (
+          <Form key="password-form" layout="vertical" onFinish={handleSubmit(onSubmit)}>
+            <Form.Item
+              label={t('auth.email')}
+              validateStatus={errors.email ? 'error' : ''}
+              help={errors.email?.message}
+            >
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    prefix={<MailOutlined />}
+                    placeholder="you@example.com"
+                    size="large"
+                  />
+                )}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={t('auth.password')}
+              validateStatus={errors.password ? 'error' : ''}
+              help={errors.password?.message}
+            >
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <Input.Password
+                    {...field}
+                    prefix={<LockOutlined />}
+                    placeholder="Password"
+                    size="large"
+                  />
+                )}
+              />
+            </Form.Item>
+
+            <div style={{ textAlign: 'right', marginBottom: 16 }}>
+              <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+            </div>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loginMutation.isPending}
+                block
+                size="large"
+              >
+                {t('auth.login')}
+              </Button>
+            </Form.Item>
+
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <Button type="link" onClick={() => {
+                setUseMagicLink(true);
+                resetLogin();
+              }}>
+                Sign in with Magic Link
+              </Button>
+            </div>
+          </Form>
+        )}
 
         <div style={{ textAlign: 'center' }}>
           <Space>
