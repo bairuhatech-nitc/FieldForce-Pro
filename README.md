@@ -1,3 +1,3 @@
-# FieldForce Pro - Internship
+# FieldForce Pro - Web Dev Internship
 View [changelogs](docs/) 👈
 
