@@ -62,7 +62,7 @@ async def check_similarity(request: SimilarityRequest):
         'text': current_text
     })
     
-    # Threshold for duplication is 85%
-    is_duplicate = max_similarity > 0.85
+    # Threshold for duplication is 80%
+    is_duplicate = max_similarity > 0.80
     
     return SimilarityResponse(is_duplicate=is_duplicate, similarity_score=max_similarity)

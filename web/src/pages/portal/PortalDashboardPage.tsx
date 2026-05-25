@@ -19,6 +19,7 @@ import {
   Empty,
   Table,
   Rate,
+  Upload,
 } from 'antd';
 import {
   SendOutlined,
@@ -45,6 +46,7 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
   StarFilled,
+  InboxOutlined,
 } from '@ant-design/icons';
 import { MapContainer, TileLayer, Marker, CircleMarker, Popup, Tooltip, useMap, useMapEvents, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
@@ -1519,6 +1521,7 @@ export default function PortalDashboardPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedRequestNumber, setSubmittedRequestNumber] = useState('');
   const [isOutsideService, setIsOutsideService] = useState(false);
+  const [fileList, setFileList] = useState<any[]>([]);
 
   const handleMapChange = useCallback((lat: number, lng: number, address: string) => {
     form.setFieldsValue({ lat, lng, address });
@@ -1552,10 +1555,28 @@ export default function PortalDashboardPage() {
           lng: Number(values.lng),
           address: values.address || '',
         })
-        .then((res) => {
+        .then(async (res) => {
+          const requestId = res.data?.data?.id;
+          const requestNumber = res.data?.data?.request_number || '';
+
+          if (fileList.length > 0 && requestId) {
+            try {
+              const formData = new FormData();
+              fileList.forEach((file) => {
+                formData.append('files', file.originFileObj || file);
+              });
+              await api.post(`/customer-portal/service-requests/${requestId}/attachments`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              });
+            } catch {
+              message.warning('Request submitted but some attachments failed to upload.');
+            }
+          }
+
           setSubmitting(false);
           setSubmitted(true);
-          setSubmittedRequestNumber(res.data?.data?.request_number || '');
+          setSubmittedRequestNumber(requestNumber);
+          setFileList([]);
           message.success('Service request submitted successfully!');
         })
         .catch((err) => {
@@ -1691,6 +1712,25 @@ export default function PortalDashboardPage() {
                   placeholder="Describe the issue in detail..."
                   size="large"
                 />
+              </Form.Item>
+
+              <Form.Item label="Attachments (optional)">
+                <Upload.Dragger
+                  multiple
+                  maxCount={5}
+                  fileList={fileList}
+                  onChange={({ fileList: newList }) => setFileList(newList)}
+                  beforeUpload={() => false}
+                  accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4"
+                >
+                  <p className="ant-upload-drag-icon">
+                    <InboxOutlined />
+                  </p>
+                  <p className="ant-upload-text">Click or drag files to upload</p>
+                  <p className="ant-upload-hint">
+                    Photos, PDFs, or videos (max 5 files, 10MB each)
+                  </p>
+                </Upload.Dragger>
               </Form.Item>
             </Card>
 

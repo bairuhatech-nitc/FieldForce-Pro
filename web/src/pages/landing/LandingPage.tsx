@@ -213,6 +213,9 @@ export default function LandingPage() {
                   <button className="lp-btn lp-btn-primary" onClick={() => navigate('/portal')}>
                     Book a Service
                   </button>
+                  <button className="lp-btn lp-btn-demo" onClick={() => navigate('/register')}>
+                    Get Demo
+                  </button>
                 </>
               )}
             </div>
@@ -248,22 +251,37 @@ export default function LandingPage() {
 
         {/* ========== Hero Section ========== */}
         <section className="lp-hero" ref={heroParallax}>
-          {/* Floating particles */}
-          <div className="lp-particles" aria-hidden="true">
-            {Array.from({ length: 20 }, (_, i) => (
-              <div key={i} className="lp-particle" style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 6}s`,
-                animationDuration: `${4 + Math.random() * 6}s`,
-                width: `${2 + Math.random() * 3}px`,
-                height: `${2 + Math.random() * 3}px`,
-              }} />
-            ))}
+          {/* Fluid gradient mesh blobs */}
+          <div className="lp-hero-blobs" aria-hidden="true">
+            <div className="lp-blob lp-blob-1" />
+            <div className="lp-blob lp-blob-2" />
+          </div>
+          {/* Decorative elements from reference */}
+          <div className="lp-hero-decor" aria-hidden="true">
+            <span className="lp-decor-bracket lp-bracket-tl">{'┌ ┐'}</span>
+            <span className="lp-decor-bracket lp-bracket-bl">{'└ ┘'}</span>
+            <span className="lp-decor-bracket lp-bracket-tr">{'┌ ┐'}</span>
+            <span className="lp-decor-bracket lp-bracket-br">{'└ ┘'}</span>
+            <span className="lp-decor-plus lp-plus-1">+</span>
+            <span className="lp-decor-plus lp-plus-2">+</span>
+            <span className="lp-decor-plus lp-plus-3">+</span>
+            <span className="lp-decor-plus lp-plus-4">+</span>
+            <span className="lp-decor-plus lp-plus-5">+</span>
+            <span className="lp-decor-plus lp-plus-6">+</span>
+            <span className="lp-decor-vtext lp-vtext-left">FieldForce</span>
+            <span className="lp-decor-vtext lp-vtext-right">Pro</span>
+            <div className="lp-decor-shapes">
+              <span className="lp-shape lp-shape-circle" />
+              <span className="lp-shape lp-shape-triangle" />
+              <span className="lp-shape lp-shape-square" />
+            </div>
+            <div className="lp-decor-qr" />
+            <div className="lp-decor-rings" />
           </div>
           <div className="lp-container">
             <div className="lp-hero-content lp-parallax-content">
               <div className="lp-hero-badge">
+                <span className="lp-badge-dot" />
                 <RocketOutlined /> AI-Powered Field Service Management
               </div>
               <h1 className="lp-text-reveal">

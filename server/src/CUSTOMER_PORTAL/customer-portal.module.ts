@@ -15,6 +15,7 @@ import { WorkOrderNote } from '../WORK_ORDER_NOTES/work_order_notes.entity';
 import { WorkOrderAttachment } from '../WORK_ORDER_ATTACHMENTS/work_order_attachments.entity';
 import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.entity';
 import { Review } from '../REVIEWS/reviews.entity';
+import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
 
 const portalProviders = [
   { provide: KEYNAMES.CONTACTS, useValue: Contact },
@@ -29,6 +30,7 @@ const portalProviders = [
   { provide: KEYNAMES.WORK_ORDER_ATTACHMENTS, useValue: WorkOrderAttachment },
   { provide: KEYNAMES.WORK_ORDER_TECHNICIAN_SESSIONS, useValue: WorkOrderTechnicianSession },
   { provide: KEYNAMES.REVIEWS, useValue: Review },
+  { provide: KEYNAMES.REQUEST_ATTACHMENTS, useValue: RequestAttachment },
 ];
 
 @Module({

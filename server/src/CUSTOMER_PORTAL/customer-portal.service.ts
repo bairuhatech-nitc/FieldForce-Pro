@@ -4,8 +4,10 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
+import axios from 'axios';
 import { Op } from 'sequelize';
 import { KEYNAMES } from '../shared/constants/keynames';
 import { Contact } from '../CONTACTS/contacts.entity';
@@ -21,6 +23,9 @@ import { WorkOrderAttachment } from '../WORK_ORDER_ATTACHMENTS/work_order_attach
 import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.entity';
 import { Review } from '../REVIEWS/reviews.entity';
 import { User } from '../USERS/users.entity';
+import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   PortalAuthDto,
   PortalMakePaymentDto,
@@ -42,6 +47,8 @@ const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class CustomerPortalService {
+  private readonly logger = new Logger(CustomerPortalService.name);
+
   constructor(
     @Inject(KEYNAMES.CONTACTS)
     private readonly contactRepository: typeof Contact,
@@ -67,6 +74,8 @@ export class CustomerPortalService {
     private readonly techSessionRepository: typeof WorkOrderTechnicianSession,
     @Inject(KEYNAMES.REVIEWS)
     private readonly reviewRepository: typeof Review,
+    @Inject(KEYNAMES.REQUEST_ATTACHMENTS)
+    private readonly requestAttachmentRepository: typeof RequestAttachment,
   ) {}
 
   /**
@@ -832,7 +841,30 @@ export class CustomerPortalService {
     });
     const requestNumber = `SR-${dateStr}-${String(todayCount + 1).padStart(3, '0')}`;
 
-    // 4. Create the service request
+    // 4. Spam / Duplicate Detection via AI service
+    let isSpamFlagged = false;
+    let spamReason: string | null = null;
+    let finalStatus = 'new';
+
+    try {
+      const aiUrl = process.env.AI_SERVICE_URL || process.env.AI_ENGINE_URL || 'http://localhost:8000';
+      const response = await axios.post(`${aiUrl}/nlp/similarity`, {
+        tenant_id: tenantId,
+        subject: dto.subject,
+        description: dto.description || '',
+      }, { timeout: 5000 });
+
+      if (response.data.is_duplicate) {
+        isSpamFlagged = true;
+        spamReason = `High similarity (${(response.data.similarity_score * 100).toFixed(1)}%) with recent request.`;
+        finalStatus = 'spam';
+        this.logger.warn(`Portal request flagged as spam: "${dto.subject}" — ${spamReason}`);
+      }
+    } catch (error) {
+      this.logger.warn(`AI spam detection unavailable for portal request: ${error.message}`);
+    }
+
+    // 5. Create the service request
     const serviceRequest = await this.serviceRequestRepository.create({
       tenant_id: tenantId,
       request_number: requestNumber,
@@ -841,8 +873,10 @@ export class CustomerPortalService {
       subject: dto.subject,
       description: dto.description || null,
       category: dto.category,
-      priority: dto.priority || 'medium',
-      status: 'new',
+      priority: (dto.priority || 'MEDIUM').toUpperCase(),
+      status: finalStatus,
+      is_spam_flagged: isSpamFlagged,
+      spam_reason: spamReason,
       channel: 'portal',
       lat: dto.lat,
       lng: dto.lng,
@@ -929,5 +963,38 @@ export class CustomerPortalService {
       remaining_balance: Number(invoice.total) - newPaidAmount,
       invoice_status: updateData.status || invoice.status,
     };
+  }
+
+  async savePortalAttachments(requestId: string, files: Express.Multer.File[]) {
+    const serviceRequest = await this.serviceRequestRepository.findOne({
+      where: { id: requestId, is_deleted: false },
+    });
+    if (!serviceRequest) {
+      throw new NotFoundException('Service request not found');
+    }
+
+    const uploadsDir = path.join(process.cwd(), 'uploads', 'portal', requestId);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const saved = [];
+    for (const file of files) {
+      const uniqueName = `${Date.now()}-${file.originalname}`;
+      const filePath = path.join(uploadsDir, uniqueName);
+      fs.writeFileSync(filePath, file.buffer);
+
+      const attachment = await this.requestAttachmentRepository.create({
+        request_id: requestId,
+        tenant_id: serviceRequest.tenant_id,
+        file_name: file.originalname,
+        file_url: `/uploads/portal/${requestId}/${uniqueName}`,
+        file_type: file.mimetype,
+        file_size: file.size,
+      });
+      saved.push(attachment);
+    }
+
+    return saved;
   }
 }

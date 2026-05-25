@@ -5,8 +5,12 @@ import {
   Body,
   Param,
   Headers,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiHeader } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiHeader, ApiConsumes } from '@nestjs/swagger';
 import { Public } from '../shared/decorator/public.decorator';
 import { DataResponseDto } from '../shared/dto/data-response.dto';
 import { CustomerPortalService } from './customer-portal.service';
@@ -145,5 +149,30 @@ export class CustomerPortalController {
   ) {
     const result = await this.customerPortalService.submitFeedback(woNumber, dto);
     return DataResponseDto.created(result, 'Feedback submitted successfully');
+  }
+
+  @Public()
+  @Post('service-requests/:requestId/attachments')
+  @ApiOperation({ summary: 'Upload attachments for a service request (public portal)' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FilesInterceptor('files', 5, {
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'video/mp4'];
+      if (!allowed.includes(file.mimetype)) {
+        return cb(new BadRequestException(`Unsupported file type: ${file.mimetype}`), false);
+      }
+      cb(null, true);
+    },
+  }))
+  async uploadPortalAttachments(
+    @Param('requestId') requestId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files uploaded');
+    }
+    const result = await this.customerPortalService.savePortalAttachments(requestId, files);
+    return DataResponseDto.created(result, 'Attachments uploaded successfully');
   }
 }
