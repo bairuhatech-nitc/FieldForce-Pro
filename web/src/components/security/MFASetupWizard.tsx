@@ -222,7 +222,7 @@ export default function MFASetupWizard() {
                 <Text type="secondary">Recovery codes remaining: </Text>
                 <Tag color={
                   (mfaStatus?.recovery_codes_remaining ?? 0) <= 2 ? 'error' :
-                  (mfaStatus?.recovery_codes_remaining ?? 0) <= 4 ? 'warning' : 'success'
+                    (mfaStatus?.recovery_codes_remaining ?? 0) <= 4 ? 'warning' : 'success'
                 }>
                   {mfaStatus?.recovery_codes_remaining ?? 0}
                 </Tag>
