@@ -37,12 +37,19 @@ export default function Header() {
   };
 
   const userMenuItems = [
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-      onClick: () => navigate('/settings'),
-    },
+    user?.is_super_admin
+      ? {
+          key: 'profile',
+          icon: <UserOutlined />,
+          label: 'My Profile',
+          onClick: () => navigate('/admin/profile'),
+        }
+      : {
+          key: 'settings',
+          icon: <SettingOutlined />,
+          label: 'Settings',
+          onClick: () => navigate('/settings'),
+        },
     {
       key: 'logout',
       icon: <LogoutOutlined />,

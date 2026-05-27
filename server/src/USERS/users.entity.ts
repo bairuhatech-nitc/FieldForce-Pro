@@ -25,7 +25,7 @@ export class User extends Model {
   id: string;
 
   @ForeignKey(() => Tenant)
-  @Column({ type: DataType.UUID, allowNull: false })
+  @Column({ type: DataType.UUID, allowNull: true })
   tenant_id: string;
 
   @Column({ type: DataType.STRING(255), allowNull: false })
@@ -130,6 +130,10 @@ export class User extends Model {
 
   @Column({ type: DataType.DATE, allowNull: true })
   magic_link_expires: Date;
+
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, allowNull: false })
+  is_super_admin: boolean;
 
   @CreatedAt
   created_at: Date;

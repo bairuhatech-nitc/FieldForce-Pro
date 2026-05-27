@@ -40,6 +40,10 @@ export const authApi = {
     return api.get<ApiResponse<User>>('/auth/me');
   },
 
+  updateMe(payload: { first_name?: string; last_name?: string; phone?: string; timezone?: string; language?: string }) {
+    return api.patch<ApiResponse<User>>('/auth/me', payload);
+  },
+
   getSessions() {
     return api.get<ApiResponse<LoginSession[]>>('/auth/sessions');
   },

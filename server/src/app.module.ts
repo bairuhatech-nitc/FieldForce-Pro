@@ -77,6 +77,9 @@ import { OnboardingModule } from './ONBOARDING/onboarding.module';
 import { AttachmentsModule } from './ATTACHMENTS/attachments.module';
 import { FeedbackModule } from './FEEDBACK/feedback.module';
 import { AiModule } from './AI/ai.module';
+import { ApiKeysModule } from './API_KEYS/api_keys.module';
+import { SuperAdminModule } from './SUPER_ADMIN/super_admin.module';
+import { MagicLinksModule } from './MAGIC_LINKS/magic_links.module';
 
 @Module({
   imports: [
@@ -154,6 +157,9 @@ import { AiModule } from './AI/ai.module';
     AttachmentsModule,
     FeedbackModule,
     AiModule,
+    ApiKeysModule,
+    SuperAdminModule,
+    MagicLinksModule,
   ],
   providers: [
     {

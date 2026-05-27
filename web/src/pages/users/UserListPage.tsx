@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Space, Tooltip } from 'antd';
-import { PlusOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
+import { PlusOutlined, EyeOutlined, TeamOutlined, LinkOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,9 @@ import StatusBadge from '@/components/common/StatusBadge';
 import { formatDateTime } from '@/utils/format-date';
 import { PermissionGuard } from '@/components/permissions';
 import RoleAssignmentModal from '@/components/users/RoleAssignmentModal';
+import { useAuthStore } from '@/store/auth.store';
+import { useGenerateMagicLink } from '@/hooks/use-magic-links';
+import MagicLinkModal from '@/components/magic-links/MagicLinkModal';
 
 export default function UserListPage() {
   const { t } = useTranslation();
@@ -25,8 +28,16 @@ export default function UserListPage() {
   });
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [magicLinkModal, setMagicLinkModal] = useState<{ link: string; expiresAt: string; purpose: string } | null>(null);
+
+  const currentUser = useAuthStore((s) => s.user);
+  const generateLink = useGenerateMagicLink();
 
   const { data, isLoading } = useUsers(params);
+
+  const isCompanyAdmin =
+    !currentUser?.is_super_admin &&
+    currentUser?.roles?.some((r) => (typeof r === 'string' ? r : r.name).toLowerCase() === 'admin');
 
   const handleAssignRoles = (userId: string) => {
     setSelectedUserId(userId);
@@ -37,6 +48,21 @@ export default function UserListPage() {
     setRoleModalOpen(false);
     setSelectedUserId(null);
   };
+
+  const handleSendMagicLink = (userId: string) => {
+    generateLink.mutate(
+      { target_user_id: userId, purpose: 'user_access' },
+      {
+        onSuccess: (res) => {
+          const d = res.data.data;
+          if (d) setMagicLinkModal({ link: d.link, expiresAt: d.expires_at, purpose: d.purpose });
+        },
+      },
+    );
+  };
+
+  const isTargetAdmin = (record: User) =>
+    record.roles?.some((r) => (typeof r === 'string' ? r : r.name).toLowerCase() === 'admin');
 
   const columns: ColumnsType<User> = [
     {
@@ -93,6 +119,16 @@ export default function UserListPage() {
               />
             </Tooltip>
           </PermissionGuard>
+          {isCompanyAdmin && !isTargetAdmin(record) && (
+            <Tooltip title="Send Magic Link">
+              <Button
+                type="link"
+                icon={<LinkOutlined />}
+                loading={generateLink.isPending}
+                onClick={() => handleSendMagicLink(record.id)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -135,6 +171,16 @@ export default function UserListPage() {
         open={roleModalOpen}
         onClose={handleCloseRoleModal}
       />
+
+      {magicLinkModal && (
+        <MagicLinkModal
+          open={!!magicLinkModal}
+          onClose={() => setMagicLinkModal(null)}
+          link={magicLinkModal.link}
+          expiresAt={magicLinkModal.expiresAt}
+          purpose={magicLinkModal.purpose}
+        />
+      )}
     </div>
   );
 }

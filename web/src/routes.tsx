@@ -76,7 +76,6 @@ const AgreementFormPage = lazy(() => import('@/pages/agreements/AgreementFormPag
 const BlueprintListPage = lazy(() => import('@/pages/blueprints/BlueprintListPage'));
 const BlueprintEditorPage = lazy(() => import('@/pages/blueprints/BlueprintEditorPage'));
 const CommunicationListPage = lazy(() => import('@/pages/communications/CommunicationListPage'));
-const WebformListPage = lazy(() => import('@/pages/webforms/WebformListPage'));
 const PricebookListPage = lazy(() => import('@/pages/pricebook/PricebookListPage'));
 const CustomFieldListPage = lazy(() => import('@/pages/customization/CustomFieldListPage'));
 const TemplateListPage = lazy(() => import('@/pages/customization/TemplateListPage'));
@@ -86,8 +85,6 @@ const ReviewListPage = lazy(() => import('@/pages/reviews/ReviewListPage'));
 const ReviewDetailPage = lazy(() => import('@/pages/reviews/ReviewDetailPage'));
 const ReviewFormPage = lazy(() => import('@/pages/reviews/ReviewFormPage'));
 const CommunicationDetailPage = lazy(() => import('@/pages/communications/CommunicationDetailPage'));
-const WebformDetailPage = lazy(() => import('@/pages/webforms/WebformDetailPage'));
-const WebformFormPage = lazy(() => import('@/pages/webforms/WebformFormPage'));
 const PricebookFormPage = lazy(() => import('@/pages/pricebook/PricebookFormPage'));
 const CustomFieldFormPage = lazy(() => import('@/pages/customization/CustomFieldFormPage'));
 const TemplateBuilderPage = lazy(() => import('@/pages/customization/TemplateBuilderPage'));
@@ -99,7 +96,6 @@ const ReportDetailPage = lazy(() => import('@/pages/reports/ReportDetailPage'));
 const AgentListPage = lazy(() => import('@/pages/workforce/AgentListPage'));
 const CalendarViewPage = lazy(() => import('@/pages/scheduling/CalendarViewPage'));
 const MapViewPage = lazy(() => import('@/pages/scheduling/MapViewPage'));
-const PortalDashboardPage = lazy(() => import('@/pages/portal/PortalDashboardPage'));
 const SLAComplianceDashboard = lazy(() => import('@/pages/agreements/SLAComplianceDashboard'));
 const EquipmentHealthDashboardPage = lazy(() => import('@/pages/maintenance/EquipmentHealthDashboardPage'));
 const DocumentUploadPage = lazy(() => import('@/pages/documents/DocumentUploadPage'));
@@ -112,7 +108,15 @@ const WorkflowTemplateDetailPage = lazy(() => import('@/pages/workflow/WorkflowT
 const DocumentApprovalListPage = lazy(() => import('@/pages/workflow/DocumentApprovalListPage'));
 const ApprovalDashboardPage = lazy(() => import('@/pages/workflow/ApprovalDashboardPage'));
 const EstimatePublicSignPage = lazy(() => import('@/pages/estimates/EstimatePublicSignPage'));
+const DashboardRouter = lazy(() => import('@/pages/dashboard/DashboardRouter'));
+const ApiKeysPage = lazy(() => import('@/pages/integrations/ApiKeysPage'));
+const IntegrationGuidePage = lazy(() => import('@/pages/integrations/IntegrationGuidePage'));
 const LandingPage = lazy(() => import('@/pages/landing/LandingPage'));
+const SuperAdminDashboardPage = lazy(() => import('@/pages/super-admin/SuperAdminDashboardPage'));
+const TenantDetailPage = lazy(() => import('@/pages/super-admin/TenantDetailPage'));
+const SuperAdminProfilePage = lazy(() => import('@/pages/super-admin/SuperAdminProfilePage'));
+const MagicLinkVerifyPage = lazy(() => import('@/pages/auth/MagicLinkVerifyPage'));
+const OnboardingSetupPage = lazy(() => import('@/pages/onboarding/OnboardingSetupPage'));
 
 function SuspenseWrapper({ children }: { children: ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>;
@@ -150,13 +154,7 @@ function OpenRoute({ children }: { children: ReactNode }) {
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: (
-      <OpenRoute>
-        <SuspenseWrapper>
-          <LandingPage />
-        </SuspenseWrapper>
-      </OpenRoute>
-    ),
+    element: <Navigate to="/login" replace />,
   },
   {
     path: '/login',
@@ -219,7 +217,7 @@ export const routes: RouteObject[] = [
         path: 'dashboard',
         element: (
           <SuspenseWrapper>
-            <DashboardPage />
+            <DashboardRouter />
           </SuspenseWrapper>
         ),
       },
@@ -921,36 +919,53 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
-      // Webforms
+      // Super Admin
       {
-        path: 'webforms',
+        path: 'admin/tenants',
         element: (
           <SuspenseWrapper>
-            <WebformListPage />
+            <SuperAdminDashboardPage />
           </SuspenseWrapper>
         ),
       },
       {
-        path: 'webforms/new',
+        path: 'admin/tenants/:id',
         element: (
           <SuspenseWrapper>
-            <WebformFormPage />
+            <TenantDetailPage />
           </SuspenseWrapper>
         ),
       },
       {
-        path: 'webforms/:id',
+        path: 'admin/platform-health',
         element: (
           <SuspenseWrapper>
-            <WebformDetailPage />
+            <SuperAdminDashboardPage />
           </SuspenseWrapper>
         ),
       },
       {
-        path: 'webforms/:id/edit',
+        path: 'admin/profile',
         element: (
           <SuspenseWrapper>
-            <WebformFormPage />
+            <SuperAdminProfilePage />
+          </SuspenseWrapper>
+        ),
+      },
+      // API Key Management (Company Admin)
+      {
+        path: 'integrations/api-keys',
+        element: (
+          <SuspenseWrapper>
+            <ApiKeysPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'integrations/guide',
+        element: (
+          <SuspenseWrapper>
+            <IntegrationGuidePage />
           </SuspenseWrapper>
         ),
       },
@@ -1256,18 +1271,23 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    path: '/landing',
-    element: <Navigate to="/" replace />,
-  },
-  // Customer Portal (Public)
-  {
-    path: '/portal',
+    path: '/auth/magic',
     element: (
       <OpenRoute>
         <SuspenseWrapper>
-          <PortalDashboardPage />
+          <MagicLinkVerifyPage />
         </SuspenseWrapper>
       </OpenRoute>
+    ),
+  },
+  {
+    path: '/onboarding/setup',
+    element: (
+      <PrivateRoute>
+        <SuspenseWrapper>
+          <OnboardingSetupPage />
+        </SuspenseWrapper>
+      </PrivateRoute>
     ),
   },
   {
@@ -1276,6 +1296,16 @@ export const routes: RouteObject[] = [
       <OpenRoute>
         <SuspenseWrapper>
           <EstimatePublicSignPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/landing',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <LandingPage />
         </SuspenseWrapper>
       </OpenRoute>
     ),

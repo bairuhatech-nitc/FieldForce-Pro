@@ -407,8 +407,10 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      tenant_id: user.tenant_id,
+      tenant_id: user.tenant_id ?? null,
       session_id: sessionId,
+      is_super_admin: user.is_super_admin ?? false,
+      primary_role: roleNames[0] ?? null,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -499,8 +501,10 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      tenant_id: user.tenant_id,
+      tenant_id: user.tenant_id ?? null,
       session_id: session.id,
+      is_super_admin: user.is_super_admin ?? false,
+      primary_role: (roles[0] as Role)?.name ?? null,
     };
 
     const accessToken = this.jwtService.sign(payload);

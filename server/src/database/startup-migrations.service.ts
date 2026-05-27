@@ -309,6 +309,67 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
         sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','SUSPENDED','WARNED'));`,
       },
 
+      // ── Super Admin support: make users.tenant_id nullable ───────────────
+      {
+        name: 'users: drop NOT NULL on tenant_id (super admin has null tenant)',
+        sql: `DO $$ BEGIN
+                IF EXISTS (
+                  SELECT 1 FROM information_schema.columns
+                  WHERE table_name = 'users'
+                  AND column_name = 'tenant_id'
+                  AND is_nullable = 'NO'
+                ) THEN
+                  ALTER TABLE users ALTER COLUMN tenant_id DROP NOT NULL;
+                END IF;
+              END $$;`,
+      },
+      {
+        name: 'users: add is_super_admin column',
+        sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN NOT NULL DEFAULT FALSE;`,
+      },
+      // ── Inbound API: new service_request columns ─────────────────────────
+      {
+        name: 'service_requests: add source_api_key_id column',
+        sql: `ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS source_api_key_id UUID;`,
+      },
+      {
+        name: 'service_requests: add external_ref_id column',
+        sql: `ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS external_ref_id VARCHAR(255);`,
+      },
+      // ── API Keys table ────────────────────────────────────────────────────
+      {
+        name: 'api_keys: create table',
+        sql: `CREATE TABLE IF NOT EXISTS api_keys (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+                name VARCHAR(255) NOT NULL,
+                key_prefix VARCHAR(20),
+                key_hash VARCHAR(255),
+                scopes JSONB NOT NULL DEFAULT '[]',
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                last_used_at TIMESTAMP,
+                expires_at TIMESTAMP,
+                is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+              );`,
+      },
+
+      // ── Magic Links table ─────────────────────────────────────────────────
+      {
+        name: 'magic_links: create table',
+        sql: `CREATE TABLE IF NOT EXISTS magic_links (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                token_hash VARCHAR(255) NOT NULL,
+                purpose VARCHAR(50) NOT NULL CHECK (purpose IN ('super_admin_access', 'admin_onboarding', 'user_access')),
+                is_used BOOLEAN NOT NULL DEFAULT FALSE,
+                expires_at TIMESTAMP NOT NULL,
+                created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW()
+              );`,
+      },
+
       // ── FEATURE 6: Technician Feedback Section ────────────────────────────
       {
         name: 'technician_feedback: create table',

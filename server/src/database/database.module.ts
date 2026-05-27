@@ -65,6 +65,7 @@ import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
 import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
 import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
+import { MagicLink } from '../MAGIC_LINKS/magic_links.entity';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
           WorkOrderTechnicianSession,
           SlaTimer,
           RequestAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
+          MagicLink,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

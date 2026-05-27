@@ -2,8 +2,10 @@ import type { DeviceType, PermissionAction, SubscriptionPlan } from './enums';
 
 export interface User {
   id: string;
-  tenant_id: string;
+  tenant_id: string | null;
   email: string;
+  is_super_admin?: boolean;
+  primary_role?: string | null;
   first_name: string;
   last_name: string;
   phone: string | null;
