@@ -2,6 +2,7 @@
 # ── Stage 1: Install dependencies (production only) ────────
 FROM node:20-alpine AS deps
 
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm \
@@ -10,6 +11,7 @@ RUN --mount=type=cache,target=/root/.npm \
 # ── Stage 2: Build TypeScript ──────────────────────────────
 FROM node:20-alpine AS builder
 
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm \

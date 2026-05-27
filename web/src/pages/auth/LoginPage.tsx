@@ -127,7 +127,6 @@ export default function LoginPage() {
           padding: '40px 32px', 
           borderRadius: 24,
           border: '1px solid rgba(59, 130, 246, 0.1)',
-          background: '#ffffff',
           boxShadow: '0 20px 40px -10px rgba(37, 99, 235, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.05)',
         }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -262,11 +261,10 @@ export default function LoginPage() {
           padding: '40px 32px',
           borderRadius: 24,
           border: '1px solid rgba(59, 130, 246, 0.1)',
-          background: '#ffffff',
           boxShadow: '0 20px 40px -10px rgba(37, 99, 235, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.05)',
         }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <Title level={2} style={{ marginBottom: 4, letterSpacing: '-0.03em', fontWeight: 700, color: '#1e293b' }}>
+          <Title level={2} style={{ marginBottom: 4, letterSpacing: '-0.03em', fontWeight: 700 }}>
             FieldForce Pro
           </Title>
           <Text type="secondary" style={{ fontSize: 14 }}>{t('auth.login')}</Text>

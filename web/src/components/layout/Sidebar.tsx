@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
+import { useAuthStore } from '@/store/auth.store';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -31,6 +32,10 @@ import {
   SafetyOutlined,
   ClockCircleOutlined,
   AuditOutlined,
+  CrownOutlined,
+  KeyOutlined,
+  DesktopOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/store/ui.store';
@@ -231,12 +236,31 @@ export default function Sidebar() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
   const { can } = usePermission();
+  const isSuperAdmin = useAuthStore((s) => s.user?.is_super_admin);
 
   // Filter menu sections based on user permissions
-  const filteredSections = menuSections
+  const baseSections = [...menuSections];
+  
+  if (isSuperAdmin) {
+    baseSections.push({
+      section: 'Super Admin',
+      items: [
+        { key: '/admin/tenants', icon: <CrownOutlined />, labelKey: 'Tenants' },
+        { key: '/admin/analytics', icon: <LineChartOutlined />, labelKey: 'Analytics' },
+        { key: '/admin/platform-health', icon: <DesktopOutlined />, labelKey: 'System Health' },
+        { key: '/admin/api-keys', icon: <KeyOutlined />, labelKey: 'API Keys' },
+        { key: '/admin/audit-logs', icon: <AuditOutlined />, labelKey: 'Audit Logs' },
+      ]
+    });
+  }
+
+  const filteredSections = baseSections
     .map((section) => {
       const filteredItems = section.items
-        .filter((item) => !item.permission || can(item.permission))
+        .filter((item) => {
+          if (isSuperAdmin && item.key === '/dashboard') return false;
+          return !item.permission || can(item.permission);
+        })
         .map((item) => {
           if (!item.children) return item;
           const filteredChildren = item.children.filter(

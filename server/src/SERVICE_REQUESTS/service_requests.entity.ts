@@ -78,6 +78,20 @@ export class ServiceRequest extends Model {
     type: DataType.STRING(10),
     allowNull: false,
     defaultValue: 'MEDIUM',
+    get() {
+      const val = this.getDataValue('priority');
+      if (!val) return val;
+      if (val === 'CRITICAL') return 'urgent';
+      return val.toLowerCase();
+    },
+    set(val: string) {
+      if (!val) return;
+      if (val.toLowerCase() === 'urgent') {
+        this.setDataValue('priority', 'CRITICAL');
+      } else {
+        this.setDataValue('priority', val.toUpperCase());
+      }
+    }
   })
   priority: string;
 

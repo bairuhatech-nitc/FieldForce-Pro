@@ -66,6 +66,8 @@ import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
 import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
 import { MagicLink } from '../MAGIC_LINKS/magic_links.entity';
+import { SuperAdminApiKey } from '../SUPER_ADMIN/SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
+import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.entity';
 
 @Module({
   imports: [
@@ -100,7 +102,7 @@ import { MagicLink } from '../MAGIC_LINKS/magic_links.entity';
           WorkOrderTechnicianSession,
           SlaTimer,
           RequestAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
-          MagicLink,
+          MagicLink, SuperAdminApiKey, SuperAdminAuditLog
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

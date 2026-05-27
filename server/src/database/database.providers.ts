@@ -59,6 +59,8 @@ import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
 import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
 import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
+import { SuperAdminApiKey } from '../SUPER_ADMIN/SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
+import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -121,4 +123,6 @@ export const databaseProviders = [
   { provide: REPOSITORY.REQUEST_AUDIT_LOGS, useValue: RequestAuditLog },
   { provide: REPOSITORY.TECHNICIAN_FEEDBACK, useValue: TechnicianFeedback },
   { provide: REPOSITORY.CUSTOMER_SATISFACTION, useValue: CustomerSatisfaction },
+  { provide: REPOSITORY.SUPER_ADMIN_API_KEYS, useValue: SuperAdminApiKey },
+  { provide: REPOSITORY.SUPER_ADMIN_AUDIT_LOGS, useValue: SuperAdminAuditLog },
 ];

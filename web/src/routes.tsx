@@ -115,6 +115,10 @@ const LandingPage = lazy(() => import('@/pages/landing/LandingPage'));
 const SuperAdminDashboardPage = lazy(() => import('@/pages/super-admin/SuperAdminDashboardPage'));
 const TenantDetailPage = lazy(() => import('@/pages/super-admin/TenantDetailPage'));
 const SuperAdminProfilePage = lazy(() => import('@/pages/super-admin/SuperAdminProfilePage'));
+const AuditLogsPage = lazy(() => import('@/pages/super-admin/AuditLogsPage'));
+const SuperAdminApiKeysPage = lazy(() => import('@/pages/super-admin/ApiKeysPage'));
+const AnalyticsDashboardPage = lazy(() => import('@/pages/super-admin/AnalyticsDashboardPage'));
+const SystemHealthPage = lazy(() => import('@/pages/super-admin/SystemHealthPage'));
 const MagicLinkVerifyPage = lazy(() => import('@/pages/auth/MagicLinkVerifyPage'));
 const OnboardingSetupPage = lazy(() => import('@/pages/onboarding/OnboardingSetupPage'));
 
@@ -940,7 +944,31 @@ export const routes: RouteObject[] = [
         path: 'admin/platform-health',
         element: (
           <SuspenseWrapper>
-            <SuperAdminDashboardPage />
+            <SystemHealthPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'admin/audit-logs',
+        element: (
+          <SuspenseWrapper>
+            <AuditLogsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'admin/api-keys',
+        element: (
+          <SuspenseWrapper>
+            <SuperAdminApiKeysPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'admin/analytics',
+        element: (
+          <SuspenseWrapper>
+            <AnalyticsDashboardPage />
           </SuspenseWrapper>
         ),
       },

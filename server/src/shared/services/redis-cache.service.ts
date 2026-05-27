@@ -82,4 +82,13 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(`Redis expire error: ${err.message}`);
     }
   }
+
+  async ping(): Promise<string> {
+    try {
+      return await this.client.ping();
+    } catch (err) {
+      this.logger.error(`Redis ping error: ${err.message}`);
+      throw err;
+    }
+  }
 }

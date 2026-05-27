@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SuperAdminService } from './super_admin.service';
 import { SuperAdminGuard } from '../shared/guards/super-admin.guard';
@@ -6,12 +6,23 @@ import { DataResponseDto } from '../shared/dto/data-response.dto';
 import { CurrentUser } from '../shared/decorator/current-user.decorator';
 import { UpdateSuperAdminProfileDto, ChangeSuperAdminEmailDto } from './dto/super-admin-profile.dto';
 
+import { SuperAdminAnalyticsService } from './SUPER_ADMIN_ANALYTICS/super_admin_analytics.service';
+import { SuperAdminHealthService } from './SUPER_ADMIN_HEALTH/super_admin_health.service';
+import { SuperAdminApiKeysService } from './SUPER_ADMIN_API_KEYS/super_admin_api_keys.service';
+import { SuperAdminAuditLogsService } from './SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.service';
+
 @ApiTags('Super Admin')
 @ApiBearerAuth()
 @UseGuards(SuperAdminGuard)
 @Controller('admin')
 export class SuperAdminController {
-  constructor(private readonly superAdminService: SuperAdminService) {}
+  constructor(
+    private readonly superAdminService: SuperAdminService,
+    private readonly analyticsService: SuperAdminAnalyticsService,
+    private readonly healthService: SuperAdminHealthService,
+    private readonly apiKeysService: SuperAdminApiKeysService,
+    private readonly auditLogsService: SuperAdminAuditLogsService,
+  ) {}
 
   @Get('tenants')
   @ApiOperation({ summary: 'List all tenants with basic stats' })
@@ -73,5 +84,101 @@ export class SuperAdminController {
   ) {
     const result = await this.superAdminService.changeSuperAdminEmail(user.id, dto.current_password, dto.new_email);
     return DataResponseDto.success(result, 'Email updated successfully');
+  }
+
+  // --- Analytics Endpoints ---
+
+  @Get('analytics/overview')
+  @ApiOperation({ summary: 'Get KPI summary for Super Admin Dashboard' })
+  async getAnalyticsOverview() {
+    const overview = await this.analyticsService.getOverviewMetrics();
+    return DataResponseDto.success(overview, 'Analytics overview fetched');
+  }
+
+  @Get('analytics/revenue')
+  @ApiOperation({ summary: 'Get revenue trends' })
+  async getRevenueTrends(@Query('period') period: 'monthly' | 'yearly' = 'monthly') {
+    const trends = await this.analyticsService.getRevenueTrends(period);
+    return DataResponseDto.success(trends, 'Revenue trends fetched');
+  }
+
+  @Get('analytics/adoption')
+  @ApiOperation({ summary: 'Get feature adoption by tenant plan' })
+  async getAdoptionMetrics() {
+    const metrics = await this.analyticsService.getAdoptionMetrics();
+    return DataResponseDto.success(metrics, 'Adoption metrics fetched');
+  }
+
+  // --- Health Endpoints ---
+
+  @Get('health/status')
+  @ApiOperation({ summary: 'Get real-time system health JSON' })
+  async getSystemHealth() {
+    const health = await this.healthService.getHealthStatus();
+    return DataResponseDto.success(health, 'System health fetched');
+  }
+
+  // --- API Keys Endpoints ---
+
+  @Get('api-keys')
+  @ApiOperation({ summary: 'List Super Admin API Keys' })
+  async listApiKeys(@CurrentUser() user: { id: string }) {
+    const keys = await this.apiKeysService.listKeys(user.id);
+    return DataResponseDto.success(keys, 'API Keys fetched');
+  }
+
+  @Post('api-keys')
+  @ApiOperation({ summary: 'Generate a new API Key' })
+  async createApiKey(
+    @CurrentUser() user: { id: string },
+    @Body('key_name') keyName: string,
+    @Body('expires_in_days') expiresInDays?: number,
+  ) {
+    const key = await this.apiKeysService.createKey(user.id, keyName, expiresInDays);
+    await this.auditLogsService.logAction(user.id, 'CREATE_API_KEY', 'API Key', key.id);
+    return DataResponseDto.success(key, 'API Key created successfully');
+  }
+
+  @Delete('api-keys/:id')
+  @ApiOperation({ summary: 'Revoke an API Key' })
+  async revokeApiKey(@CurrentUser() user: { id: string }, @Param('id') id: string) {
+    await this.apiKeysService.revokeKey(user.id, id);
+    await this.auditLogsService.logAction(user.id, 'REVOKE_API_KEY', 'API Key', id);
+    return DataResponseDto.success({ id }, 'API Key revoked successfully');
+  }
+
+  @Patch('api-keys/:id/regenerate')
+  @ApiOperation({ summary: 'Rotate/Regenerate an API Key' })
+  async regenerateApiKey(
+    @CurrentUser() user: { id: string }, 
+    @Param('id') id: string,
+    @Body('key_name') keyName: string,
+  ) {
+    await this.apiKeysService.revokeKey(user.id, id);
+    const newKey = await this.apiKeysService.createKey(user.id, keyName);
+    await this.auditLogsService.logAction(user.id, 'REGENERATE_API_KEY', 'API Key', newKey.id);
+    return DataResponseDto.success(newKey, 'API Key regenerated successfully');
+  }
+
+  // --- Audit Logs Endpoints ---
+
+  @Get('audit-logs')
+  @ApiOperation({ summary: 'Get paginated audit logs' })
+  async getAuditLogs(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('action') action?: string,
+  ) {
+    const logs = await this.auditLogsService.getLogs(Number(page) || 1, Number(limit) || 50, { action });
+    return DataResponseDto.success(logs, 'Audit logs fetched');
+  }
+
+  @Get('audit-logs/export')
+  @ApiOperation({ summary: 'Export all audit logs' })
+  async exportAuditLogs() {
+    const logs = await this.auditLogsService.getAllLogsForExport();
+    // In a real scenario, this might return CSV directly using Res()
+    // For now, we return JSON and frontend converts to CSV.
+    return DataResponseDto.success(logs, 'Audit logs exported');
   }
 }
