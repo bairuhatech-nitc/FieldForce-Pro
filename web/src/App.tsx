@@ -15,7 +15,7 @@ export default function App() {
 
   // Update body class for global CSS support
   useEffect(() => {
-    if (themeMode === 'dark') {
+    if (themeMode === 'light') {
       document.body.classList.add('dark');
     } else {
       document.body.classList.remove('dark');

@@ -158,7 +158,13 @@ function OpenRoute({ children }: { children: ReactNode }) {
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <Navigate to="/login" replace />,
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <LandingPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
   },
   {
     path: '/login',

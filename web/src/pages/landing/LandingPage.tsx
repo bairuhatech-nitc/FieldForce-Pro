@@ -26,6 +26,11 @@ import {
   SyncOutlined,
   BellOutlined,
   MailOutlined,
+  EyeOutlined,
+  FundOutlined,
+  CrownOutlined,
+  ApartmentOutlined,
+  BranchesOutlined,
 } from '@ant-design/icons';
 import { ReactLenis } from 'lenis/react';
 import './LandingPage.css';
@@ -210,9 +215,6 @@ export default function LandingPage() {
               ) : (
                 <>
                   <button className="lp-btn lp-btn-ghost" onClick={() => navigate('/login')}>Log In</button>
-                  <button className="lp-btn lp-btn-primary" onClick={() => navigate('/portal')}>
-                    Book a Service
-                  </button>
                   <button className="lp-btn lp-btn-demo" onClick={() => navigate('/register')}>
                     Get Demo
                   </button>
@@ -241,9 +243,6 @@ export default function LandingPage() {
             ) : (
               <>
                 <button className="lp-btn lp-btn-outline" onClick={() => navigate('/login')} style={{ width: '100%' }}>Log In</button>
-                <button className="lp-btn lp-btn-primary" onClick={() => navigate('/portal')} style={{ width: '100%' }}>
-                  Book a Service
-                </button>
               </>
             )}
           </div>
@@ -293,8 +292,8 @@ export default function LandingPage() {
                 customers — all from one powerful AI-driven platform.
               </p>
               <div className="lp-hero-actions">
-                <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={() => navigate('/portal')}>
-                  Book a Service <RightOutlined />
+                <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={() => navigate('/register')}>
+                  Get Started <RightOutlined />
                 </button>
                 <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => scrollToSection('how-it-works')}>
                   <PlayCircleOutlined /> Learn More
@@ -439,65 +438,109 @@ export default function LandingPage() {
             </div>
 
             <div className="lp-features-grid">
-              {/* Pillar 1 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-1">
-                <div className="lp-feature-icon lp-feature-icon-blue">
-                  <ToolOutlined />
+              {[
+                {
+                  icon: <CustomerServiceOutlined />, color: 'blue',
+                  title: 'AI‑Powered Customer Chatbot',
+                  desc: '24/7 intelligent support that creates tickets, answers FAQs, and generates estimates automatically.',
+                  bullets: ['Ticket creation from chat', 'FAQ knowledge base', 'AI estimate generation', 'Multi-language support'],
+                },
+                {
+                  icon: <ScheduleOutlined />, color: 'cyan',
+                  title: 'Autonomous Scheduling & Dispatch',
+                  desc: 'AI-driven job assignment that optimises routes, skills, and availability — reducing travel time by 30%.',
+                  bullets: ['Skill-based auto-assign', 'AI route optimisation', 'Drag-and-drop board', 'Real-time GPS tracking'],
+                },
+                {
+                  icon: <SyncOutlined />, color: 'green',
+                  title: 'Predictive Maintenance (IoT + LSTM)',
+                  desc: 'IoT sensor data combined with LSTM models to forecast equipment failures before they happen.',
+                  bullets: ['Sensor data ingestion', 'LSTM failure prediction', 'Automated work order creation', 'Asset health dashboards'],
+                },
+                {
+                  icon: <EyeOutlined />, color: 'amber',
+                  title: 'Computer‑Vision Quality Assurance',
+                  desc: 'YOLOv8-powered visual inspection that detects defects, verifies job completion, and flags anomalies.',
+                  bullets: ['YOLOv8 object detection', 'Defect classification', 'Photo-based job verification', 'Compliance photo audit'],
+                },
+                {
+                  icon: <FileTextOutlined />, color: 'blue',
+                  title: 'Document AI (OCR + LLM)',
+                  desc: 'Extract and structure data from invoices, contracts, and job sheets with OCR and large language models.',
+                  bullets: ['Invoice OCR extraction', 'Contract parsing', 'Auto-fill from documents', 'LLM-powered summaries'],
+                },
+                {
+                  icon: <BarChartOutlined />, color: 'cyan',
+                  title: 'Natural‑Language Analytics',
+                  desc: 'Ask questions in plain English and get instant charts, reports, and operational insights.',
+                  bullets: ['Plain-English queries', 'Auto-generated charts', 'KPI trend analysis', 'Exportable reports'],
+                },
+                {
+                  icon: <FundOutlined />, color: 'green',
+                  title: 'Churn & Demand Forecasting',
+                  desc: 'Gradient-boosting + Prophet models predict customer churn and future service demand to keep you ahead.',
+                  bullets: ['Churn risk scoring', 'Demand forecasting', 'Revenue projections', 'Seasonal trend detection'],
+                },
+                {
+                  icon: <CrownOutlined />, color: 'amber',
+                  title: 'Super‑Admin Dashboard',
+                  desc: 'Full-platform oversight with audit logs, API-key management, health monitoring, and billing analytics.',
+                  bullets: ['Complete audit logs', 'API key management', 'System health monitoring', 'Billing analytics'],
+                },
+                {
+                  icon: <ApartmentOutlined />, color: 'blue',
+                  title: 'Full‑Stack FSM Modules',
+                  desc: 'Every module you need: Contacts, Assets, Service Requests, Estimates, Work Orders, Inventory, SLA, Reviews.',
+                  bullets: ['Asset registry & IoT', 'SLA management', 'Inventory tracking', 'Reviews & ratings'],
+                },
+                {
+                  icon: <MailOutlined />, color: 'cyan',
+                  title: 'Multi‑Channel Intake',
+                  desc: 'Capture service requests via email, web form, WhatsApp, SMS, AI chat, and REST API — all in one inbox.',
+                  bullets: ['Email & web form', 'WhatsApp & SMS', 'AI chat intake', 'REST API ingestion'],
+                },
+                {
+                  icon: <BranchesOutlined />, color: 'green',
+                  title: 'Blueprint Workflow Editor',
+                  desc: 'Visual drag-and-drop state-machine editor to design and customise your own service workflows.',
+                  bullets: ['Visual state-machine editor', 'Custom status transitions', 'Conditional logic rules', 'Template library'],
+                },
+                {
+                  icon: <MobileOutlined />, color: 'amber',
+                  title: 'Offline‑First Mobile App',
+                  desc: 'WatermelonDB-powered sync gives field techs full functionality even without internet connectivity.',
+                  bullets: ['WatermelonDB sync engine', 'Offline job management', 'Photo & signature capture', 'Voice notes & AI assist'],
+                },
+                {
+                  icon: <SafetyCertificateOutlined />, color: 'blue',
+                  title: 'Enterprise‑Grade Security',
+                  desc: 'JWT + 2FA authentication, unlimited custom RBAC, full audit trails, and SOC-2-ready infrastructure.',
+                  bullets: ['JWT + 2FA auth', 'Unlimited custom RBAC', 'Full audit trails', 'SOC-2-ready'],
+                },
+                {
+                  icon: <GlobalOutlined />, color: 'cyan',
+                  title: 'Internationalisation (25+ Languages)',
+                  desc: 'Locale-aware UI with RTL support and 25+ languages so your global team works in their own language.',
+                  bullets: ['25+ languages', 'RTL layout support', 'Locale-aware formatting', 'Per-user language setting'],
+                },
+                {
+                  icon: <ApiOutlined />, color: 'green',
+                  title: 'Extensible API Marketplace',
+                  desc: 'REST, GraphQL, and Webhooks give partners and developers a first-class integration platform.',
+                  bullets: ['REST & GraphQL APIs', 'Webhooks engine', 'OAuth 2.0 apps', 'Developer sandbox'],
+                },
+              ].map((feat, idx) => (
+                <div key={idx} className={`lp-feature-card lp-reveal lp-reveal-up lp-stagger-${(idx % 4) + 1}`}>
+                  <div className={`lp-feature-icon lp-feature-icon-${feat.color}`}>{feat.icon}</div>
+                  <h3>{feat.title}</h3>
+                  <p>{feat.desc}</p>
+                  <ul className="lp-feature-list">
+                    {feat.bullets.map((b) => (
+                      <li key={b}><CheckCircleFilled className="lp-check" /> {b}</li>
+                    ))}
+                  </ul>
                 </div>
-                <h3>Work Order Management</h3>
-                <p>Create, assign, and track work orders through every stage with AI-powered automation.</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> Complete lifecycle tracking</li>
-                  <li><CheckCircleFilled className="lp-check" /> Custom fields & templates</li>
-                  <li><CheckCircleFilled className="lp-check" /> Job sheets & checklists</li>
-                  <li><CheckCircleFilled className="lp-check" /> SLA monitoring</li>
-                </ul>
-              </div>
-
-              {/* Pillar 2 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-2">
-                <div className="lp-feature-icon lp-feature-icon-cyan">
-                  <ScheduleOutlined />
-                </div>
-                <h3>Smart Scheduling</h3>
-                <p>AI-optimized dispatching and scheduling for maximum technician efficiency.</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> Drag-and-drop dispatch board</li>
-                  <li><CheckCircleFilled className="lp-check" /> AI route optimization</li>
-                  <li><CheckCircleFilled className="lp-check" /> Calendar & map views</li>
-                  <li><CheckCircleFilled className="lp-check" /> Real-time GPS tracking</li>
-                </ul>
-              </div>
-
-              {/* Pillar 3 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-3">
-                <div className="lp-feature-icon lp-feature-icon-green">
-                  <DollarOutlined />
-                </div>
-                <h3>Invoicing & Payments</h3>
-                <p>Generate invoices from work orders and accept payments right from the field.</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> Auto-generate invoices</li>
-                  <li><CheckCircleFilled className="lp-check" /> Multi-currency support</li>
-                  <li><CheckCircleFilled className="lp-check" /> Online payment portals</li>
-                  <li><CheckCircleFilled className="lp-check" /> Revenue analytics</li>
-                </ul>
-              </div>
-
-              {/* Pillar 4 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-4">
-                <div className="lp-feature-icon lp-feature-icon-amber">
-                  <MobileOutlined />
-                </div>
-                <h3>Mobile Workforce</h3>
-                <p>Empower your field teams with a powerful mobile app for offline-first operations.</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> Native iOS & Android app</li>
-                  <li><CheckCircleFilled className="lp-check" /> Offline data sync</li>
-                  <li><CheckCircleFilled className="lp-check" /> Photo & signature capture</li>
-                  <li><CheckCircleFilled className="lp-check" /> Voice notes & AI assist</li>
-                </ul>
-              </div>
+              ))}
             </div>
           </div>
         </section>
@@ -892,7 +935,7 @@ export default function LandingPage() {
         </section>
 
         {/* ========== Integrations ========== */}
-        <section className="lp-section lp-section-alt">
+        <section id="integrations" className="lp-section lp-section-alt">
           <div className="lp-container">
             <div className="lp-section-header lp-reveal lp-reveal-up">
               <span className="lp-section-tag">Integrations</span>
