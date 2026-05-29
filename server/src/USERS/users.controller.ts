@@ -13,12 +13,12 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/users_create.dto';
 import { UpdateUserDto } from './dto/users_update.dto';
+import { InviteUserDto } from './dto/invite_user.dto';
 import { PageOptionsDto } from '../shared/dto/page-options.dto';
 import { DataResponseDto } from '../shared/dto/data-response.dto';
-import { CurrentUser } from '../shared/decorator/current-user.decorator';
 import { TenantId } from '../shared/decorator/tenant.decorator';
+import { UserId } from '../shared/decorator/user.decorator';
 import { Permissions } from '../shared/decorator/permission.decorator';
-import { JwtPayload } from '../shared/interfaces/jwt-payload.interface';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -44,6 +44,14 @@ export class UsersController {
     return DataResponseDto.success(agents, 'Agents fetched successfully');
   }
 
+  @Get('usage')
+  @Permissions('users:read')
+  @ApiOperation({ summary: 'Get current tenant user usage vs plan limit' })
+  async getUsage(@TenantId() tenantId: string) {
+    const summary = await this.usersService.getUsageSummary(tenantId);
+    return DataResponseDto.success(summary, 'Usage fetched successfully');
+  }
+
   @Get(':id')
   @Permissions('users:read')
   @ApiOperation({ summary: 'Get user by ID' })
@@ -58,6 +66,18 @@ export class UsersController {
   async create(@TenantId() tenantId: string, @Body() dto: CreateUserDto) {
     const user = await this.usersService.create(tenantId, dto);
     return DataResponseDto.created(user, 'User created successfully');
+  }
+
+  @Post('invite')
+  @Permissions('users:create')
+  @ApiOperation({ summary: 'Invite a user — creates inactive account and sends a 48-hour magic link' })
+  async invite(
+    @TenantId() tenantId: string,
+    @UserId() invitorId: string,
+    @Body() dto: InviteUserDto,
+  ) {
+    const result = await this.usersService.invite(tenantId, invitorId, dto);
+    return DataResponseDto.created(result, 'User invited successfully');
   }
 
   @Put(':id')

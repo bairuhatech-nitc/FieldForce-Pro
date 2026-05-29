@@ -22,6 +22,7 @@ export interface User {
   locked_until: string | null;
   created_at: string;
   updated_at: string;
+  onboarding_completed?: boolean;
   roles?: Role[] | string[];  // Can be full Role objects or just role name strings from JWT
   permissions?: string[];      // Flat array of permission strings from JWT
 }

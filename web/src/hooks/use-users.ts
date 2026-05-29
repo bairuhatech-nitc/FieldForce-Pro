@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { usersApi } from '@/api/users.api';
+import { usersApi, type InviteUserPayload } from '@/api/users.api';
 import type { PageOptions } from '@/types/api.types';
 import type { User } from '@/types/models.types';
 import { useNotificationStore } from '@/store/notification.store';
@@ -96,6 +96,33 @@ export function useDeactivateUser() {
     mutationFn: (id: string) => usersApi.deactivate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
+export function useInviteUser() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (payload: InviteUserPayload) => usersApi.invite(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      const msg = err?.response?.data?.message || 'Failed to send invitation';
+      addNotification({ type: 'error', message: msg });
+    },
+  });
+}
+
+export function useCompanyUsage() {
+  return useQuery({
+    queryKey: ['users-usage'],
+    queryFn: async () => {
+      const res = await usersApi.getUsage();
+      return res.data.data!;
     },
   });
 }

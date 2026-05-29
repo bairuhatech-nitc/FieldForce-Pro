@@ -23,6 +23,32 @@ export interface TenantOverview extends TenantSummary {
   admin_name: string | null;
   work_order_count: number;
   invoice_count: number;
+  subscription_plan_id: string | null;
+  subscription_status: string;
+  subscription_end: string | null;
+  custom_limits: Record<string, number | null> | null;
+}
+
+export interface TenantUsageData {
+  plan_name: string;
+  subscription_status: string;
+  subscription_end: string | null;
+  usage: { total_users: { current: number; limit: number | null } };
+}
+
+export interface SubscriptionPlanSummary {
+  id: string;
+  name: string;
+  max_total_users: number | null;
+  price_monthly: number;
+  price_yearly: number;
+}
+
+export interface UpdateSubscriptionPayload {
+  plan_id?: string;
+  subscription_status?: string;
+  subscription_end?: string | null;
+  max_users_override?: number | null;
 }
 
 export interface PlatformHealth {
@@ -63,5 +89,17 @@ export const superAdminApi = {
 
   changeEmail(payload: { new_email: string; current_password: string }) {
     return api.patch<ApiResponse<{ email: string }>>('/admin/profile/email', payload);
+  },
+
+  listSubscriptionPlans() {
+    return api.get<ApiResponse<SubscriptionPlanSummary[]>>('/admin/subscription-plans');
+  },
+
+  getTenantUsage(id: string) {
+    return api.get<ApiResponse<TenantUsageData>>(`/admin/tenants/${id}/usage`);
+  },
+
+  updateTenantSubscription(id: string, payload: UpdateSubscriptionPayload) {
+    return api.patch<ApiResponse<TenantOverview>>(`/admin/tenants/${id}/subscription`, payload);
   },
 };

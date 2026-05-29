@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Result, Spin, Typography } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Result, Spin, Typography, Button, Space } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { magicLinksApi } from '@/api/magic-links.api';
 import { useAuthStore } from '@/store/auth.store';
 import type { User } from '@/types/models.types';
@@ -9,6 +9,11 @@ import type { User } from '@/types/models.types';
 const { Text } = Typography;
 
 type VerifyState = 'loading' | 'success' | 'error';
+
+function extractErrorMessage(err: unknown): string {
+  const e = err as { response?: { data?: { message?: string } }; message?: string };
+  return e?.response?.data?.message || e?.message || 'An unexpected error occurred. Please try again.';
+}
 
 export default function MagicLinkVerifyPage() {
   const [searchParams] = useSearchParams();
@@ -22,7 +27,7 @@ export default function MagicLinkVerifyPage() {
     const token = searchParams.get('token');
     if (!token) {
       setState('error');
-      setErrorMsg('Invalid or missing magic link token.');
+      setErrorMsg('No token found in this link. Please check the URL and try again.');
       return;
     }
 
@@ -35,19 +40,19 @@ export default function MagicLinkVerifyPage() {
         const { user, purpose } = res.data.data ?? {};
         if (!user) {
           setState('error');
-          setErrorMsg('Link expired or already used');
+          setErrorMsg('Verification failed. Please request a new link.');
           return;
         }
 
-        // Store user in auth store (cookies set by the server)
         const typedUser = user as unknown as User;
         login(typedUser);
         setState('success');
 
-        // Redirect based on purpose
         setTimeout(() => {
           if (purpose === 'admin_onboarding') {
             navigate('/onboarding/setup', { replace: true });
+          } else if (purpose === 'user_onboarding') {
+            navigate('/onboarding/user-setup', { replace: true });
           } else if (typedUser.is_super_admin) {
             navigate('/admin/tenants', { replace: true });
           } else {
@@ -55,10 +60,10 @@ export default function MagicLinkVerifyPage() {
           }
         }, 1200);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
         setState('error');
-        setErrorMsg('Link expired or already used');
+        setErrorMsg(extractErrorMessage(err));
       });
 
     return () => {
@@ -79,12 +84,15 @@ export default function MagicLinkVerifyPage() {
         }}
       >
         <Spin size="large" />
-        <Text type="secondary">Verifying your magic link…</Text>
+        <Text type="secondary">Verifying your link…</Text>
       </div>
     );
   }
 
   if (state === 'error') {
+    const isAlreadyUsed = errorMsg.toLowerCase().includes('already been used');
+    const isExpired = errorMsg.toLowerCase().includes('expired');
+
     return (
       <div
         style={{
@@ -92,12 +100,32 @@ export default function MagicLinkVerifyPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          padding: 24,
         }}
       >
         <Result
-          icon={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
-          title="Link Expired or Already Used"
-          subTitle={errorMsg || 'This magic link is no longer valid. Please request a new one.'}
+          icon={
+            isAlreadyUsed ? (
+              <WarningOutlined style={{ color: '#faad14' }} />
+            ) : (
+              <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+            )
+          }
+          title={
+            isAlreadyUsed
+              ? 'Link Already Used'
+              : isExpired
+                ? 'Link Expired'
+                : 'Invalid Link'
+          }
+          subTitle={errorMsg}
+          extra={
+            <Space direction="vertical" align="center">
+              <Button type="primary" onClick={() => navigate('/login', { replace: true })}>
+                Go to Login
+              </Button>
+            </Space>
+          }
         />
       </div>
     );

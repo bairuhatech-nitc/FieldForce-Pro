@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class GenerateMagicLinkDto {
   @ApiProperty({ description: 'UUID of the target user who will receive the magic link' })
@@ -7,9 +7,9 @@ export class GenerateMagicLinkDto {
   @IsNotEmpty()
   target_user_id: string;
 
-  @ApiProperty({ enum: ['super_admin_access', 'admin_onboarding', 'user_access'] })
-  @IsEnum(['super_admin_access', 'admin_onboarding', 'user_access'])
-  purpose: 'super_admin_access' | 'admin_onboarding' | 'user_access';
+  @ApiProperty({ enum: ['super_admin_access', 'admin_onboarding', 'user_access', 'user_onboarding'] })
+  @IsEnum(['super_admin_access', 'admin_onboarding', 'user_access', 'user_onboarding'])
+  purpose: 'super_admin_access' | 'admin_onboarding' | 'user_access' | 'user_onboarding';
 }
 
 export class CompleteOnboardingDto {
@@ -27,4 +27,9 @@ export class CompleteOnboardingDto {
   @IsString()
   @IsNotEmpty()
   new_password: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  phone?: string;
 }

@@ -29,7 +29,7 @@ export class MagicLink extends Model {
   token_hash: string;
 
   @Column({ type: DataType.STRING(50), allowNull: false })
-  purpose: 'super_admin_access' | 'admin_onboarding' | 'user_access';
+  purpose: 'super_admin_access' | 'admin_onboarding' | 'user_access' | 'user_onboarding';
 
   @Default(false)
   @Column({ type: DataType.BOOLEAN, allowNull: false })

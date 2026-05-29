@@ -22,8 +22,9 @@ import { GenerateMagicLinkDto, CompleteOnboardingDto } from './dto/magic_links.d
 
 const EXPIRY_MINUTES: Record<string, number> = {
   super_admin_access: 15,
-  admin_onboarding: 24 * 60,
+  admin_onboarding: 30 * 24 * 60,  // 30 days — valid until admin completes setup
   user_access: 15,
+  user_onboarding: 30 * 24 * 60,   // 30 days — valid until user accepts or resend replaces it
 };
 
 const RATE_LIMIT_PER_HOUR = 5;
@@ -107,7 +108,30 @@ export class MagicLinksService {
     }
 
     if (!matched) {
-      throw new UnauthorizedException('Link expired or already used');
+      // Secondary scan of recently expired/used records to give a more helpful error message.
+      // Limited to 30 records to avoid excessive bcrypt work on the error path.
+      const recentExpiredOrUsed = await this.magicLinkRepository.findAll({
+        where: {
+          [Op.or]: [
+            { is_used: true },
+            { expires_at: { [Op.lte]: new Date() } },
+          ],
+        },
+        order: [['created_at', 'DESC']],
+        limit: 30,
+      });
+
+      for (const record of recentExpiredOrUsed) {
+        const ok = await bcrypt.compare(rawToken, record.token_hash);
+        if (ok) {
+          if (record.is_used) {
+            throw new UnauthorizedException('This link has already been used. Please contact your administrator for a new link.');
+          }
+          throw new UnauthorizedException('This link has expired. Please contact your administrator for a new link.');
+        }
+      }
+
+      throw new UnauthorizedException('Invalid link. Please check the URL and try again.');
     }
 
     // Mark as used (atomic-ish: re-fetch and check)
@@ -121,12 +145,17 @@ export class MagicLinksService {
     }
 
     const user = await this.userRepository.findOne({
-      where: { id: matched.user_id, is_deleted: false, is_active: true },
+      where: { id: matched.user_id, is_deleted: false },
       include: [{ model: Role, through: { attributes: [] } }],
     });
 
     if (!user) {
-      throw new UnauthorizedException('Link expired or already used');
+      throw new UnauthorizedException('User account not found or has been deleted. Please contact your administrator.');
+    }
+
+    // Activate invited users on first magic link use
+    if (!user.is_active) {
+      await user.update({ is_active: true });
     }
 
     return this.issueTokensForUser(user, matched.purpose, ip, userAgent);
@@ -154,6 +183,8 @@ export class MagicLinksService {
       first_name: dto.first_name,
       last_name: dto.last_name,
       password_hash: passwordHash,
+      ...(dto.phone ? { phone: dto.phone } : {}),
+      onboarding_completed: true,
     });
   }
 
@@ -181,19 +212,19 @@ export class MagicLinksService {
           throw new ForbiddenException('admin_onboarding links can only target company admins');
         }
       } else {
-        throw new ForbiddenException('Super admins cannot generate user_access links');
+        throw new ForbiddenException('Super admins can only generate super_admin_access or admin_onboarding links');
       }
       return;
     }
 
-    // Company admin: can only generate user_access for their own tenant's non-admin users
+    // Company admin: can generate user_access or user_onboarding for their own tenant's non-admin users
     const primaryRole = generator.primary_role?.toLowerCase() ?? '';
     if (primaryRole !== 'admin') {
       throw new ForbiddenException('Only admins can generate magic links');
     }
 
-    if (purpose !== 'user_access') {
-      throw new ForbiddenException('Company admins can only generate user_access links');
+    if (purpose !== 'user_access' && purpose !== 'user_onboarding') {
+      throw new ForbiddenException('Company admins can only generate user_access or user_onboarding links');
     }
 
     if (target.tenant_id !== generator.tenant_id) {

@@ -1,22 +1,25 @@
 import { useState } from 'react';
-import { Button, Space, Tooltip } from 'antd';
-import { PlusOutlined, EyeOutlined, TeamOutlined, LinkOutlined } from '@ant-design/icons';
+import { Button, Space, Tooltip, Progress, Tag, Typography } from 'antd';
+import { PlusOutlined, EyeOutlined, TeamOutlined, LinkOutlined, UserAddOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
-import { useUsers } from '@/hooks/use-users';
+import { useUsers, useCompanyUsage } from '@/hooks/use-users';
 import type { User, Role } from '@/types/models.types';
 import type { PageOptions } from '@/types/api.types';
 import { Order } from '@/types/enums';
 import PageHeader from '@/components/common/PageHeader';
 import DataTable from '@/components/common/DataTable';
-import StatusBadge from '@/components/common/StatusBadge';
 import { formatDateTime } from '@/utils/format-date';
 import { PermissionGuard } from '@/components/permissions';
 import RoleAssignmentModal from '@/components/users/RoleAssignmentModal';
+import InviteUserModal from '@/components/users/InviteUserModal';
 import { useAuthStore } from '@/store/auth.store';
 import { useGenerateMagicLink } from '@/hooks/use-magic-links';
 import MagicLinkModal from '@/components/magic-links/MagicLinkModal';
+import type { InviteResult } from '@/api/users.api';
+
+const { Text } = Typography;
 
 export default function UserListPage() {
   const { t } = useTranslation();
@@ -28,12 +31,14 @@ export default function UserListPage() {
   });
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [magicLinkModal, setMagicLinkModal] = useState<{ link: string; expiresAt: string; purpose: string } | null>(null);
 
   const currentUser = useAuthStore((s) => s.user);
   const generateLink = useGenerateMagicLink();
 
   const { data, isLoading } = useUsers(params);
+  const { data: usage } = useCompanyUsage();
 
   const isCompanyAdmin =
     !currentUser?.is_super_admin &&
@@ -61,8 +66,38 @@ export default function UserListPage() {
     );
   };
 
+  const handleResendInvite = (userId: string) => {
+    generateLink.mutate(
+      { target_user_id: userId, purpose: 'user_onboarding' },
+      {
+        onSuccess: (res) => {
+          const d = res.data.data;
+          if (d) setMagicLinkModal({ link: d.link, expiresAt: d.expires_at, purpose: d.purpose });
+        },
+      },
+    );
+  };
+
+  const handleInvited = (result: InviteResult) => {
+    setMagicLinkModal({
+      link: result.magic_link,
+      expiresAt: result.expires_at,
+      purpose: 'user_onboarding',
+    });
+  };
+
   const isTargetAdmin = (record: User) =>
     record.roles?.some((r) => (typeof r === 'string' ? r : r.name).toLowerCase() === 'admin');
+
+  const usageCurrent = usage?.usage?.total_users?.current;
+  const usageLimit = usage?.usage?.total_users?.limit;
+  const usagePct = usageLimit && usageCurrent != null ? Math.round((usageCurrent / usageLimit) * 100) : 0;
+
+  const getProgressColor = (pct: number) => {
+    if (pct > 90) return '#ff4d4f';
+    if (pct > 70) return '#faad14';
+    return '#52c41a';
+  };
 
   const columns: ColumnsType<User> = [
     {
@@ -88,9 +123,12 @@ export default function UserListPage() {
     {
       title: t('users.status'),
       key: 'status',
-      render: (_, record) => (
-        <StatusBadge status={record.is_active ? 'active' : 'inactive'} />
-      ),
+      render: (_, record) =>
+        record.is_active ? (
+          <Tag color="success">Active</Tag>
+        ) : (
+          <Tag color="warning">Pending</Tag>
+        ),
     },
     {
       title: t('users.lastLogin'),
@@ -119,7 +157,17 @@ export default function UserListPage() {
               />
             </Tooltip>
           </PermissionGuard>
-          {isCompanyAdmin && !isTargetAdmin(record) && (
+          {isCompanyAdmin && !record.is_active && (
+            <Tooltip title="Resend Invite">
+              <Button
+                type="link"
+                icon={<ReloadOutlined />}
+                loading={generateLink.isPending}
+                onClick={() => handleResendInvite(record.id)}
+              />
+            </Tooltip>
+          )}
+          {isCompanyAdmin && record.is_active && !isTargetAdmin(record) && (
             <Tooltip title="Send Magic Link">
               <Button
                 type="link"
@@ -139,17 +187,50 @@ export default function UserListPage() {
       <PageHeader
         title={t('users.title')}
         extra={
-          <PermissionGuard permission="users:create">
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/users/create')}
-            >
-              {t('users.createUser')}
-            </Button>
-          </PermissionGuard>
+          <Space>
+            <PermissionGuard permission="users:create">
+              <Button
+                icon={<UserAddOutlined />}
+                onClick={() => setInviteModalOpen(true)}
+              >
+                Invite User
+              </Button>
+            </PermissionGuard>
+            <PermissionGuard permission="users:create">
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/users/create')}
+              >
+                {t('users.createUser')}
+              </Button>
+            </PermissionGuard>
+          </Space>
         }
       />
+
+      {usage && (
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid #f0f0f0' }}>
+          <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              Plan: <strong>{usage.plan_name}</strong>
+            </Text>
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              Users: <strong>{usageCurrent ?? 0}</strong>
+              {usageLimit ? ` / ${usageLimit}` : ' (unlimited)'}
+            </Text>
+          </Space>
+          {usageLimit ? (
+            <Progress
+              percent={usagePct}
+              strokeColor={getProgressColor(usagePct)}
+              status={usagePct > 90 ? 'exception' : 'normal'}
+              size="small"
+            />
+          ) : null}
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         dataSource={data?.data || []}
@@ -170,6 +251,12 @@ export default function UserListPage() {
         userId={selectedUserId}
         open={roleModalOpen}
         onClose={handleCloseRoleModal}
+      />
+
+      <InviteUserModal
+        open={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        onInvited={handleInvited}
       />
 
       {magicLinkModal && (

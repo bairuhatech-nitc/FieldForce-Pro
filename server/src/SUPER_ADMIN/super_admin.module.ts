@@ -14,6 +14,7 @@ import { SuperAdminApiKeysService } from './SUPER_ADMIN_API_KEYS/super_admin_api
 import { SuperAdminAuditLogsService } from './SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.service';
 import { SuperAdminApiKey } from './SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
 import { SuperAdminAuditLog } from './SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 
 const superAdminProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -22,6 +23,7 @@ const superAdminProviders = [
   { provide: REPOSITORY.INVOICES, useValue: Invoice },
   { provide: REPOSITORY.SUPER_ADMIN_API_KEYS, useValue: SuperAdminApiKey },
   { provide: REPOSITORY.SUPER_ADMIN_AUDIT_LOGS, useValue: SuperAdminAuditLog },
+  { provide: REPOSITORY.SUBSCRIPTION_PLANS, useValue: SubscriptionPlan },
 ];
 
 @Module({

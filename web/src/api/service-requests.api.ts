@@ -78,4 +78,15 @@ export const serviceRequestsApi = {
   updatePriority(id: string, priority: string) {
     return api.patch<ApiResponse<ServiceRequest>>(`/queue/${id}/priority`, { priority });
   },
+
+  assignTechnician(id: string, technicianId: string, technicianName: string) {
+    return api.patch<ApiResponse<ServiceRequest>>(`/service-requests/${id}/assign`, {
+      technician_id: technicianId,
+      technician_name: technicianName,
+    });
+  },
+
+  convertToWorkOrder(id: string) {
+    return api.post<ApiResponse<{ workOrder: { id: string; wo_number: string }; serviceRequest: ServiceRequest }>>(`/service-requests/${id}/convert-to-work-order`);
+  },
 };

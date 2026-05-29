@@ -50,6 +50,8 @@ services:
     environment:
       - REDIS_HOST=fsm-redis
       - REDIS_PORT=6379
+    ports:
+      - "127.0.0.1:3213:3213"
     networks:
       - fsm-network
 

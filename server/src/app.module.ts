@@ -69,7 +69,6 @@ import { SCHEDULINGModule } from './SCHEDULING/scheduling.module';
 import { IoTDataModule } from './IOT_DATA/iot_data.module';
 import { ChatbotSessionsModule } from './CHATBOT_SESSIONS/chatbot_sessions.module';
 import { DocumentsModule } from './DOCUMENTS/documents.module';
-import { CustomerPortalModule } from './CUSTOMER_PORTAL/customer-portal.module';
 import { WorkflowModule } from './WORKFLOW/workflow.module';
 import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.module';
 import { SlaTimersModule } from './SLA_TIMERS/sla_timers.module';
@@ -80,6 +79,7 @@ import { AiModule } from './AI/ai.module';
 import { ApiKeysModule } from './API_KEYS/api_keys.module';
 import { SuperAdminModule } from './SUPER_ADMIN/super_admin.module';
 import { MagicLinksModule } from './MAGIC_LINKS/magic_links.module';
+import { SubscriptionPlansModule } from './SUBSCRIPTION_PLANS/subscription_plans.module';
 
 @Module({
   imports: [
@@ -149,7 +149,6 @@ import { MagicLinksModule } from './MAGIC_LINKS/magic_links.module';
     IoTDataModule,
     ChatbotSessionsModule,
     DocumentsModule,
-    CustomerPortalModule,
     WorkflowModule,
     WorkOrderTechnicianSessionsModule,
     SlaTimersModule,
@@ -160,6 +159,7 @@ import { MagicLinksModule } from './MAGIC_LINKS/magic_links.module';
     ApiKeysModule,
     SuperAdminModule,
     MagicLinksModule,
+    SubscriptionPlansModule,
   ],
   providers: [
     {

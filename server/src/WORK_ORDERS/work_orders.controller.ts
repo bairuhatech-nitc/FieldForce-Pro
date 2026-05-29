@@ -8,6 +8,7 @@ import {
   Param,
   Body,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { WorkOrdersService } from './work_orders.service';
@@ -85,6 +86,21 @@ export class WorkOrdersController {
     );
   }
 
+  @Get('my-jobs')
+  @Permissions('work_orders:read')
+  @ApiOperation({ summary: 'Get work orders assigned to the current technician, with optional status filter, sorted by scheduled date' })
+  async findMyJobs(
+    @UserId() userId: string,
+    @TenantId() tenantId: string,
+    @Query() pageOptionsDto: PageOptionsDto,
+    @Query('status') status?: string,
+  ) {
+    const result = await this.workOrdersService.findMyJobsPaginated(userId, tenantId, pageOptionsDto, status);
+    return DataResponseDto.success(result.data, 'My jobs fetched successfully', {
+      ...result.meta,
+    } as unknown as Record<string, unknown>);
+  }
+
   @Get(':id/approvals')
   @Permissions('work_orders:read')
   @ApiOperation({ summary: 'Get approval chain for a work order' })
@@ -153,6 +169,34 @@ export class WorkOrdersController {
   ) {
     const workOrder = await this.workOrdersService.updateStatus(id, tenantId, dto);
     return DataResponseDto.success(workOrder, 'Work order status updated successfully');
+  }
+
+  @Post(':id/accept')
+  @Permissions('work_orders:update')
+  @ApiOperation({ summary: 'Technician accepts an assigned work order (transitions to scheduled)' })
+  async acceptJob(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+  ) {
+    const workOrder = await this.workOrdersService.acceptJob(id, tenantId, userId);
+    return DataResponseDto.success(workOrder, 'Work order accepted successfully');
+  }
+
+  @Post(':id/decline')
+  @Permissions('work_orders:update')
+  @ApiOperation({ summary: 'Technician declines an assigned work order (unassigns and resets to new)' })
+  async declineJob(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+    @Body('reason') reason: string,
+  ) {
+    if (!reason?.trim()) {
+      throw new BadRequestException('Reason is required to decline a work order');
+    }
+    const workOrder = await this.workOrdersService.declineJob(id, tenantId, userId, reason.trim());
+    return DataResponseDto.success(workOrder, 'Work order declined successfully');
   }
 
   @Delete(':id')

@@ -36,7 +36,16 @@ api.interceptors.response.use(
 
     // Skip refresh attempt for auth endpoints — they should fail cleanly
     const url = originalRequest?.url || '';
-    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password');
+    // Magic link verify endpoints return 401 for their own token validation reasons,
+    // not for JWT expiry — exclude them so we don't accidentally redirect to /login
+    const isAuthEndpoint =
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/refresh') ||
+      url.includes('/auth/forgot-password') ||
+      url.includes('/auth/reset-password') ||
+      url.includes('/auth/magic/verify') ||
+      url.includes('/auth/magic-link/verify');
 
     // 401 = token expired/invalid; 403 = token valid but permissions stale (admin just granted access)
     // In both cases, attempt a token refresh — the refresh endpoint re-reads permissions from DB.

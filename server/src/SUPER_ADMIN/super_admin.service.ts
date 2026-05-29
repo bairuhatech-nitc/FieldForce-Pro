@@ -6,7 +6,9 @@ import { User } from '../USERS/users.entity';
 import { ServiceRequest } from '../SERVICE_REQUESTS/service_requests.entity';
 import { WorkOrder } from '../WORK_ORDERS/work_orders.entity';
 import { Invoice } from '../INVOICES/invoices.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 import { TenantsService } from '../TENANTS/tenants.service';
+import { UpdateTenantSubscriptionDto } from './dto/update_tenant_subscription.dto';
 
 // Note: USERS and SERVICE_REQUESTS repositories are provided locally in SuperAdminModule
 // to enable cross-tenant queries without being constrained by tenant-scoped services.
@@ -25,6 +27,8 @@ export class SuperAdminService {
     private readonly workOrderRepository: typeof WorkOrder,
     @Inject(REPOSITORY.INVOICES)
     private readonly invoiceRepository: typeof Invoice,
+    @Inject(REPOSITORY.SUBSCRIPTION_PLANS)
+    private readonly subscriptionPlanRepository: typeof SubscriptionPlan,
   ) {}
 
   async listTenants() {
@@ -120,6 +124,56 @@ export class SuperAdminService {
       users: { total: totalUsers },
       service_requests: { total: totalServiceRequests },
       timestamp: new Date().toISOString(),
+    };
+  }
+
+  async listSubscriptionPlans() {
+    return this.subscriptionPlanRepository.findAll({
+      where: { is_active: true },
+      order: [['price_monthly', 'ASC']],
+      attributes: ['id', 'name', 'max_total_users', 'price_monthly', 'price_yearly'],
+    });
+  }
+
+  async updateTenantSubscription(tenantId: string, dto: UpdateTenantSubscriptionDto) {
+    const tenant = await this.tenantsService.findById(tenantId);
+
+    const updates: Record<string, unknown> = {};
+    if (dto.plan_id !== undefined) updates.subscription_plan_id = dto.plan_id;
+    if (dto.subscription_status !== undefined) updates.subscription_status = dto.subscription_status;
+    if (dto.subscription_end !== undefined) updates.subscription_end = dto.subscription_end ? new Date(dto.subscription_end) : null;
+    if (dto.max_users_override !== undefined) {
+      updates.custom_limits = dto.max_users_override !== null
+        ? { ...(tenant.custom_limits || {}), max_total_users: dto.max_users_override }
+        : null;
+    }
+
+    await tenant.update(updates);
+    return tenant.toJSON();
+  }
+
+  async getTenantUsage(tenantId: string) {
+    const tenant = await this.tenantsService.findById(tenantId);
+
+    let plan: SubscriptionPlan | null = null;
+    if (tenant.subscription_plan_id) {
+      plan = await this.subscriptionPlanRepository.findByPk(tenant.subscription_plan_id);
+    }
+
+    const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_total_users ?? null;
+    const totalUsersLimit: number | null = customMax ?? plan?.max_total_users ?? null;
+
+    const currentUsers = await this.userRepository.count({
+      where: { tenant_id: tenantId, is_deleted: false },
+    });
+
+    return {
+      plan_name: plan?.name ?? (tenant.subscription_plan || 'Unknown'),
+      subscription_status: tenant.subscription_status,
+      subscription_end: tenant.subscription_end,
+      usage: {
+        total_users: { current: currentUsers, limit: totalUsersLimit },
+      },
     };
   }
 

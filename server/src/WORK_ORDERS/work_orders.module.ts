@@ -6,9 +6,10 @@ import { workflowTemplatesProviders } from '../WORKFLOW/WORKFLOW_TEMPLATES/workf
 import { DatabaseModule } from '../database/database.module';
 import { InvoicesModule } from '../INVOICES/invoices.module';
 import { WorkflowModule } from '../WORKFLOW/workflow.module';
+import { NotificationsModule } from '../NOTIFICATIONS/notifications.module';
 
 @Module({
-  imports: [DatabaseModule, InvoicesModule, WorkflowModule],
+  imports: [DatabaseModule, InvoicesModule, WorkflowModule, NotificationsModule],
   controllers: [WorkOrdersController],
   providers: [WorkOrdersService, ...workOrdersProviders, ...workflowTemplatesProviders],
   exports: [WorkOrdersService],

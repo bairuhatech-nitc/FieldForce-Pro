@@ -3,24 +3,39 @@ import {
   Inject,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Op } from 'sequelize';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { REPOSITORY } from '../shared/constants/keynames';
 import { User } from './users.entity';
 import { CreateUserDto } from './dto/users_create.dto';
 import { UpdateUserDto } from './dto/users_update.dto';
+import { InviteUserDto } from './dto/invite_user.dto';
 import { PageOptionsDto } from '../shared/dto/page-options.dto';
 import { PageMetaDto } from '../shared/dto/page-meta.dto';
 import { PageDto } from '../shared/dto/page.dto';
 import { Role } from '../ROLES/roles.entity';
 import { Permission } from '../PERMISSIONS/permissions.entity';
+import { Tenant } from '../TENANTS/tenants.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
+import { MagicLink } from '../MAGIC_LINKS/magic_links.entity';
+import { UserRole } from '../USER_ROLES/user_roles.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @Inject(REPOSITORY.USERS)
     private readonly userRepository: typeof User,
+    @Inject(REPOSITORY.TENANTS)
+    private readonly tenantRepository: typeof Tenant,
+    @Inject(REPOSITORY.SUBSCRIPTION_PLANS)
+    private readonly subscriptionPlanRepository: typeof SubscriptionPlan,
+    @Inject(REPOSITORY.MAGIC_LINKS)
+    private readonly magicLinkRepository: typeof MagicLink,
+    @Inject(REPOSITORY.USER_ROLES)
+    private readonly userRoleRepository: typeof UserRole,
   ) {}
 
   async findAllPaginated(tenantId: string, pageOptionsDto: PageOptionsDto): Promise<PageDto<User>> {
@@ -162,6 +177,132 @@ export class UsersService {
     // Return without password
     const { password_hash, ...result } = user.toJSON();
     return result as User;
+  }
+
+  // ── 2A: User limit check ────────────────────────────────────────────────
+  async checkUserLimit(tenantId: string): Promise<void> {
+    const tenant = await this.tenantRepository.findByPk(tenantId);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    // custom_limits takes precedence over subscription plan
+    const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_total_users ?? null;
+    let limit: number | null = customMax;
+
+    if (limit === null && tenant.subscription_plan_id) {
+      const plan = await this.subscriptionPlanRepository.findByPk(tenant.subscription_plan_id);
+      limit = plan?.max_total_users ?? null;
+    }
+
+    // null means unlimited
+    if (limit === null) return;
+
+    const currentCount = await this.userRepository.count({
+      where: { tenant_id: tenantId, is_deleted: false },
+    });
+
+    if (currentCount >= limit) {
+      throw new ForbiddenException(
+        `User limit reached (${currentCount}/${limit}). Please contact your administrator to upgrade your plan.`,
+      );
+    }
+  }
+
+  // ── 2B: Invite user ─────────────────────────────────────────────────────
+  async invite(
+    tenantId: string,
+    invitorId: string,
+    dto: InviteUserDto,
+  ): Promise<{ user: Partial<User>; magic_link: string; expires_at: Date }> {
+    await this.checkUserLimit(tenantId);
+
+    const existing = await this.userRepository.findOne({
+      where: { email: dto.email, is_deleted: false },
+    });
+    if (existing) {
+      if (!existing.is_active) {
+        // Resend: regenerate magic link for pending (inactive) invited user
+        await this.magicLinkRepository.update(
+          { is_used: true },
+          { where: { user_id: existing.id, is_used: false } },
+        );
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = await bcrypt.hash(rawToken, 10);
+        const expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000);
+        await this.magicLinkRepository.create({
+          user_id: existing.id,
+          token_hash: tokenHash,
+          purpose: 'user_onboarding' as any,
+          is_used: false,
+          expires_at,
+          created_by: invitorId,
+        });
+        const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+        return {
+          user: { id: existing.id, email: existing.email, first_name: existing.first_name, last_name: existing.last_name },
+          magic_link: `${frontendBase}/auth/magic?token=${rawToken}`,
+          expires_at,
+        };
+      }
+      throw new ConflictException('User with this email already exists');
+    }
+
+    const user = await this.userRepository.create({
+      tenant_id: tenantId,
+      email: dto.email,
+      password_hash: null,
+      first_name: dto.first_name,
+      last_name: dto.last_name,
+      is_active: false,
+    } as any);
+
+    await this.userRoleRepository.create({ user_id: user.id, role_id: dto.role_id });
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(rawToken, 10);
+    const expires_at = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+    await this.magicLinkRepository.create({
+      user_id: user.id,
+      token_hash: tokenHash,
+      purpose: 'user_onboarding' as any,
+      is_used: false,
+      expires_at,
+      created_by: invitorId,
+    });
+
+    const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const magic_link = `${frontendBase}/auth/magic?token=${rawToken}`;
+
+    return {
+      user: { id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name },
+      magic_link,
+      expires_at,
+    };
+  }
+
+  // ── 3B: Company admin usage summary ────────────────────────────────────
+  async getUsageSummary(tenantId: string) {
+    const tenant = await this.tenantRepository.findByPk(tenantId);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    let plan = null;
+    if (tenant.subscription_plan_id) {
+      plan = await this.subscriptionPlanRepository.findByPk(tenant.subscription_plan_id);
+    }
+
+    const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_total_users ?? null;
+    const limit: number | null = customMax ?? plan?.max_total_users ?? null;
+
+    const current = await this.userRepository.count({
+      where: { tenant_id: tenantId, is_deleted: false },
+    });
+
+    return {
+      plan_name: plan?.name ?? (tenant.subscription_plan || 'Unknown'),
+      subscription_status: tenant.subscription_status,
+      subscription_end: tenant.subscription_end,
+      usage: { total_users: { current, limit } },
+    };
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {

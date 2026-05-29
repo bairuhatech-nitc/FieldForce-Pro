@@ -66,6 +66,8 @@ import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
 import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
 import { MagicLink } from '../MAGIC_LINKS/magic_links.entity';
+import { ApiKey } from '../API_KEYS/api_keys.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 import { SuperAdminApiKey } from '../SUPER_ADMIN/SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
 import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.entity';
 
@@ -80,7 +82,7 @@ import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_
         password: configService.dbPassword,
         database: configService.dbName,
         models: [
-          User, Tenant, Role, Permission, RolePermission, UserRole,
+          SubscriptionPlan, User, Tenant, Role, Permission, RolePermission, UserRole,
           LoginSession, UserDocument, Contact, Company, ServiceLocation,
           Asset, AssetMaintenancePlan,
           ServicesCatalog, PartsCatalog,
@@ -102,7 +104,7 @@ import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_
           WorkOrderTechnicianSession,
           SlaTimer,
           RequestAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
-          MagicLink, SuperAdminApiKey, SuperAdminAuditLog
+          ApiKey, MagicLink, SuperAdminApiKey, SuperAdminAuditLog
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

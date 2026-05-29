@@ -103,6 +103,9 @@ export class RolesService {
   }
 
   async create(tenantId: string, dto: CreateRoleDto): Promise<Role> {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant context is required to create a role');
+    }
     const existing = await this.roleRepository.findOne({
       where: { name: dto.name, tenant_id: tenantId },
     });

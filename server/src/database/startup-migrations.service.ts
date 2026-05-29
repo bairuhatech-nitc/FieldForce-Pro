@@ -370,6 +370,90 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
               );`,
       },
 
+      // ── Subscription Plans table ──────────────────────────────────────────
+      {
+        name: 'subscription_plans: create table',
+        sql: `CREATE TABLE IF NOT EXISTS subscription_plans (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name VARCHAR(100) NOT NULL UNIQUE,
+                max_technicians INTEGER,
+                max_dispatchers INTEGER,
+                max_managers INTEGER,
+                max_admins INTEGER,
+                max_total_users INTEGER,
+                price_monthly DECIMAL(10,2) NOT NULL DEFAULT 0,
+                price_yearly DECIMAL(10,2) NOT NULL DEFAULT 0,
+                features JSONB NOT NULL DEFAULT '[]',
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+              );`,
+      },
+      {
+        name: 'subscription_plans: seed Basic plan',
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Basic', 5, 2, 1, 1, 10, 49.00, 490.00, '["service_requests","work_orders","invoices","basic_reports"]', NOW(), NOW())
+              ON CONFLICT (name) DO NOTHING;`,
+      },
+      {
+        name: 'subscription_plans: seed Professional plan',
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Professional', 20, 5, 3, 2, 30, 149.00, 1490.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access"]', NOW(), NOW())
+              ON CONFLICT (name) DO NOTHING;`,
+      },
+      {
+        name: 'subscription_plans: seed Enterprise plan',
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Enterprise', NULL, NULL, NULL, NULL, NULL, 399.00, 3990.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access","custom_fields","webhooks","ai_features"]', NOW(), NOW())
+              ON CONFLICT (name) DO NOTHING;`,
+      },
+
+      // ── Magic Links: add created_at column (missing from initial table) ────
+      {
+        name: 'magic_links: add created_at column',
+        sql: `ALTER TABLE magic_links ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW();`,
+      },
+
+      // ── Magic Links: add user_onboarding purpose ─────────────────────────
+      {
+        name: 'magic_links: drop old purpose check constraint',
+        sql: `ALTER TABLE magic_links DROP CONSTRAINT IF EXISTS magic_links_purpose_check;`,
+      },
+      {
+        name: 'magic_links: add updated purpose check constraint',
+        sql: `DO $$ BEGIN
+                IF NOT EXISTS (
+                  SELECT 1 FROM information_schema.constraint_column_usage
+                  WHERE table_name = 'magic_links' AND constraint_name = 'magic_links_purpose_check_v2'
+                ) THEN
+                  ALTER TABLE magic_links ADD CONSTRAINT magic_links_purpose_check_v2
+                    CHECK (purpose IN ('super_admin_access', 'admin_onboarding', 'user_access', 'user_onboarding'));
+                END IF;
+              END $$;`,
+      },
+
+      // ── Tenants: add subscription columns ────────────────────────────────
+      {
+        name: 'tenants: add subscription_plan_id column',
+        sql: `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_plan_id UUID REFERENCES subscription_plans(id) ON DELETE SET NULL;`,
+      },
+      {
+        name: 'tenants: add subscription_status column',
+        sql: `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(20) NOT NULL DEFAULT 'trial';`,
+      },
+      {
+        name: 'tenants: add subscription_start column',
+        sql: `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_start TIMESTAMP;`,
+      },
+      {
+        name: 'tenants: add subscription_end column',
+        sql: `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_end TIMESTAMP;`,
+      },
+      {
+        name: 'tenants: add custom_limits column',
+        sql: `ALTER TABLE tenants ADD COLUMN IF NOT EXISTS custom_limits JSONB;`,
+      },
+
       // ── FEATURE 6: Technician Feedback Section ────────────────────────────
       {
         name: 'technician_feedback: create table',

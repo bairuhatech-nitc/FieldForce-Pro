@@ -3,7 +3,7 @@ import type { ApiResponse } from '@/types/api.types';
 
 export interface GenerateMagicLinkPayload {
   target_user_id: string;
-  purpose: 'super_admin_access' | 'admin_onboarding' | 'user_access';
+  purpose: 'super_admin_access' | 'admin_onboarding' | 'user_access' | 'user_onboarding';
 }
 
 export interface MagicLinkResult {
@@ -16,6 +16,7 @@ export interface CompleteOnboardingPayload {
   first_name: string;
   last_name: string;
   new_password: string;
+  phone?: string;
 }
 
 export const magicLinksApi = {

@@ -19,7 +19,7 @@ export default function OnboardingWizard() {
       const res = await axiosInstance.get('/onboarding/status');
       return res.data.data; // { isComplete: boolean }
     },
-    enabled: !!user,
+    enabled: !!user && !user.is_super_admin,
   });
 
   // Mutation to mark onboarding complete

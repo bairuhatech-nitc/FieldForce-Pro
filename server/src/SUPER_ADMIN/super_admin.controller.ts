@@ -5,6 +5,7 @@ import { SuperAdminGuard } from '../shared/guards/super-admin.guard';
 import { DataResponseDto } from '../shared/dto/data-response.dto';
 import { CurrentUser } from '../shared/decorator/current-user.decorator';
 import { UpdateSuperAdminProfileDto, ChangeSuperAdminEmailDto } from './dto/super-admin-profile.dto';
+import { UpdateTenantSubscriptionDto } from './dto/update_tenant_subscription.dto';
 
 import { SuperAdminAnalyticsService } from './SUPER_ADMIN_ANALYTICS/super_admin_analytics.service';
 import { SuperAdminHealthService } from './SUPER_ADMIN_HEALTH/super_admin_health.service';
@@ -43,6 +44,30 @@ export class SuperAdminController {
   async getTenantOverview(@Param('id') id: string) {
     const overview = await this.superAdminService.getTenantOverview(id);
     return DataResponseDto.success(overview, 'Tenant overview fetched successfully');
+  }
+
+  @Get('subscription-plans')
+  @ApiOperation({ summary: 'List all active subscription plans' })
+  async listSubscriptionPlans() {
+    const plans = await this.superAdminService.listSubscriptionPlans();
+    return DataResponseDto.success(plans, 'Subscription plans fetched');
+  }
+
+  @Patch('tenants/:id/subscription')
+  @ApiOperation({ summary: 'Update a tenant subscription plan, status, and limits' })
+  async updateTenantSubscription(
+    @Param('id') id: string,
+    @Body() dto: UpdateTenantSubscriptionDto,
+  ) {
+    const tenant = await this.superAdminService.updateTenantSubscription(id, dto);
+    return DataResponseDto.success(tenant, 'Tenant subscription updated successfully');
+  }
+
+  @Get('tenants/:id/usage')
+  @ApiOperation({ summary: 'Get tenant subscription usage stats' })
+  async getTenantUsage(@Param('id') id: string) {
+    const usage = await this.superAdminService.getTenantUsage(id);
+    return DataResponseDto.success(usage, 'Tenant usage fetched successfully');
   }
 
   @Patch('tenants/:id/suspend')

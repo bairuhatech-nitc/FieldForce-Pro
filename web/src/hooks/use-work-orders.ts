@@ -133,3 +133,48 @@ export function useSubmitWorkOrderForApproval() {
     },
   });
 }
+
+export function useMyJobs(params?: PageOptions & { status?: string }) {
+  return useQuery({
+    queryKey: ['work-orders', 'my-jobs', params],
+    queryFn: async () => {
+      const response = await workOrdersApi.getMyJobs(params);
+      return {
+        data: response.data.data!,
+        meta: response.data.meta!,
+      };
+    },
+  });
+}
+
+export function useAcceptJob() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+  return useMutation({
+    mutationFn: (id: string) => workOrdersApi.acceptJob(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['work-orders'] });
+      addNotification({ type: 'success', message: 'Job accepted successfully' });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to accept job';
+      addNotification({ type: 'error', message: msg });
+    },
+  });
+}
+
+export function useDeclineJob() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => workOrdersApi.declineJob(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['work-orders'] });
+      addNotification({ type: 'success', message: 'Job declined' });
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to decline job';
+      addNotification({ type: 'error', message: msg });
+    },
+  });
+}

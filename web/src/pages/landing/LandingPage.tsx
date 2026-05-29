@@ -210,8 +210,8 @@ export default function LandingPage() {
               ) : (
                 <>
                   <button className="lp-btn lp-btn-ghost" onClick={() => navigate('/login')}>Log In</button>
-                  <button className="lp-btn lp-btn-primary" onClick={() => navigate('/portal')}>
-                    Book a Service
+                  <button className="lp-btn lp-btn-primary" onClick={() => navigate('/register')}>
+                    Register Your Company
                   </button>
                   <button className="lp-btn lp-btn-demo" onClick={() => navigate('/register')}>
                     Get Demo
@@ -241,8 +241,8 @@ export default function LandingPage() {
             ) : (
               <>
                 <button className="lp-btn lp-btn-outline" onClick={() => navigate('/login')} style={{ width: '100%' }}>Log In</button>
-                <button className="lp-btn lp-btn-primary" onClick={() => navigate('/portal')} style={{ width: '100%' }}>
-                  Book a Service
+                <button className="lp-btn lp-btn-primary" onClick={() => navigate('/register')} style={{ width: '100%' }}>
+                  Register Your Company
                 </button>
               </>
             )}
@@ -293,8 +293,8 @@ export default function LandingPage() {
                 customers — all from one powerful AI-driven platform.
               </p>
               <div className="lp-hero-actions">
-                <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={() => navigate('/portal')}>
-                  Book a Service <RightOutlined />
+                <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={() => navigate('/register')}>
+                  Register Your Company <RightOutlined />
                 </button>
                 <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => scrollToSection('how-it-works')}>
                   <PlayCircleOutlined /> Learn More

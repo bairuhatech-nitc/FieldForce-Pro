@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Space, Skeleton, Tag, Table, Tabs, Form, Input, Switch, Upload, Modal, Select, DatePicker, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { EditOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, FileTextOutlined, UploadOutlined, UserAddOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, FileTextOutlined, UploadOutlined, UserAddOutlined, CheckCircleOutlined, CloseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useWorkOrder, useDeleteWorkOrder, useUpdateWorkOrderStatus } from '@/hooks/use-work-orders';
+import { useWorkOrder, useDeleteWorkOrder, useUpdateWorkOrderStatus, useAcceptJob, useDeclineJob } from '@/hooks/use-work-orders';
+import { useAuthStore } from '@/store/auth.store';
 import { useWorkOrderLineItems, useDeleteWorkOrderLineItem } from '@/hooks/use-work-order-line-items';
 import { useWorkOrderNotes, useCreateWorkOrderNote, useDeleteWorkOrderNote } from '@/hooks/use-work-order-notes';
 import { useWorkOrderAttachments, useUploadWorkOrderAttachment, useDeleteWorkOrderAttachment } from '@/hooks/use-work-order-attachments';
@@ -66,9 +67,13 @@ export default function WorkOrderDetailPage() {
   const navigate = useNavigate();
   const [noteForm] = Form.useForm();
   const [assignForm] = Form.useForm();
+  const [declineForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState('details');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [declineModalOpen, setDeclineModalOpen] = useState(false);
+
+  const currentUser = useAuthStore((s) => s.user);
 
   const { data: workOrder, isLoading } = useWorkOrder(id!);
   const { data: slaTimer } = useSlaTimer(id!);
@@ -85,6 +90,8 @@ export default function WorkOrderDetailPage() {
   const uploadAttachment = useUploadWorkOrderAttachment();
   const deleteAttachment = useDeleteWorkOrderAttachment();
   const createAppointment = useCreateAppointment();
+  const acceptJob = useAcceptJob();
+  const declineJob = useDeclineJob();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const handleAssignTechnician = async (values: { agent_id: string; scheduled_start: dayjs.Dayjs; scheduled_end: dayjs.Dayjs }) => {
@@ -584,6 +591,72 @@ export default function WorkOrderDetailPage() {
         </Card>
       )}
 
+      {currentUser && workOrder.assigned_to === currentUser.id && (
+        <Card style={{ marginBottom: 16, borderColor: '#1677ff', background: '#f0f5ff' }}>
+          <Space wrap>
+            {['new', 'approved', 'estimated'].includes(workOrder.status) && (
+              <>
+                <Button
+                  type="primary"
+                  icon={<CheckCircleOutlined />}
+                  loading={acceptJob.isPending}
+                  onClick={() => {
+                    showConfirmDialog({
+                      title: 'Accept Job',
+                      content: 'Accept this work order? It will be marked as Scheduled.',
+                      onOk: async () => { await acceptJob.mutateAsync(workOrder.id); },
+                    });
+                  }}
+                >
+                  Accept Job
+                </Button>
+                <Button
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => setDeclineModalOpen(true)}
+                >
+                  Decline Job
+                </Button>
+              </>
+            )}
+            {workOrder.status === 'scheduled' && (
+              <>
+                <Tag color="green" style={{ padding: '4px 8px', fontSize: 13 }}>
+                  <CheckCircleOutlined style={{ marginRight: 4 }} />
+                  Job Accepted
+                </Tag>
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  loading={updateStatus.isPending}
+                  onClick={() => handleStatusChange('in_progress')}
+                >
+                  Start Job
+                </Button>
+                <Button
+                  danger
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => setDeclineModalOpen(true)}
+                >
+                  Decline Job
+                </Button>
+              </>
+            )}
+            {workOrder.status === 'in_progress' && (
+              <Button
+                type="primary"
+                style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                icon={<CheckCircleOutlined />}
+                loading={updateStatus.isPending}
+                onClick={() => handleStatusChange('completed')}
+              >
+                Complete Job
+              </Button>
+            )}
+          </Space>
+        </Card>
+      )}
+
       {slaTimer && (
         <div style={{ marginBottom: 16 }}>
           <SlaTimerBadge timer={slaTimer} />
@@ -662,6 +735,33 @@ export default function WorkOrderDetailPage() {
         onCancel={() => setIsFeedbackModalOpen(false)}
         onSuccess={() => setIsFeedbackModalOpen(false)}
       />
+
+      <Modal
+        title="Decline Job"
+        open={declineModalOpen}
+        onCancel={() => { setDeclineModalOpen(false); declineForm.resetFields(); }}
+        onOk={() => declineForm.submit()}
+        okText="Decline"
+        okButtonProps={{ danger: true, loading: declineJob.isPending }}
+      >
+        <Form
+          form={declineForm}
+          layout="vertical"
+          onFinish={async (values: { reason: string }) => {
+            await declineJob.mutateAsync({ id: workOrder.id, reason: values.reason });
+            setDeclineModalOpen(false);
+            declineForm.resetFields();
+          }}
+        >
+          <Form.Item
+            name="reason"
+            label="Reason for declining"
+            rules={[{ required: true, message: 'Please provide a reason' }, { min: 5, message: 'Reason must be at least 5 characters' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Enter reason..." />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

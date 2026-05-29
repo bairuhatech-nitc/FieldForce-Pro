@@ -8,8 +8,11 @@ import {
   CreatedAt,
   UpdatedAt,
   HasMany,
+  ForeignKey,
+  BelongsTo,
 } from 'sequelize-typescript';
 import { User } from '../USERS/users.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 
 @Table({ tableName: 'tenants', timestamps: true, underscored: true })
 export class Tenant extends Model {
@@ -45,6 +48,27 @@ export class Tenant extends Model {
   @Default(true)
   @Column(DataType.BOOLEAN)
   is_active: boolean;
+
+  // ── Subscription Plan (Part 1) ──────────────────────────────────────────
+  @ForeignKey(() => SubscriptionPlan)
+  @Column({ type: DataType.UUID, allowNull: true })
+  subscription_plan_id: string | null;
+
+  @BelongsTo(() => SubscriptionPlan, { as: 'plan' })
+  plan: SubscriptionPlan;
+
+  @Default('trial')
+  @Column({ type: DataType.STRING(20), allowNull: false })
+  subscription_status: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  subscription_start: Date | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  subscription_end: Date | null;
+
+  @Column({ type: DataType.JSONB, allowNull: true })
+  custom_limits: Record<string, number | null> | null;
 
   @CreatedAt
   created_at: Date;

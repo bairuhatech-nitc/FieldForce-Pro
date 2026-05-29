@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { superAdminApi } from '@/api/super-admin.api';
+import { superAdminApi, type UpdateSubscriptionPayload } from '@/api/super-admin.api';
 import { useNotificationStore } from '@/store/notification.store';
 
 export function usePlatformHealth() {
@@ -78,6 +78,46 @@ export function useUpdateSuperAdminProfile() {
     },
     onError: () => {
       addNotification({ type: 'error', message: 'Failed to update profile' });
+    },
+  });
+}
+
+export function useSubscriptionPlans() {
+  return useQuery({
+    queryKey: ['subscription-plans'],
+    queryFn: async () => {
+      const res = await superAdminApi.listSubscriptionPlans();
+      return res.data.data!;
+    },
+  });
+}
+
+export function useTenantUsage(id: string) {
+  return useQuery({
+    queryKey: ['admin-tenant-usage', id],
+    queryFn: async () => {
+      const res = await superAdminApi.getTenantUsage(id);
+      return res.data.data!;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useUpdateTenantSubscription() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ id, ...payload }: UpdateSubscriptionPayload & { id: string }) =>
+      superAdminApi.updateTenantSubscription(id, payload),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-tenant-overview', vars.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tenant-usage', vars.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tenants'] });
+      addNotification({ type: 'success', message: 'Subscription updated successfully' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to update subscription' });
     },
   });
 }

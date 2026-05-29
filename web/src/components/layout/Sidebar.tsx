@@ -36,6 +36,7 @@ import {
   KeyOutlined,
   DesktopOutlined,
   LineChartOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/store/ui.store';
@@ -202,6 +203,7 @@ const menuSections: MenuSection[] = [
     items: [
       { key: '/users', icon: <UserOutlined />, labelKey: 'nav.users', permission: 'users:read' },
       { key: '/reports', icon: <BarChartOutlined />, labelKey: 'nav.reports', permission: 'reports:read' },
+      { key: '/integrations/api-keys', icon: <KeyOutlined />, labelKey: 'API Keys', permission: 'settings:read' },
       {
         key: 'settings-submenu',
         icon: <SettingOutlined />,
@@ -229,6 +231,18 @@ const menuSections: MenuSection[] = [
   },
 ];
 
+const technicianSections: MenuSection[] = [
+  {
+    items: [
+      { key: '/dashboard', icon: <DashboardOutlined />, labelKey: 'nav.dashboard' },
+      { key: '/work-orders/my-jobs', icon: <ScheduleOutlined />, labelKey: 'My Jobs' },
+      { key: '/scheduling/calendar', icon: <CalendarOutlined />, labelKey: 'My Schedule' },
+      { key: '/timesheets', icon: <ClockCircleOutlined />, labelKey: 'nav.timesheets' },
+      { key: '/notifications', icon: <BellOutlined />, labelKey: 'Notifications' },
+    ],
+  },
+];
+
 export default function Sidebar() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -237,6 +251,12 @@ export default function Sidebar() {
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed);
   const { can } = usePermission();
   const isSuperAdmin = useAuthStore((s) => s.user?.is_super_admin);
+  const user = useAuthStore((s) => s.user);
+
+  const roles: unknown[] = Array.isArray(user?.roles) ? (user.roles as unknown[]) : [];
+  const isTechnician =
+    !isSuperAdmin &&
+    roles.some((r) => (typeof r === 'string' ? r : (r as { name?: string })?.name) === 'Technician');
 
   // Filter menu sections based on user permissions
   const baseSections = [...menuSections];
@@ -275,6 +295,8 @@ export default function Sidebar() {
       return { ...section, items: filteredItems };
     })
     .filter(Boolean) as MenuSection[];
+
+  const activeSections = isTechnician ? technicianSections : filteredSections;
 
   if (!i18n.isInitialized) return null;
 
@@ -351,7 +373,7 @@ export default function Sidebar() {
 
       {/* Menu Sections */}
       <div style={{ flex: 1 }}>
-        {filteredSections.map((section, index) => (
+        {activeSections.map((section, index) => (
           <div key={index} style={{ marginBottom: 12 }}>
             {!collapsed && section.section && (
               <div className="sidebar-section-title">{section.section}</div>

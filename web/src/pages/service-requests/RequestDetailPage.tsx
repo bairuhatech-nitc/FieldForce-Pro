@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Descriptions, Button, Space, Skeleton, Tag, Steps, Modal, Input, Alert } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { Card, Descriptions, Button, Space, Skeleton, Tag, Steps, Modal, Input, Alert, Select } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, MinusCircleOutlined, UserAddOutlined, SwapOutlined } from '@ant-design/icons';
 import {
   useServiceRequest,
   useDeleteServiceRequest,
   useUpdateServiceRequestStatus,
   useServiceRequestApprovals,
   useProcessServiceRequestApproval,
+  useAssignServiceRequestTechnician,
+  useConvertToWorkOrder,
 } from '@/hooks/use-service-requests';
+import { useAgents } from '@/hooks/use-users';
 import { useAuthStore } from '@/store/auth.store';
 import { usePermission } from '@/components/permissions/usePermission';
 import PageHeader from '@/components/common/PageHeader';
@@ -64,14 +67,21 @@ export default function RequestDetailPage() {
   const { isAdmin } = usePermission();
   const { data: request, isLoading, error: requestError } = useServiceRequest(id!);
   const { data: approvals, refetch: refetchApprovals } = useServiceRequestApprovals(id!);
+  const { data: agents = [] } = useAgents();
   const deleteRequest = useDeleteServiceRequest();
   const updateStatus = useUpdateServiceRequestStatus();
   const processApproval = useProcessServiceRequestApproval();
+  const assignTechnician = useAssignServiceRequestTechnician();
+  const convertToWorkOrder = useConvertToWorkOrder();
 
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [approvalAction, setApprovalAction] = useState<'APPROVE' | 'REJECT'>('APPROVE');
   const [approvalComments, setApprovalComments] = useState('');
   const [selectedApprovalId, setSelectedApprovalId] = useState<string>('');
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>('');
+  const [convertedWoNumber, setConvertedWoNumber] = useState<string | null>(null);
+  const [convertedWoId, setConvertedWoId] = useState<string | null>(null);
 
   const handleDelete = () => {
     if (!request) return;
@@ -89,6 +99,31 @@ export default function RequestDetailPage() {
   const handleStatusChange = async (newStatus: string) => {
     if (!request) return;
     await updateStatus.mutateAsync({ id: request.id, status: newStatus });
+  };
+
+  const handleAssignTechnician = async () => {
+    if (!request || !selectedTechnicianId) return;
+    const agent = agents.find((a) => a.id === selectedTechnicianId);
+    const name = agent ? `${agent.first_name} ${agent.last_name}` : '';
+    await assignTechnician.mutateAsync({ id: request.id, technicianId: selectedTechnicianId, technicianName: name });
+    setAssignModalOpen(false);
+    setSelectedTechnicianId('');
+  };
+
+  const handleConvertToWorkOrder = () => {
+    if (!request) return;
+    showConfirmDialog({
+      title: 'Convert to Work Order',
+      content: 'This will create a Work Order from this Service Request. Continue?',
+      onOk: async () => {
+        const response = await convertToWorkOrder.mutateAsync(request.id);
+        const wo = response.data.data?.workOrder;
+        if (wo) {
+          setConvertedWoNumber(wo.wo_number);
+          setConvertedWoId(wo.id);
+        }
+      },
+    });
   };
 
   const openApprovalModal = (approvalId: string, action: 'APPROVE' | 'REJECT') => {
@@ -159,6 +194,21 @@ export default function RequestDetailPage() {
         extra={
           isAdmin ? (
             <Space>
+              <Button
+                icon={<UserAddOutlined />}
+                onClick={() => setAssignModalOpen(true)}
+              >
+                Assign Technician
+              </Button>
+              {!['converted_to_wo', 'closed', 'spam'].includes(request.status) && (
+                <Button
+                  icon={<SwapOutlined />}
+                  loading={convertToWorkOrder.isPending}
+                  onClick={handleConvertToWorkOrder}
+                >
+                  Convert to Work Order
+                </Button>
+              )}
               <Button icon={<EditOutlined />} onClick={() => navigate(`/service-requests/${request.id}/edit`)}>
                 Edit
               </Button>
@@ -169,6 +219,20 @@ export default function RequestDetailPage() {
           ) : undefined
         }
       />
+
+      {convertedWoNumber && convertedWoId && (
+        <Alert
+          message={`Work Order ${convertedWoNumber} created successfully`}
+          type="success"
+          showIcon
+          style={{ marginBottom: 16 }}
+          action={
+            <Button size="small" type="primary" onClick={() => navigate(`/work-orders/${convertedWoId}`)}>
+              View Work Order
+            </Button>
+          }
+        />
+      )}
 
       {request.is_spam && (
         <Alert
@@ -285,7 +349,14 @@ export default function RequestDetailPage() {
           </Descriptions.Item>
 
           <Descriptions.Item label="Assigned To">
-            {request.assigned_to || <span style={{ opacity: 0.5 }}>-</span>}
+            {request.assigned_to
+              ? (() => {
+                  const agent = agents.find((a) => a.id === request.assigned_to);
+                  return agent
+                    ? `${agent.first_name} ${agent.last_name}`
+                    : request.assigned_to;
+                })()
+              : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
           <Descriptions.Item label="Created At">
@@ -358,6 +429,31 @@ export default function RequestDetailPage() {
       <Card title="Attachments" style={{ marginTop: 16 }}>
         <FileUploadZone requestId={request.id} />
       </Card>
+
+      {/* Assign Technician Modal */}
+      <Modal
+        title="Assign Technician"
+        open={assignModalOpen}
+        onOk={handleAssignTechnician}
+        onCancel={() => { setAssignModalOpen(false); setSelectedTechnicianId(''); }}
+        confirmLoading={assignTechnician.isPending}
+        okText="Assign"
+        okButtonProps={{ disabled: !selectedTechnicianId }}
+      >
+        <p style={{ marginBottom: 12 }}>Select a technician to assign to this service request:</p>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Search and select a technician"
+          showSearch
+          optionFilterProp="label"
+          value={selectedTechnicianId || undefined}
+          onChange={(val) => setSelectedTechnicianId(val)}
+          options={agents.map((a) => ({
+            value: a.id,
+            label: `${a.first_name} ${a.last_name}${a.email ? ` (${a.email})` : ''}`,
+          }))}
+        />
+      </Modal>
 
       {/* Approval Action Modal */}
       <Modal

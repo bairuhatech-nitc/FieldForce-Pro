@@ -16,6 +16,7 @@ const PURPOSE_LABELS: Record<string, string> = {
   super_admin_access: 'Super Admin Access',
   admin_onboarding: 'Company Admin Onboarding',
   user_access: 'User Access',
+  user_onboarding: 'User Invitation',
 };
 
 export default function MagicLinkModal({ open, onClose, link, expiresAt, purpose }: MagicLinkModalProps) {

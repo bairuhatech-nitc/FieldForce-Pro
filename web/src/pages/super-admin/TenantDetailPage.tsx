@@ -1,25 +1,85 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Row, Col, Card, Statistic, Tag, Button, Descriptions, Space,
-  Alert, Typography, Skeleton, Popconfirm,
+  Alert, Typography, Skeleton, Popconfirm, Progress, Modal, Form,
+  Select, InputNumber,
 } from 'antd';
 import {
   ArrowLeftOutlined, TeamOutlined, FileTextOutlined,
   ToolOutlined, DollarOutlined, CheckCircleOutlined,
-  StopOutlined, PlayCircleOutlined, ClusterOutlined,
+  StopOutlined, PlayCircleOutlined, ClusterOutlined, EditOutlined,
 } from '@ant-design/icons';
-import { useTenantOverview, useSuspendTenant, useActivateTenant } from '@/hooks/use-super-admin';
+import dayjs from 'dayjs';
+import { DatePicker } from 'antd';
+import {
+  useTenantOverview, useSuspendTenant, useActivateTenant,
+  useTenantUsage, useSubscriptionPlans, useUpdateTenantSubscription,
+} from '@/hooks/use-super-admin';
 import { formatDateTime } from '@/utils/format-date';
 
 const { Title, Text } = Typography;
 
+const STATUS_COLORS: Record<string, string> = {
+  trial: 'blue',
+  active: 'success',
+  suspended: 'error',
+  cancelled: 'default',
+  expired: 'warning',
+};
+
+function getProgressStatus(pct: number): 'normal' | 'exception' | 'active' {
+  if (pct > 90) return 'exception';
+  return 'normal';
+}
+
+function getProgressColor(pct: number) {
+  if (pct > 90) return '#ff4d4f';
+  if (pct > 70) return '#faad14';
+  return '#52c41a';
+}
+
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [subModalOpen, setSubModalOpen] = useState(false);
+  const [subForm] = Form.useForm();
 
   const { data: tenant, isLoading } = useTenantOverview(id!);
+  const { data: usage } = useTenantUsage(id!);
+  const { data: plans } = useSubscriptionPlans();
   const suspendTenant = useSuspendTenant();
   const activateTenant = useActivateTenant();
+  const updateSubscription = useUpdateTenantSubscription();
+
+  const handleOpenSubModal = () => {
+    subForm.setFieldsValue({
+      plan_id: tenant?.subscription_plan_id ?? undefined,
+      subscription_status: tenant?.subscription_status ?? 'trial',
+      subscription_end: tenant?.subscription_end ? dayjs(tenant.subscription_end) : null,
+      max_users_override: tenant?.custom_limits?.max_total_users ?? null,
+    });
+    setSubModalOpen(true);
+  };
+
+  const handleSubModalOk = () => {
+    subForm.validateFields().then((values) => {
+      updateSubscription.mutate(
+        {
+          id: id!,
+          plan_id: values.plan_id || undefined,
+          subscription_status: values.subscription_status || undefined,
+          subscription_end: values.subscription_end
+            ? (values.subscription_end as ReturnType<typeof dayjs>).toISOString()
+            : null,
+          max_users_override: values.max_users_override ?? null,
+        },
+        {
+          onSuccess: () => setSubModalOpen(false),
+        },
+      );
+    });
+  };
 
   if (isLoading) {
     return (
@@ -38,6 +98,10 @@ export default function TenantDetailPage() {
       />
     );
   }
+
+  const usageCurrent = usage?.usage?.total_users?.current ?? tenant.user_count;
+  const usageLimit = usage?.usage?.total_users?.limit;
+  const usagePct = usageLimit ? Math.round((usageCurrent / usageLimit) * 100) : 0;
 
   return (
     <div>
@@ -140,6 +204,58 @@ export default function TenantDetailPage() {
         </Col>
       </Row>
 
+      {/* Subscription Section */}
+      <Card
+        title="Subscription"
+        style={{ marginBottom: 24 }}
+        extra={
+          <Button icon={<EditOutlined />} onClick={handleOpenSubModal}>
+            Update Subscription
+          </Button>
+        }
+      >
+        <Row gutter={[24, 16]}>
+          <Col xs={24} sm={8}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Plan</Text>
+            <div style={{ marginTop: 4 }}>
+              <Text strong>{usage?.plan_name ?? tenant.subscription_plan}</Text>
+            </div>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Status</Text>
+            <div style={{ marginTop: 4 }}>
+              <Tag color={STATUS_COLORS[tenant.subscription_status ?? 'trial'] ?? 'default'}>
+                {(tenant.subscription_status ?? 'trial').charAt(0).toUpperCase() +
+                  (tenant.subscription_status ?? 'trial').slice(1)}
+              </Tag>
+            </div>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Subscription End</Text>
+            <div style={{ marginTop: 4 }}>
+              <Text>{tenant.subscription_end ? formatDateTime(tenant.subscription_end) : '—'}</Text>
+            </div>
+          </Col>
+          <Col xs={24}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Users: {usageCurrent} / {usageLimit ?? '∞'}
+            </Text>
+            {usageLimit ? (
+              <Progress
+                percent={usagePct}
+                strokeColor={getProgressColor(usagePct)}
+                status={getProgressStatus(usagePct)}
+                style={{ marginTop: 4 }}
+              />
+            ) : (
+              <div style={{ marginTop: 4 }}>
+                <Text type="secondary">Unlimited users on this plan</Text>
+              </div>
+            )}
+          </Col>
+        </Row>
+      </Card>
+
       {/* Tenant Details */}
       <Card title="Tenant Information" style={{ marginBottom: 24 }}>
         <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
@@ -176,6 +292,60 @@ export default function TenantDetailPage() {
           Exit Tenant View — Return to Super Admin Dashboard
         </Button>
       </div>
+
+      {/* Update Subscription Modal */}
+      <Modal
+        open={subModalOpen}
+        title="Update Subscription"
+        okText="Save Changes"
+        cancelText="Cancel"
+        confirmLoading={updateSubscription.isPending}
+        onOk={handleSubModalOk}
+        onCancel={() => setSubModalOpen(false)}
+        width={480}
+      >
+        <Form form={subForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item name="plan_id" label="Subscription Plan">
+            <Select
+              placeholder="Select a plan"
+              allowClear
+              options={plans?.map((p) => ({
+                label: `${p.name} ($${p.price_monthly}/mo)`,
+                value: p.id,
+              }))}
+            />
+          </Form.Item>
+
+          <Form.Item name="subscription_status" label="Status">
+            <Select
+              placeholder="Select status"
+              options={[
+                { label: 'Trial', value: 'trial' },
+                { label: 'Active', value: 'active' },
+                { label: 'Suspended', value: 'suspended' },
+                { label: 'Cancelled', value: 'cancelled' },
+                { label: 'Expired', value: 'expired' },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item name="subscription_end" label="Subscription End Date">
+            <DatePicker style={{ width: '100%' }} allowClear />
+          </Form.Item>
+
+          <Form.Item
+            name="max_users_override"
+            label="Max Users Override"
+            extra="Leave empty to use the plan's default limit"
+          >
+            <InputNumber
+              min={1}
+              placeholder="e.g. 50"
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

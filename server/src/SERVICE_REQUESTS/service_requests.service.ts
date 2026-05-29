@@ -21,6 +21,8 @@ import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templa
 import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 import { RequestAuditLog } from './request_audit_log.entity';
+import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
+import { WorkOrder } from '../WORK_ORDERS/work_orders.entity';
 import axios from 'axios';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -45,7 +47,10 @@ export class ServiceRequestsService {
     private readonly templateRepository: typeof WorkflowTemplate,
     @Inject(KEYNAMES.REQUEST_AUDIT_LOGS)
     private readonly requestAuditLogRepository: typeof RequestAuditLog,
+    @Inject(KEYNAMES.WORK_ORDERS)
+    private readonly workOrderRepository: typeof WorkOrder,
     private readonly documentApprovalsService: DocumentApprovalsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findAllPaginated(
@@ -309,6 +314,31 @@ export class ServiceRequestsService {
     return serviceRequest;
   }
 
+  async assignTechnician(
+    id: string,
+    tenantId: string,
+    technicianId: string,
+    technicianName: string,
+  ): Promise<ServiceRequest> {
+    const serviceRequest = await this.findById(id, tenantId);
+    await serviceRequest.update({ assigned_to: technicianId });
+
+    try {
+      await this.notificationsService.create(tenantId, {
+        user_id: technicianId,
+        type: 'service_request_assigned',
+        title: 'Service Request Assigned',
+        body: `You have been assigned to Service Request ${serviceRequest.request_number}`,
+        data: { service_request_id: id, navigate_to: 'service_request' },
+        channel: 'in_app',
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to notify technician ${technicianName} for SR ${id}: ${(err as Error).message}`);
+    }
+
+    return serviceRequest;
+  }
+
   async updateStatus(
     id: string,
     tenantId: string,
@@ -343,6 +373,57 @@ export class ServiceRequestsService {
   async delete(id: string, tenantId: string): Promise<void> {
     const serviceRequest = await this.findById(id, tenantId);
     await serviceRequest.update({ is_deleted: true });
+  }
+
+  async convertToWorkOrder(
+    id: string,
+    tenantId: string,
+    managerId: string,
+  ): Promise<{ workOrder: WorkOrder; serviceRequest: ServiceRequest }> {
+    const serviceRequest = await this.findById(id, tenantId);
+
+    if (serviceRequest.status === 'converted_to_wo') {
+      throw new BadRequestException('This service request has already been converted to a work order');
+    }
+    if (['closed', 'spam'].includes(serviceRequest.status)) {
+      throw new BadRequestException(`Cannot convert a service request with status '${serviceRequest.status}' to a work order`);
+    }
+
+    // Auto-generate wo_number
+    const count = await this.workOrderRepository.count({ where: { tenant_id: tenantId } });
+    const woNumber = `WO-${String(count + 1).padStart(6, '0')}`;
+
+    const workOrder = await this.workOrderRepository.create({
+      tenant_id: tenantId,
+      wo_number: woNumber,
+      request_id: serviceRequest.id,
+      contact_id: serviceRequest.contact_id,
+      location_id: serviceRequest.location_id,
+      summary: serviceRequest.subject,
+      description: serviceRequest.description,
+      priority: serviceRequest.priority === 'CRITICAL' ? 'urgent' : (serviceRequest.priority?.toLowerCase() || 'medium'),
+      status: 'new',
+      assigned_to: serviceRequest.assigned_to || null,
+    });
+
+    await serviceRequest.update({ status: 'converted_to_wo' });
+
+    try {
+      if (serviceRequest.assigned_to && serviceRequest.assigned_to !== managerId) {
+        await this.notificationsService.create(tenantId, {
+          user_id: serviceRequest.assigned_to,
+          type: 'work_order_created',
+          title: 'Work Order Created',
+          body: `Service Request ${serviceRequest.request_number} has been converted to Work Order ${woNumber}`,
+          data: { work_order_id: workOrder.id, service_request_id: id, navigate_to: 'work_order' },
+          channel: 'in_app',
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify about SR-to-WO conversion for SR ${id}: ${(err as Error).message}`);
+    }
+
+    return { workOrder, serviceRequest };
   }
 
   async getQueue(tenantId: string): Promise<ServiceRequest[]> {

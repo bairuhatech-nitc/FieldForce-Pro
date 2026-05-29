@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { WorkOrder } from './work_orders.entity';
 import { Contact } from '../CONTACTS/contacts.entity';
 import { ServiceLocation } from '../SERVICE_LOCATIONS/service_locations.entity';
@@ -12,6 +12,7 @@ import { KEYNAMES } from '../shared/constants/keynames';
 import { Op } from 'sequelize';
 import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.service';
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
+import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
 
 // Valid status transitions for work orders
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -34,6 +35,7 @@ export class WorkOrdersService {
     @Inject(KEYNAMES.WORK_ORDERS)
     private readonly workOrderRepository: typeof WorkOrder,
     private readonly documentApprovalsService: DocumentApprovalsService,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   async findAllPaginated(
@@ -280,6 +282,126 @@ export class WorkOrdersService {
   async delete(id: string, tenantId: string): Promise<void> {
     const workOrder = await this.findById(id, tenantId);
     await workOrder.update({ is_deleted: true });
+  }
+
+  async findMyJobsPaginated(
+    userId: string,
+    tenantId: string,
+    pageOptionsDto: PageOptionsDto,
+    status?: string,
+  ): Promise<PageDto<WorkOrder>> {
+    const where: Record<string, unknown> = {
+      tenant_id: tenantId,
+      assigned_to: userId,
+      is_deleted: false,
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (pageOptionsDto.search) {
+      where[Op.or as unknown as string] = [
+        { wo_number: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+        { summary: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+        { description: { [Op.iLike]: `%${pageOptionsDto.search}%` } },
+      ];
+    }
+
+    const { count, rows } = await this.workOrderRepository.findAndCountAll({
+      where,
+      order: [['scheduled_start', 'ASC'], ['created_at', 'DESC']],
+      limit: pageOptionsDto.take,
+      offset: pageOptionsDto.skip,
+      include: [
+        { model: Contact, as: 'contact', attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+        { model: ServiceLocation, as: 'location', attributes: ['id', 'address', 'lat', 'lng'] },
+      ],
+    });
+
+    const meta = new PageMetaDto({ pageOptionsDto, itemCount: count });
+    return new PageDto(rows, meta);
+  }
+
+  async acceptJob(id: string, tenantId: string, userId: string): Promise<WorkOrder> {
+    const workOrder = await this.findById(id, tenantId);
+
+    if (workOrder.assigned_to !== userId) {
+      throw new ForbiddenException('You are not assigned to this work order');
+    }
+
+    if (!['new', 'approved', 'estimated'].includes(workOrder.status)) {
+      throw new BadRequestException(`Cannot accept a work order with status '${workOrder.status}'`);
+    }
+
+    await workOrder.update({ status: 'scheduled' });
+
+    this.notifyAdmins(tenantId, userId, workOrder.wo_number, 'accepted', '').catch((err) =>
+      this.logger.warn(`Failed to notify admins for WO accept ${id}: ${(err as Error).message}`),
+    );
+
+    return this.findById(id, tenantId);
+  }
+
+  async declineJob(id: string, tenantId: string, userId: string, reason: string): Promise<WorkOrder> {
+    const workOrder = await this.findById(id, tenantId);
+
+    if (workOrder.assigned_to !== userId) {
+      throw new ForbiddenException('You are not assigned to this work order');
+    }
+
+    if (!['new', 'approved', 'estimated', 'scheduled'].includes(workOrder.status)) {
+      throw new BadRequestException(`Cannot decline a work order with status '${workOrder.status}'`);
+    }
+
+    await workOrder.update({ status: 'new', assigned_to: null });
+
+    this.notifyAdmins(tenantId, userId, workOrder.wo_number, 'declined', reason).catch((err) =>
+      this.logger.warn(`Failed to notify admins for WO decline ${id}: ${(err as Error).message}`),
+    );
+
+    return this.findById(id, tenantId);
+  }
+
+  private async notifyAdmins(
+    tenantId: string,
+    technicianId: string,
+    woNumber: string,
+    action: 'accepted' | 'declined',
+    reason: string,
+  ): Promise<void> {
+    const techRows = (await this.workOrderRepository.sequelize!.query(
+      `SELECT first_name, last_name FROM users WHERE id = :technicianId AND is_deleted = false LIMIT 1`,
+      { replacements: { technicianId }, type: 'SELECT' as unknown as undefined },
+    )) as { first_name: string; last_name: string }[];
+
+    const techName =
+      techRows.length > 0
+        ? `${techRows[0].first_name || ''} ${techRows[0].last_name || ''}`.trim() || 'Technician'
+        : 'Technician';
+
+    const adminRows = (await this.workOrderRepository.sequelize!.query(
+      `SELECT DISTINCT u.id FROM users u
+       JOIN user_roles ur ON ur.user_id = u.id
+       JOIN roles r ON r.id = ur.role_id
+       WHERE u.tenant_id = :tenantId AND r.name = 'Admin' AND u.is_deleted = false`,
+      { replacements: { tenantId }, type: 'SELECT' as unknown as undefined },
+    )) as { id: string }[];
+
+    const body =
+      action === 'accepted'
+        ? `Technician ${techName} has accepted Work Order ${woNumber}`
+        : `Technician ${techName} has declined Work Order ${woNumber}. Reason: ${reason}`;
+
+    for (const admin of adminRows) {
+      await this.notificationsService.create(tenantId, {
+        user_id: admin.id,
+        type: `work_order_${action}`,
+        title: `Work Order ${action === 'accepted' ? 'Accepted' : 'Declined'}`,
+        body,
+        channel: 'in_app',
+      });
+    }
   }
 
   async submitForApproval(

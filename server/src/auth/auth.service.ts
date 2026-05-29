@@ -142,6 +142,32 @@ export class AuthService {
       });
     }
 
+    // Create default Technician role for tenant
+    const technicianPermissionNames = new Set([
+      'service_requests:read', 'work_orders:read', 'work_orders:update',
+      'service_appointments:read', 'job_sheets:read', 'job_sheets:update',
+      'timesheets:read', 'timesheets:create', 'timesheets:update',
+      'trips:read', 'trips:create', 'dashboard:read', 'notifications:read',
+      'documents:read', 'documents:create', 'contacts:read',
+      'service_locations:read', 'parts_catalog:read', 'services_catalog:read',
+      'scheduling:read', 'reviews:read', 'reviews:create',
+      'agent_locations:read', 'agent_locations:update',
+    ]);
+    const technicianRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Technician',
+      description: 'Field technician - performs on-site work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (technicianPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: technicianRole.id,
+          permission_id: permission.id,
+        });
+      }
+    }
+
     // Assign admin role to user
     await this.userRolesService.assignRole(user.id, adminRole.id);
 
@@ -291,6 +317,32 @@ export class AuthService {
         role_id: adminRole.id,
         permission_id: permission.id,
       });
+    }
+
+    // Create default Technician role for tenant
+    const technicianPermissionNames = new Set([
+      'service_requests:read', 'work_orders:read', 'work_orders:update',
+      'service_appointments:read', 'job_sheets:read', 'job_sheets:update',
+      'timesheets:read', 'timesheets:create', 'timesheets:update',
+      'trips:read', 'trips:create', 'dashboard:read', 'notifications:read',
+      'documents:read', 'documents:create', 'contacts:read',
+      'service_locations:read', 'parts_catalog:read', 'services_catalog:read',
+      'scheduling:read', 'reviews:read', 'reviews:create',
+      'agent_locations:read', 'agent_locations:update',
+    ]);
+    const technicianRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Technician',
+      description: 'Field technician - performs on-site work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (technicianPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: technicianRole.id,
+          permission_id: permission.id,
+        });
+      }
     }
 
     // Assign admin role to user

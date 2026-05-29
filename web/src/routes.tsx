@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { Navigate, type RouteObject } from 'react-router-dom';
+import { Navigate, useLocation, type RouteObject } from 'react-router-dom';
 
 import { useAuthStore } from '@/store/auth.store';
 import { useMe } from '@/hooks/use-auth';
@@ -121,6 +121,9 @@ const AnalyticsDashboardPage = lazy(() => import('@/pages/super-admin/AnalyticsD
 const SystemHealthPage = lazy(() => import('@/pages/super-admin/SystemHealthPage'));
 const MagicLinkVerifyPage = lazy(() => import('@/pages/auth/MagicLinkVerifyPage'));
 const OnboardingSetupPage = lazy(() => import('@/pages/onboarding/OnboardingSetupPage'));
+const UserOnboardingPage = lazy(() => import('@/pages/onboarding/UserOnboardingPage'));
+const MyJobsPage = lazy(() => import('@/pages/technician/MyJobsPage'));
+const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
 
 function SuspenseWrapper({ children }: { children: ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>;
@@ -155,10 +158,45 @@ function OpenRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function SuperAdminRoute({ children }: { children: ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!user?.is_super_admin) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
+function TechnicianGuard({ children }: { children: ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  const location = useLocation();
+
+  const roles: unknown[] = Array.isArray(user?.roles) ? (user.roles as unknown[]) : [];
+  const isTechnician =
+    !user?.is_super_admin &&
+    roles.some((r) => (typeof r === 'string' ? r : (r as { name?: string })?.name) === 'Technician');
+
+  if (!isTechnician) return <>{children}</>;
+
+  const path = location.pathname;
+  const allowed =
+    path === '/dashboard' ||
+    path === '/work-orders/my-jobs' ||
+    path.startsWith('/work-orders/') ||
+    path === '/scheduling/calendar' ||
+    path === '/timesheets' ||
+    path.startsWith('/timesheets/') ||
+    path === '/notifications' ||
+    path === '/profile' ||
+    path.startsWith('/profile/');
+
+  if (!allowed) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <Navigate to="/login" replace />,
+    element: <Navigate to="/landing" replace />,
   },
   {
     path: '/login',
@@ -213,7 +251,9 @@ export const routes: RouteObject[] = [
   {
     element: (
       <PrivateRoute>
-        <AppLayout />
+        <TechnicianGuard>
+          <AppLayout />
+        </TechnicianGuard>
       </PrivateRoute>
     ),
     children: [
@@ -589,6 +629,14 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'work-orders/my-jobs',
+        element: (
+          <SuspenseWrapper>
+            <MyJobsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'work-orders/:id',
         element: (
           <SuspenseWrapper>
@@ -764,6 +812,15 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
+      // Notifications
+      {
+        path: 'notifications',
+        element: (
+          <SuspenseWrapper>
+            <NotificationsPage />
+          </SuspenseWrapper>
+        ),
+      },
       // Trips
       {
         path: 'trips/history',
@@ -927,57 +984,71 @@ export const routes: RouteObject[] = [
       {
         path: 'admin/tenants',
         element: (
-          <SuspenseWrapper>
-            <SuperAdminDashboardPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SuperAdminDashboardPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
         path: 'admin/tenants/:id',
         element: (
-          <SuspenseWrapper>
-            <TenantDetailPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <TenantDetailPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
         path: 'admin/platform-health',
         element: (
-          <SuspenseWrapper>
-            <SystemHealthPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SystemHealthPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
         path: 'admin/audit-logs',
         element: (
-          <SuspenseWrapper>
-            <AuditLogsPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <AuditLogsPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
         path: 'admin/api-keys',
         element: (
-          <SuspenseWrapper>
-            <SuperAdminApiKeysPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SuperAdminApiKeysPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
         path: 'admin/analytics',
         element: (
-          <SuspenseWrapper>
-            <AnalyticsDashboardPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <AnalyticsDashboardPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
         path: 'admin/profile',
         element: (
-          <SuspenseWrapper>
-            <SuperAdminProfilePage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SuperAdminProfilePage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       // API Key Management (Company Admin)
@@ -1314,6 +1385,16 @@ export const routes: RouteObject[] = [
       <PrivateRoute>
         <SuspenseWrapper>
           <OnboardingSetupPage />
+        </SuspenseWrapper>
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: '/onboarding/user-setup',
+    element: (
+      <PrivateRoute>
+        <SuspenseWrapper>
+          <UserOnboardingPage />
         </SuspenseWrapper>
       </PrivateRoute>
     ),

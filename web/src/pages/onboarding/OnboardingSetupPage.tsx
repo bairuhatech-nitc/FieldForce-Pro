@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Card, Form, Input, Button, Space, Alert, Typography } from 'antd';
 import { UserOutlined, LockOutlined, CheckOutlined } from '@ant-design/icons';
 import { useForm, Controller } from 'react-hook-form';
@@ -34,6 +35,13 @@ export default function OnboardingSetupPage() {
   const completeOnboarding = useCompleteOnboarding();
   const setUser = useAuthStore((s) => s.setUser);
   const user = useAuthStore((s) => s.user);
+
+  // If onboarding is already done, go to dashboard
+  useEffect(() => {
+    if (user?.onboarding_completed) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const {
     control,
