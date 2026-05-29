@@ -270,9 +270,11 @@ export class EstimatesService {
   async create(tenantId: string, dto: CreateEstimateDto, userId?: string): Promise<Estimate> {
     const estimate = await this.estimateRepository.create({
       tenant_id: tenantId,
-      estimate_number: this.generateEstimateNumber(),
       created_by: userId || null,
       ...dto,
+      // These come AFTER the spread so dto's undefined values don't win
+      estimate_number: dto.estimate_number || this.generateEstimateNumber(),
+      status: dto.status ?? 'draft',
     });
 
     // Auto-trigger ESTIMATE_APPROVAL workflow on creation
@@ -782,17 +784,18 @@ export class EstimatesService {
   async generateInvoice(id: string, tenantId: string): Promise<Invoice> {
     const estimate = await this.findById(id, tenantId);
 
-    if (estimate.status !== 'approved') {
-      throw new BadRequestException('Only approved estimates can generate an invoice');
-    }
-
-    // Return existing invoice if already generated for this estimate
+    // Idempotency: return existing invoice if already generated (checked before status gate
+    // so repeated calls on a converted_to_invoice estimate still return the invoice)
     const existing = await this.invoiceRepository.findOne({
       where: { estimate_id: id, tenant_id: tenantId, is_deleted: false },
     });
 
     if (existing) {
       return existing;
+    }
+
+    if (estimate.status !== 'approved') {
+      throw new BadRequestException('Only approved estimates can generate an invoice');
     }
 
     const lineItems = (estimate.line_items || []).map((item) => ({
@@ -843,11 +846,16 @@ export class EstimatesService {
       notes: `Auto-generated from Estimate ${estimate.estimate_number || id.slice(0, 8)}`,
     });
 
+    // Map estimate line item types to valid invoice_line_items ENUM values
+    const INVOICE_LI_TYPES = new Set(['service', 'part', 'travel', 'other']);
+    const mapType = (t: string): string =>
+      INVOICE_LI_TYPES.has(t) ? t : t === 'labor' ? 'service' : t === 'material' || t === 'equipment' ? 'part' : 'other';
+
     for (const item of lineItems) {
       await this.invoiceLineItemRepository.create({
         tenant_id: tenantId,
         invoice_id: invoice.id,
-        type: item.type,
+        type: mapType(item.type ?? 'service'),
         name: item.name,
         description: item.description,
         quantity: item.quantity,
