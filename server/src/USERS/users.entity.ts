@@ -16,6 +16,8 @@ import { Tenant } from '../TENANTS/tenants.entity';
 import { UserRole } from '../USER_ROLES/user_roles.entity';
 import { Role } from '../ROLES/roles.entity';
 import { LoginSession } from '../LOGIN_SESSIONS/login_sessions.entity';
+import { ServiceRequest } from '../SERVICE_REQUESTS/service_requests.entity';
+import { ServiceRequestTechnician } from '../SERVICE_REQUESTS/service_request_technician.entity';
 
 @Table({ tableName: 'users', timestamps: true, underscored: true })
 export class User extends Model {
@@ -152,6 +154,9 @@ export class User extends Model {
 
   @HasMany(() => LoginSession)
   loginSessions: LoginSession[];
+
+  @BelongsToMany(() => ServiceRequest, () => ServiceRequestTechnician)
+  serviceRequests: ServiceRequest[];
 
   get fullName(): string {
     return `${this.first_name} ${this.last_name}`;

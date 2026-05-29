@@ -223,6 +223,7 @@ export interface ServiceRequest {
   updated_at: string;
   contact?: Contact;
   location?: ServiceLocation;
+  technicians?: User[];
 }
 
 export interface Estimate {

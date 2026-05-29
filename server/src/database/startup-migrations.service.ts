@@ -520,6 +520,29 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
         name: 'invoices: add estimate_id column',
         sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS estimate_id UUID;`,
       },
+
+      // ── MULTIPLE TECHNICIANS FOR SERVICE REQUESTS ────────────────────────
+      {
+        name: 'service_request_technicians: create table',
+        sql: `CREATE TABLE IF NOT EXISTS service_request_technicians (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            tenant_id UUID NOT NULL,
+            service_request_id UUID NOT NULL REFERENCES service_requests(id) ON DELETE CASCADE,
+            technician_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            UNIQUE (service_request_id, technician_id)
+        );`,
+      },
+      {
+        name: 'service_request_technicians: backfill existing assignments',
+        sql: `INSERT INTO service_request_technicians (tenant_id, service_request_id, technician_id)
+              SELECT tenant_id, id, assigned_to
+              FROM service_requests
+              WHERE assigned_to IS NOT NULL
+              ON CONFLICT (service_request_id, technician_id) DO NOTHING;`,
+      },
     ];
 
     for (const migration of migrations) {

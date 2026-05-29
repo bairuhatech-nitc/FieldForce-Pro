@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUUID, IsEnum, IsObject, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsEnum, IsObject, IsNumber, IsDateString, IsArray } from 'class-validator';
 
 export class CreateServiceRequestDto {
   @ApiPropertyOptional({ description: 'Contact ID', example: 'uuid' })
@@ -60,6 +60,12 @@ export class CreateServiceRequestDto {
   @IsUUID()
   @IsOptional()
   assigned_to?: string;
+
+  @ApiPropertyOptional({ description: 'List of assigned technician user IDs', type: [String], example: ['uuid1', 'uuid2'] })
+  @IsUUID('4', { each: true })
+  @IsArray()
+  @IsOptional()
+  technician_ids?: string[];
 
   @ApiPropertyOptional({ description: 'Latitude', example: 25.276987 })
   @IsNumber()

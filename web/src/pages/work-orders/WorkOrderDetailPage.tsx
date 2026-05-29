@@ -144,20 +144,24 @@ export default function WorkOrderDetailPage() {
     };
   }, []);
 
-  const handleAssignTechnician = async (values: { agent_id: string; scheduled_start: dayjs.Dayjs; scheduled_end: dayjs.Dayjs }) => {
+  const handleAssignTechnician = async (values: { agent_ids: string[]; scheduled_start: dayjs.Dayjs; scheduled_end: dayjs.Dayjs }) => {
     if (!workOrder) return;
     try {
-      await createAppointment.mutateAsync({
-        work_order_id: workOrder.id,
-        agent_id: values.agent_id,
-        scheduled_start: values.scheduled_start.toISOString(),
-        scheduled_end: values.scheduled_end.toISOString(),
-      });
-      message.success('Technician assigned successfully!');
+      await Promise.all(
+        values.agent_ids.map((agent_id) =>
+          createAppointment.mutateAsync({
+            work_order_id: workOrder.id,
+            agent_id,
+            scheduled_start: values.scheduled_start.toISOString(),
+            scheduled_end: values.scheduled_end.toISOString(),
+          })
+        )
+      );
+      message.success('Technicians assigned successfully!');
       setAssignModalOpen(false);
       assignForm.resetFields();
     } catch {
-      message.error('Failed to assign technician');
+      message.error('Failed to assign one or more technicians');
     }
   };
 
@@ -967,7 +971,7 @@ export default function WorkOrderDetailPage() {
       />
 
       <Modal
-        title="Assign Technician"
+        title="Assign Technicians"
         open={assignModalOpen}
         onCancel={() => { setAssignModalOpen(false); assignForm.resetFields(); }}
         onOk={() => assignForm.submit()}
@@ -975,10 +979,11 @@ export default function WorkOrderDetailPage() {
         confirmLoading={createAppointment.isPending}
       >
         <Form form={assignForm} layout="vertical" onFinish={handleAssignTechnician}>
-          <Form.Item name="agent_id" label="Technician" rules={[{ required: true, message: 'Please select a technician' }]}>
+          <Form.Item name="agent_ids" label="Technicians" rules={[{ required: true, message: 'Please select at least one technician' }]}>
             <Select
+              mode="multiple"
               showSearch
-              placeholder="Select a technician"
+              placeholder="Select technicians"
               optionFilterProp="label"
               options={(usersData?.data || []).map((u: any) => ({
                 value: u.id,

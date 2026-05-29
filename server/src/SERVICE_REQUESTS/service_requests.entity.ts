@@ -5,11 +5,13 @@ import {
   DataType,
   ForeignKey,
   BelongsTo,
+  BelongsToMany,
 } from 'sequelize-typescript';
 import { Tenant } from '../TENANTS/tenants.entity';
 import { Contact } from '../CONTACTS/contacts.entity';
 import { ServiceLocation } from '../SERVICE_LOCATIONS/service_locations.entity';
 import { User } from '../USERS/users.entity';
+import { ServiceRequestTechnician } from './service_request_technician.entity';
 
 @Table({
   tableName: 'service_requests',
@@ -141,6 +143,9 @@ export class ServiceRequest extends Model {
 
   @BelongsTo(() => User)
   assignee: User;
+
+  @BelongsToMany(() => User, () => ServiceRequestTechnician)
+  technicians: User[];
 
   @Column({
     type: DataType.JSONB,

@@ -9,6 +9,7 @@ import dayjs from 'dayjs';
 import { useServiceRequest, useCreateServiceRequest, useUpdateServiceRequest } from '@/hooks/use-service-requests';
 import { useAllContacts } from '@/hooks/use-contacts';
 import { useAllServiceLocations } from '@/hooks/use-service-locations';
+import { useAgents } from '@/hooks/use-users';
 import PageHeader from '@/components/common/PageHeader';
 import CreateContactModal from '@/components/contacts/CreateContactModal';
 import type { ServiceLocation } from '@/types/models.types';
@@ -164,9 +165,10 @@ export default function RequestFormPage() {
   const updateRequest = useUpdateServiceRequest();
   const { data: contacts } = useAllContacts();
   const { data: locations } = useAllServiceLocations();
+  const { data: agents } = useAgents();
 
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
-  const [fileList, setFileList] = useState([]);
+  const [fileList, setFileList] = useState<any[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const [searchText, setSearchText] = useState('');
@@ -193,6 +195,7 @@ export default function RequestFormPage() {
         category: request.category,
         channel: request.channel,
         scheduled_start: request.scheduled_start ? dayjs(request.scheduled_start) : null,
+        technician_ids: request.technicians?.map((t) => t.id) || [],
       });
       setSelectedLocationId(request.location_id || null);
       if (request.location_id && locations) {
@@ -424,7 +427,7 @@ export default function RequestFormPage() {
       if (isEdit) {
         await updateRequest.mutateAsync({ id: id!, ...payload });
       } else {
-        await createRequest.mutateAsync(payload as unknown as Record<string, unknown> & { subject: string });
+        await createRequest.mutateAsync(payload as any);
       }
       navigate('/service-requests');
     } catch {
@@ -575,7 +578,19 @@ export default function RequestFormPage() {
                 </Col>
               </Row>
 
-<Form.Item label="Attachments (optional)">
+              <Form.Item name="technician_ids" label="Assigned Technicians">
+                <Select
+                  mode="multiple"
+                  placeholder="Select technicians"
+                  allowClear
+                  options={agents?.map((a) => ({
+                    value: a.id,
+                    label: `${a.first_name} ${a.last_name}`,
+                  })) || []}
+                />
+              </Form.Item>
+
+              <Form.Item label="Attachments (optional)">
   <Upload.Dragger
     multiple
     fileList={fileList}

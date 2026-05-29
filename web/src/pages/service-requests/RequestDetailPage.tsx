@@ -10,6 +10,7 @@ import {
   useProcessServiceRequestApproval,
   useAssignServiceRequestTechnician,
   useApproveAndConvert,
+  useUpdateServiceRequest,
 } from '@/hooks/use-service-requests';
 import { useAgents } from '@/hooks/use-users';
 import { useAuthStore } from '@/store/auth.store';
@@ -85,6 +86,7 @@ export default function RequestDetailPage() {
   const updateStatus = useUpdateServiceRequestStatus();
   const processApproval = useProcessServiceRequestApproval();
   const assignTechnician = useAssignServiceRequestTechnician();
+  const updateRequest = useUpdateServiceRequest();
   const approveAndConvert = useApproveAndConvert();
 
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
@@ -92,7 +94,7 @@ export default function RequestDetailPage() {
   const [approvalComments, setApprovalComments] = useState('');
   const [selectedApprovalId, setSelectedApprovalId] = useState<string>('');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>('');
+  const [selectedTechnicianIds, setSelectedTechnicianIds] = useState<string[]>([]);
 
   const handleDelete = () => {
     if (!request) return;
@@ -113,12 +115,16 @@ export default function RequestDetailPage() {
   };
 
   const handleAssignTechnician = async () => {
-    if (!request || !selectedTechnicianId) return;
-    const agent = agents.find((a) => a.id === selectedTechnicianId);
-    const name = agent ? `${agent.first_name} ${agent.last_name}` : '';
-    await assignTechnician.mutateAsync({ id: request.id, technicianId: selectedTechnicianId, technicianName: name });
+    if (!request || selectedTechnicianIds.length === 0) return;
+    await updateRequest.mutateAsync({ id: request.id, technician_ids: selectedTechnicianIds });
     setAssignModalOpen(false);
-    setSelectedTechnicianId('');
+    setSelectedTechnicianIds([]);
+  };
+
+  const openAssignModal = () => {
+    // Pre-populate with already assigned technicians
+    setSelectedTechnicianIds(request?.technicians?.map((t) => t.id) || []);
+    setAssignModalOpen(true);
   };
 
   const handleApproveAndConvert = () => {
@@ -206,7 +212,7 @@ export default function RequestDetailPage() {
             <Space>
               <Button
                 icon={<UserAddOutlined />}
-                onClick={() => setAssignModalOpen(true)}
+                onClick={openAssignModal}
               >
                 Assign Technician
               </Button>
@@ -345,15 +351,18 @@ export default function RequestDetailPage() {
             {request.scheduled_start ? formatDateTime(request.scheduled_start) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Assigned To">
-            {request.assigned_to
-              ? (() => {
-                  const agent = agents.find((a) => a.id === request.assigned_to);
-                  return agent
-                    ? `${agent.first_name} ${agent.last_name}`
-                    : request.assigned_to;
-                })()
-              : <span style={{ opacity: 0.5 }}>-</span>}
+          <Descriptions.Item label="Assigned Technicians">
+            {request.technicians && request.technicians.length > 0 ? (
+              <Space wrap>
+                {request.technicians.map((t) => (
+                  <Tag key={t.id} color="blue">
+                    {t.first_name} {t.last_name}
+                  </Tag>
+                ))}
+              </Space>
+            ) : (
+              <span style={{ opacity: 0.5 }}>-</span>
+            )}
           </Descriptions.Item>
 
           <Descriptions.Item label="Created At">
@@ -456,24 +465,24 @@ export default function RequestDetailPage() {
         <FileUploadZone requestId={request.id} />
       </Card>
 
-      {/* Assign Technician Modal */}
       <Modal
-        title="Assign Technician"
+        title="Assign Technicians"
         open={assignModalOpen}
         onOk={handleAssignTechnician}
-        onCancel={() => { setAssignModalOpen(false); setSelectedTechnicianId(''); }}
-        confirmLoading={assignTechnician.isPending}
-        okText="Assign"
-        okButtonProps={{ disabled: !selectedTechnicianId }}
+        onCancel={() => { setAssignModalOpen(false); setSelectedTechnicianIds([]); }}
+        confirmLoading={updateRequest.isPending}
+        okText="Save"
+        okButtonProps={{ disabled: selectedTechnicianIds.length === 0 }}
       >
-        <p style={{ marginBottom: 12 }}>Select a technician to assign to this service request:</p>
+        <p style={{ marginBottom: 12 }}>Select one or more technicians to assign to this service request:</p>
         <Select
+          mode="multiple"
           style={{ width: '100%' }}
-          placeholder="Search and select a technician"
+          placeholder="Search and select technicians"
           showSearch
           optionFilterProp="label"
-          value={selectedTechnicianId || undefined}
-          onChange={(val) => setSelectedTechnicianId(val)}
+          value={selectedTechnicianIds}
+          onChange={(val) => setSelectedTechnicianIds(val)}
           options={agents.map((a) => ({
             value: a.id,
             label: `${a.first_name} ${a.last_name}${a.email ? ` (${a.email})` : ''}`,

@@ -263,6 +263,24 @@ export default function RequestListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
+      title: 'Technicians',
+      key: 'technicians',
+      render: (_, record) =>
+        record.technicians && record.technicians.length > 0 ? (
+          <Space wrap size={[0, 4]}>
+            {record.technicians.map((t) => (
+              <Tooltip key={t.id} title={`${t.first_name} ${t.last_name}`}>
+                <Tag color="blue" style={{ borderRadius: '50%', width: 24, height: 24, textAlign: 'center', lineHeight: '22px', padding: 0 }}>
+                  {t.first_name?.charAt(0)}{t.last_name?.charAt(0)}
+                </Tag>
+              </Tooltip>
+            ))}
+          </Space>
+        ) : (
+          <span style={{ opacity: 0.5 }}>-</span>
+        ),
+    },
+    {
       title: 'Created',
       dataIndex: 'created_at',
       key: 'created_at',
