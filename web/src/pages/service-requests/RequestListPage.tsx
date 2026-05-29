@@ -4,7 +4,7 @@ import { Button, Table, Space, Tooltip, Tag, Select, Tabs, Modal, Input, message
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useServiceRequests, useDeleteServiceRequest, useMyPendingApprovals, useProcessServiceRequestApproval, useQueue, useUpdatePriority } from '@/hooks/use-service-requests';
+import { useServiceRequests, useDeleteServiceRequest, useMyPendingApprovals, useProcessServiceRequestApproval, useQueue, useUpdatePriority, useApproveAndConvert, useUpdateServiceRequestStatus } from '@/hooks/use-service-requests';
 import { serviceRequestsApi } from '@/api/service-requests.api';
 import { usePermission } from '@/components/permissions/usePermission';
 import { useAuthStore } from '@/store/auth.store';
@@ -24,8 +24,24 @@ const priorityColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   new: 'blue',
+  triaged: 'cyan',
+  estimated: 'gold',
   approved: 'green',
+  converted_to_wo: 'purple',
   rejected: 'red',
+  closed: 'default',
+  spam: 'red',
+};
+
+const statusLabels: Record<string, string> = {
+  new: 'Pending Approval',
+  triaged: 'Triaged',
+  estimated: 'Estimated',
+  approved: 'Approved',
+  converted_to_wo: 'Converted to WO',
+  rejected: 'Rejected',
+  closed: 'Closed',
+  spam: 'Flagged',
 };
 
 const statusOptions = [
@@ -75,6 +91,8 @@ export default function RequestListPage() {
 
   const deleteRequest = useDeleteServiceRequest();
   const processApproval = useProcessServiceRequestApproval();
+  const approveAndConvert = useApproveAndConvert();
+  const rejectSr = useUpdateServiceRequestStatus();
 
   const { data: queueData = [], isLoading: queueLoading } = useQueue();
   const updatePriority = useUpdatePriority();
@@ -221,7 +239,7 @@ export default function RequestListPage() {
       key: 'status',
       render: (status: string) => (
         <Tag color={statusColors[status] || 'default'}>
-          {status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+          {statusLabels[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
         </Tag>
       ),
     },
@@ -361,6 +379,31 @@ export default function RequestListPage() {
     updatePriority.mutate({ id, priority });
   };
 
+  const handleApproveFromQueue = (record: ServiceRequest) => {
+    showConfirmDialog({
+      title: 'Approve & Create Work Order',
+      content: `This will approve "${record.subject}" and create a Work Order. You will be redirected to the new Work Order.`,
+      onOk: async () => {
+        const response = await approveAndConvert.mutateAsync(record.id);
+        const wo = response.data.data?.workOrder;
+        if (wo) {
+          navigate(`/work-orders/${wo.id}`);
+        }
+      },
+    });
+  };
+
+  const handleRejectFromQueue = (record: ServiceRequest) => {
+    showConfirmDialog({
+      title: 'Reject Service Request',
+      content: `Are you sure you want to reject "${record.subject}"?`,
+      onOk: async () => {
+        await rejectSr.mutateAsync({ id: record.id, status: 'rejected' });
+      },
+      danger: true,
+    });
+  };
+
   const queueColumns: ColumnsType<ServiceRequest> = [
     {
       title: 'Request ID',
@@ -404,7 +447,7 @@ export default function RequestListPage() {
       key: 'status',
       render: (status: string) => (
         <Tag color={statusColors[status] || 'default'}>
-          {status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+          {statusLabels[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
         </Tag>
       ),
     },
@@ -418,12 +461,35 @@ export default function RequestListPage() {
       title: 'Actions',
       key: 'actions',
       fixed: 'right',
-      width: 100,
+      width: 160,
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="View">
             <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
           </Tooltip>
+          {isAdmin && !['converted_to_wo', 'closed', 'spam', 'rejected'].includes(record.status) && (
+            <>
+              <Tooltip title="Approve & Create Work Order">
+                <Button
+                  type="text"
+                  icon={<CheckCircleOutlined />}
+                  size="small"
+                  style={{ color: '#52c41a' }}
+                  loading={approveAndConvert.isPending}
+                  onClick={() => handleApproveFromQueue(record)}
+                />
+              </Tooltip>
+              <Tooltip title="Reject">
+                <Button
+                  type="text"
+                  icon={<CloseCircleOutlined />}
+                  size="small"
+                  danger
+                  onClick={() => handleRejectFromQueue(record)}
+                />
+              </Tooltip>
+            </>
+          )}
         </Space>
       ),
     },

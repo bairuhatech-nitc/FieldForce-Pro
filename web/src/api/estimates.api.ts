@@ -2,7 +2,7 @@ import axios from 'axios';
 import api from './axios-instance';
 import { API_URL } from '@/utils/constants';
 import type { ApiResponse, PageOptions } from '@/types/api.types';
-import type { Estimate } from '@/types/models.types';
+import type { Estimate, Invoice } from '@/types/models.types';
 
 const publicAxios = axios.create({
   baseURL: API_URL,
@@ -12,6 +12,7 @@ const publicAxios = axios.create({
 export interface CreateEstimatePayload {
   contact_id?: string;
   request_id?: string;
+  work_order_id?: string;
   notes?: string;
   expiry_date?: string;
   subtotal?: number;
@@ -100,6 +101,26 @@ export const estimatesApi = {
 
   convertToWorkOrder(id: string, payload?: ConvertToWorkOrderPayload) {
     return api.post<ApiResponse<any>>(`/estimates/${id}/convert-to-work-order`, payload || {});
+  },
+
+  getByWorkOrderId(workOrderId: string) {
+    return api.get<ApiResponse<Estimate[]>>(`/estimates/work-order/${workOrderId}`);
+  },
+
+  submitForApproval(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/submit-for-approval`);
+  },
+
+  adminApprove(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-approve`);
+  },
+
+  adminReject(id: string, reason?: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-reject`, { reason });
+  },
+
+  generateInvoice(id: string) {
+    return api.post<ApiResponse<Invoice>>(`/estimates/${id}/generate-invoice`);
   },
 
   delete(id: string) {

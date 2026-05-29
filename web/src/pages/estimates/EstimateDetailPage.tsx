@@ -7,11 +7,13 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import {
   EditOutlined, DeleteOutlined, FilePdfOutlined, CopyOutlined,
-  ClockCircleOutlined,
+  ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, FileTextOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
 import { downloadEstimatePdf } from '@/utils/estimate-pdf';
 import {
   useEstimate, useDeleteEstimate, useUpdateEstimateStatus,
+  useSubmitEstimateForApproval, useAdminApproveEstimate, useAdminRejectEstimate, useGenerateInvoiceFromEstimate,
 } from '@/hooks/use-estimates';
 import { useEstimateLineItems } from '@/hooks/use-estimate-line-items';
 import type { EstimateLineItem } from '@/types/models.types';
@@ -24,12 +26,14 @@ import ApprovalTrackingView from '@/components/estimates/ApprovalTrackingView';
 
 const statusColors: Record<string, string> = {
   draft: 'default',
+  pending_approval: 'orange',
   sent: 'blue',
   viewed: 'cyan',
   approved: 'green',
   rejected: 'red',
   expired: 'orange',
   converted_to_wo: 'purple',
+  converted_to_invoice: 'geekblue',
 };
 
 // Manual transitions only — `approved` and `converted_to_wo` happen automatically
@@ -56,6 +60,10 @@ export default function EstimateDetailPage() {
   const { data: lineItems, isLoading: lineItemsLoading } = useEstimateLineItems(id!);
   const deleteEstimate = useDeleteEstimate();
   const updateStatus = useUpdateEstimateStatus();
+  const submitForApproval = useSubmitEstimateForApproval();
+  const adminApprove = useAdminApproveEstimate();
+  const adminReject = useAdminRejectEstimate();
+  const generateInvoice = useGenerateInvoiceFromEstimate();
 
   const handleDelete = () => {
     if (!estimate) return;
@@ -408,6 +416,91 @@ export default function EstimateDetailPage() {
         </Col>
 
         <Col xs={24} lg={8}>
+          {/* ── Technician: Submit for Approval ── */}
+          {estimate.status === 'draft' && (
+            <Card style={{ marginBottom: 16 }}>
+              <PermissionGuard permission="estimates:update">
+                <Button
+                  block
+                  type="primary"
+                  icon={<SendOutlined />}
+                  loading={submitForApproval.isPending}
+                  onClick={() => {
+                    showConfirmDialog({
+                      title: 'Submit for Approval',
+                      content: 'Submit this estimate for admin/dispatcher approval?',
+                      onOk: async () => { await submitForApproval.mutateAsync(estimate.id); },
+                    });
+                  }}
+                >
+                  Submit for Approval
+                </Button>
+              </PermissionGuard>
+            </Card>
+          )}
+
+          {/* ── Admin/Dispatcher: Approve or Reject ── */}
+          {estimate.status === 'pending_approval' && (
+            <Card title="Pending Approval" style={{ marginBottom: 16 }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <PermissionGuard permission="estimates:update">
+                  <Button
+                    block
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    loading={adminApprove.isPending}
+                    onClick={() => {
+                      showConfirmDialog({
+                        title: 'Approve Estimate',
+                        content: 'Approve this estimate?',
+                        onOk: async () => { await adminApprove.mutateAsync(estimate.id); },
+                      });
+                    }}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    block
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    loading={adminReject.isPending}
+                    onClick={() => {
+                      showConfirmDialog({
+                        title: 'Reject Estimate',
+                        content: 'Reject this estimate?',
+                        onOk: async () => { await adminReject.mutateAsync({ id: estimate.id }); },
+                        danger: true,
+                      });
+                    }}
+                  >
+                    Reject
+                  </Button>
+                </PermissionGuard>
+              </Space>
+            </Card>
+          )}
+
+          {/* ── Generate Invoice ── */}
+          {estimate.status === 'approved' && (
+            <Card style={{ marginBottom: 16 }}>
+              <PermissionGuard permission="invoices:create">
+                <Button
+                  block
+                  type="primary"
+                  icon={<FileTextOutlined />}
+                  loading={generateInvoice.isPending}
+                  onClick={async () => {
+                    const res = await generateInvoice.mutateAsync(estimate.id);
+                    const inv = res.data.data;
+                    if (inv?.id) navigate(`/invoices/${inv.id}`);
+                  }}
+                >
+                  Generate Invoice
+                </Button>
+              </PermissionGuard>
+            </Card>
+          )}
+
           <ApprovalTrackingView estimate={estimate} />
         </Col>
       </Row>

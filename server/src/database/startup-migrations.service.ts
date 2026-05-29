@@ -481,6 +481,45 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
             submitted_at TIMESTAMP DEFAULT NOW()
         );`,
       },
+
+      // ── ESTIMATION + INVOICE WORKFLOW: schema additions ───────────────────
+
+      // estimates: add work_order_id so estimates can be linked to a WO
+      {
+        name: 'estimates: add work_order_id column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS work_order_id UUID;`,
+      },
+
+      // estimates: convert status ENUM → VARCHAR so new values (pending_approval,
+      // converted_to_invoice) can be inserted without an ALTER TYPE which is DDL-heavy
+      {
+        name: 'estimates: drop ENUM default on status',
+        sql: `ALTER TABLE estimates ALTER COLUMN status DROP DEFAULT;`,
+      },
+      {
+        name: 'estimates: convert status ENUM to VARCHAR',
+        sql: `DO $$ BEGIN
+                IF EXISTS (
+                  SELECT 1 FROM information_schema.columns
+                  WHERE table_name = 'estimates'
+                  AND column_name = 'status'
+                  AND data_type = 'USER-DEFINED'
+                ) THEN
+                  ALTER TABLE estimates
+                    ALTER COLUMN status TYPE VARCHAR(50) USING status::text;
+                END IF;
+              END $$;`,
+      },
+      {
+        name: 'estimates: restore default on status',
+        sql: `ALTER TABLE estimates ALTER COLUMN status SET DEFAULT 'draft';`,
+      },
+
+      // invoices: add estimate_id so we can track which estimate generated an invoice
+      {
+        name: 'invoices: add estimate_id column',
+        sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS estimate_id UUID;`,
+      },
     ];
 
     for (const migration of migrations) {
@@ -493,6 +532,9 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
 
     // ── Seed: auto-create SCHEDULE workflow template per tenant ────────────
     await this.seedScheduleWorkflow();
+
+    // ── Seed: create Dispatcher role for tenants that don't have one yet ──
+    await this.seedDispatcherRole();
   }
 
   /**
@@ -567,6 +609,88 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
       }
     } catch (err) {
       this.logger.warn(`SCHEDULE workflow seed failed: ${err.message}`);
+    }
+  }
+
+  /**
+   * For every tenant that does NOT yet have a Dispatcher role,
+   * create one with the standard dispatcher permission set.
+   * Idempotent — skips tenants that already have the role.
+   */
+  private async seedDispatcherRole(): Promise<void> {
+    try {
+      const dispatcherPermissionNames = [
+        'dashboard:read', 'notifications:read',
+        'service_requests:read', 'service_requests:create', 'service_requests:update',
+        'work_orders:read', 'work_orders:create', 'work_orders:update',
+        'scheduling:read', 'scheduling:create', 'scheduling:update',
+        'service_appointments:read', 'service_appointments:create', 'service_appointments:update',
+        'estimates:read', 'estimates:create', 'estimates:update',
+        'invoices:read', 'invoices:create', 'invoices:update',
+        'contacts:read', 'companies:read', 'service_locations:read',
+        'agent_locations:read',
+        'work_order_line_items:read', 'work_order_line_items:create', 'work_order_line_items:update',
+        'documents:read', 'documents:create',
+        'reports:read',
+      ];
+
+      // Tenants that don't yet have a Dispatcher role
+      const tenantsWithout = (await this.sequelize.query(
+        `SELECT t.id
+         FROM tenants t
+         WHERE NOT EXISTS (
+             SELECT 1 FROM roles r
+             WHERE r.tenant_id = t.id
+               AND LOWER(r.name) = 'dispatcher'
+           )`,
+        { type: (this.sequelize as any).constructor.QueryTypes.SELECT },
+      ) as unknown) as Array<{ id: string }>;
+
+      if (!tenantsWithout || tenantsWithout.length === 0) {
+        return;
+      }
+
+      // Resolve permission IDs once (permissions are global)
+      const permissionRows = (await this.sequelize.query(
+        `SELECT id, name FROM permissions WHERE name = ANY(:names)`,
+        {
+          replacements: { names: dispatcherPermissionNames },
+          type: (this.sequelize as any).constructor.QueryTypes.SELECT,
+        },
+      ) as unknown) as Array<{ id: string; name: string }>;
+
+      for (const tenant of tenantsWithout) {
+        // Create the Dispatcher role
+        const roleResults = (await this.sequelize.query(
+          `INSERT INTO roles (id, tenant_id, name, description, is_system, created_at, updated_at)
+           VALUES (gen_random_uuid(), :tenantId, 'Dispatcher', 'Dispatch coordinator - reviews service requests, assigns technicians, manages work orders', false, NOW(), NOW())
+           RETURNING id`,
+          {
+            replacements: { tenantId: tenant.id },
+            type: (this.sequelize as any).constructor.QueryTypes.SELECT,
+          },
+        ) as unknown) as Array<{ id: string }>;
+
+        const roleRow = roleResults[0];
+        if (!roleRow) {
+          this.logger.warn(`Tenant ${tenant.id}: failed to create Dispatcher role`);
+          continue;
+        }
+
+        // Assign permissions
+        for (const perm of permissionRows) {
+          await this.sequelize.query(
+            `INSERT INTO role_permissions (id, role_id, permission_id)
+             VALUES (gen_random_uuid(), :roleId, :permId)
+             ON CONFLICT DO NOTHING`,
+            { replacements: { roleId: roleRow.id, permId: perm.id } },
+          );
+        }
+
+        this.logger.log(`Tenant ${tenant.id}: seeded Dispatcher role (id=${roleRow.id}, permissions=${permissionRows.length})`);
+      }
+    } catch (err) {
+      this.logger.warn(`Dispatcher role seed failed: ${err.message}`);
     }
   }
 }

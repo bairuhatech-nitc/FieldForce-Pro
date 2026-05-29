@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useEstimate, useCreateEstimate, useUpdateEstimate } from '@/hooks/use-estimates';
@@ -11,6 +11,8 @@ const { TextArea } = Input;
 export default function EstimateFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const workOrderId = searchParams.get('work_order_id') || undefined;
   const [form] = Form.useForm();
   const isEdit = !!id;
 
@@ -44,10 +46,19 @@ export default function EstimateFormPage() {
     try {
       if (isEdit) {
         await updateEstimate.mutateAsync({ id: id!, ...payload });
+        navigate('/estimates');
       } else {
-        await createEstimate.mutateAsync(payload);
+        const result = await createEstimate.mutateAsync({ ...payload, work_order_id: workOrderId });
+        const newId = result.data.data?.id;
+        if (workOrderId) {
+          // Redirect back to the work order's estimates tab
+          navigate(`/work-orders/${workOrderId}?tab=estimates`);
+        } else if (newId) {
+          navigate(`/estimates/${newId}`);
+        } else {
+          navigate('/estimates');
+        }
       }
-      navigate('/estimates');
     } catch {
       // Error handled by mutation hooks
     }
@@ -65,8 +76,8 @@ export default function EstimateFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Estimate' : 'Create Estimate'}
-        onBack={() => navigate('/estimates')}
+        title={isEdit ? 'Edit Estimate' : workOrderId ? 'Create Estimate for Work Order' : 'Create Estimate'}
+        onBack={() => workOrderId ? navigate(`/work-orders/${workOrderId}`) : navigate('/estimates')}
       />
 
       <Card>

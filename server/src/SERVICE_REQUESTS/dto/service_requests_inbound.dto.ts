@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEnum, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsObject, IsNumber } from 'class-validator';
 
 export class InboundServiceRequestDto {
   @ApiProperty({ description: 'Customer full name', example: 'John Doe' })
@@ -44,6 +44,16 @@ export class InboundServiceRequestDto {
   @IsString()
   @IsOptional()
   external_ref_id?: string;
+
+  @ApiPropertyOptional({ description: 'GPS latitude', example: 25.2048 })
+  @IsNumber()
+  @IsOptional()
+  lat?: number;
+
+  @ApiPropertyOptional({ description: 'GPS longitude', example: 55.2708 })
+  @IsNumber()
+  @IsOptional()
+  lng?: number;
 
   @ApiPropertyOptional({ description: 'Additional custom fields', example: { preferred_time: 'Morning' } })
   @IsObject()

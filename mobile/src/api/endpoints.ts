@@ -356,9 +356,13 @@ export const estimatesApi = {
   getById: (id: string) =>
     api.get<ApiResponse<Estimate>>(`/estimates/${id}`),
 
+  getByWorkOrder: (workOrderId: string) =>
+    api.get<ApiResponse<Estimate[]>>(`/estimates/work-order/${workOrderId}`),
+
   create: (dto: {
     contact_id?: string;
     request_id?: string;
+    work_order_id?: string;
     notes?: string;
     expiry_date?: string;
     subtotal?: number;
@@ -378,6 +382,18 @@ export const estimatesApi = {
 
   reject: (id: string, reason?: string) =>
     api.post<ApiResponse<Estimate>>(`/estimates/${id}/reject`, reason ? { reason } : {}),
+
+  submitForApproval: (id: string) =>
+    api.post<ApiResponse<Estimate>>(`/estimates/${id}/submit-for-approval`),
+
+  adminApprove: (id: string) =>
+    api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-approve`),
+
+  adminReject: (id: string, reason?: string) =>
+    api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-reject`, { reason }),
+
+  generateInvoice: (id: string) =>
+    api.post<ApiResponse<Invoice>>(`/estimates/${id}/generate-invoice`),
 
   convertToWorkOrder: (id: string) =>
     api.post<ApiResponse<unknown>>(`/estimates/${id}/convert-to-work-order`),

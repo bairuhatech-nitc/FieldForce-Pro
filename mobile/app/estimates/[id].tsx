@@ -168,32 +168,36 @@ function SignatureCaptureModal({
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  draft:           '#6c757d',
-  sent:            '#0ea5e9',
-  viewed:          '#6366f1',
-  approved:        '#22c55e',
-  rejected:        '#ef4444',
-  expired:         '#f59e0b',
-  converted_to_wo: '#10b981',
+  draft:                '#6c757d',
+  pending_approval:     '#f59e0b',
+  sent:                 '#0ea5e9',
+  viewed:               '#6366f1',
+  approved:             '#22c55e',
+  rejected:             '#ef4444',
+  expired:              '#f59e0b',
+  converted_to_wo:      '#10b981',
+  converted_to_invoice: '#6366f1',
 };
 
 const STATUS_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  draft:           'document-outline',
-  sent:            'paper-plane-outline',
-  viewed:          'eye-outline',
-  approved:        'checkmark-circle-outline',
-  rejected:        'close-circle-outline',
-  expired:         'timer-outline',
-  converted_to_wo: 'construct-outline',
+  draft:                'document-outline',
+  pending_approval:     'hourglass-outline',
+  sent:                 'paper-plane-outline',
+  viewed:               'eye-outline',
+  approved:             'checkmark-circle-outline',
+  rejected:             'close-circle-outline',
+  expired:              'timer-outline',
+  converted_to_wo:      'construct-outline',
+  converted_to_invoice: 'receipt-outline',
 };
 
 function statusColor(s: string): string { return STATUS_COLORS[s] ?? colors.textLight; }
 
 function statusLabel(s: string): string {
   const map: Record<string, string> = {
-    draft: 'Draft', sent: 'Sent', viewed: 'Viewed',
+    draft: 'Draft', pending_approval: 'Pending Approval', sent: 'Sent', viewed: 'Viewed',
     approved: 'Approved', rejected: 'Rejected', expired: 'Expired',
-    converted_to_wo: 'Converted to WO',
+    converted_to_wo: 'Converted to WO', converted_to_invoice: 'Invoiced',
   };
   return map[s] ?? s;
 }
@@ -550,6 +554,78 @@ export default function EstimateDetailScreen() {
     );
   };
 
+  const doSubmitForApproval = () => {
+    confirm('Submit for Approval', 'Submit this estimate for admin/dispatcher approval?', async () => {
+      setActionLoading('submit');
+      try {
+        const res = await estimatesApi.submitForApproval(id!);
+        setEstimate(res.data.data ?? estimate);
+      } catch {
+        Alert.alert('Error', 'Could not submit for approval.');
+      } finally {
+        setActionLoading(null);
+      }
+    });
+  };
+
+  const doAdminApprove = () => {
+    confirm('Approve Estimate', 'Approve this estimate?', async () => {
+      setActionLoading('admin-approve');
+      try {
+        const res = await estimatesApi.adminApprove(id!);
+        setEstimate(res.data.data ?? estimate);
+      } catch {
+        Alert.alert('Error', 'Could not approve estimate.');
+      } finally {
+        setActionLoading(null);
+      }
+    });
+  };
+
+  const doAdminReject = () => {
+    Alert.alert(
+      'Reject Estimate',
+      'Reject this estimate?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reject',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading('admin-reject');
+            try {
+              const res = await estimatesApi.adminReject(id!);
+              setEstimate(res.data.data ?? estimate);
+            } catch {
+              Alert.alert('Error', 'Could not reject estimate.');
+            } finally {
+              setActionLoading(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const doGenerateInvoice = () => {
+    confirm('Generate Invoice', 'Create a draft invoice from this approved estimate?', async () => {
+      setActionLoading('invoice');
+      try {
+        const res = await estimatesApi.generateInvoice(id!);
+        const inv = res.data.data;
+        // Reload estimate to reflect converted_to_invoice status
+        await load();
+        if (inv?.id) {
+          router.push(`/invoices/${inv.id}` as `/${string}`);
+        }
+      } catch {
+        Alert.alert('Error', 'Could not generate invoice.');
+      } finally {
+        setActionLoading(null);
+      }
+    });
+  };
+
   // ── Render: loading ────────────────────────────────────────────────────────
 
   if (loading) {
@@ -576,7 +652,7 @@ export default function EstimateDetailScreen() {
 
   const sColor   = statusColor(estimate.status);
   const sIcon    = STATUS_ICONS[estimate.status] ?? 'document-outline';
-  const isFinal  = estimate.status === 'converted_to_wo';
+  const isFinal  = estimate.status === 'converted_to_wo' || estimate.status === 'converted_to_invoice';
   const canAct   = !isFinal;
   const expiry   = expiryBadge(estimate.expiry_date);
   const contactName = contact
@@ -777,14 +853,42 @@ export default function EstimateDetailScreen() {
             <Text style={[styles.sectionTitle, { color: c.textSecondary }]}>Actions</Text>
             <View style={styles.actionsWrap}>
 
-              {/* DRAFT → send */}
+              {/* DRAFT → send or submit for approval */}
               {estimate.status === 'draft' && (
-                <ActionButton
-                  label="Send to Customer"
-                  icon="paper-plane-outline"
-                  onPress={doSend}
-                  loading={actionLoading === 'send'}
-                />
+                <>
+                  <ActionButton
+                    label="Send to Customer"
+                    icon="paper-plane-outline"
+                    onPress={doSend}
+                    loading={actionLoading === 'send'}
+                  />
+                  <ActionButton
+                    label="Submit for Approval"
+                    icon="hourglass-outline"
+                    onPress={doSubmitForApproval}
+                    variant="secondary"
+                    loading={actionLoading === 'submit'}
+                  />
+                </>
+              )}
+
+              {/* PENDING_APPROVAL → admin approve or reject */}
+              {estimate.status === 'pending_approval' && (
+                <>
+                  <ActionButton
+                    label="Approve"
+                    icon="checkmark-circle-outline"
+                    onPress={doAdminApprove}
+                    loading={actionLoading === 'admin-approve'}
+                  />
+                  <ActionButton
+                    label="Reject"
+                    icon="close-circle-outline"
+                    onPress={doAdminReject}
+                    variant="danger"
+                    loading={actionLoading === 'admin-reject'}
+                  />
+                </>
               )}
 
               {/* SENT → viewed or expire */}
@@ -833,14 +937,23 @@ export default function EstimateDetailScreen() {
                 </>
               )}
 
-              {/* APPROVED → convert to WO */}
+              {/* APPROVED → convert to WO or generate invoice */}
               {estimate.status === 'approved' && (
-                <ActionButton
-                  label="Convert to Work Order"
-                  icon="construct-outline"
-                  onPress={doConvert}
-                  loading={actionLoading === 'convert'}
-                />
+                <>
+                  <ActionButton
+                    label="Generate Invoice"
+                    icon="receipt-outline"
+                    onPress={doGenerateInvoice}
+                    loading={actionLoading === 'invoice'}
+                  />
+                  <ActionButton
+                    label="Convert to Work Order"
+                    icon="construct-outline"
+                    onPress={doConvert}
+                    variant="secondary"
+                    loading={actionLoading === 'convert'}
+                  />
+                </>
               )}
 
               {/* REJECTED or EXPIRED → revert to draft */}
@@ -863,7 +976,9 @@ export default function EstimateDetailScreen() {
           <View style={[styles.finalNotice, { borderLeftColor: sColor, backgroundColor: cardBg, borderColor }]}>
             <Ionicons name="checkmark-circle" size={18} color={sColor} />
             <Text style={[styles.finalNoticeText, { color: sColor }]}>
-              This estimate has been converted to a work order and cannot be modified.
+              {estimate.status === 'converted_to_invoice'
+                ? 'This estimate has been invoiced and cannot be modified.'
+                : 'This estimate has been converted to a work order and cannot be modified.'}
             </Text>
           </View>
         )}

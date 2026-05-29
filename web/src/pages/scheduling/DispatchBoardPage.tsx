@@ -2,7 +2,37 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Alert, Button, Table, Space, Tooltip, Tag, Tabs, Card, Descriptions, Skeleton, Modal, Select, Divider, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, UserAddOutlined, ReloadOutlined, CalendarOutlined, FileTextOutlined, TeamOutlined } from '@ant-design/icons';
+import { EyeOutlined, UserAddOutlined, ReloadOutlined, CalendarOutlined, FileTextOutlined, TeamOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { workOrdersApi } from '@/api/work-orders.api';
+import type { WorkOrder } from '@/types/models.types';
+
+// Fix default Leaflet marker icons in bundlers
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+const blueIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+const greenIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
 
 const { Text } = Typography;
 import { useTranslation } from 'react-i18next';
@@ -178,6 +208,21 @@ export default function DispatchBoardPage() {
     queryClient.invalidateQueries({ queryKey: ['appointments'] });
   }, [queryClient]);
 
+  // Live map: fetch all work orders with locations, auto-refresh every 30s
+  const { data: mapWorkOrders = [], refetch: refetchMap } = useQuery({
+    queryKey: ['work-orders', 'dispatch-map'],
+    queryFn: async () => {
+      const res = await workOrdersApi.getAllNonPaginated();
+      return (res.data.data || []) as WorkOrder[];
+    },
+    enabled: activeTab === 'map',
+    refetchInterval: activeTab === 'map' ? 30000 : false,
+  });
+
+  const jobsWithLocation = mapWorkOrders.filter(
+    (wo) => wo.location?.lat && wo.location?.lng,
+  );
+
   // ─── Shared columns (without actions) ─────────────────────────────
 
   const baseColumns: ColumnsType<ServiceAppointment> = [
@@ -287,6 +332,7 @@ export default function DispatchBoardPage() {
   const tabItems = [
     { key: 'all', label: 'All Appointments' },
     { key: 'new', label: 'New / Assign' },
+    { key: 'map', label: <span><EnvironmentOutlined style={{ marginRight: 4 }} />Live Map</span> },
   ];
 
   return (
@@ -303,65 +349,123 @@ export default function DispatchBoardPage() {
         style={{ marginBottom: 16 }}
       />
 
-      <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <SearchFilter
-          placeholder="Search appointments..."
-          allowClear
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          style={{ width: 400 }}
-        />
-        {activeTab === 'all' && (
-          <Select
-            placeholder="Filter by status"
-            allowClear
-            value={statusFilter}
-            onChange={(value) => { setStatusFilter(value); setPage(1); }}
-            options={statusOptions}
-            style={{ width: 200 }}
-          />
-        )}
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={handleReload}
-        >
-          Reload
-        </Button>
-      </div>
+      {activeTab !== 'map' && (
+        <>
+          <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <SearchFilter
+              placeholder="Search appointments..."
+              allowClear
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={{ width: 400 }}
+            />
+            {activeTab === 'all' && (
+              <Select
+                placeholder="Filter by status"
+                allowClear
+                value={statusFilter}
+                onChange={(value) => { setStatusFilter(value); setPage(1); }}
+                options={statusOptions}
+                style={{ width: 200 }}
+              />
+            )}
+            <Button icon={<ReloadOutlined />} onClick={handleReload}>Reload</Button>
+          </div>
 
-      {activeTab === 'new' && (
-        <Alert
-          type={canAssign ? 'info' : 'warning'}
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={
-            canAssign
-              ? `You are the designated assigner for scheduling.${assignerName ? ` (${assignerName})` : ''}`
-              : scheduleAssignerId
-                ? `Only the designated assigner${assignerName ? ` (${assignerName})` : ''} can assign technicians.`
-                : 'No SCHEDULE workflow is configured. Configure a SCHEDULE workflow in Workflow Settings to designate an assigner.'
-          }
-        />
+          {activeTab === 'new' && (
+            <Alert
+              type={canAssign ? 'info' : 'warning'}
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                canAssign
+                  ? `You are the designated assigner for scheduling.${assignerName ? ` (${assignerName})` : ''}`
+                  : scheduleAssignerId
+                    ? `Only the designated assigner${assignerName ? ` (${assignerName})` : ''} can assign technicians.`
+                    : 'No SCHEDULE workflow is configured. Configure a SCHEDULE workflow in Workflow Settings to designate an assigner.'
+              }
+            />
+          )}
+
+          <Table
+            columns={columns}
+            dataSource={appointments}
+            rowKey="id"
+            loading={isLoading}
+            scroll={{ x: 1200 }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: meta?.itemCount || 0,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} appointments`,
+              onChange: (newPage, newPageSize) => {
+                setPage(newPage);
+                setPageSize(newPageSize);
+              },
+            }}
+          />
+        </>
       )}
 
-      <Table
-        columns={columns}
-        dataSource={appointments}
-        rowKey="id"
-        loading={isLoading}
-        scroll={{ x: 1200 }}
-        pagination={{
-          current: page,
-          pageSize,
-          total: meta?.itemCount || 0,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} appointments`,
-          onChange: (newPage, newPageSize) => {
-            setPage(newPage);
-            setPageSize(newPageSize);
-          },
-        }}
-      />
+      {activeTab === 'map' && (
+        <Card
+          extra={
+            <Button icon={<ReloadOutlined />} size="small" onClick={() => refetchMap()}>
+              Refresh
+            </Button>
+          }
+        >
+          <Space style={{ marginBottom: 12 }}>
+            <Tag color="red">Unassigned</Tag>
+            <Tag color="blue">Assigned / In Progress</Tag>
+            <Tag color="green">Completed</Tag>
+            <Text type="secondary" style={{ fontSize: 12 }}>Auto-refreshes every 30s</Text>
+          </Space>
+          {jobsWithLocation.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px 0', color: '#999' }}>
+              No jobs with GPS location data found.
+            </div>
+          ) : (
+            <div style={{ height: 500, width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid #d9d9d9' }}>
+              <MapContainer
+                center={[Number(jobsWithLocation[0].location!.lat), Number(jobsWithLocation[0].location!.lng)]}
+                zoom={11}
+                style={{ height: '100%', width: '100%' }}
+                scrollWheelZoom
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {jobsWithLocation.map((wo) => {
+                  const lat = Number(wo.location!.lat);
+                  const lng = Number(wo.location!.lng);
+                  const icon = wo.status === 'completed' || wo.status === 'closed'
+                    ? greenIcon
+                    : wo.assigned_to
+                      ? blueIcon
+                      : redIcon;
+                  return (
+                    <Marker key={wo.id} position={[lat, lng]} icon={icon}>
+                      <Popup>
+                        <strong>{wo.wo_number || wo.id}</strong>
+                        <div style={{ fontSize: 12, marginTop: 4 }}>{wo.summary}</div>
+                        <div style={{ fontSize: 12, marginTop: 2 }}>
+                          Status: <Tag style={{ fontSize: 11 }}>{wo.status.replace(/_/g, ' ')}</Tag>
+                        </div>
+                        {wo.location?.address && (
+                          <div style={{ fontSize: 12, marginTop: 2, color: '#666' }}>{wo.location.address}</div>
+                        )}
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MapContainer>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Assign Technician Modal */}
       <Modal

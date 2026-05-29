@@ -189,6 +189,14 @@ export class EstimatesController {
     return DataResponseDto.success(estimate, 'Estimate declined.');
   }
 
+  @Get('work-order/:workOrderId')
+  @Permissions('estimates:read')
+  @ApiOperation({ summary: 'Get all estimates for a work order' })
+  async findByWorkOrder(@Param('workOrderId') workOrderId: string, @TenantId() tenantId: string) {
+    const estimates = await this.estimatesService.findByWorkOrder(workOrderId, tenantId);
+    return DataResponseDto.success(estimates, 'Work order estimates fetched successfully');
+  }
+
   @Get(':id')
   @Permissions('estimates:read')
   @ApiOperation({ summary: 'Get estimate by ID' })
@@ -292,6 +300,42 @@ export class EstimatesController {
   async convertToWorkOrder(@Param('id') id: string, @TenantId() tenantId: string, @Body() options?: any) {
     const workOrder = await this.estimatesService.convertToWorkOrder(id, tenantId, options);
     return DataResponseDto.success(workOrder, 'Estimate converted to work order successfully');
+  }
+
+  @Post(':id/submit-for-approval')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Submit a draft estimate for admin/dispatcher approval (technician flow)' })
+  async submitForApproval(@Param('id') id: string, @TenantId() tenantId: string) {
+    const estimate = await this.estimatesService.submitForApproval(id, tenantId);
+    return DataResponseDto.success(estimate, 'Estimate submitted for approval');
+  }
+
+  @Post(':id/admin-approve')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Admin/Dispatcher directly approves an estimate (draft or pending_approval)' })
+  async adminApprove(@Param('id') id: string, @TenantId() tenantId: string) {
+    const estimate = await this.estimatesService.adminApprove(id, tenantId);
+    return DataResponseDto.success(estimate, 'Estimate approved successfully');
+  }
+
+  @Post(':id/admin-reject')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Admin/Dispatcher rejects an estimate (draft or pending_approval)' })
+  async adminReject(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @Body('reason') reason?: string,
+  ) {
+    const estimate = await this.estimatesService.adminReject(id, tenantId, reason);
+    return DataResponseDto.success(estimate, 'Estimate rejected');
+  }
+
+  @Post(':id/generate-invoice')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Generate a draft invoice from an approved estimate' })
+  async generateInvoice(@Param('id') id: string, @TenantId() tenantId: string) {
+    const invoice = await this.estimatesService.generateInvoice(id, tenantId);
+    return DataResponseDto.created(invoice, 'Invoice generated successfully');
   }
 
   @Get(':id/pdf')

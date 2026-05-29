@@ -4,6 +4,7 @@ import { QueueController } from './queue.controller';
 import { ServiceRequestsService } from './service_requests.service';
 import { serviceRequestsProviders } from './service_requests.provider';
 import { workflowTemplatesProviders } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templates.provider';
+import { serviceLocationsProviders } from '../SERVICE_LOCATIONS/service_locations.provider';
 import { DatabaseModule } from '../database/database.module';
 import { WorkflowModule } from '../WORKFLOW/workflow.module';
 import { ApiKeysModule } from '../API_KEYS/api_keys.module';
@@ -20,6 +21,7 @@ import { workOrdersProviders } from '../WORK_ORDERS/work_orders.provider';
     ...serviceRequestsProviders,
     ...workflowTemplatesProviders,
     ...workOrdersProviders,
+    ...serviceLocationsProviders,
   ],
   exports: [ServiceRequestsService],
 })

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { estimatesApi, CreateEstimatePayload, UpdateEstimatePayload } from '@/api/estimates.api';
 import type { PageOptions } from '@/types/api.types';
+import type { Invoice } from '@/types/models.types';
 import { useNotificationStore } from '@/store/notification.store';
 
 export function useEstimates(params?: PageOptions & { status?: string; excludeStatus?: string; createdBy?: string }, enabled = true) {
@@ -215,6 +216,84 @@ export function useRejectEstimate() {
     },
     onError: () => {
       addNotification({ type: 'error', message: 'Failed to reject estimate' });
+    },
+  });
+}
+
+export function useEstimatesByWorkOrder(workOrderId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['estimates', 'work-order', workOrderId],
+    queryFn: async () => {
+      const response = await estimatesApi.getByWorkOrderId(workOrderId);
+      return response.data.data!;
+    },
+    enabled: enabled && !!workOrderId,
+  });
+}
+
+export function useSubmitEstimateForApproval() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.submitForApproval(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate submitted for approval' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to submit estimate for approval' });
+    },
+  });
+}
+
+export function useAdminApproveEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.adminApprove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate approved' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to approve estimate' });
+    },
+  });
+}
+
+export function useAdminRejectEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      estimatesApi.adminReject(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate rejected' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to reject estimate' });
+    },
+  });
+}
+
+export function useGenerateInvoiceFromEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.generateInvoice(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      const inv = response.data.data as Invoice | undefined;
+      addNotification({ type: 'success', message: `Invoice ${inv?.invoice_number || ''} generated` });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to generate invoice' });
     },
   });
 }

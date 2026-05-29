@@ -23,15 +23,19 @@ import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVAL
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 import { WorkOrdersService } from '../WORK_ORDERS/work_orders.service';
 import { WorkOrderLineItemsService } from '../WORK_ORDER_LINE_ITEMS/work_order_line_items.service';
+import { Invoice } from '../INVOICES/invoices.entity';
+import { InvoiceLineItem } from '../INVOICE_LINE_ITEMS/invoice_line_items.entity';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
-  draft: ['sent'],
+  draft: ['sent', 'pending_approval'],
+  pending_approval: ['approved', 'rejected'],
   sent: ['viewed', 'approved', 'rejected', 'expired'],
   viewed: ['approved', 'rejected', 'expired'],
-  approved: ['converted_to_wo'],
+  approved: ['converted_to_wo', 'converted_to_invoice'],
   rejected: ['draft'],
   expired: ['draft'],
   converted_to_wo: [],
+  converted_to_invoice: [],
 };
 
 @Injectable()
@@ -43,6 +47,10 @@ export class EstimatesService {
     private readonly estimateRepository: typeof Estimate,
     @Inject(KEYNAMES.WORKFLOW_TEMPLATES)
     private readonly templateRepository: typeof WorkflowTemplate,
+    @Inject(KEYNAMES.INVOICES)
+    private readonly invoiceRepository: typeof Invoice,
+    @Inject(KEYNAMES.INVOICE_LINE_ITEMS)
+    private readonly invoiceLineItemRepository: typeof InvoiceLineItem,
     private readonly documentApprovalsService: DocumentApprovalsService,
     private readonly workOrdersService: WorkOrdersService,
     private readonly workOrderLineItemsService: WorkOrderLineItemsService,
@@ -692,6 +700,168 @@ export class EstimatesService {
     // Return the first approver's ID as the designated estimate creator
     const sorted = [...template.approvers].sort((a, b) => (a.order_no ?? 0) - (b.order_no ?? 0));
     return sorted[0].approver_id;
+  }
+
+  async findByWorkOrder(workOrderId: string, tenantId: string): Promise<Estimate[]> {
+    return this.estimateRepository.findAll({
+      where: { work_order_id: workOrderId, tenant_id: tenantId, is_deleted: false },
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+        {
+          model: EstimateLineItem,
+          as: 'line_items',
+          where: { is_deleted: false },
+          required: false,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+  }
+
+  async submitForApproval(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (estimate.status !== 'draft') {
+      throw new BadRequestException('Only draft estimates can be submitted for approval');
+    }
+
+    await estimate.update({ status: 'pending_approval' });
+    return estimate;
+  }
+
+  async adminApprove(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (!['draft', 'pending_approval'].includes(estimate.status)) {
+      throw new BadRequestException(
+        `Only draft or pending-approval estimates can be approved. Current status: '${estimate.status}'`,
+      );
+    }
+
+    await estimate.update({ status: 'approved' });
+    return estimate;
+  }
+
+  async adminReject(id: string, tenantId: string, reason?: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (!['draft', 'pending_approval'].includes(estimate.status)) {
+      throw new BadRequestException(
+        `Only draft or pending-approval estimates can be rejected. Current status: '${estimate.status}'`,
+      );
+    }
+
+    const customFields = { ...(estimate.custom_fields || {}) };
+    if (reason) {
+      customFields['rejection_reason'] = reason;
+      customFields['rejected_at'] = new Date().toISOString();
+    }
+
+    await estimate.update({ status: 'rejected', custom_fields: customFields });
+    return estimate;
+  }
+
+  private async generateInvoiceNumber(tenantId: string): Promise<string> {
+    const lastInvoice = await this.invoiceRepository.findOne({
+      where: { tenant_id: tenantId },
+      order: [['created_at', 'DESC']],
+      attributes: ['invoice_number'],
+    });
+
+    let nextNumber = 1;
+    if (lastInvoice?.invoice_number) {
+      const match = (lastInvoice.invoice_number as string).match(/INV-(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    return `INV-${nextNumber.toString().padStart(6, '0')}`;
+  }
+
+  async generateInvoice(id: string, tenantId: string): Promise<Invoice> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (estimate.status !== 'approved') {
+      throw new BadRequestException('Only approved estimates can generate an invoice');
+    }
+
+    // Return existing invoice if already generated for this estimate
+    const existing = await this.invoiceRepository.findOne({
+      where: { estimate_id: id, tenant_id: tenantId, is_deleted: false },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const lineItems = (estimate.line_items || []).map((item) => ({
+      type: item.type || 'service',
+      name: item.name,
+      description: item.description || null,
+      quantity: Number(item.quantity) || 1,
+      unit_price: Number(item.unit_price) || 0,
+      tax_rate: Number(item.tax_rate) || 0,
+      discount_type: (item as unknown as Record<string, string>)['discount_type'] || 'fixed',
+      discount: Number(item.discount) || 0,
+      total: Number(item.total) || 0,
+    }));
+
+    let subtotal = 0;
+    let taxTotal = 0;
+    let discountTotal = 0;
+    for (const item of lineItems) {
+      subtotal += item.total;
+      taxTotal += item.unit_price * item.quantity * (item.tax_rate / 100);
+      discountTotal += item.discount;
+    }
+
+    if (lineItems.length === 0) {
+      subtotal = Number(estimate.subtotal) || 0;
+      taxTotal = Number(estimate.tax) || 0;
+      discountTotal = Number(estimate.discount) || 0;
+    }
+
+    const totalAmount = subtotal + taxTotal - discountTotal;
+    const invoiceNumber = await this.generateInvoiceNumber(tenantId);
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    const invoice = await this.invoiceRepository.create({
+      tenant_id: tenantId,
+      estimate_id: id,
+      contact_id: estimate.contact_id,
+      invoice_number: invoiceNumber,
+      due_date: dueDate.toISOString().split('T')[0],
+      status: 'draft',
+      subtotal,
+      tax: taxTotal,
+      discount: discountTotal,
+      total: totalAmount > 0 ? totalAmount : subtotal,
+      paid_amount: 0,
+      currency: 'INR',
+      notes: `Auto-generated from Estimate ${estimate.estimate_number || id.slice(0, 8)}`,
+    });
+
+    for (const item of lineItems) {
+      await this.invoiceLineItemRepository.create({
+        tenant_id: tenantId,
+        invoice_id: invoice.id,
+        type: item.type,
+        name: item.name,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        tax_rate: item.tax_rate,
+        discount_type: item.discount_type,
+        discount: item.discount,
+        total: item.total,
+      });
+    }
+
+    await estimate.update({ status: 'converted_to_invoice' });
+
+    return invoice;
   }
 
   async delete(id: string, tenantId: string): Promise<void> {

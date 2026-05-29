@@ -213,6 +213,18 @@ export class ServiceRequestsController {
     );
   }
 
+  @Post(':id/approve-and-convert')
+  @Permissions('service_requests:update')
+  @ApiOperation({ summary: 'Approve a service request and immediately convert it into a work order' })
+  async approveAndConvert(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() managerId: string,
+  ) {
+    const result = await this.serviceRequestsService.approveAndConvert(id, tenantId, managerId);
+    return DataResponseDto.created(result, `Work Order ${result.workOrder.wo_number} created successfully`);
+  }
+
   @Post(':id/convert-to-work-order')
   @Permissions('service_requests:update')
   @ApiOperation({ summary: 'Convert an approved service request into a new work order' })

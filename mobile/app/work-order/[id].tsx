@@ -23,6 +23,7 @@ import {
   workOrderNotesApi,
   workOrderAttachmentsApi,
   workOrderLineItemsApi,
+  estimatesApi,
 } from '@/api/endpoints';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MapNavigation } from '@/components/MapNavigation';
@@ -39,11 +40,12 @@ import type {
   WorkOrderNote,
   WorkOrderAttachment,
   WorkOrderLineItem,
+  Estimate,
 } from '@/types/models';
 
 // ─── Tab definition ───────────────────────────────────────────────────────────
 
-type Tab = 'details' | 'notes' | 'attachments' | 'line_items';
+type Tab = 'details' | 'notes' | 'attachments' | 'line_items' | 'estimates';
 
 interface TabConfig {
   key: Tab;
@@ -56,6 +58,7 @@ const TABS: TabConfig[] = [
   { key: 'notes', label: 'Notes', icon: 'chatbox-outline' },
   { key: 'attachments', label: 'Files', icon: 'attach-outline' },
   { key: 'line_items', label: 'Items', icon: 'list-outline' },
+  { key: 'estimates', label: 'Estimates', icon: 'document-text-outline' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -89,6 +92,9 @@ export default function WorkOrderDetailScreen() {
   const [notes, setNotes] = useState<WorkOrderNote[]>([]);
   const [attachments, setAttachments] = useState<WorkOrderAttachment[]>([]);
   const [lineItems, setLineItems] = useState<WorkOrderLineItem[]>([]);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [estimatesLoading, setEstimatesLoading] = useState(false);
+  const [estimateActionLoading, setEstimateActionLoading] = useState<string | null>(null);
 
   // Note compose
   const [newNote, setNewNote] = useState('');
@@ -139,6 +145,16 @@ export default function WorkOrderDetailScreen() {
     } catch { /* silently fail */ }
   }, [id]);
 
+  const fetchEstimates = useCallback(async () => {
+    if (!id) return;
+    setEstimatesLoading(true);
+    try {
+      const res = await estimatesApi.getByWorkOrder(id);
+      setEstimates(res.data.data ?? []);
+    } catch { /* silently fail */ }
+    finally { setEstimatesLoading(false); }
+  }, [id]);
+
   useEffect(() => { fetchWorkOrder(); }, [fetchWorkOrder]);
 
   // Lazy-load tab data when switching tabs
@@ -146,7 +162,8 @@ export default function WorkOrderDetailScreen() {
     if (activeTab === 'notes') fetchNotes();
     if (activeTab === 'attachments') fetchAttachments();
     if (activeTab === 'line_items') fetchLineItems();
-  }, [activeTab, fetchNotes, fetchAttachments, fetchLineItems]);
+    if (activeTab === 'estimates') fetchEstimates();
+  }, [activeTab, fetchNotes, fetchAttachments, fetchLineItems, fetchEstimates]);
 
   // Android hardware back button
   useEffect(() => {
@@ -680,6 +697,157 @@ export default function WorkOrderDetailScreen() {
     </View>
   );
 
+  const renderEstimates = () => (
+    <View style={{ flex: 1 }}>
+      {/* Create Estimate button */}
+      <TouchableOpacity
+        style={[styles.addEstimateBtn, { backgroundColor: ACCENT }]}
+        onPress={() => router.push(`/estimates/new?work_order_id=${id}` as `/${string}`)}
+      >
+        <Ionicons name="add-circle-outline" size={18} color="#fff" />
+        <Text style={styles.addEstimateBtnText}>Create Estimate</Text>
+      </TouchableOpacity>
+
+      {estimatesLoading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator color={ACCENT} />
+        </View>
+      ) : (
+        <FlatList
+          data={estimates}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.tabContent, estimates.length === 0 && styles.emptyContent]}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={40} color={colors.textLight} />
+              <Text style={styles.emptyText}>No estimates yet</Text>
+              <Text style={styles.emptySubtext}>Create an estimate for this work order</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const estStatusColors: Record<string, string> = {
+              draft: colors.textSecondary, pending_approval: '#f59e0b', sent: '#0ea5e9',
+              viewed: '#6366f1', approved: '#22c55e', rejected: '#ef4444',
+              expired: '#f59e0b', converted_to_wo: '#10b981', converted_to_invoice: '#6366f1',
+            };
+            const sCol = estStatusColors[item.status] ?? colors.textSecondary;
+            return (
+              <TouchableOpacity
+                style={[styles.estimateCard, { backgroundColor: cardBg, borderColor }]}
+                onPress={() => router.push(`/estimates/${item.id}` as `/${string}`)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.estimateCardTop}>
+                  <Text style={styles.estimateNumber}>{item.estimate_number ?? 'Draft'}</Text>
+                  <View style={[styles.estimateStatusBadge, { backgroundColor: sCol + '18', borderColor: sCol + '40' }]}>
+                    <Text style={[styles.estimateStatusText, { color: sCol }]}>
+                      {item.status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.estimateTotal}>{formatCurrency(Number(item.total))}</Text>
+                {/* Inline Approve / Reject for pending_approval */}
+                {item.status === 'pending_approval' && (
+                  <View style={styles.estimateActions}>
+                    <TouchableOpacity
+                      style={[styles.estimateActionBtn, { backgroundColor: '#22c55e' }]}
+                      disabled={estimateActionLoading === item.id + '-approve'}
+                      onPress={() => {
+                        Alert.alert('Approve', `Approve estimate ${item.estimate_number ?? item.id.slice(0, 8)}?`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Approve',
+                            onPress: async () => {
+                              setEstimateActionLoading(item.id + '-approve');
+                              try {
+                                await estimatesApi.adminApprove(item.id);
+                                await fetchEstimates();
+                              } catch {
+                                Alert.alert('Error', 'Could not approve estimate.');
+                              } finally {
+                                setEstimateActionLoading(null);
+                              }
+                            },
+                          },
+                        ]);
+                      }}
+                    >
+                      {estimateActionLoading === item.id + '-approve'
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <Text style={styles.estimateActionBtnText}>Approve</Text>
+                      }
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.estimateActionBtn, { backgroundColor: '#ef4444' }]}
+                      disabled={estimateActionLoading === item.id + '-reject'}
+                      onPress={() => {
+                        Alert.alert('Reject', `Reject estimate ${item.estimate_number ?? item.id.slice(0, 8)}?`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Reject', style: 'destructive',
+                            onPress: async () => {
+                              setEstimateActionLoading(item.id + '-reject');
+                              try {
+                                await estimatesApi.adminReject(item.id);
+                                await fetchEstimates();
+                              } catch {
+                                Alert.alert('Error', 'Could not reject estimate.');
+                              } finally {
+                                setEstimateActionLoading(null);
+                              }
+                            },
+                          },
+                        ]);
+                      }}
+                    >
+                      {estimateActionLoading === item.id + '-reject'
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <Text style={styles.estimateActionBtnText}>Reject</Text>
+                      }
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {/* Generate Invoice for approved */}
+                {item.status === 'approved' && (
+                  <TouchableOpacity
+                    style={[styles.estimateActionBtn, { backgroundColor: ACCENT, marginTop: spacing.sm, width: '100%' }]}
+                    disabled={estimateActionLoading === item.id + '-invoice'}
+                    onPress={() => {
+                      Alert.alert('Generate Invoice', 'Create a draft invoice from this estimate?', [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Generate',
+                          onPress: async () => {
+                            setEstimateActionLoading(item.id + '-invoice');
+                            try {
+                              const res = await estimatesApi.generateInvoice(item.id);
+                              await fetchEstimates();
+                              const inv = res.data.data;
+                              if (inv?.id) router.push(`/invoices/${inv.id}` as `/${string}`);
+                            } catch {
+                              Alert.alert('Error', 'Could not generate invoice.');
+                            } finally {
+                              setEstimateActionLoading(null);
+                            }
+                          },
+                        },
+                      ]);
+                    }}
+                  >
+                    {estimateActionLoading === item.id + '-invoice'
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Text style={styles.estimateActionBtnText}>Generate Invoice</Text>
+                    }
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
+    </View>
+  );
+
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -773,6 +941,7 @@ export default function WorkOrderDetailScreen() {
         {activeTab === 'notes' && renderNotes()}
         {activeTab === 'attachments' && renderAttachments()}
         {activeTab === 'line_items' && renderLineItems()}
+        {activeTab === 'estimates' && renderEstimates()}
       </View>
 
       <WorkOrderToolsModal
@@ -1258,4 +1427,68 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
   emptyText: { ...typography.h4, color: colors.textSecondary, textAlign: 'center' },
   emptySubtext: { ...typography.body, color: colors.textLight, textAlign: 'center' },
+
+  // ── Estimates tab ─────────────────────────────────────────────────────────
+  addEstimateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  addEstimateBtnText: {
+    ...typography.button,
+    color: '#fff',
+  },
+  estimateCard: {
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+  },
+  estimateCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  estimateNumber: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  estimateStatusBadge: {
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  estimateStatusText: {
+    ...typography.caption,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  estimateTotal: {
+    ...typography.h4,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  estimateActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  estimateActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+  },
+  estimateActionBtnText: {
+    ...typography.label,
+    color: '#fff',
+    fontWeight: '700',
+  },
 });

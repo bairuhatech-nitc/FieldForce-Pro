@@ -89,4 +89,8 @@ export const serviceRequestsApi = {
   convertToWorkOrder(id: string) {
     return api.post<ApiResponse<{ workOrder: { id: string; wo_number: string }; serviceRequest: ServiceRequest }>>(`/service-requests/${id}/convert-to-work-order`);
   },
+
+  approveAndConvert(id: string) {
+    return api.post<ApiResponse<{ workOrder: { id: string; wo_number: string }; serviceRequest: ServiceRequest }>>(`/service-requests/${id}/approve-and-convert`);
+  },
 };

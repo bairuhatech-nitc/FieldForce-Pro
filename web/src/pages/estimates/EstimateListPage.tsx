@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Table, Space, Tooltip, Tag, Tabs, Alert } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EyeOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EyeOutlined, InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useTranslation } from 'react-i18next';
-import { useEstimates, useMyEstimateDrafts, useMyEstimateApprovals, useEstimateAssignedCreator } from '@/hooks/use-estimates';
+import { useEstimates, useMyEstimateDrafts, useMyEstimateApprovals, useEstimateAssignedCreator, useAdminApproveEstimate, useAdminRejectEstimate } from '@/hooks/use-estimates';
 import EstimateInternalReviewCard from '@/components/estimates/EstimateInternalReviewCard';
 import SendEstimateModal from '@/components/estimates/SendEstimateModal';
 import { usePermission } from '@/components/permissions/usePermission';
@@ -18,12 +19,14 @@ import SearchFilter from '@/components/common/SearchFilter';
 
 const statusColors: Record<string, string> = {
   draft: 'default',
+  pending_approval: 'orange',
   sent: 'blue',
   viewed: 'cyan',
   approved: 'green',
   rejected: 'red',
   expired: 'orange',
   converted_to_wo: 'purple',
+  converted_to_invoice: 'geekblue',
 };
 
 function formatStatus(status: string): string {
@@ -41,14 +44,14 @@ export default function EstimateListPage() {
     const tabParam = searchParams.get('tab');
     // Map old 'internal-review' to 'review' for backwards compat
     if (tabParam === 'internal-review') return 'review';
-    return tabParam && ['all', 'drafts', 'review'].includes(tabParam) ? tabParam : 'all';
+    return tabParam && ['all', 'drafts', 'review', 'pending-review'].includes(tabParam) ? tabParam : 'all';
   });
 
   // Sync tab from URL query params (e.g. navigated from notification)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     const mapped = tabParam === 'internal-review' ? 'review' : tabParam;
-    if (mapped && ['all', 'drafts', 'review'].includes(mapped) && mapped !== activeTab) {
+    if (mapped && ['all', 'drafts', 'review', 'pending-review'].includes(mapped) && mapped !== activeTab) {
       setActiveTab(mapped);
     }
   }, [searchParams]);
@@ -60,6 +63,8 @@ export default function EstimateListPage() {
   const [draftsPageSize, setDraftsPageSize] = useState(10);
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewPageSize, setReviewPageSize] = useState(10);
+  const [pendingReviewPage, setPendingReviewPage] = useState(1);
+  const [pendingReviewPageSize, setPendingReviewPageSize] = useState(10);
 
   // Shared search (per-tab)
   const [searchInput, setSearchInput] = useState('');
@@ -85,9 +90,16 @@ export default function EstimateListPage() {
     { page: reviewPage, take: reviewPageSize, search },
     activeTab === 'review',
   );
+  const pendingReviewQuery = useEstimates(
+    { page: pendingReviewPage, take: pendingReviewPageSize, search, status: 'pending_approval' },
+    activeTab === 'pending-review',
+  );
 
-  // Pick active query (for table-based tabs: all, drafts)
-  const currentQuery = activeTab === 'all' ? allQuery : activeTab === 'drafts' ? draftsQuery : reviewQuery;
+  const adminApproveEstimate = useAdminApproveEstimate();
+  const adminRejectEstimate = useAdminRejectEstimate();
+
+  // Pick active query (for table-based tabs: all, drafts, pending-review)
+  const currentQuery = activeTab === 'all' ? allQuery : activeTab === 'drafts' ? draftsQuery : activeTab === 'pending-review' ? pendingReviewQuery : reviewQuery;
   const estimates = currentQuery.data?.data || [];
   const meta = currentQuery.data?.meta;
   const isLoading = currentQuery.isLoading;
@@ -96,10 +108,10 @@ export default function EstimateListPage() {
   const reviewEstimates = reviewQuery.data?.data || [];
 
   // Current pagination setters
-  const currentPage = activeTab === 'all' ? allPage : activeTab === 'drafts' ? draftsPage : reviewPage;
-  const currentPageSize = activeTab === 'all' ? allPageSize : activeTab === 'drafts' ? draftsPageSize : reviewPageSize;
-  const setCurrentPage = activeTab === 'all' ? setAllPage : activeTab === 'drafts' ? setDraftsPage : setReviewPage;
-  const setCurrentPageSize = activeTab === 'all' ? setAllPageSize : activeTab === 'drafts' ? setDraftsPageSize : setReviewPageSize;
+  const currentPage = activeTab === 'all' ? allPage : activeTab === 'drafts' ? draftsPage : activeTab === 'pending-review' ? pendingReviewPage : reviewPage;
+  const currentPageSize = activeTab === 'all' ? allPageSize : activeTab === 'drafts' ? draftsPageSize : activeTab === 'pending-review' ? pendingReviewPageSize : reviewPageSize;
+  const setCurrentPage = activeTab === 'all' ? setAllPage : activeTab === 'drafts' ? setDraftsPage : activeTab === 'pending-review' ? setPendingReviewPage : setReviewPage;
+  const setCurrentPageSize = activeTab === 'all' ? setAllPageSize : activeTab === 'drafts' ? setDraftsPageSize : activeTab === 'pending-review' ? setPendingReviewPageSize : setReviewPageSize;
 
   // Debounce search input
   useEffect(() => {
@@ -109,6 +121,7 @@ export default function EstimateListPage() {
       setAllPage(1);
       setDraftsPage(1);
       setReviewPage(1);
+      setPendingReviewPage(1);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchInput]);
@@ -211,9 +224,57 @@ export default function EstimateListPage() {
     ),
   };
 
+  // Pending Review tab: inline Approve / Reject
+  const pendingReviewAction: ColumnsType<Estimate>[number] = {
+    title: 'Actions',
+    key: 'actions',
+    fixed: 'right',
+    width: 200,
+    render: (_, record) => (
+      <Space size="small">
+        <Tooltip title="View">
+          <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/estimates/${record.id}`)} />
+        </Tooltip>
+        <Button
+          size="small"
+          type="primary"
+          icon={<CheckCircleOutlined />}
+          loading={adminApproveEstimate.isPending}
+          onClick={() => {
+            showConfirmDialog({
+              title: 'Approve Estimate',
+              content: `Approve estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+              onOk: async () => { await adminApproveEstimate.mutateAsync(record.id); },
+            });
+          }}
+        >
+          Approve
+        </Button>
+        <Button
+          size="small"
+          danger
+          icon={<CloseCircleOutlined />}
+          loading={adminRejectEstimate.isPending}
+          onClick={() => {
+            showConfirmDialog({
+              title: 'Reject Estimate',
+              content: `Reject estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+              onOk: async () => { await adminRejectEstimate.mutateAsync({ id: record.id }); },
+              danger: true,
+            });
+          }}
+        >
+          Reject
+        </Button>
+      </Space>
+    ),
+  };
+
   const columns: ColumnsType<Estimate> =
     activeTab === 'drafts'
       ? [...sharedColumns, draftsAction]
+      : activeTab === 'pending-review'
+      ? [...sharedColumns, pendingReviewAction]
       : [...sharedColumns, viewOnlyAction];
 
   const tabItems = [
@@ -224,6 +285,10 @@ export default function EstimateListPage() {
     {
       key: 'drafts',
       label: 'Drafts',
+    },
+    {
+      key: 'pending-review',
+      label: 'Pending Review',
     },
     {
       key: 'review',

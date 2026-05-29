@@ -168,6 +168,36 @@ export class AuthService {
       }
     }
 
+    // Create default Dispatcher role for tenant
+    const dispatcherPermissionNames = new Set([
+      'dashboard:read', 'notifications:read',
+      'service_requests:read', 'service_requests:create', 'service_requests:update',
+      'work_orders:read', 'work_orders:create', 'work_orders:update',
+      'scheduling:read', 'scheduling:create', 'scheduling:update',
+      'service_appointments:read', 'service_appointments:create', 'service_appointments:update',
+      'estimates:read', 'estimates:create', 'estimates:update',
+      'invoices:read', 'invoices:create', 'invoices:update',
+      'contacts:read', 'companies:read', 'service_locations:read',
+      'agent_locations:read',
+      'work_order_line_items:read', 'work_order_line_items:create', 'work_order_line_items:update',
+      'documents:read', 'documents:create',
+      'reports:read',
+    ]);
+    const dispatcherRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Dispatcher',
+      description: 'Dispatch coordinator - reviews service requests, assigns technicians, manages work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (dispatcherPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: dispatcherRole.id,
+          permission_id: permission.id,
+        });
+      }
+    }
+
     // Assign admin role to user
     await this.userRolesService.assignRole(user.id, adminRole.id);
 
@@ -340,6 +370,36 @@ export class AuthService {
       if (technicianPermissionNames.has(permission.name)) {
         await this.rolePermissionRepository.create({
           role_id: technicianRole.id,
+          permission_id: permission.id,
+        });
+      }
+    }
+
+    // Create default Dispatcher role for tenant
+    const dispatcherPermissionNames = new Set([
+      'dashboard:read', 'notifications:read',
+      'service_requests:read', 'service_requests:create', 'service_requests:update',
+      'work_orders:read', 'work_orders:create', 'work_orders:update',
+      'scheduling:read', 'scheduling:create', 'scheduling:update',
+      'service_appointments:read', 'service_appointments:create', 'service_appointments:update',
+      'estimates:read', 'estimates:create', 'estimates:update',
+      'invoices:read', 'invoices:create', 'invoices:update',
+      'contacts:read', 'companies:read', 'service_locations:read',
+      'agent_locations:read',
+      'work_order_line_items:read', 'work_order_line_items:create', 'work_order_line_items:update',
+      'documents:read', 'documents:create',
+      'reports:read',
+    ]);
+    const dispatcherRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Dispatcher',
+      description: 'Dispatch coordinator - reviews service requests, assigns technicians, manages work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (dispatcherPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: dispatcherRole.id,
           permission_id: permission.id,
         });
       }

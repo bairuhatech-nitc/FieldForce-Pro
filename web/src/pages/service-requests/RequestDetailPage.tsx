@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Space, Skeleton, Tag, Steps, Modal, Input, Alert, Select } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, MinusCircleOutlined, UserAddOutlined, SwapOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, MinusCircleOutlined, UserAddOutlined, SwapOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import {
   useServiceRequest,
   useDeleteServiceRequest,
@@ -9,7 +9,7 @@ import {
   useServiceRequestApprovals,
   useProcessServiceRequestApproval,
   useAssignServiceRequestTechnician,
-  useConvertToWorkOrder,
+  useApproveAndConvert,
 } from '@/hooks/use-service-requests';
 import { useAgents } from '@/hooks/use-users';
 import { useAuthStore } from '@/store/auth.store';
@@ -32,22 +32,35 @@ const statusColors: Record<string, string> = {
   estimated: 'gold',
   approved: 'green',
   converted_to_wo: 'purple',
+  rejected: 'red',
   closed: 'default',
   spam: 'red',
 };
 
+const statusLabels: Record<string, string> = {
+  new: 'Pending Approval',
+  triaged: 'Triaged',
+  estimated: 'Estimated',
+  approved: 'Approved',
+  converted_to_wo: 'Converted to WO',
+  rejected: 'Rejected',
+  closed: 'Closed',
+  spam: 'Flagged',
+};
+
 const statusTransitions: Record<string, string[]> = {
-  new: ['triaged', 'spam'],
-  triaged: ['estimated', 'closed', 'spam'],
-  estimated: ['approved', 'closed'],
+  new: ['triaged', 'rejected', 'spam'],
+  triaged: ['estimated', 'rejected', 'closed', 'spam'],
+  estimated: ['approved', 'rejected', 'closed'],
   approved: ['converted_to_wo', 'closed'],
   converted_to_wo: ['closed'],
+  rejected: ['new', 'closed'],
   closed: [],
   spam: [],
 };
 
 function formatStatus(status: string): string {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  return statusLabels[status] || status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
 interface ApprovalItem {
@@ -72,7 +85,7 @@ export default function RequestDetailPage() {
   const updateStatus = useUpdateServiceRequestStatus();
   const processApproval = useProcessServiceRequestApproval();
   const assignTechnician = useAssignServiceRequestTechnician();
-  const convertToWorkOrder = useConvertToWorkOrder();
+  const approveAndConvert = useApproveAndConvert();
 
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [approvalAction, setApprovalAction] = useState<'APPROVE' | 'REJECT'>('APPROVE');
@@ -80,8 +93,6 @@ export default function RequestDetailPage() {
   const [selectedApprovalId, setSelectedApprovalId] = useState<string>('');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>('');
-  const [convertedWoNumber, setConvertedWoNumber] = useState<string | null>(null);
-  const [convertedWoId, setConvertedWoId] = useState<string | null>(null);
 
   const handleDelete = () => {
     if (!request) return;
@@ -110,17 +121,16 @@ export default function RequestDetailPage() {
     setSelectedTechnicianId('');
   };
 
-  const handleConvertToWorkOrder = () => {
+  const handleApproveAndConvert = () => {
     if (!request) return;
     showConfirmDialog({
-      title: 'Convert to Work Order',
-      content: 'This will create a Work Order from this Service Request. Continue?',
+      title: 'Approve & Create Work Order',
+      content: 'This will approve the service request and create a Work Order. You will be redirected to the new Work Order.',
       onOk: async () => {
-        const response = await convertToWorkOrder.mutateAsync(request.id);
+        const response = await approveAndConvert.mutateAsync(request.id);
         const wo = response.data.data?.workOrder;
         if (wo) {
-          setConvertedWoNumber(wo.wo_number);
-          setConvertedWoId(wo.id);
+          navigate(`/work-orders/${wo.id}`);
         }
       },
     });
@@ -200,13 +210,14 @@ export default function RequestDetailPage() {
               >
                 Assign Technician
               </Button>
-              {!['converted_to_wo', 'closed', 'spam'].includes(request.status) && (
+              {!['converted_to_wo', 'closed', 'spam', 'rejected'].includes(request.status) && (
                 <Button
+                  type="primary"
                   icon={<SwapOutlined />}
-                  loading={convertToWorkOrder.isPending}
-                  onClick={handleConvertToWorkOrder}
+                  loading={approveAndConvert.isPending}
+                  onClick={handleApproveAndConvert}
                 >
-                  Convert to Work Order
+                  Approve &amp; Create Work Order
                 </Button>
               )}
               <Button icon={<EditOutlined />} onClick={() => navigate(`/service-requests/${request.id}/edit`)}>
@@ -219,20 +230,6 @@ export default function RequestDetailPage() {
           ) : undefined
         }
       />
-
-      {convertedWoNumber && convertedWoId && (
-        <Alert
-          message={`Work Order ${convertedWoNumber} created successfully`}
-          type="success"
-          showIcon
-          style={{ marginBottom: 16 }}
-          action={
-            <Button size="small" type="primary" onClick={() => navigate(`/work-orders/${convertedWoId}`)}>
-              View Work Order
-            </Button>
-          }
-        />
-      )}
 
       {request.is_spam && (
         <Alert
@@ -368,6 +365,35 @@ export default function RequestDetailPage() {
           </Descriptions.Item>
         </Descriptions>
       </Card>
+
+      {(() => {
+        const lat = (request.location?.lat ?? (request as any).lat) as number | undefined;
+        const lng = (request.location?.lng ?? (request as any).lng) as number | undefined;
+        const address = request.location?.address || ((request as any).custom_fields as Record<string, unknown>)?.service_address as string | undefined;
+        if (!lat || !lng) return null;
+        const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${Number(lng) - 0.01},${Number(lat) - 0.01},${Number(lng) + 0.01},${Number(lat) + 0.01}&layer=mapnik&marker=${lat},${lng}`;
+        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        return (
+          <Card
+            title={<><EnvironmentOutlined style={{ marginRight: 6 }} />Service Location</>}
+            style={{ marginTop: 16 }}
+          >
+            {address && <p style={{ marginBottom: 8, fontWeight: 500 }}>{address}</p>}
+            <p style={{ marginBottom: 8, color: '#666', fontSize: 13 }}>
+              GPS: {Number(lat).toFixed(6)}, {Number(lng).toFixed(6)}
+            </p>
+            <iframe
+              src={mapSrc}
+              title="Service Location Map"
+              style={{ width: '100%', height: 200, border: '1px solid #e8e8e8', borderRadius: 4, marginBottom: 12 }}
+              loading="lazy"
+            />
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+              <Button type="primary" icon={<EnvironmentOutlined />}>Get Directions</Button>
+            </a>
+          </Card>
+        );
+      })()}
 
       {typedApprovals && typedApprovals.length > 0 && (
         <Card title="Approval Status" style={{ marginTop: 16 }}>

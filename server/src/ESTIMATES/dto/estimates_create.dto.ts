@@ -20,6 +20,14 @@ export class CreateEstimateDto {
   request_id?: string;
 
   @ApiPropertyOptional({
+    description: 'Work order ID reference (no formal FK)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsUUID()
+  @IsOptional()
+  work_order_id?: string;
+
+  @ApiPropertyOptional({
     description: 'Contact ID',
     example: '550e8400-e29b-41d4-a716-446655440001',
   })
@@ -37,10 +45,10 @@ export class CreateEstimateDto {
 
   @ApiPropertyOptional({
     description: 'Estimate status',
-    enum: ['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'],
+    enum: ['draft', 'pending_approval', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo', 'converted_to_invoice'],
     default: 'draft',
   })
-  @IsEnum(['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'])
+  @IsEnum(['draft', 'pending_approval', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo', 'converted_to_invoice'])
   @IsOptional()
   status?: string;
 

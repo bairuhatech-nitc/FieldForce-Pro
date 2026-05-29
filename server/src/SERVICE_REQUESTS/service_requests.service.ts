@@ -49,6 +49,8 @@ export class ServiceRequestsService {
     private readonly requestAuditLogRepository: typeof RequestAuditLog,
     @Inject(KEYNAMES.WORK_ORDERS)
     private readonly workOrderRepository: typeof WorkOrder,
+    @Inject(KEYNAMES.SERVICE_LOCATIONS)
+    private readonly serviceLocationRepository: typeof ServiceLocation,
     private readonly documentApprovalsService: DocumentApprovalsService,
     private readonly notificationsService: NotificationsService,
   ) {}
@@ -245,6 +247,22 @@ export class ServiceRequestsService {
       throw error;
     }
 
+    // Create ServiceLocation if GPS coordinates were provided
+    if (dto.lat !== undefined && dto.lng !== undefined) {
+      try {
+        const address = (dto.custom_fields?.service_address as string) || 'Location from GPS';
+        const location = await this.serviceLocationRepository.create({
+          tenant_id: tenantId,
+          address,
+          lat: dto.lat,
+          lng: dto.lng,
+        });
+        await serviceRequest.update({ location_id: location.id });
+      } catch (error) {
+        this.logger.warn(`Failed to create ServiceLocation for SR ${serviceRequest.id}: ${(error as Error).message}`);
+      }
+    }
+
     // Auto-trigger approval chain if an active template exists for SERVICE_REQUEST
     try {
       await this.triggerApprovalChain(tenantId, serviceRequest);
@@ -421,6 +439,55 @@ export class ServiceRequestsService {
       }
     } catch (err) {
       this.logger.warn(`Failed to notify about SR-to-WO conversion for SR ${id}: ${(err as Error).message}`);
+    }
+
+    return { workOrder, serviceRequest };
+  }
+
+  async approveAndConvert(
+    id: string,
+    tenantId: string,
+    managerId: string,
+  ): Promise<{ workOrder: WorkOrder; serviceRequest: ServiceRequest }> {
+    const serviceRequest = await this.findById(id, tenantId);
+
+    if (['converted_to_wo', 'closed', 'spam'].includes(serviceRequest.status)) {
+      throw new BadRequestException(
+        `Cannot approve a service request with status '${serviceRequest.status}'`,
+      );
+    }
+
+    const count = await this.workOrderRepository.count({ where: { tenant_id: tenantId } });
+    const woNumber = `WO-${String(count + 1).padStart(6, '0')}`;
+
+    const workOrder = await this.workOrderRepository.create({
+      tenant_id: tenantId,
+      wo_number: woNumber,
+      request_id: serviceRequest.id,
+      contact_id: serviceRequest.contact_id,
+      location_id: serviceRequest.location_id,
+      summary: serviceRequest.subject,
+      description: serviceRequest.description,
+      priority: serviceRequest.priority === 'CRITICAL' ? 'urgent' : (serviceRequest.priority?.toLowerCase() || 'medium'),
+      status: 'new',
+      assigned_to: serviceRequest.assigned_to || null,
+    });
+
+    await serviceRequest.update({ status: 'converted_to_wo' });
+
+    try {
+      if (serviceRequest.assigned_to && serviceRequest.assigned_to !== managerId) {
+        await this.notificationsService.create(tenantId, {
+          user_id: serviceRequest.assigned_to,
+          type: 'work_order_created',
+          title: 'Work Order Created',
+          body: `Service Request ${serviceRequest.request_number} has been approved and converted to Work Order ${woNumber}`,
+          data: { work_order_id: workOrder.id, service_request_id: id, navigate_to: 'work_order' },
+          channel: 'in_app',
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify about SR approval+convert for SR ${id}: ${(err as Error).message}`);
     }
 
     return { workOrder, serviceRequest };

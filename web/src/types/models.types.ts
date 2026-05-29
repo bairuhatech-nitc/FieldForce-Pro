@@ -229,9 +229,10 @@ export interface Estimate {
   id: string;
   tenant_id: string;
   request_id: string | null;
+  work_order_id: string | null;
   contact_id: string | null;
   estimate_number: string | null;
-  status: 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo';
+  status: 'draft' | 'pending_approval' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo' | 'converted_to_invoice';
   subtotal: number;
   tax: number;
   discount: number;
@@ -482,6 +483,7 @@ export interface Invoice {
   id: string;
   tenant_id: string;
   work_order_id: string | null;
+  estimate_id: string | null;
   contact_id: string | null;
   invoice_number: string | null;
   status: 'draft' | 'sent' | 'viewed' | 'partially_paid' | 'paid' | 'overdue' | 'void';

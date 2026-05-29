@@ -1,18 +1,20 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Space, Skeleton, Tag, Table, Tabs, Form, Input, Switch, Upload, Modal, Select, DatePicker, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { EditOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, FileTextOutlined, UploadOutlined, UserAddOutlined, CheckCircleOutlined, CloseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, FileTextOutlined, UploadOutlined, UserAddOutlined, CheckCircleOutlined, CloseCircleOutlined, PlayCircleOutlined, EnvironmentOutlined, CarOutlined, PhoneOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useWorkOrder, useDeleteWorkOrder, useUpdateWorkOrderStatus, useAcceptJob, useDeclineJob } from '@/hooks/use-work-orders';
+import { useCreateAgentLocation } from '@/hooks/use-agent-locations';
 import { useAuthStore } from '@/store/auth.store';
 import { useWorkOrderLineItems, useDeleteWorkOrderLineItem } from '@/hooks/use-work-order-line-items';
 import { useWorkOrderNotes, useCreateWorkOrderNote, useDeleteWorkOrderNote } from '@/hooks/use-work-order-notes';
 import { useWorkOrderAttachments, useUploadWorkOrderAttachment, useDeleteWorkOrderAttachment } from '@/hooks/use-work-order-attachments';
 import { useCreateAppointment } from '@/hooks/use-appointments';
 import { useUsers } from '@/hooks/use-users';
-import type { WorkOrderLineItem, WorkOrderNote, WorkOrderAttachment } from '@/types/models.types';
+import { useEstimatesByWorkOrder, useAdminApproveEstimate, useAdminRejectEstimate, useGenerateInvoiceFromEstimate } from '@/hooks/use-estimates';
+import type { WorkOrderLineItem, WorkOrderNote, WorkOrderAttachment, Estimate } from '@/types/models.types';
 import { useSlaTimer } from '@/hooks/use-sla-timers';
 import { SlaTimerBadge } from '@/components/work-orders/SlaTimerBadge';
 import PageHeader from '@/components/common/PageHeader';
@@ -92,7 +94,55 @@ export default function WorkOrderDetailPage() {
   const createAppointment = useCreateAppointment();
   const acceptJob = useAcceptJob();
   const declineJob = useDeclineJob();
+  const createAgentLocation = useCreateAgentLocation();
+  const { data: woEstimates, isLoading: woEstimatesLoading } = useEstimatesByWorkOrder(id!);
+  const adminApproveEstimate = useAdminApproveEstimate();
+  const adminRejectEstimate = useAdminRejectEstimate();
+  const generateInvoiceFromEstimate = useGenerateInvoiceFromEstimate();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [isTripActive, setIsTripActive] = useState(false);
+  const tripIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const sendLocation = () => {
+    if (!currentUser) return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      createAgentLocation.mutate({
+        user_id: currentUser.id,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        speed: pos.coords.speed ?? undefined,
+        heading: pos.coords.heading ?? undefined,
+        recorded_at: new Date().toISOString(),
+      });
+    });
+  };
+
+  const startTrip = () => {
+    if (!navigator.geolocation) {
+      message.error('Geolocation is not supported by your browser');
+      return;
+    }
+    sendLocation();
+    tripIntervalRef.current = setInterval(sendLocation, 30000);
+    setIsTripActive(true);
+    message.success('Trip started — sharing location every 30 seconds');
+  };
+
+  const stopTrip = () => {
+    if (tripIntervalRef.current) {
+      clearInterval(tripIntervalRef.current);
+      tripIntervalRef.current = null;
+    }
+    setIsTripActive(false);
+    message.info('Trip stopped');
+  };
+
+  useEffect(() => {
+    return () => {
+      if (tripIntervalRef.current) clearInterval(tripIntervalRef.current);
+    };
+  }, []);
 
   const handleAssignTechnician = async (values: { agent_id: string; scheduled_start: dayjs.Dayjs; scheduled_end: dayjs.Dayjs }) => {
     if (!workOrder) return;
@@ -420,6 +470,43 @@ export default function WorkOrderDetailPage() {
       ),
     },
     {
+      key: 'location',
+      label: <span><EnvironmentOutlined style={{ marginRight: 4 }} />Location</span>,
+      children: (() => {
+        const lat = workOrder.location?.lat as number | undefined;
+        const lng = workOrder.location?.lng as number | undefined;
+        const address = workOrder.location?.address;
+        if (!lat || !lng) {
+          return (
+            <Card>
+              <p style={{ color: '#999', textAlign: 'center', padding: '32px 0' }}>
+                No GPS location available for this work order.
+              </p>
+            </Card>
+          );
+        }
+        const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${Number(lng) - 0.01},${Number(lat) - 0.01},${Number(lng) + 0.01},${Number(lat) + 0.01}&layer=mapnik&marker=${lat},${lng}`;
+        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        return (
+          <Card>
+            {address && <p style={{ marginBottom: 8, fontWeight: 500, fontSize: 15 }}>{address}</p>}
+            <p style={{ marginBottom: 12, color: '#666', fontSize: 13 }}>
+              GPS: {Number(lat).toFixed(6)}, {Number(lng).toFixed(6)}
+            </p>
+            <iframe
+              src={mapSrc}
+              title="Work Order Location Map"
+              style={{ width: '100%', height: 300, border: '1px solid #e8e8e8', borderRadius: 4, marginBottom: 16 }}
+              loading="lazy"
+            />
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+              <Button type="primary" icon={<EnvironmentOutlined />}>Get Directions</Button>
+            </a>
+          </Card>
+        );
+      })(),
+    },
+    {
       key: 'line-items',
       label: 'Line Items',
       children: (
@@ -540,6 +627,147 @@ export default function WorkOrderDetailPage() {
         </Space>
       ),
     },
+    {
+      key: 'estimates',
+      label: (
+        <span>
+          <FileTextOutlined style={{ marginRight: 4 }} />
+          Estimates
+        </span>
+      ),
+      children: (
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Card
+            extra={
+              <PermissionGuard permission="estimates:create">
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate(`/estimates/new?work_order_id=${workOrder.id}`)}
+                >
+                  Create Estimate
+                </Button>
+              </PermissionGuard>
+            }
+          >
+            <Table
+              columns={[
+                {
+                  title: 'Estimate #',
+                  dataIndex: 'estimate_number',
+                  key: 'estimate_number',
+                  render: (num: string, record: Estimate) => (
+                    <Button type="link" size="small" onClick={() => navigate(`/estimates/${record.id}`)}>
+                      {num || record.id.slice(0, 8)}
+                    </Button>
+                  ),
+                },
+                {
+                  title: 'Status',
+                  dataIndex: 'status',
+                  key: 'status',
+                  render: (status: string) => {
+                    const colors: Record<string, string> = {
+                      draft: 'default',
+                      pending_approval: 'orange',
+                      sent: 'blue',
+                      viewed: 'purple',
+                      approved: 'green',
+                      rejected: 'red',
+                      expired: 'volcano',
+                      converted_to_wo: 'cyan',
+                      converted_to_invoice: 'geekblue',
+                    };
+                    return (
+                      <Tag color={colors[status] || 'default'}>
+                        {status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </Tag>
+                    );
+                  },
+                },
+                {
+                  title: 'Total',
+                  dataIndex: 'total',
+                  key: 'total',
+                  render: (total: number) => formatCurrency(total),
+                },
+                {
+                  title: 'Created',
+                  dataIndex: 'created_at',
+                  key: 'created_at',
+                  render: (date: string) => formatDateTime(date),
+                },
+                {
+                  title: 'Actions',
+                  key: 'actions',
+                  width: 240,
+                  render: (_: unknown, record: Estimate) => (
+                    <Space size="small">
+                      {['draft', 'pending_approval'].includes(record.status) && (
+                        <PermissionGuard permission="estimates:update">
+                          <Button
+                            size="small"
+                            type="primary"
+                            icon={<CheckCircleOutlined />}
+                            loading={adminApproveEstimate.isPending}
+                            onClick={() => {
+                              showConfirmDialog({
+                                title: 'Approve Estimate',
+                                content: `Approve estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+                                onOk: async () => { await adminApproveEstimate.mutateAsync(record.id); },
+                              });
+                            }}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="small"
+                            danger
+                            icon={<CloseCircleOutlined />}
+                            loading={adminRejectEstimate.isPending}
+                            onClick={() => {
+                              showConfirmDialog({
+                                title: 'Reject Estimate',
+                                content: `Reject estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+                                onOk: async () => { await adminRejectEstimate.mutateAsync({ id: record.id }); },
+                                danger: true,
+                              });
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        </PermissionGuard>
+                      )}
+                      {record.status === 'approved' && (
+                        <PermissionGuard permission="invoices:create">
+                          <Button
+                            size="small"
+                            icon={<FileTextOutlined />}
+                            loading={generateInvoiceFromEstimate.isPending}
+                            onClick={async () => {
+                              const res = await generateInvoiceFromEstimate.mutateAsync(record.id);
+                              const inv = res.data.data;
+                              if (inv?.id) navigate(`/invoices/${inv.id}`);
+                            }}
+                          >
+                            Generate Invoice
+                          </Button>
+                        </PermissionGuard>
+                      )}
+                    </Space>
+                  ),
+                },
+              ]}
+              dataSource={woEstimates || []}
+              rowKey="id"
+              loading={woEstimatesLoading}
+              pagination={false}
+              locale={{ emptyText: 'No estimates for this work order' }}
+            />
+          </Card>
+        </Space>
+      ),
+    },
   ];
 
   return (
@@ -593,65 +821,103 @@ export default function WorkOrderDetailPage() {
 
       {currentUser && workOrder.assigned_to === currentUser.id && (
         <Card style={{ marginBottom: 16, borderColor: '#1677ff', background: '#f0f5ff' }}>
-          <Space wrap>
-            {['new', 'approved', 'estimated'].includes(workOrder.status) && (
-              <>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Space wrap>
+              {['new', 'approved', 'estimated'].includes(workOrder.status) && (
+                <>
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    loading={acceptJob.isPending}
+                    onClick={() => {
+                      showConfirmDialog({
+                        title: 'Accept Job',
+                        content: 'Accept this work order? It will be marked as Scheduled.',
+                        onOk: async () => { await acceptJob.mutateAsync(workOrder.id); },
+                      });
+                    }}
+                  >
+                    Accept Job
+                  </Button>
+                  <Button
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => setDeclineModalOpen(true)}
+                  >
+                    Decline Job
+                  </Button>
+                </>
+              )}
+              {workOrder.status === 'scheduled' && (
+                <>
+                  <Tag color="green" style={{ padding: '4px 8px', fontSize: 13 }}>
+                    <CheckCircleOutlined style={{ marginRight: 4 }} />
+                    Job Accepted
+                  </Tag>
+                  <Button
+                    type="primary"
+                    icon={<PlayCircleOutlined />}
+                    loading={updateStatus.isPending}
+                    onClick={() => handleStatusChange('in_progress')}
+                  >
+                    Start Job
+                  </Button>
+                  <Button
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => setDeclineModalOpen(true)}
+                  >
+                    Decline Job
+                  </Button>
+                </>
+              )}
+              {workOrder.status === 'in_progress' && (
                 <Button
                   type="primary"
+                  style={{ background: '#52c41a', borderColor: '#52c41a' }}
                   icon={<CheckCircleOutlined />}
-                  loading={acceptJob.isPending}
-                  onClick={() => {
-                    showConfirmDialog({
-                      title: 'Accept Job',
-                      content: 'Accept this work order? It will be marked as Scheduled.',
-                      onOk: async () => { await acceptJob.mutateAsync(workOrder.id); },
-                    });
-                  }}
-                >
-                  Accept Job
-                </Button>
-                <Button
-                  danger
-                  icon={<CloseCircleOutlined />}
-                  onClick={() => setDeclineModalOpen(true)}
-                >
-                  Decline Job
-                </Button>
-              </>
-            )}
-            {workOrder.status === 'scheduled' && (
-              <>
-                <Tag color="green" style={{ padding: '4px 8px', fontSize: 13 }}>
-                  <CheckCircleOutlined style={{ marginRight: 4 }} />
-                  Job Accepted
-                </Tag>
-                <Button
-                  type="primary"
-                  icon={<PlayCircleOutlined />}
                   loading={updateStatus.isPending}
-                  onClick={() => handleStatusChange('in_progress')}
+                  onClick={() => handleStatusChange('completed')}
                 >
-                  Start Job
+                  Complete Job
                 </Button>
+              )}
+            </Space>
+
+            {['scheduled', 'in_progress'].includes(workOrder.status) && (
+              <Space wrap style={{ borderTop: '1px solid #d6e4ff', paddingTop: 12 }}>
+                {workOrder.location?.lat && workOrder.location?.lng && (
+                  <>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${workOrder.location.lat},${workOrder.location.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button icon={<CarOutlined />}>Google Maps</Button>
+                    </a>
+                    <a
+                      href={`https://waze.com/ul?ll=${workOrder.location.lat},${workOrder.location.lng}&navigate=yes`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button icon={<CarOutlined />}>Waze</Button>
+                    </a>
+                  </>
+                )}
+                {workOrder.contact?.phone && (
+                  <a href={`tel:${workOrder.contact.phone}`}>
+                    <Button icon={<PhoneOutlined />}>Call Customer</Button>
+                  </a>
+                )}
                 <Button
-                  danger
-                  icon={<CloseCircleOutlined />}
-                  onClick={() => setDeclineModalOpen(true)}
+                  type={isTripActive ? 'default' : 'primary'}
+                  danger={isTripActive}
+                  icon={<EnvironmentOutlined />}
+                  onClick={isTripActive ? stopTrip : startTrip}
                 >
-                  Decline Job
+                  {isTripActive ? 'Stop Trip' : 'Start Trip'}
                 </Button>
-              </>
-            )}
-            {workOrder.status === 'in_progress' && (
-              <Button
-                type="primary"
-                style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                icon={<CheckCircleOutlined />}
-                loading={updateStatus.isPending}
-                onClick={() => handleStatusChange('completed')}
-              >
-                Complete Job
-              </Button>
+              </Space>
             )}
           </Space>
         </Card>

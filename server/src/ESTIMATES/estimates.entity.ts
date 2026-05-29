@@ -59,7 +59,14 @@ export class Estimate extends Model {
   estimate_number: string;
 
   @Column({
-    type: DataType.ENUM('draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'),
+    type: DataType.UUID,
+    allowNull: true,
+    comment: 'Reference to work_orders (no formal FK to avoid circular dep)',
+  })
+  work_order_id: string;
+
+  @Column({
+    type: DataType.STRING(50),
     allowNull: false,
     defaultValue: 'draft',
   })

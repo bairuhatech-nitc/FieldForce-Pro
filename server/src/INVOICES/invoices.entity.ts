@@ -39,6 +39,13 @@ export class Invoice extends Model {
   })
   work_order_id: string;
 
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+    comment: 'Reference to estimates (no formal FK)',
+  })
+  estimate_id: string;
+
   @ForeignKey(() => Contact)
   @Column({
     type: DataType.UUID,

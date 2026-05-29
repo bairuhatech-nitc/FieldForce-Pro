@@ -530,8 +530,9 @@ export interface Estimate {
   tenant_id: string;
   estimate_number: string | null;
   request_id: string | null;
+  work_order_id: string | null;
   contact_id: string | null;
-  status: 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo';
+  status: 'draft' | 'pending_approval' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo' | 'converted_to_invoice';
   subtotal: number;
   tax: number;
   discount: number;
