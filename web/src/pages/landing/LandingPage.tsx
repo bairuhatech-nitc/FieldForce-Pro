@@ -219,19 +219,11 @@ export default function LandingPage() {
           <div className="lp-navbar-inner">
             <a href="#" className="lp-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
               <div className="lp-logo-icon" aria-label="FieldForce Pro icon">
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  {/* Hexagon outline */}
+                <svg width="20" height="20" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  {/* Exact lightning bolt from reference SVG */}
                   <path
-                    d="M11 1L20.124 6V16L11 21L1.876 16V6L11 1Z"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.35)"
-                    strokeWidth="0.8"
-                  />
-                  {/* Lightning bolt */}
-                  <path
-                    d="M12.5 4L7 11.5H11L9.5 18L15 10.5H11.5L12.5 4Z"
+                    d="M 226,112 L 344,112 A 8,8 0 0,1 351,121 L 297,196 A 4,4 0 0,0 300,202 L 356,202 A 8,8 0 0,1 363,212 L 173,394 A 8,8 0 0,1 160,387 L 218,254 A 4,4 0 0,0 214,248 L 152,248 A 8,8 0 0,1 145,237 L 219,117 A 8,8 0 0,1 226,112 Z"
                     fill="white"
-                    fillOpacity="0.95"
                   />
                 </svg>
               </div>

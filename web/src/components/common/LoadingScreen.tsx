@@ -48,19 +48,24 @@ const SQUIRCLE_PROPS = {
 } as const;
 
 /**
- * Lightning bolt path — traced to match the logo image.
- * Coordinate space: 200×200 viewBox.
+ * Lightning bolt path — exact shape from the provided reference SVG.
+ * Source: 512×512 viewBox with squircle at x=32,y=32,w=448,h=448.
+ * Scaled to 200×200: x_new = 5 + (x_src − 32) × (190/448), y_new = 5 + (y_src − 32) × (190/448).
+ * Arc radii scaled by the same factor (8→⁈3.4, 4→⁈1.7).
  *
- * Path breakdown:
- *   M 128,22   → top-right corner of upper wing
- *   L 60,110   → middle-left apex
- *   L 99,110   → inner notch step-right
- *   L 75,180   → bottom tip
- *   L 142,90   → bottom-right, sweeps up-right
- *   L 103,90   → inner notch step-left (upper)
- *   Z          → closes back to 128,22 (right edge of upper wing)
+ * Shape: horizontal top bar → rounded upper-right → diagonal down to inner notch
+ *        → step right to outer-right → long diagonal to bottom-left tip (rounded)
+ *        → diagonal up-right to inner-left notch → step left to outer-left
+ *        → diagonal up-right to close
  */
-const BOLT_PATH = 'M 128 22 L 60 110 L 99 110 L 75 180 L 142 90 L 103 90 Z';
+const BOLT_PATH =
+  'M 87.3 38.9 L 137.3 38.9 A 3.4 3.4 0 0 1 140.3 42.8 ' +
+  'L 117.4 74.6 A 1.7 1.7 0 0 0 118.7 77.1 ' +
+  'L 142.4 77.1 A 3.4 3.4 0 0 1 145.4 81.3 ' +
+  'L 64.8 158.5 A 3.4 3.4 0 0 1 59.3 155.6 ' +
+  'L 83.9 99.2 A 1.7 1.7 0 0 0 82.2 96.6 ' +
+  'L 55.9 96.6 A 3.4 3.4 0 0 1 52.9 91.9 ' +
+  'L 84.3 41.1 A 3.4 3.4 0 0 1 87.3 38.9 Z';
 
 /* ─────────────────────────────────────────────────────────────────
    LOADING MESSAGES  (cycled while progress < 100)
@@ -122,8 +127,17 @@ export function LoadingScreen({
   const rawProgress = demo ? internalProgress : (externalProgress ?? 0);
   const progress    = Math.min(100, Math.max(0, rawProgress));
 
-  /* ── Theme detection ──────────────────────────────────────────── */
-  const isDark = document.body.classList.contains('dark');
+  /* ── Theme detection (follows OS / browser colour scheme) ─────── */
+  const [isDark, setIsDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   /* ── Demo: mock progress interval ────────────────────────────── */
   useEffect(() => {
