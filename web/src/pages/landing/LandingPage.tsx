@@ -26,6 +26,13 @@ import {
   SyncOutlined,
   BellOutlined,
   MailOutlined,
+  EyeOutlined,
+  FundOutlined,
+  CrownOutlined,
+  ApartmentOutlined,
+  BranchesOutlined,
+  SunOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
 import { ReactLenis } from 'lenis/react';
 import { useTranslation } from 'react-i18next';
@@ -146,6 +153,9 @@ export default function LandingPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isDark, setIsDark] = useState(
+    () => localStorage.getItem('lp-theme') === 'dark'
+  );
   const revealRef = useScrollReveal();
   const heroParallax = useScrollParallax();
   const featuresGlow = useMouseGlow();
@@ -166,6 +176,15 @@ export default function LandingPage() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Dark mode toggle — persists to localStorage
+  useEffect(() => {
+    const el = document.querySelector('.landing-page');
+    if (el) {
+      el.classList.toggle('dark', isDark);
+    }
+    localStorage.setItem('lp-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   const scrollToSection = (id: string) => {
     setMobileNavOpen(false);
@@ -194,7 +213,7 @@ export default function LandingPage() {
 
   return (
     <ReactLenis root>
-      <div className="landing-page" ref={revealRef} style={{ direction: i18n.language === 'ar' ? 'rtl' : 'ltr' }}>
+      <div className={`landing-page${isDark ? ' dark' : ''}`} ref={revealRef}>
         {/* ========== Navbar ========== */}
         <nav className={`lp-navbar ${scrolled ? 'scrolled' : ''}`}>
           <div className="lp-scroll-progress" style={{ transform: `scaleX(${scrollProgress})`, transformOrigin: i18n.language === 'ar' ? 'right' : 'left' }} />
@@ -215,19 +234,37 @@ export default function LandingPage() {
             <div className="lp-nav-actions">
               {/* Language Switcher */}
               <div className="lp-lang-switcher">
-                <button className="lp-lang-btn" onClick={() => setLangOpen(!langOpen)}>
-                  <GlobalOutlined /> <span>{currentLang.label}</span>
+                <button
+                  className="lp-lang-btn"
+                  onClick={() => setLangOpen(!langOpen)}
+                >
+                  <GlobalOutlined /> {currentLang.label}
                 </button>
                 {langOpen && (
                   <div className="lp-lang-dropdown">
                     {languages.map((l) => (
-                      <button key={l.key} onClick={() => handleLanguageChange(l.key)} className={i18n.language === l.key ? 'active' : ''}>
+                      <button
+                        key={l.key}
+                        className={i18n.language === l.key ? 'active' : ''}
+                        onClick={() => handleLanguageChange(l.key)}
+                      >
                         {l.label}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
+
+              {/* Dark mode toggle */}
+              <button
+                id="lp-theme-toggle"
+                className="lp-theme-toggle"
+                onClick={() => setIsDark((d) => !d)}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={isDark ? 'Light mode' : 'Dark mode'}
+              >
+                {isDark ? <SunOutlined /> : <MoonOutlined />}
+              </button>
 
               {isAuthenticated ? (
                 <button
