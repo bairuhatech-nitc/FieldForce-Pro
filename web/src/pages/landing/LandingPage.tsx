@@ -31,6 +31,8 @@ import {
   CrownOutlined,
   ApartmentOutlined,
   BranchesOutlined,
+  SunOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
 import { ReactLenis } from 'lenis/react';
 import './LandingPage.css';
@@ -148,6 +150,9 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isDark, setIsDark] = useState(
+    () => localStorage.getItem('lp-theme') === 'dark'
+  );
   const revealRef = useScrollReveal();
   const heroParallax = useScrollParallax();
   const featuresGlow = useMouseGlow();
@@ -169,6 +174,15 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Dark mode toggle — persists to localStorage
+  useEffect(() => {
+    const el = document.querySelector('.landing-page');
+    if (el) {
+      el.classList.toggle('dark', isDark);
+    }
+    localStorage.setItem('lp-theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
   const scrollToSection = (id: string) => {
     setMobileNavOpen(false);
     const el = document.getElementById(id);
@@ -179,7 +193,7 @@ export default function LandingPage() {
 
   return (
     <ReactLenis root>
-      <div className="landing-page" ref={revealRef}>
+      <div className={`landing-page${isDark ? ' dark' : ''}`} ref={revealRef}>
         {/* ========== Navbar ========== */}
         <nav className={`lp-navbar ${scrolled ? 'scrolled' : ''}`}>
           <div className="lp-scroll-progress" style={{ transform: `scaleX(${scrollProgress})` }} />
@@ -198,6 +212,17 @@ export default function LandingPage() {
             </ul>
 
             <div className="lp-nav-actions">
+              {/* Dark mode toggle */}
+              <button
+                id="lp-theme-toggle"
+                className="lp-theme-toggle"
+                onClick={() => setIsDark((d) => !d)}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={isDark ? 'Light mode' : 'Dark mode'}
+              >
+                {isDark ? <SunOutlined /> : <MoonOutlined />}
+              </button>
+
               {isAuthenticated ? (
                 <button
                   className="lp-user-avatar-btn"
