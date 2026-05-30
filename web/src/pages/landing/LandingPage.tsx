@@ -150,9 +150,14 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [isDark, setIsDark] = useState(
-    () => localStorage.getItem('lp-theme') === 'dark'
-  );
+  const [isDark, setIsDark] = useState(() => {
+    // If user has explicitly chosen a theme, respect it
+    const saved = localStorage.getItem('lp-theme');
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    // Otherwise, follow Chrome / OS system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const revealRef = useScrollReveal();
   const heroParallax = useScrollParallax();
   const featuresGlow = useMouseGlow();
@@ -172,6 +177,20 @@ export default function LandingPage() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Sync with system theme changes (e.g., Chrome switching dark mode)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      // Only auto-follow system if user hasn't manually overridden
+      const saved = localStorage.getItem('lp-theme');
+      if (!saved) {
+        setIsDark(e.matches);
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   // Dark mode toggle — persists to localStorage
@@ -199,7 +218,23 @@ export default function LandingPage() {
           <div className="lp-scroll-progress" style={{ transform: `scaleX(${scrollProgress})` }} />
           <div className="lp-navbar-inner">
             <a href="#" className="lp-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-              <div className="lp-logo-icon">FF</div>
+              <div className="lp-logo-icon" aria-label="FieldForce Pro icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  {/* Hexagon outline */}
+                  <path
+                    d="M11 1L20.124 6V16L11 21L1.876 16V6L11 1Z"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.35)"
+                    strokeWidth="0.8"
+                  />
+                  {/* Lightning bolt */}
+                  <path
+                    d="M12.5 4L7 11.5H11L9.5 18L15 10.5H11.5L12.5 4Z"
+                    fill="white"
+                    fillOpacity="0.95"
+                  />
+                </svg>
+              </div>
               FieldForce Pro
             </a>
 
