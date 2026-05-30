@@ -135,13 +135,13 @@ export default function EstimateListPage() {
   // Shared data columns (no actions)
   const sharedColumns: ColumnsType<Estimate> = [
     {
-      title: 'Estimate #',
+      title: t('estimateList.columns.number'),
       dataIndex: 'estimate_number',
       key: 'estimate_number',
       render: (num: string) => <span style={{ fontWeight: 500 }}>{num || '-'}</span>,
     },
     {
-      title: 'Customer',
+      title: t('estimateList.columns.customer'),
       key: 'contact',
       render: (_, record) =>
         record.contact
@@ -149,7 +149,7 @@ export default function EstimateListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Status',
+      title: t('estimateList.columns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -159,33 +159,33 @@ export default function EstimateListPage() {
       ),
     },
     {
-      title: 'Subtotal',
+      title: t('estimateList.columns.subtotal'),
       dataIndex: 'subtotal',
       key: 'subtotal',
       render: (amount: number) => formatCurrency(amount || 0),
       sorter: (a, b) => (a.subtotal || 0) - (b.subtotal || 0),
     },
     {
-      title: 'Tax',
+      title: t('estimateList.columns.tax'),
       dataIndex: 'tax',
       key: 'tax',
       render: (amount: number) => formatCurrency(amount || 0),
     },
     {
-      title: 'Total',
+      title: t('estimateList.columns.total'),
       dataIndex: 'total',
       key: 'total',
       render: (amount: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(amount || 0)}</span>,
       sorter: (a, b) => (a.total || 0) - (b.total || 0),
     },
     {
-      title: 'Expiry Date',
+      title: t('estimateList.columns.expiryDate'),
       dataIndex: 'expiry_date',
       key: 'expiry_date',
       render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Created',
+      title: t('estimateList.columns.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
@@ -195,12 +195,12 @@ export default function EstimateListPage() {
 
   // View-only actions (All Estimates + Approve/Reject tabs)
   const viewOnlyAction: ColumnsType<Estimate>[number] = {
-    title: 'Actions',
+    title: t('estimateList.columns.actions'),
     key: 'actions',
     fixed: 'right',
     width: 80,
     render: (_, record) => (
-      <Tooltip title="View">
+      <Tooltip title={t('common.view')}>
         <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/estimates/${record.id}`)} />
       </Tooltip>
     ),
@@ -208,16 +208,16 @@ export default function EstimateListPage() {
 
   // Drafts tab actions — View + Create (continue working on draft)
   const draftsAction: ColumnsType<Estimate>[number] = {
-    title: 'Actions',
+    title: t('estimateList.columns.actions'),
     key: 'actions',
     fixed: 'right',
     width: 120,
     render: (_, record) => (
       <Space size="small">
-        <Tooltip title="View">
+        <Tooltip title={t('common.view')}>
           <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/estimates/${record.id}`)} />
         </Tooltip>
-        <Tooltip title="Create Estimate">
+        <Tooltip title={t('estimateList.actions.edit')}>
           <Button type="text" icon={<PlusOutlined />} size="small" onClick={() => navigate(`/estimates/${record.id}/edit`)} />
         </Tooltip>
       </Space>
@@ -226,13 +226,13 @@ export default function EstimateListPage() {
 
   // Pending Review tab: inline Approve / Reject
   const pendingReviewAction: ColumnsType<Estimate>[number] = {
-    title: 'Actions',
+    title: t('estimateList.columns.actions'),
     key: 'actions',
     fixed: 'right',
     width: 200,
     render: (_, record) => (
       <Space size="small">
-        <Tooltip title="View">
+        <Tooltip title={t('common.view')}>
           <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/estimates/${record.id}`)} />
         </Tooltip>
         <Button
@@ -242,13 +242,13 @@ export default function EstimateListPage() {
           loading={adminApproveEstimate.isPending}
           onClick={() => {
             showConfirmDialog({
-              title: 'Approve Estimate',
-              content: `Approve estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+              title: t('estimateList.actions.approve'),
+              content: t('estimateList.messages.confirmApprove', { number: record.estimate_number || record.id.slice(0, 8) }),
               onOk: async () => { await adminApproveEstimate.mutateAsync(record.id); },
             });
           }}
         >
-          Approve
+          {t('estimateList.actions.approve')}
         </Button>
         <Button
           size="small"
@@ -257,14 +257,14 @@ export default function EstimateListPage() {
           loading={adminRejectEstimate.isPending}
           onClick={() => {
             showConfirmDialog({
-              title: 'Reject Estimate',
-              content: `Reject estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+              title: t('estimateList.actions.reject'),
+              content: t('estimateList.messages.confirmReject', { number: record.estimate_number || record.id.slice(0, 8) }),
               onOk: async () => { await adminRejectEstimate.mutateAsync({ id: record.id }); },
               danger: true,
             });
           }}
         >
-          Reject
+          {t('estimateList.actions.reject')}
         </Button>
       </Space>
     ),
@@ -280,19 +280,19 @@ export default function EstimateListPage() {
   const tabItems = [
     {
       key: 'all',
-      label: 'All Estimates',
+      label: t('estimateList.tabs.all'),
     },
     {
       key: 'drafts',
-      label: 'Drafts',
+      label: t('estimateList.tabs.drafts'),
     },
     {
       key: 'pending-review',
-      label: 'Pending Review',
+      label: t('estimateList.tabs.pendingReview'),
     },
     {
       key: 'review',
-      label: 'Approve / Reject',
+      label: t('estimateList.tabs.approveReject'),
     },
   ];
 
@@ -300,12 +300,12 @@ export default function EstimateListPage() {
     <div>
       <PageHeader
         title={t('nav.estimates')}
-        subtitle="Manage estimates and quotes"
+        subtitle={t('estimateList.pageDescription')}
         extra={
           activeTab === 'drafts' && canCreate ? (
             <PermissionGuard permission="estimates:create">
               <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/estimates/new')}>
-                Create Estimate
+                {t('estimateList.actions.create')}
               </Button>
             </PermissionGuard>
           ) : undefined
@@ -324,14 +324,14 @@ export default function EstimateListPage() {
           type="info"
           showIcon
           icon={<InfoCircleOutlined />}
-          message="Only the assigned estimator can create estimates"
+          message={t('estimateList.messages.notAuthorizedToCreate')}
           style={{ marginBottom: 16 }}
         />
       )}
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search estimates by number or customer"
+          placeholder={t('estimateList.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -341,12 +341,12 @@ export default function EstimateListPage() {
 
       {activeTab === 'review' ? (
         reviewQuery.isLoading ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: '#999' }}>Loading...</div>
+          <div style={{ textAlign: 'center', padding: '48px 0', color: '#999' }}>{t('common.loading')}</div>
         ) : reviewEstimates.length === 0 ? (
           <Alert
             type="info"
             showIcon
-            message="No estimates pending your review"
+            message={t('estimateList.messages.noPendingReview')}
             style={{ marginBottom: 16 }}
           />
         ) : (
@@ -374,7 +374,7 @@ export default function EstimateListPage() {
             pageSize: currentPageSize,
             total: meta?.itemCount || 0,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} estimates`,
+            showTotal: (total) => t('estimateList.pagination.total', { total }),
             onChange: (newPage, newPageSize) => {
               setCurrentPage(newPage);
               setCurrentPageSize(newPageSize);

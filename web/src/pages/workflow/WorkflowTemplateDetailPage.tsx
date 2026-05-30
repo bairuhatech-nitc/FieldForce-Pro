@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Descriptions,
   Tag,
@@ -30,6 +31,7 @@ import {
 const { Text } = Typography;
 
 export default function WorkflowTemplateDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -40,8 +42,8 @@ export default function WorkflowTemplateDetailPage() {
 
   const handleDelete = () => {
     showConfirmDialog({
-      title: 'Delete Workflow Template',
-      content: 'Are you sure you want to delete this workflow template? This action cannot be undone.',
+      title: t('workflowTemplate.deleteTitle'),
+      content: t('workflowTemplate.deleteContent'),
       onOk: async () => {
         await deleteMutation.mutateAsync(id!);
         navigate('/workflow/templates');
@@ -54,7 +56,7 @@ export default function WorkflowTemplateDetailPage() {
   }
 
   if (!template) {
-    return <div style={{ padding: 24 }}>Template not found</div>;
+    return <div style={{ padding: 24 }}>{t('workflowTemplate.notFound')}</div>;
   }
 
   const sortedApprovers = [...(template.approvers || [])].sort((a, b) => a.order_no - b.order_no);
@@ -64,11 +66,11 @@ export default function WorkflowTemplateDetailPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/workflow/templates')}>
-            Back
+            {t('workflowTemplate.back')}
           </Button>
           <h2 style={{ margin: 0 }}>{template.name}</h2>
           <Tag color={template.is_active ? 'green' : 'default'}>
-            {template.is_active ? 'Active' : 'Inactive'}
+            {template.is_active ? t('workflowTemplate.active') : t('workflowTemplate.inactive')}
           </Tag>
         </Space>
 
@@ -82,44 +84,44 @@ export default function WorkflowTemplateDetailPage() {
                   : activateMutation.mutate(id!)
               }
             >
-              {template.is_active ? 'Deactivate' : 'Activate'}
+              {template.is_active ? t('workflowTemplate.deactivate') : t('workflowTemplate.activate')}
             </Button>
             <Button
               icon={<EditOutlined />}
               onClick={() => navigate(`/workflow/templates/${id}/edit`)}
             >
-              Edit
+              {t('workflowTemplate.edit')}
             </Button>
           </PermissionGuard>
           <PermissionGuard permission="workflow_templates:delete">
             <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-              Delete
+              {t('workflowTemplate.delete')}
             </Button>
           </PermissionGuard>
         </Space>
       </div>
 
-      <Card title="Template Details" style={{ marginBottom: 16 }}>
+      <Card title={t('workflowTemplate.details')} style={{ marginBottom: 16 }}>
         <Descriptions bordered column={2}>
-          <Descriptions.Item label="Name">{template.name}</Descriptions.Item>
-          <Descriptions.Item label="Version">v{template.version}</Descriptions.Item>
-          <Descriptions.Item label="Document Type">
+          <Descriptions.Item label={t('workflowTemplate.name')}>{template.name}</Descriptions.Item>
+          <Descriptions.Item label={t('workflowTemplate.version')}>v{template.version}</Descriptions.Item>
+          <Descriptions.Item label={t('workflowTemplate.documentType')}>
             <Tag color="blue">{template.document_type?.replace(/_/g, ' ') || '-'}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Category">
+          <Descriptions.Item label={t('workflowTemplate.category')}>
             <Tag color="green">{template.document_category || '-'}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Description" span={2}>
-            {template.description || <Text type="secondary">No description</Text>}
+          <Descriptions.Item label={t('workflowTemplate.description')} span={2}>
+            {template.description || <Text type="secondary">{t('workflowTemplate.noDescription')}</Text>}
           </Descriptions.Item>
-          <Descriptions.Item label="Created">{formatDateTime(template.created_at)}</Descriptions.Item>
-          <Descriptions.Item label="Updated">{formatDateTime(template.updated_at)}</Descriptions.Item>
+          <Descriptions.Item label={t('workflowTemplate.created')}>{formatDateTime(template.created_at)}</Descriptions.Item>
+          <Descriptions.Item label={t('workflowTemplate.updated')}>{formatDateTime(template.updated_at)}</Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card title={`Approval Steps (${sortedApprovers.length})`}>
+      <Card title={t('workflowTemplate.approvalSteps', { count: sortedApprovers.length })}>
         {sortedApprovers.length === 0 ? (
-          <Text type="secondary">No approval steps configured</Text>
+          <Text type="secondary">{t('workflowTemplate.noSteps')}</Text>
         ) : (
           <Steps
             direction="vertical"
@@ -133,9 +135,9 @@ export default function WorkflowTemplateDetailPage() {
                       ? `${approver.approver.first_name} ${approver.approver.last_name}`
                       : approver.approver_id}
                   </span>
-                  {approver.is_required && <Tag color="red">Required</Tag>}
+                  {approver.is_required && <Tag color="red">{t('workflowTemplate.required')}</Tag>}
                   {approver.approval_authority && (
-                    <Tag color="blue">Authority: {approver.approval_authority}</Tag>
+                    <Tag color="blue">{t('workflowTemplate.authority')}: {approver.approval_authority}</Tag>
                   )}
                 </Space>
               ),
@@ -146,15 +148,15 @@ export default function WorkflowTemplateDetailPage() {
                       <Text type="secondary">{approver.approver.email}</Text>
                     )}
                     {approver.amount_threshold_min != null && (
-                      <Tag>Min: ${approver.amount_threshold_min}</Tag>
+                      <Tag>{t('workflowTemplate.min')}: ${approver.amount_threshold_min}</Tag>
                     )}
                     {approver.amount_threshold_max != null && (
-                      <Tag>Max: ${approver.amount_threshold_max}</Tag>
+                      <Tag>{t('workflowTemplate.max')}: ${approver.amount_threshold_max}</Tag>
                     )}
                     {approver.budget_threshold != null && (
-                      <Tag>Budget: ${approver.budget_threshold}</Tag>
+                      <Tag>{t('workflowTemplate.budget')}: ${approver.budget_threshold}</Tag>
                     )}
-                    {approver.notes && <Text type="secondary">Note: {approver.notes}</Text>}
+                    {approver.notes && <Text type="secondary">{t('workflowTemplate.note')}: {approver.notes}</Text>}
                   </Space>
                 </div>
               ),

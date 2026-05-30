@@ -1,5 +1,6 @@
 import { Card, Statistic, Progress, Table, Tag, Space, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowUpOutlined,
   ArrowDownOutlined,
@@ -34,6 +35,7 @@ export function KPIWidget({
   trendValue,
   valueStyle,
 }: KPIWidgetProps) {
+  const { t } = useTranslation();
   return (
     <Card>
       <Statistic
@@ -47,7 +49,7 @@ export function KPIWidget({
       {trend && trendValue && (
         <div style={{ marginTop: 8 }}>
           <Tag color={trend === 'up' ? 'green' : 'red'} icon={trend === 'up' ? <ArrowUpOutlined /> : <ArrowDownOutlined />}>
-            {trendValue}% vs last period
+            {t('kpiWidget.vsLastPeriod', { trendValue })}
           </Tag>
         </div>
       )}
@@ -124,12 +126,13 @@ export interface ChartWidgetProps {
 }
 
 export function ChartWidget({ title, type, data, height = 300 }: ChartWidgetProps) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
       <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
         <Text type="secondary">
-          {type.toUpperCase()} Chart Placeholder
-          <div style={{ fontSize: 12, marginTop: 8 }}>Install react-chartjs-2 for full functionality</div>
+          {t('chartWidget.placeholder', { type: type.toUpperCase() })}
+          <div style={{ fontSize: 12, marginTop: 8 }}>{t('chartWidget.installInstruction')}</div>
         </Text>
       </div>
     </Card>
@@ -204,6 +207,7 @@ export function MetricComparisonWidget({
   label,
   format = 'number',
 }: MetricComparisonProps) {
+  const { t } = useTranslation();
   const change = current - previous;
   const changePercent = previous > 0 ? ((change / previous) * 100).toFixed(1) : 0;
   const isPositive = change > 0;
@@ -231,7 +235,7 @@ export function MetricComparisonWidget({
         <Tag color={isPositive ? 'success' : 'error'} icon={isPositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}>
           {changePercent}%
         </Tag>
-        <Text type="secondary">vs previous period ({formatValue(previous)})</Text>
+        <Text type="secondary">{t('metricComparison.vsPreviousPeriod', { value: formatValue(previous) })}</Text>
       </Space>
     </Card>
   );
@@ -277,7 +281,6 @@ export function QuickStatsGrid({ stats }: QuickStatsGridProps) {
   );
 }
 
-// ========== Export All Widgets ==========
 export const DashboardWidgets = {
   KPIWidget,
   ProgressWidget,

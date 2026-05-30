@@ -23,6 +23,7 @@ import {
 import { useAutoAssign } from '@/hooks/use-scheduling';
 import type { AutoAssignCandidate } from '@/api/scheduling.api';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 
 const { Text, Title } = Typography;
 
@@ -32,6 +33,7 @@ interface AutoAssignPanelProps {
 }
 
 export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignPanelProps) {
+  const { t } = useTranslation();
   const [woId, setWoId] = useState(workOrderId || '');
   const [startTime, setStartTime] = useState<dayjs.Dayjs | null>(null);
   const [endTime, setEndTime] = useState<dayjs.Dayjs | null>(null);
@@ -60,7 +62,7 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
 
   const candidateColumns: ColumnsType<AutoAssignCandidate> = [
     {
-      title: 'Technician',
+      title: t('autoAssign.technician'),
       dataIndex: 'agent_name',
       key: 'agent_name',
       render: (name: string) => (
@@ -71,19 +73,19 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
       ),
     },
     {
-      title: 'Available',
+      title: t('autoAssign.available'),
       dataIndex: 'available',
       key: 'available',
       width: 100,
       render: (available: boolean) =>
         available ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">Yes</Tag>
+          <Tag icon={<CheckCircleOutlined />} color="success">{t('autoAssign.yes')}</Tag>
         ) : (
-          <Tag icon={<CloseCircleOutlined />} color="error">No</Tag>
+          <Tag icon={<CloseCircleOutlined />} color="error">{t('autoAssign.no')}</Tag>
         ),
     },
     {
-      title: 'Score',
+      title: t('autoAssign.score'),
       dataIndex: 'score',
       key: 'score',
       width: 80,
@@ -94,7 +96,7 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
       defaultSortOrder: 'descend',
     },
     {
-      title: 'Details',
+      title: t('autoAssign.details'),
       dataIndex: 'reasons',
       key: 'reasons',
       render: (reasons: string[]) => (
@@ -112,26 +114,26 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
       render: (_, record) =>
         record.available ? (
           <Button size="small" type="primary" onClick={() => handleSelectCandidate(record)}>
-            Assign
+            {t('autoAssign.assign')}
           </Button>
         ) : null,
     },
   ];
 
   const skillOptions = [
-    { value: 'hvac', label: 'HVAC' },
-    { value: 'plumbing', label: 'Plumbing' },
-    { value: 'electrical', label: 'Electrical' },
-    { value: 'appliance', label: 'Appliance' },
-    { value: 'general', label: 'General' },
+    { value: 'hvac', label: t('autoAssign.skills.hvac') },
+    { value: 'plumbing', label: t('autoAssign.skills.plumbing') },
+    { value: 'electrical', label: t('autoAssign.skills.electrical') },
+    { value: 'appliance', label: t('autoAssign.skills.appliance') },
+    { value: 'general', label: t('autoAssign.skills.general') },
   ];
 
   const territoryOptions = [
-    { value: 'north', label: 'North' },
-    { value: 'south', label: 'South' },
-    { value: 'east', label: 'East' },
-    { value: 'west', label: 'West' },
-    { value: 'central', label: 'Central' },
+    { value: 'north', label: t('autoAssign.territories.north') },
+    { value: 'south', label: t('autoAssign.territories.south') },
+    { value: 'east', label: t('autoAssign.territories.east') },
+    { value: 'west', label: t('autoAssign.territories.west') },
+    { value: 'central', label: t('autoAssign.territories.central') },
   ];
 
   return (
@@ -139,7 +141,7 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
       title={
         <Space>
           <ThunderboltOutlined />
-          <span>Auto-Assign Technician</span>
+          <span>{t('autoAssign.title')}</span>
         </Space>
       }
       size="small"
@@ -147,7 +149,7 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         {!workOrderId && (
           <Input
-            placeholder="Work Order ID"
+            placeholder={t('autoAssign.workOrderId')}
             value={woId}
             onChange={(e) => setWoId(e.target.value)}
           />
@@ -156,14 +158,14 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
         <Space wrap>
           <DatePicker
             showTime
-            placeholder="Scheduled Start"
+            placeholder={t('autoAssign.scheduledStart')}
             value={startTime}
             onChange={setStartTime}
             style={{ width: 200 }}
           />
           <DatePicker
             showTime
-            placeholder="Scheduled End"
+            placeholder={t('autoAssign.scheduledEnd')}
             value={endTime}
             onChange={setEndTime}
             style={{ width: 200 }}
@@ -173,7 +175,7 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
         <Space wrap>
           <Select
             mode="multiple"
-            placeholder="Required Skills"
+            placeholder={t('autoAssign.requiredSkills')}
             options={skillOptions}
             value={skills}
             onChange={setSkills}
@@ -181,7 +183,7 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
             allowClear
           />
           <Select
-            placeholder="Territory"
+            placeholder={t('autoAssign.territory')}
             options={territoryOptions}
             value={territory || undefined}
             onChange={(v) => setTerritory(v || '')}
@@ -197,10 +199,10 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
           disabled={!woId || !startTime || !endTime}
           onClick={handleAutoAssign}
         >
-          Find Best Technician
+          {t('autoAssign.findBestTechnician')}
         </Button>
 
-        {autoAssign.isPending && <Spin tip="Evaluating candidates..." />}
+        {autoAssign.isPending && <Spin tip={t('autoAssign.evaluatingCandidates')} />}
 
         {result && (
           <>
@@ -209,15 +211,15 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
             {result.assigned ? (
               <Alert
                 type="success"
-                message={`Recommended: ${result.agent_name}`}
-                description={`Score: ${result.score} — This technician is the best match based on availability, skills, territory, and workload.`}
+                message={t('autoAssign.recommended', { name: result.agent_name })}
+                description={t('autoAssign.matchDescription', { score: result.score })}
                 showIcon
               />
             ) : (
               <Alert
                 type="warning"
-                message="No available technician found"
-                description="All technicians have conflicts or are unavailable for this time slot. Consider rescheduling or review the candidates below."
+                message={t('autoAssign.noTechnicianFound')}
+                description={t('autoAssign.noTechnicianDescription')}
                 showIcon
               />
             )}
@@ -225,7 +227,7 @@ export default function AutoAssignPanel({ workOrderId, onAssigned }: AutoAssignP
             {result.candidates.length > 0 && (
               <>
                 <Title level={5} style={{ marginTop: 8, marginBottom: 4 }}>
-                  All Candidates ({result.candidates.length})
+                  {t('autoAssign.allCandidates', { count: result.candidates.length })}
                 </Title>
                 <Table
                   columns={candidateColumns}

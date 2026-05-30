@@ -21,6 +21,7 @@ import {
   CheckCircleOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '@/utils/format-date';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import type { IPWhitelistEntry } from '@/api/ip-whitelist.api';
@@ -38,6 +39,7 @@ const { TextArea } = Input;
 const { Text } = Typography;
 
 export default function IPWhitelistManagement() {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<IPWhitelistEntry | null>(null);
   const [form] = Form.useForm();
@@ -73,8 +75,8 @@ export default function IPWhitelistManagement() {
 
   const handleDelete = (entry: IPWhitelistEntry) => {
     showConfirmDialog({
-      title: 'Remove IP from Whitelist',
-      content: `Are you sure you want to remove ${entry.ip_address} from the whitelist?`,
+      title: t('ipWhitelist.removeTitle'),
+      content: t('ipWhitelist.removeConfirm', { ip: entry.ip_address }),
       onOk: async () => {
         await deleteMutation.mutateAsync(entry.id).catch(() => {});
       },
@@ -102,12 +104,12 @@ export default function IPWhitelistManagement() {
 
   const validateIP = (_: unknown, value: string) => {
     if (!value) {
-      return Promise.reject(new Error('IP address is required'));
+      return Promise.reject(new Error(t('ipWhitelist.errorRequired')));
     }
 
     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/;
     if (!ipRegex.test(value)) {
-      return Promise.reject(new Error('Invalid IP address or CIDR notation'));
+      return Promise.reject(new Error(t('ipWhitelist.errorInvalidFormat')));
     }
 
     const [ip] = value.split('/');
@@ -118,7 +120,7 @@ export default function IPWhitelistManagement() {
     });
 
     if (!validOctets) {
-      return Promise.reject(new Error('Invalid IP address'));
+      return Promise.reject(new Error(t('ipWhitelist.errorInvalidIP')));
     }
 
     return Promise.resolve();
@@ -126,7 +128,7 @@ export default function IPWhitelistManagement() {
 
   const columns: ColumnsType<IPWhitelistEntry> = [
     {
-      title: 'IP Address / Range',
+      title: t('ipWhitelist.tableIpAddress'),
       dataIndex: 'ip_address',
       key: 'ip_address',
       render: (ip: string) => (
@@ -139,28 +141,28 @@ export default function IPWhitelistManagement() {
       ),
     },
     {
-      title: 'Description',
+      title: t('ipWhitelist.tableDescription'),
       dataIndex: 'description',
       key: 'description',
     },
     {
-      title: 'Status',
+      title: t('ipWhitelist.tableStatus'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (active: boolean) => (
         <Tag color={active ? 'success' : 'default'} icon={active ? <CheckCircleOutlined /> : undefined}>
-          {active ? 'Active' : 'Inactive'}
+          {active ? t('ipWhitelist.statusActive') : t('ipWhitelist.statusInactive')}
         </Tag>
       ),
     },
     {
-      title: 'Added',
+      title: t('ipWhitelist.tableAdded'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Actions',
+      title: t('ipWhitelist.tableActions'),
       key: 'actions',
       render: (_, record) => (
         <Space size="small">
@@ -179,14 +181,13 @@ export default function IPWhitelistManagement() {
 
   return (
     <div>
-      {/* Global Enable/Disable */}
       <Card style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <Text strong>Enable IP Whitelisting</Text>
+            <Text strong>{t('ipWhitelist.enableLabel')}</Text>
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>
-                When enabled, only requests from whitelisted IPs will be allowed
+                {t('ipWhitelist.enableDescription')}
               </Text>
             </div>
           </div>
@@ -194,15 +195,15 @@ export default function IPWhitelistManagement() {
             checked={whitelistEnabled}
             onChange={handleToggle}
             loading={isLoadingConfig || toggleMutation.isPending}
-            checkedChildren="Enabled"
-            unCheckedChildren="Disabled"
+            checkedChildren={t('ipWhitelist.statusEnabled')}
+            unCheckedChildren={t('ipWhitelist.statusDisabled')}
           />
         </div>
 
         {whitelistEnabled && (
           <Alert
-            message="IP Whitelisting is Active"
-            description="Only IP addresses in the whitelist below can access the system."
+            message={t('ipWhitelist.alertActiveTitle')}
+            description={t('ipWhitelist.alertActiveDescription')}
             type="warning"
             showIcon
             style={{ marginTop: 16 }}
@@ -211,10 +212,10 @@ export default function IPWhitelistManagement() {
       </Card>
 
       <Card
-        title="Whitelisted IP Addresses"
+        title={t('ipWhitelist.tableTitle')}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            Add IP Address
+            {t('ipWhitelist.addButton')}
           </Button>
         }
       >
@@ -222,7 +223,7 @@ export default function IPWhitelistManagement() {
           message={
             <Space>
               <InfoCircleOutlined />
-              <span>You can use CIDR notation for IP ranges (e.g., 192.168.1.0/24)</span>
+              <span>{t('ipWhitelist.cidrInfo')}</span>
             </Space>
           }
           type="info"
@@ -238,9 +239,8 @@ export default function IPWhitelistManagement() {
         />
       </Card>
 
-      {/* Add/Edit Modal */}
       <Modal
-        title={editingEntry ? 'Edit IP Whitelist Entry' : 'Add IP to Whitelist'}
+        title={editingEntry ? t('ipWhitelist.modalEditTitle') : t('ipWhitelist.modalAddTitle')}
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -252,40 +252,40 @@ export default function IPWhitelistManagement() {
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="ip_address"
-            label="IP Address or CIDR Range"
+            label={t('ipWhitelist.formIpAddress')}
             rules={[
               { required: true },
               { validator: validateIP },
             ]}
           >
             <Input
-              placeholder="e.g., 192.168.1.1 or 10.0.0.0/24"
+              placeholder={t('ipWhitelist.placeholderIp')}
               prefix={<GlobalOutlined />}
             />
           </Form.Item>
 
           <Alert
-            message="CIDR Notation Examples"
+            message={t('ipWhitelist.cidrExamplesTitle')}
             description={
               <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
-                <li>Single IP: 192.168.1.1</li>
-                <li>Class C network: 192.168.1.0/24 (256 addresses)</li>
-                <li>Class B network: 172.16.0.0/16 (65,536 addresses)</li>
+                <li>{t('ipWhitelist.cidrSingle')}</li>
+                <li>{t('ipWhitelist.cidrClassC')}</li>
+                <li>{t('ipWhitelist.cidrClassB')}</li>
               </ul>
             }
             type="info"
             style={{ marginBottom: 16 }}
           />
 
-          <Form.Item name="description" label="Description">
+          <Form.Item name="description" label={t('ipWhitelist.formDescription')}>
             <TextArea
               rows={3}
-              placeholder="e.g., Office network, VPN connection, Remote worker..."
+              placeholder={t('ipWhitelist.placeholderDescription')}
             />
           </Form.Item>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked" initialValue={true}>
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+          <Form.Item name="is_active" label={t('ipWhitelist.formActive')} valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren={t('ipWhitelist.statusActive')} unCheckedChildren={t('ipWhitelist.statusInactive')} />
           </Form.Item>
         </Form>
       </Modal>

@@ -138,20 +138,20 @@ export default function LoginPage() {
               <SafetyOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
             )}
             <Title level={3} style={{ marginBottom: 4 }}>
-              {useRecoveryCode ? 'Recovery Code' : 'Verification Required'}
+              {useRecoveryCode ? t('auth.recoveryCode') : t('auth.verificationRequired')}
             </Title>
             <Text type="secondary">
               {useRecoveryCode
-                ? 'Enter one of your recovery codes to sign in.'
+                ? t('auth.enterRecoveryCode')
                 : isTotp
-                  ? 'Enter the 6-digit code from your authenticator app.'
-                  : 'A 6-digit code has been sent to your email. Enter it below to continue.'}
+                  ? t('auth.enterTotpCode')
+                  : t('auth.enterEmailCode')}
             </Text>
           </div>
 
           <Form layout="vertical">
             {useRecoveryCode ? (
-              <Form.Item label="Recovery Code">
+              <Form.Item label={t('auth.recoveryCode')}>
                 <Input
                   size="large"
                   placeholder="XXXX-XXXX"
@@ -162,7 +162,7 @@ export default function LoginPage() {
                 />
               </Form.Item>
             ) : (
-              <Form.Item label="Verification Code">
+              <Form.Item label={t('auth.verificationCode')}>
                 <Input
                   size="large"
                   placeholder="000000"
@@ -183,7 +183,7 @@ export default function LoginPage() {
                 disabled={useRecoveryCode ? recoveryCode.length !== 9 : mfaCode.length !== 6}
                 onClick={onMFASubmit}
               >
-                {useRecoveryCode ? 'Verify Recovery Code' : 'Verify & Sign In'}
+                {useRecoveryCode ? t('auth.verifyRecoveryCode') : t('auth.verifySignIn')}
               </Button>
             </Form.Item>
           </Form>
@@ -196,7 +196,7 @@ export default function LoginPage() {
                   loading={loginMutation.isPending}
                   onClick={handleResendCode}
                 >
-                  Resend Code
+                  {t('auth.resendCode')}
                 </Button>
               )}
               <Button
@@ -207,7 +207,7 @@ export default function LoginPage() {
                   setMfaCode('');
                 }}
               >
-                {useRecoveryCode ? 'Use verification code instead' : 'Use a recovery code'}
+                {useRecoveryCode ? t('auth.useVerificationCode') : t('auth.useRecoveryCode')}
               </Button>
               <Button
                 type="link"
@@ -219,7 +219,7 @@ export default function LoginPage() {
                   setRecoveryCode('');
                 }}
               >
-                Back to Login
+                {t('auth.backToLogin')}
               </Button>
             </Space>
           </div>
@@ -299,7 +299,7 @@ export default function LoginPage() {
                 block
                 size="large"
               >
-                Send Magic Link
+                {t('auth.sendMagicLink')}
               </Button>
             </Form.Item>
 
@@ -308,7 +308,7 @@ export default function LoginPage() {
                 setUseMagicLink(false);
                 resetMagicLink();
               }}>
-                Sign in with Password
+                {t('auth.signInWithPassword')}
               </Button>
             </div>
           </Form>
@@ -345,7 +345,7 @@ export default function LoginPage() {
                   <Input.Password
                     {...field}
                     prefix={<LockOutlined />}
-                    placeholder="Password"
+                    placeholder={t('auth.password')}
                     size="large"
                   />
                 )}
@@ -373,7 +373,7 @@ export default function LoginPage() {
                 setUseMagicLink(true);
                 resetLogin();
               }}>
-                Sign in with Magic Link
+                {t('auth.signInWithMagicLink')}
               </Button>
             </div>
           </Form>

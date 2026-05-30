@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useTranslation } from 'react-i18next';
 import {
   useNotifications,
   useMarkNotificationAsRead,
@@ -29,6 +30,8 @@ function NotificationItem({
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <List.Item
       style={{
@@ -47,7 +50,7 @@ function NotificationItem({
             icon={<CheckOutlined />}
             size="small"
             onClick={() => onMarkRead(notification.id)}
-            title="Mark as read"
+            title={t('notifications.markAsRead')}
           />
         ),
         <Button
@@ -57,7 +60,7 @@ function NotificationItem({
           size="small"
           danger
           onClick={() => onDelete(notification.id)}
-          title="Delete"
+          title={t('notifications.delete')}
         />,
       ].filter(Boolean)}
     >
@@ -86,7 +89,7 @@ function NotificationItem({
             </Text>
             {!notification.is_read && (
               <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>
-                New
+                {t('notifications.new')}
               </Tag>
             )}
           </div>
@@ -107,6 +110,7 @@ function NotificationItem({
 }
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useNotifications({ take: 100 });
   const markAsRead = useMarkNotificationAsRead();
   const markAllRead = useMarkAllNotificationsAsRead();
@@ -123,8 +127,8 @@ export default function NotificationsPage() {
   return (
     <div style={{ padding: '24px' }}>
       <PageHeader
-        title="Notifications"
-        subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+        title={t('notifications.title')}
+        subtitle={unreadCount > 0 ? t('notifications.unreadCount', { count: unreadCount }) : t('notifications.allCaughtUp')}
         extra={
           unreadCount > 0 ? (
             <Button
@@ -132,7 +136,7 @@ export default function NotificationsPage() {
               onClick={() => markAllRead.mutate()}
               loading={markAllRead.isPending}
             >
-              Mark All as Read
+              {t('notifications.markAllAsRead')}
             </Button>
           ) : undefined
         }
@@ -145,7 +149,7 @@ export default function NotificationsPage() {
           </div>
         ) : sorted.length === 0 ? (
           <Empty
-            description="No notifications"
+            description={t('notifications.noNotifications')}
             style={{ padding: '60px 0' }}
           />
         ) : (

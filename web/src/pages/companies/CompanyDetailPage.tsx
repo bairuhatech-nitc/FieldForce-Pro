@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, Descriptions, Button, Space, Skeleton } from 'antd';
 import { EditOutlined, DeleteOutlined, GlobalOutlined } from '@ant-design/icons';
 import { useCompany, useDeleteCompany } from '@/hooks/use-companies';
@@ -8,6 +9,7 @@ import { PermissionGuard } from '@/components/permissions';
 import { formatDateTime } from '@/utils/format-date';
 
 export default function CompanyDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: company, isLoading } = useCompany(id!);
@@ -16,8 +18,8 @@ export default function CompanyDetailPage() {
   const handleDelete = () => {
     if (!company) return;
     showConfirmDialog({
-      title: 'Delete Company',
-      content: `Are you sure you want to delete ${company.name}?`,
+      title: t('companies.deleteCompany'),
+      content: t('companies.deleteConfirmation', { name: company.name }),
       onOk: async () => {
         await deleteCompany.mutateAsync(company.id);
         navigate('/companies');
@@ -29,7 +31,7 @@ export default function CompanyDetailPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Company Details" />
+        <PageHeader title={t('companies.details')} />
         <Card>
           <Skeleton active />
         </Card>
@@ -40,8 +42,8 @@ export default function CompanyDetailPage() {
   if (!company) {
     return (
       <div>
-        <PageHeader title="Company Not Found" />
-        <Card>Company not found</Card>
+        <PageHeader title={t('companies.notFoundTitle')} />
+        <Card>{t('companies.notFoundMessage')}</Card>
       </div>
     );
   }
@@ -58,33 +60,33 @@ export default function CompanyDetailPage() {
                 icon={<EditOutlined />}
                 onClick={() => navigate(`/companies/${company.id}/edit`)}
               >
-                Edit
+                {t('companies.edit')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="companies:delete">
               <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-                Delete
+                {t('companies.delete')}
               </Button>
             </PermissionGuard>
           </Space>
         }
       />
 
-      <Card title="Company Information">
+      <Card title={t('companies.information')}>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="Company Name" span={2}>
+          <Descriptions.Item label={t('companies.companyName')} span={2}>
             {company.name}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Industry">
+          <Descriptions.Item label={t('companies.industry')}>
             {company.industry || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Tax ID">
+          <Descriptions.Item label={t('companies.taxId')}>
             {company.tax_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Website" span={2}>
+          <Descriptions.Item label={t('companies.website')} span={2}>
             {company.website ? (
               <Space>
                 <GlobalOutlined />
@@ -97,25 +99,25 @@ export default function CompanyDetailPage() {
             )}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Billing Address" span={2}>
+          <Descriptions.Item label={t('companies.billingAddress')} span={2}>
             {company.billing_address || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Notes" span={2}>
+          <Descriptions.Item label={t('companies.notes')} span={2}>
             {company.notes || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Created At">
+          <Descriptions.Item label={t('companies.createdAt')}>
             {formatDateTime(company.created_at)}
           </Descriptions.Item>
-          <Descriptions.Item label="Updated At">
+          <Descriptions.Item label={t('companies.updatedAt')}>
             {formatDateTime(company.updated_at)}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
       {company.custom_fields && Object.keys(company.custom_fields).length > 0 && (
-        <Card title="Custom Fields" style={{ marginTop: 16 }}>
+        <Card title={t('companies.customFields')} style={{ marginTop: 16 }}>
           <Descriptions column={2} bordered>
             {Object.entries(company.custom_fields).map(([key, value]) => (
               <Descriptions.Item key={key} label={key}>

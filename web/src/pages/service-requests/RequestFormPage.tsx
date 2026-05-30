@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, Row, Col, Typography, message, Alert, Divider, AutoComplete, DatePicker, Upload } from 'antd';
 import { EnvironmentOutlined, CheckCircleOutlined, WarningOutlined, SaveOutlined, CloseOutlined, AimOutlined, LoadingOutlined, PlusOutlined, InboxOutlined } from '@ant-design/icons';
@@ -155,6 +156,7 @@ const boundaryMatchedStyle = {
 // --- Main form ---
 
 export default function RequestFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -246,21 +248,21 @@ export default function RequestFormPage() {
       setNoServiceWarning('');
       setBoundaryMatched(true);
       message.success(
-        `Service location matched: ${match.location.address}` +
-        (match.distance > 0.5 ? ` (${match.distance.toFixed(1)} km away)` : ''),
+        t('serviceRequests.serviceLocationMatched', { address: match.location.address }) +
+        (match.distance > 0.5 ? t('serviceRequests.distanceAway', { distance: match.distance.toFixed(1) }) : ''),
       );
     } else {
       form.setFieldsValue({ location_id: undefined });
       setSelectedLocationId(null);
       setBoundaryMatched(false);
       setNoServiceWarning(
-        'This location does not match any existing service location. Please select a location that was already created in the Service Locations page, or create a new service location first.',
+        t('serviceRequests.noServiceWarning'),
       );
     }
 
     // 2. Always fetch and show the boundary
     await fetchBoundary(lat, lng);
-  }, [locations, form, fetchBoundary]);
+  }, [locations, form, fetchBoundary, t]);
 
   // --- Dropdown selection (direct pick — always valid) ---
   const handleDropdownSelect = (value: string | undefined) => {
@@ -285,7 +287,7 @@ export default function RequestFormPage() {
         // Fetch boundary for this location
         fetchBoundary(Number(loc.lat), Number(loc.lng), false);
       }
-      message.success(`Selected: ${loc.address}`);
+      message.success(t('serviceRequests.selectedAddress', { address: loc.address }));
     }
   };
 
@@ -309,7 +311,7 @@ export default function RequestFormPage() {
       .slice(0, 3)
       .map((l) => ({
         value: l.address || '',
-        label: `📍 ${l.address} (Saved Location)`,
+        label: t('serviceRequests.savedLocationLabel', { address: l.address }),
         lat: Number(l.lat),
         lng: Number(l.lng),
         localId: l.id,
@@ -317,7 +319,7 @@ export default function RequestFormPage() {
 
     setSuggestions(localMatches.length > 0
       ? localMatches
-      : [{ value: '', label: '🔍 Searching...', lat: 0, lng: 0 }],
+      : [{ value: '', label: t('serviceRequests.searching'), lat: 0, lng: 0 }],
     );
 
     // 2. Debounce the Photon search (300ms — no rate limit issues)
@@ -346,13 +348,13 @@ export default function RequestFormPage() {
           });
 
           const combined = [...localMatches, ...photonResults];
-          setSuggestions(combined.length > 0 ? combined : [{ value: '', label: 'No results found', lat: 0, lng: 0 }]);
+          setSuggestions(combined.length > 0 ? combined : [{ value: '', label: t('serviceRequests.noResults'), lat: 0, lng: 0 }]);
         } catch {
-          setSuggestions(localMatches.length > 0 ? localMatches : [{ value: '', label: 'Search failed. Try again.', lat: 0, lng: 0 }]);
+          setSuggestions(localMatches.length > 0 ? localMatches : [{ value: '', label: t('serviceRequests.searchFailed'), lat: 0, lng: 0 }]);
         }
       }, 300);
     }
-  }, [locations]);
+  }, [locations, t]);
 
   const handleSelectSuggestion = (_value: string, option: { lat?: number; lng?: number; value?: string; localId?: string }) => {
     isTypingRef.current = false;
@@ -375,7 +377,7 @@ export default function RequestFormPage() {
           // Fetch boundary for this location
           fetchBoundary(Number(loc.lat), Number(loc.lng), false);
         }
-        message.success(`Selected: ${loc.address}`);
+        message.success(t('serviceRequests.selectedAddress', { address: loc.address }));
         return;
       }
     }
@@ -387,7 +389,7 @@ export default function RequestFormPage() {
 
   // --- Current location ---
   const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) { message.error('Geolocation not supported'); return; }
+    if (!navigator.geolocation) { message.error(t('serviceRequests.geolocationNotSupported')); return; }
     setFetchingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -396,7 +398,7 @@ export default function RequestFormPage() {
       },
       () => {
         setFetchingLocation(false);
-        message.error('Unable to get your location.');
+        message.error(t('serviceRequests.unableToGetLocation'));
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -414,7 +416,7 @@ export default function RequestFormPage() {
   // --- Submit ---
   const handleSubmit = async (values: Record<string, unknown>) => {
     if (!values.location_id) {
-      message.warning('Please select an existing service location.');
+      message.warning(t('serviceRequests.selectExistingLocationWarning'));
       return;
     }
     const payload = {
@@ -451,8 +453,8 @@ export default function RequestFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Service Request' : 'New Service Request'}
-        subtitle={isEdit ? `Editing request: ${request?.subject || ''}` : 'Create a new service request and assign a location'}
+        title={isEdit ? t('serviceRequests.editTitle') : t('serviceRequests.createTitle')}
+        subtitle={isEdit ? t('serviceRequests.editSubtitle', { subject: request?.subject || '' }) : t('serviceRequests.createSubtitle')}
         onBack={() => navigate('/service-requests')}
       />
 
@@ -466,38 +468,38 @@ export default function RequestFormPage() {
         <Row gutter={24}>
           {/* Left column: Request details */}
           <Col xs={24} lg={10}>
-            <Card title="Request Details" style={{ marginBottom: 24 }}>
+            <Card title={t('serviceRequests.requestDetails')} style={{ marginBottom: 24 }}>
               <Form.Item
                 name="subject"
-                label="Subject"
-                rules={[{ required: true, message: 'Please enter a subject' }]}
+                label={t('serviceRequests.subject')}
+                rules={[{ required: true, message: t('serviceRequests.subjectRequired') }]}
               >
-                <Input placeholder="e.g. AC unit not cooling" />
+                <Input placeholder={t('serviceRequests.subjectPlaceholder')} />
               </Form.Item>
 
-              <Form.Item name="description" label="Description">
-                <TextArea rows={3} placeholder="Describe the service request in detail..." />
+              <Form.Item name="description" label={t('serviceRequests.description')}>
+                <TextArea rows={3} placeholder={t('serviceRequests.descriptionPlaceholder')} />
               </Form.Item>
 
               <Form.Item
                 name="scheduled_start"
-                label="Scheduled Date"
-                rules={[{ required: true, message: 'Scheduled date is required' }]}
+                label={t('serviceRequests.scheduledDate')}
+                rules={[{ required: true, message: t('serviceRequests.scheduledDateRequired') }]}
               >
                 <DatePicker
                   format="YYYY-MM-DD"
-                  placeholder="Select scheduled date"
+                  placeholder={t('serviceRequests.selectScheduledDate')}
                   style={{ width: '100%' }}
                 />
               </Form.Item>
 
               <Form.Item
                 name="contact_id"
-                label="Customer (Contact)"
-                rules={[{ required: true, message: 'Customer is required' }]}
+                label={t('serviceRequests.customer')}
+                rules={[{ required: true, message: t('serviceRequests.customerRequired') }]}
               >
                 <Select
-                  placeholder="Select customer"
+                  placeholder={t('serviceRequests.selectCustomer')}
                   showSearch
                   optionFilterProp="label"
                   onChange={() => {}}
@@ -515,7 +517,7 @@ export default function RequestFormPage() {
                         onClick={() => setIsContactModalOpen(true)}
                         style={{ width: '100%', textAlign: 'left', padding: '4px 12px' }}
                       >
-                        Create New Customer
+                        {t('serviceRequests.createNewCustomer')}
                       </Button>
                     </>
                   )}
@@ -530,10 +532,10 @@ export default function RequestFormPage() {
                   const contact = contacts?.find((c) => c.id === selectedId);
                   if (!contact) return null;
                   return (
-                    <Form.Item label="Customer Phone" required>
+                    <Form.Item label={t('serviceRequests.customerPhone')} required>
                       <Input
                         readOnly
-                        value={contact.phone || 'No phone on record'}
+                        value={contact.phone || t('serviceRequests.noPhoneOnRecord')}
                         style={{
                           background: contact.phone ? undefined : '#fff7e6',
                           color: contact.phone ? undefined : '#d46b08',
@@ -541,7 +543,7 @@ export default function RequestFormPage() {
                         suffix={
                           !contact.phone && (
                             <Text type="warning" style={{ fontSize: 11 }}>
-                              Add phone in Contacts
+                              {t('serviceRequests.addPhoneInContacts')}
                             </Text>
                           )
                         }
@@ -555,33 +557,33 @@ export default function RequestFormPage() {
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="priority" label="Priority">
-                    <Select placeholder="Select">
-                      <Select.Option value="low">Low</Select.Option>
-                      <Select.Option value="medium">Medium</Select.Option>
-                      <Select.Option value="high">High</Select.Option>
-                      <Select.Option value="urgent">Urgent</Select.Option>
+                  <Form.Item name="priority" label={t('serviceRequests.priority')}>
+                    <Select placeholder={t('serviceRequests.select')}>
+                      <Select.Option value="low">{t('serviceRequests.priorityLow')}</Select.Option>
+                      <Select.Option value="medium">{t('serviceRequests.priorityMedium')}</Select.Option>
+                      <Select.Option value="high">{t('serviceRequests.priorityHigh')}</Select.Option>
+                      <Select.Option value="urgent">{t('serviceRequests.priorityUrgent')}</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="category" label="Category">
-                    <Select placeholder="Select" allowClear>
-                      <Select.Option value="HVAC">HVAC</Select.Option>
-                      <Select.Option value="Plumbing">Plumbing</Select.Option>
-                      <Select.Option value="Electrical">Electrical</Select.Option>
-                      <Select.Option value="Appliance">Appliance</Select.Option>
-                      <Select.Option value="General">General</Select.Option>
-                      <Select.Option value="Other">Other</Select.Option>
+                  <Form.Item name="category" label={t('serviceRequests.category')}>
+                    <Select placeholder={t('serviceRequests.select')} allowClear>
+                      <Select.Option value="HVAC">{t('serviceRequests.categoryHvac')}</Select.Option>
+                      <Select.Option value="Plumbing">{t('serviceRequests.categoryPlumbing')}</Select.Option>
+                      <Select.Option value="Electrical">{t('serviceRequests.categoryElectrical')}</Select.Option>
+                      <Select.Option value="Appliance">{t('serviceRequests.categoryAppliance')}</Select.Option>
+                      <Select.Option value="General">{t('serviceRequests.categoryGeneral')}</Select.Option>
+                      <Select.Option value="Other">{t('serviceRequests.categoryOther')}</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Form.Item name="technician_ids" label="Assigned Technicians">
+              <Form.Item name="technician_ids" label={t('serviceRequests.assignedTechnicians')}>
                 <Select
                   mode="multiple"
-                  placeholder="Select technicians"
+                  placeholder={t('serviceRequests.selectTechnicians')}
                   allowClear
                   options={agents?.map((a) => ({
                     value: a.id,
@@ -590,7 +592,7 @@ export default function RequestFormPage() {
                 />
               </Form.Item>
 
-              <Form.Item label="Attachments (optional)">
+              <Form.Item label={t('serviceRequests.attachmentsOptional')}>
   <Upload.Dragger
     multiple
     fileList={fileList}
@@ -599,19 +601,19 @@ export default function RequestFormPage() {
     accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
   >
     <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-    <p className="ant-upload-text">Click or drag files to attach</p>
-    <p className="ant-upload-hint">Supports images, PDF, Word, Excel</p>
+    <p className="ant-upload-text">{t('serviceRequests.uploadDragText')}</p>
+    <p className="ant-upload-hint">{t('serviceRequests.uploadHint')}</p>
   </Upload.Dragger>
 </Form.Item>
-              <Form.Item name="channel" label="Channel" style={{ marginBottom: 0 }}>
-                <Select placeholder="Select channel">
-                  <Select.Option value="phone">Phone</Select.Option>
-                  <Select.Option value="email">Email</Select.Option>
-                  <Select.Option value="portal">Portal</Select.Option>
-                  <Select.Option value="webform">Web Form</Select.Option>
-                  <Select.Option value="api">API</Select.Option>
-                  <Select.Option value="whatsapp">WhatsApp</Select.Option>
-                  <Select.Option value="sms">SMS</Select.Option>
+              <Form.Item name="channel" label={t('serviceRequests.channel')} style={{ marginBottom: 0 }}>
+                <Select placeholder={t('serviceRequests.selectChannel')}>
+                  <Select.Option value="phone">{t('serviceRequests.channelPhone')}</Select.Option>
+                  <Select.Option value="email">{t('serviceRequests.channelEmail')}</Select.Option>
+                  <Select.Option value="portal">{t('serviceRequests.channelPortal')}</Select.Option>
+                  <Select.Option value="webform">{t('serviceRequests.channelWebform')}</Select.Option>
+                  <Select.Option value="api">{t('serviceRequests.channelApi')}</Select.Option>
+                  <Select.Option value="whatsapp">{t('serviceRequests.channelWhatsapp')}</Select.Option>
+                  <Select.Option value="sms">{t('serviceRequests.channelSms')}</Select.Option>
                 </Select>
               </Form.Item>
             </Card>
@@ -620,23 +622,23 @@ export default function RequestFormPage() {
           {/* Right column: Location picker */}
           <Col xs={24} lg={14}>
             <Card
-              title={<Space><EnvironmentOutlined /> Service Location <span style={{ color: '#ff4d4f' }}>*</span></Space>}
+              title={<Space><EnvironmentOutlined /> {t('serviceRequests.serviceLocation')} <span style={{ color: '#ff4d4f' }}>*</span></Space>}
               extra={
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  {locations?.length || 0} location{(locations?.length || 0) !== 1 ? 's' : ''} available
+                  {t('serviceRequests.locationsAvailable', { count: locations?.length || 0 })}
                 </Text>
               }
               style={{ marginBottom: 24 }}
             >
-              <Form.Item name="location_id" hidden rules={[{ required: true, message: 'Please select a service location' }]}>
+              <Form.Item name="location_id" hidden rules={[{ required: true, message: t('serviceRequests.pleaseSelectLocation') }]}>
                 <Input />
               </Form.Item>
 
               {/* Quick select dropdown */}
-              <Text strong style={{ display: 'block', marginBottom: 6 }}>Quick select:</Text>
+              <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('serviceRequests.quickSelect')}</Text>
               <Select
                 value={selectedLocationId || undefined}
-                placeholder="Select from existing locations..."
+                placeholder={t('serviceRequests.selectFromExisting')}
                 allowClear
                 showSearch
                 optionFilterProp="label"
@@ -649,7 +651,7 @@ export default function RequestFormPage() {
                 }))}
               />
 
-              <Divider style={{ margin: '0 0 16px 0' }}>or find on map</Divider>
+              <Divider style={{ margin: '0 0 16px 0' }}>{t('serviceRequests.orFindOnMap')}</Divider>
 
               {/* Address search */}
               <AutoComplete
@@ -659,7 +661,7 @@ export default function RequestFormPage() {
                 onSelect={handleSelectSuggestion}
                 onBlur={() => { isTypingRef.current = false; }}
                 filterOption={false}
-                placeholder="Search address..."
+                placeholder={t('serviceRequests.searchAddress')}
                 style={{ width: '100%', marginBottom: 8 }}
                 size="large"
                 allowClear
@@ -673,7 +675,7 @@ export default function RequestFormPage() {
                 block
                 style={{ marginBottom: 8 }}
               >
-                Use My Current Location
+                {t('serviceRequests.useCurrentLocation')}
               </Button>
 
               {/* Interactive map */}
@@ -722,7 +724,7 @@ export default function RequestFormPage() {
                             setMapCoords({ lat: Number(loc.lat), lng: Number(loc.lng) });
                             fetchBoundary(Number(loc.lat), Number(loc.lng), false);
                           }
-                          message.success(`Selected: ${loc.address}`);
+                          message.success(t('serviceRequests.selectedAddress', { address: loc.address }));
                         },
                       }}
                     >
@@ -738,7 +740,7 @@ export default function RequestFormPage() {
               </div>
 
               <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 6 }}>
-                Search an address or click the map. Blue dots are existing service locations — your selection must match one.
+                {t('serviceRequests.mapHelpText')}
               </Text>
 
               {/* Success: matched an existing service location */}
@@ -746,10 +748,10 @@ export default function RequestFormPage() {
                 <Alert
                   message={
                     <span>
-                      Matched service location: <strong>{selectedLocation.address}</strong>
+                      {t('serviceRequests.matchedServiceLocation')} <strong>{selectedLocation.address}</strong>
                       {boundaryName && (
                         <Text type="secondary" style={{ marginLeft: 8 }}>
-                          (in {boundaryName})
+                          {t('serviceRequests.inBoundary', { name: boundaryName })}
                         </Text>
                       )}
                     </span>
@@ -777,7 +779,7 @@ export default function RequestFormPage() {
               {/* No locations at all */}
               {(locations || []).length === 0 && (
                 <Alert
-                  message="No service locations available. Please create a service location first."
+                  message={t('serviceRequests.noLocationsAvailable')}
                   type="warning"
                   showIcon
                   banner
@@ -796,10 +798,10 @@ export default function RequestFormPage() {
               icon={<SaveOutlined />}
               loading={createRequest.isPending || updateRequest.isPending}
             >
-              {isEdit ? 'Update Request' : 'Create Request'}
+              {isEdit ? t('serviceRequests.updateRequest') : t('serviceRequests.createRequest')}
             </Button>
             <Button onClick={() => navigate('/service-requests')} icon={<CloseOutlined />}>
-              Cancel
+              {t('serviceRequests.cancel')}
             </Button>
           </Space>
         </Card>

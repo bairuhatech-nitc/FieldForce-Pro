@@ -173,6 +173,84 @@
   gap: 10px;
 }
 
+/* ---------- Language Switcher ---------- */
+.lp-lang-switcher {
+  position: relative;
+}
+
+.lp-lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 51, 204, 0.05);
+  border: 1px solid rgba(34, 51, 204, 0.1);
+  padding: 8px 16px;
+  border-radius: 10px;
+  color: #2233CC;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.lp-lang-btn:hover {
+  background: rgba(34, 51, 204, 0.1);
+  border-color: rgba(34, 51, 204, 0.2);
+}
+
+.lp-lang-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid rgba(34, 51, 204, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(34, 51, 204, 0.12);
+  padding: 8px;
+  min-width: 140px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: lpFadeScale 0.2s ease-out;
+}
+
+@keyframes lpFadeScale {
+  from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.lp-lang-dropdown button {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5578;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+[dir="rtl"] .lp-lang-dropdown button {
+  text-align: right;
+}
+
+.lp-lang-dropdown button:hover {
+  background: rgba(34, 51, 204, 0.06);
+  color: #2233CC;
+}
+
+.lp-lang-dropdown button.active {
+  background: rgba(34, 51, 204, 0.1);
+  color: #2233CC;
+  font-weight: 600;
+}
+
 /* ---------- User Avatar Button ---------- */
 .lp-user-avatar-btn {
   border-radius: 50%;
@@ -368,6 +446,42 @@
   gap: 12px;
   margin-top: 20px;
   padding-top: 16px;
+}
+
+/* ---------- Mobile Language Switcher ---------- */
+.lp-mobile-lang-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lp-mobile-lang-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(34, 51, 204, 0.04);
+  border: 1px solid rgba(34, 51, 204, 0.08);
+  padding: 10px;
+  border-radius: 10px;
+  color: #4A5578;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.lp-mobile-lang-btn:hover {
+  background: rgba(34, 51, 204, 0.08);
+}
+
+.lp-mobile-lang-btn.active {
+  background: rgba(34, 51, 204, 0.1);
+  border-color: #2233CC;
+  color: #2233CC;
+  font-weight: 600;
 }
 
 /* ============================================

@@ -43,8 +43,8 @@ export default function MaintenancePlanListPage() {
 
   const handleDelete = (plan: AssetMaintenancePlan) => {
     showConfirmDialog({
-      title: 'Delete Maintenance Plan',
-      content: `Are you sure you want to delete the maintenance plan "${plan.name}"?`,
+      title: t('maintenancePlans.deleteConfirmTitle'),
+      content: t('maintenancePlans.deleteConfirmContent', { name: plan.name }),
       onOk: async () => {
         await deleteMaintenancePlan.mutateAsync(plan.id);
       },
@@ -65,7 +65,7 @@ export default function MaintenancePlanListPage() {
 
   const columns: ColumnsType<AssetMaintenancePlan> = [
     {
-      title: 'Name',
+      title: t('maintenancePlans.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => (
@@ -73,17 +73,17 @@ export default function MaintenancePlanListPage() {
       ),
     },
     {
-      title: 'Asset',
+      title: t('maintenancePlans.asset'),
       dataIndex: ['asset', 'name'],
       key: 'asset',
       render: (name: string | undefined, record) => (
-        <Tooltip title={`Asset ID: ${record.asset_id}`}>
-          {name || <span style={{ color: '#999' }}>Asset #{record.asset_id.slice(0, 8)}</span>}
+        <Tooltip title={t('maintenancePlans.assetId', { id: record.asset_id })}>
+          {name || <span style={{ color: '#999' }}>{t('maintenancePlans.assetPrefix', { id: record.asset_id.slice(0, 8) })}</span>}
         </Tooltip>
       ),
     },
     {
-      title: 'Frequency',
+      title: t('maintenancePlans.frequency'),
       dataIndex: 'frequency',
       key: 'frequency',
       render: (frequency: string) => (
@@ -93,11 +93,11 @@ export default function MaintenancePlanListPage() {
       ),
     },
     {
-      title: 'Next Due Date',
+      title: t('maintenancePlans.nextDueDate'),
       dataIndex: 'next_due_date',
       key: 'next_due_date',
       render: (date: string | null) => {
-        if (!date) return <span style={{ color: '#999' }}>Not scheduled</span>;
+        if (!date) return <span style={{ color: '#999' }}>{t('maintenancePlans.notScheduled')}</span>;
         const dueDate = new Date(date);
         const today = new Date();
         const isOverdue = dueDate < today;
@@ -107,7 +107,7 @@ export default function MaintenancePlanListPage() {
             <span style={{ color: isOverdue ? '#ff4d4f' : undefined }}>
               {formatDateTime(date)}
             </span>
-            {isOverdue && <Badge status="error" text="Overdue" />}
+            {isOverdue && <Badge status="error" text={t('maintenancePlans.overdue')} />}
           </Space>
         );
       },
@@ -118,36 +118,36 @@ export default function MaintenancePlanListPage() {
       },
     },
     {
-      title: 'Last Completed',
+      title: t('maintenancePlans.lastCompleted'),
       dataIndex: 'last_completed_date',
       key: 'last_completed_date',
-      render: (date: string | null) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>Never</span>,
+      render: (date: string | null) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>{t('maintenancePlans.never')}</span>,
     },
     {
-      title: 'Auto Create WO',
+      title: t('maintenancePlans.autoCreateWo'),
       dataIndex: 'auto_create_wo',
       key: 'auto_create_wo',
       render: (auto: boolean) => (
-        <Badge status={auto ? 'success' : 'default'} text={auto ? 'Yes' : 'No'} />
+        <Badge status={auto ? 'success' : 'default'} text={auto ? t('common.yes') : t('common.no')} />
       ),
     },
     {
-      title: 'Status',
+      title: t('maintenancePlans.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (active: boolean) => (
-        <Badge status={active ? 'success' : 'warning'} text={active ? 'Active' : 'Inactive'} />
+        <Badge status={active ? 'success' : 'warning'} text={active ? t('maintenancePlans.active') : t('maintenancePlans.inactive')} />
       ),
     },
     {
-      title: 'Actions',
+      title: t('maintenancePlans.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="asset_maintenance_plans:read">
-            <Tooltip title="View">
+            <Tooltip title={t('common.view')}>
               <Button
                 type="text"
                 icon={<EyeOutlined />}
@@ -157,7 +157,7 @@ export default function MaintenancePlanListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="asset_maintenance_plans:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('common.edit')}>
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -167,7 +167,7 @@ export default function MaintenancePlanListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="asset_maintenance_plans:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button
                 type="text"
                 danger
@@ -185,8 +185,8 @@ export default function MaintenancePlanListPage() {
   return (
     <div>
       <PageHeader
-        title="Maintenance Plans"
-        subtitle="Manage asset maintenance plans and schedules"
+        title={t('maintenancePlans.title')}
+        subtitle={t('maintenancePlans.subtitle')}
         extra={
           <PermissionGuard permission="asset_maintenance_plans:create">
             <Button
@@ -194,7 +194,7 @@ export default function MaintenancePlanListPage() {
               icon={<PlusOutlined />}
               onClick={() => navigate('/maintenance-plans/new')}
             >
-              Add Maintenance Plan
+              {t('maintenancePlans.addPlan')}
             </Button>
           </PermissionGuard>
         }
@@ -202,7 +202,7 @@ export default function MaintenancePlanListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search maintenance plans by name or description"
+          placeholder={t('maintenancePlans.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -220,7 +220,7 @@ export default function MaintenancePlanListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} maintenance plans`,
+          showTotal: (total) => t('maintenancePlans.totalItems', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

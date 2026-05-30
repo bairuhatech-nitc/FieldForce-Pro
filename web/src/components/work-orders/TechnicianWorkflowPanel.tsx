@@ -50,6 +50,7 @@ import { workOrderAttachmentsApi } from '@/api/work-order-attachments.api';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSlaTimer } from '@/hooks/use-sla-timers';
 import { SlaTimerBadge } from './SlaTimerBadge';
+import { useTranslation } from 'react-i18next'; // Rule 1
 
 const { Text, Title } = Typography;
 
@@ -85,7 +86,8 @@ const STEP_THEME: Record<string, { bg: string; border: string; iconColor: string
 };
 
 function getTheme(step: string | null) {
-  return STEP_THEME[step ?? ''] ?? { bg: 'var(--bg-color)', border: 'var(--border-color)', iconColor: '#8c8c8c', label: 'Field Workflow' };
+  const { t } = useTranslation(); // Rule 2, for nested function
+  return STEP_THEME[step ?? ''] ?? { bg: 'var(--bg-color)', border: 'var(--border-color)', iconColor: '#8c8c8c', label: t('technicianWorkflow.stepTheme.fieldWorkflow') };
 }
 
 // ── Mini step progress bar ────────────────────────────────────────────────────
@@ -94,9 +96,20 @@ function MiniStepProgress({ currentStep }: { currentStep: string | null }) {
   const currentIdx = STEP_KEYS.indexOf(currentStep ?? '');
   const isFinished = currentStep === 'finished';
 
+  // These labels are defined in WORKFLOW_STEPS outside the component, so they will be translated once.
+  // We need `useTranslation` if we were defining them inside the component.
+  // For `s.label` in `title={s.label}`, the `s.label` itself is already translated in WORKFLOW_STEPS.
+
+  const { t } = useTranslation(); // Rule 2
+
+  const translatedWorkflowSteps = WORKFLOW_STEPS.map(s => ({
+    ...s,
+    label: t(`technicianWorkflow.workflowSteps.${s.key.replace(/_(\w)/g, (g) => g[1].toUpperCase())}`),
+  }));
+
   return (
     <div style={{ display: 'flex', gap: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-      {WORKFLOW_STEPS.map((s, i) => {
+      {translatedWorkflowSteps.map((s, i) => {
         const isDone    = isFinished || i < currentIdx;
         const isActive  = !isFinished && i === currentIdx;
         const isPending = !isFinished && i > currentIdx;
@@ -130,10 +143,35 @@ function MiniStepProgress({ currentStep }: { currentStep: string | null }) {
   );
 }
 
-// ── Step header banner ────────────────────────────────────────────────────────
+// ── Step header banner ─────────────���──────────────────────────────────────────
 
 function StepHeader({ step, icon }: { step: string | null; icon: React.ReactNode }) {
+  const { t } = useTranslation(); // Rule 2
+
+  // Translate labels in STEP_THEME here or pass them directly as t() calls.
+  // Since getTheme is called here, we need to make sure its internal `t()` call is defined.
+  // It's probably cleaner to redefine STEP_THEME *once* with t() calls if it was purely within a component,
+  // but since it's defined globally, it's better to translate its `label` values where they are consumed.
   const theme = getTheme(step);
+
+  const translatedLabel = (() => {
+    switch(step) {
+      case 'pending_approval': return t('technicianWorkflow.stepTheme.reviewAssignment');
+      case 'approved': return t('technicianWorkflow.stepTheme.headToSite');
+      case 'trip_started': return t('technicianWorkflow.stepTheme.inTransit');
+      case 'reached': return t('technicianWorkflow.stepTheme.arrivedOnSite');
+      case 'items_confirmed': return t('technicianWorkflow.stepTheme.verifyPartsMaterials');
+      case 'call_confirmed': return t('technicianWorkflow.stepTheme.clientCommunication');
+      case 'work_started': return t('technicianWorkflow.stepTheme.workInProgress');
+      case 'after_photos': return t('technicianWorkflow.stepTheme.documentYourWork');
+      case 'finished': return t('technicianWorkflow.stepTheme.jobComplete');
+      case 'rejected': return t('technicianWorkflow.stepTheme.jobRejected');
+      case 'paused': return t('technicianWorkflow.stepTheme.workPaused');
+      default: return t('technicianWorkflow.stepTheme.fieldWorkflow');
+    }
+  })();
+
+
   return (
     <div style={{
       background: theme.bg,
@@ -162,7 +200,7 @@ function StepHeader({ step, icon }: { step: string | null; icon: React.ReactNode
       </div>
       <div>
         <Text strong style={{ fontSize: 14, display: 'block', lineHeight: '20px' }}>
-          {theme.label}
+          {translatedLabel}
         </Text>
       </div>
     </div>
@@ -180,7 +218,7 @@ function StepCard({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const theme = getTheme(step);
+  const theme = getTheme(step); // getTheme already uses t()
   return (
     <div style={{
       border: `1px solid ${theme.border}`,
@@ -201,8 +239,8 @@ function PrimaryAction({
   onClick,
   loading,
   icon,
-  label,
-  sublabel,
+  label, // This is a prop, will be translated by parent
+  sublabel, // This is a prop, will be translated by parent
   color,
   disabled,
 }: {
@@ -214,6 +252,7 @@ function PrimaryAction({
   color?: string;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation(); // Rule 2
   return (
     <button
       onClick={onClick}
@@ -263,6 +302,7 @@ interface Props {
 }
 
 export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoading }: Props) {
+  const { t } = useTranslation(); // Rule 2
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
@@ -375,7 +415,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
 
   const handleStartTripManual = () => {
     if (!navigator.geolocation) {
-      message.warning('GPS not available. Starting trip without location tracking.');
+      message.warning(t('technicianWorkflow.gpsNotAvailableWarning'));
       startTripMutation.mutate({ start_lat: 0, start_lng: 0, trip_start_type: 'manual' });
       return;
     }
@@ -388,7 +428,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
         });
       },
       () => {
-        message.warning('Could not get GPS location. Starting trip without location tracking.');
+        message.warning(t('technicianWorkflow.gpsLocationErrorWarning'));
         startTripMutation.mutate({ start_lat: 0, start_lng: 0, trip_start_type: 'manual' });
       },
       { enableHighAccuracy: true, timeout: 5000 },
@@ -396,7 +436,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
   };
 
   const handleReject = () => {
-    if (!rejectReason.trim()) { message.warning('Please provide a reason'); return; }
+    if (!rejectReason.trim()) { message.warning(t('technicianWorkflow.provideReasonWarning')); return; }
     rejectMutation.mutate(rejectReason, {
       onSuccess: () => { setRejectModalOpen(false); setRejectReason(''); },
     });
@@ -413,9 +453,9 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       queryClient.invalidateQueries({ queryKey: ['work-order-attachments', workOrderId] });
       if (photoType === 'before_work') setBeforePhotoCount((n) => n + successCount);
       else setAfterPhotoCount((n) => n + successCount);
-      message.success(`${successCount} photo(s) uploaded`);
+      message.success(t('technicianWorkflow.photosUploadedSuccess', { count: successCount }));
     } catch {
-      message.error('Failed to upload some photos');
+      message.error(t('technicianWorkflow.photosUploadFailedError'));
     } finally {
       setUploadingPhotos(false);
     }
@@ -435,9 +475,9 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
         border: '1px dashed var(--border-color)',
       }}>
         <ClockCircleOutlined style={{ fontSize: 36, opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
-        <Text style={{ display: 'block', opacity: 0.5, fontSize: 14 }}>Awaiting session initialization</Text>
+        <Text style={{ display: 'block', opacity: 0.5, fontSize: 14 }}>{t('technicianWorkflow.awaitingSessionInit')}</Text>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          The field workflow will appear here once the session is started.
+          {t('technicianWorkflow.fieldWorkflowAppearance')}
         </Text>
       </div>
     );
@@ -449,12 +489,12 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text strong style={{ fontSize: 12, opacity: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Your Progress
+          {t('technicianWorkflow.yourProgress')}
         </Text>
         <Text type="secondary" style={{ fontSize: 12 }}>
           {step === 'finished'
-            ? <span style={{ color: '#52c41a', fontWeight: 600 }}>✓ Complete</span>
-            : `Step ${Math.max(STEP_KEYS.indexOf(step ?? '') + 1, 1)} / ${WORKFLOW_STEPS.length}`
+            ? <span style={{ color: '#52c41a', fontWeight: 600 }}>{t('technicianWorkflow.completeStatus')}</span>
+            : t('technicianWorkflow.stepProgress', { current: Math.max(STEP_KEYS.indexOf(step ?? '') + 1, 1), total: WORKFLOW_STEPS.length })
           }
         </Text>
       </div>
@@ -465,7 +505,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
   return (
     <div>
       {stepHeader}
-      
+
       {slaTimer && (
         <div style={{ marginBottom: 16 }}>
           <SlaTimerBadge timer={slaTimer} />
@@ -482,7 +522,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             loading={pauseWorkMutation.isPending}
             style={{ borderRadius: 8 }}
           >
-            Pause Work
+            {t('technicianWorkflow.pauseWorkButton')}
           </Button>
         </div>
       )}
@@ -491,7 +531,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
           type="warning"
           icon={<PauseCircleOutlined />}
           showIcon
-          message="Work is currently paused"
+          message={t('technicianWorkflow.workPausedAlert')}
           action={
             <Button
               icon={<PlayCircleOutlined />}
@@ -500,7 +540,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
               loading={resumeWorkMutation.isPending}
               size="small"
             >
-              Resume Work
+              {t('technicianWorkflow.resumeWorkButton')}
             </Button>
           }
           style={{ marginBottom: 12, borderRadius: 8 }}
@@ -537,8 +577,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
               onClick={() => approveMutation.mutate()}
               loading={approveMutation.isPending}
               icon={<CheckOutlined />}
-              label="Accept Job"
-              sublabel="I'll take this work order"
+              label={t('technicianWorkflow.acceptJobLabel')}
+              sublabel={t('technicianWorkflow.acceptJobSublabel')}
               color="#52c41a"
             />
             <button
@@ -557,8 +597,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             >
               <CloseOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
               <div style={{ textAlign: 'left' }}>
-                <div style={{ color: '#ff4d4f', fontSize: 14, fontWeight: 600 }}>Reject</div>
-                <div style={{ color: '#ff4d4f', opacity: 0.6, fontSize: 11 }}>Can't take this job</div>
+                <div style={{ color: '#ff4d4f', fontSize: 14, fontWeight: 600 }}>{t('technicianWorkflow.rejectButton')}</div>
+                <div style={{ color: '#ff4d4f', opacity: 0.6, fontSize: 11 }}>{t('technicianWorkflow.rejectSublabel')}</div>
               </div>
             </button>
           </div>
@@ -572,14 +612,14 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <Alert
               type="info"
               showIcon
-              message="Movement detected — trip started automatically"
+              message={t('technicianWorkflow.gpsAutoTripMessage')}
               style={{ marginBottom: 12, borderRadius: 8 }}
               closable
             />
           )}
           <div style={{ marginBottom: 12 }}>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              Navigate to the service location below. When you're ready to go, tap Start Trip.
+              {t('technicianWorkflow.navigateToSitePrompt')}
             </Text>
           </div>
           <ServiceLocationMap
@@ -592,8 +632,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
               onClick={handleStartTripManual}
               loading={startTripMutation.isPending}
               icon={<CarOutlined />}
-              label="Start Trip"
-              sublabel="Tap when you leave for the site"
+              label={t('technicianWorkflow.startTripLabel')}
+              sublabel={t('technicianWorkflow.startTripSublabel')}
               color="#1677ff"
             />
           </div>
@@ -603,10 +643,10 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       {/* ── Rejected ─────────────────────────────────────────────────────────── */}
       {step === 'rejected' && (
         <StepCard step={step} icon={<CloseOutlined />}>
-          <Text>You rejected this work order.</Text>
+          <Text>{t('technicianWorkflow.rejectedWorkOrderMessage')}</Text>
           {session.rejection_reason && (
             <div style={{ marginTop: 12, padding: '10px 12px', background: 'rgba(255, 77, 79, 0.1)', borderRadius: 8, border: '1px solid rgba(255, 77, 79, 0.25)' }}>
-              <Text strong style={{ fontSize: 13 }}>Reason: </Text>
+              <Text strong style={{ fontSize: 13 }}>{t('technicianWorkflow.rejectionReasonLabel')}{' '}</Text>
               <Text style={{ fontSize: 13 }}>{session.rejection_reason}</Text>
             </div>
           )}
@@ -626,22 +666,22 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             marginBottom: 14,
           }}>
             <div style={{ background: 'var(--bg-color)', borderRadius: 8, padding: '10px 12px', border: '1px solid var(--border-color)' }}>
-              <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>Started</Text>
+              <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>{t('technicianWorkflow.tripStats.started')}</Text>
               <Text strong style={{ fontSize: 14 }}>
                 {session?.trip_started_at
                   ? new Date(session.trip_started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : '—'}
+                  : t('technicianWorkflow.tripStats.notAvailable')}
               </Text>
             </div>
             <div style={{ background: 'rgba(250, 173, 20, 0.1)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(250, 173, 20, 0.25)' }}>
-              <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>Duration</Text>
-              <Text strong style={{ fontSize: 14, color: '#fa8c16' }}>{tripElapsed || '—'}</Text>
+              <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>{t('technicianWorkflow.tripStats.duration')}</Text>
+              <Text strong style={{ fontSize: 14, color: '#fa8c16' }}>{tripElapsed || t('technicianWorkflow.tripStats.notAvailable')}</Text>
             </div>
             {hasValidTripOrigin && serviceLat && serviceLng && (
               <div style={{ background: 'rgba(22, 119, 255, 0.08)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(22, 119, 255, 0.25)' }}>
-                <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>Distance</Text>
+                <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase' }}>{t('technicianWorkflow.tripStats.distance')}</Text>
                 <Text strong style={{ fontSize: 14, color: '#1677ff' }}>
-                  {haversineKm(tripStartLat!, tripStartLng!, serviceLat, serviceLng).toFixed(1)} km
+                  {haversineKm(tripStartLat!, tripStartLng!, serviceLat, serviceLng).toFixed(1)} {t('technicianWorkflow.tripStats.distanceUnit')}
                 </Text>
               </div>
             )}
@@ -652,25 +692,25 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8 }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#52c41a', marginTop: 4, flexShrink: 0 }} />
               <div>
-                <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase' }}>FROM</Text>
+                <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase' }}>{t('technicianWorkflow.tripRoute.from')}</Text>
                 <Text style={{ fontSize: 13, display: 'block' }}>
                   {hasValidTripOrigin
                     ? `${tripStartLat!.toFixed(5)}, ${tripStartLng!.toFixed(5)}`
-                    : 'Location not captured (GPS unavailable)'}
+                    : t('technicianWorkflow.tripRoute.locationNotCaptured')}
                 </Text>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, margin: '0 4px 8px', alignItems: 'center' }}>
               <div style={{ width: 2, height: 16, background: 'var(--border-color)' }} />
               <Tag color={session?.trip_start_type === 'auto_gps' ? 'blue' : 'green'} style={{ margin: 0, fontSize: 11 }}>
-                {session?.trip_start_type === 'auto_gps' ? '📡 Auto GPS' : '✋ Manual'}
+                {session?.trip_start_type === 'auto_gps' ? t('technicianWorkflow.tripType.autoGps') : t('technicianWorkflow.tripType.manual')}
               </Tag>
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff4d4f', marginTop: 4, flexShrink: 0 }} />
               <div>
-                <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase' }}>TO</Text>
-                <Text style={{ fontSize: 13, display: 'block' }}>{serviceAddress || 'Service location'}</Text>
+                <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase' }}>{t('technicianWorkflow.tripRoute.to')}</Text>
+                <Text style={{ fontSize: 13, display: 'block' }}>{serviceAddress || t('technicianWorkflow.tripRoute.serviceLocationFallback')}</Text>
               </div>
             </div>
           </div>
@@ -682,7 +722,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             serviceAddress={serviceAddress}
             originLat={hasValidTripOrigin ? tripStartLat : null}
             originLng={hasValidTripOrigin ? tripStartLng : null}
-            originLabel="Trip Start Location"
+            originLabel={t('technicianWorkflow.tripRoute.tripStartLocationLabel')}
           />
 
           <div style={{ marginTop: 14 }}>
@@ -690,8 +730,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
               onClick={() => markReachedMutation.mutate()}
               loading={markReachedMutation.isPending}
               icon={<EnvironmentOutlined />}
-              label="I've Arrived at the Location"
-              sublabel="Tap when you reach the service site"
+              label={t('technicianWorkflow.arrivedLocationLabel')}
+              sublabel={t('technicianWorkflow.arrivedLocationSublabel')}
               color="#52c41a"
             />
           </div>
@@ -705,10 +745,10 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={{ fontSize: 13 }}>
-                  {woLineItems && woLineItems.length > 0 ? 'Work order items:' : 'Items from estimate:'}
+                  {woLineItems && woLineItems.length > 0 ? t('technicianWorkflow.lineItems.workOrderItems') : t('technicianWorkflow.lineItems.estimateItems')}
                 </Text>
                 <Tag color={checkedItems.size === lineItems.length ? 'success' : 'processing'}>
-                  {checkedItems.size} / {lineItems.length} confirmed
+                  {t('technicianWorkflow.lineItems.confirmedItems', { count: checkedItems.size, total: lineItems.length })}
                 </Tag>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
@@ -745,12 +785,12 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
                         <div style={{ display: 'flex', gap: 12, marginTop: 2, flexWrap: 'wrap' }}>
                           {item.quantity && item.quantity !== 1 && (
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              Qty: {item.quantity}{(item as { unit?: string }).unit ? ` ${(item as { unit?: string }).unit}` : ''}
+                              {t('technicianWorkflow.lineItems.quantity', { quantity: item.quantity, unit: (item as { unit?: string }).unit })}
                             </Text>
                           )}
                           {Number(item.unit_price) > 0 && (
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              ${Number(item.unit_price).toFixed(2)} each
+                              {t('technicianWorkflow.lineItems.unitPrice', { price: Number(item.unit_price).toFixed(2) })}
                             </Text>
                           )}
                         </div>
@@ -768,14 +808,14 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
                 <Alert
                   type="info"
                   showIcon
-                  message={`${lineItems.length - checkedItems.size} item(s) not yet confirmed`}
+                  message={t('technicianWorkflow.lineItems.itemsNotYetConfirmed', { count: lineItems.length - checkedItems.size })}
                   style={{ marginBottom: 14, borderRadius: 8 }}
                 />
               )}
             </>
           ) : (
             <div style={{ padding: '12px 0', marginBottom: 14 }}>
-              <Text type="secondary">No items linked to this work order.</Text>
+              <Text type="secondary">{t('technicianWorkflow.lineItems.noItemsLinked')}</Text>
             </div>
           )}
           <PrimaryAction
@@ -783,9 +823,9 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             loading={confirmItemsMutation.isPending}
             icon={<CheckOutlined />}
             label={lineItems.length > 0 && checkedItems.size === lineItems.length
-              ? 'All Items Confirmed — Proceed'
-              : 'Confirm & Proceed'}
-            sublabel={lineItems.length > 0 ? `${checkedItems.size}/${lineItems.length} items checked` : 'No items to check'}
+              ? t('technicianWorkflow.lineItems.allItemsConfirmedProceed')
+              : t('technicianWorkflow.lineItems.confirmProceed')}
+            sublabel={lineItems.length > 0 ? t('technicianWorkflow.lineItems.itemsChecked', { checked: checkedItems.size, total: lineItems.length }) : t('technicianWorkflow.lineItems.noItemsToCheck')}
             color="#531dab"
             disabled={lineItems.length > 0 && checkedItems.size < lineItems.length}
           />
@@ -811,17 +851,17 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
               )}
             </div>
           ) : (
-            <Alert type="warning" showIcon message="No contact information on this work order" style={{ marginBottom: 14, borderRadius: 8 }} />
+            <Alert type="warning" showIcon message={t('technicianWorkflow.contactInfoMissingWarning')} style={{ marginBottom: 14, borderRadius: 8 }} />
           )}
           <Text type="secondary" style={{ display: 'block', marginBottom: 14, fontSize: 13 }}>
-            Let the client know you're on-site and ready to begin. Then tap the button below.
+            {t('technicianWorkflow.callClientPrompt')}
           </Text>
           <PrimaryAction
             onClick={() => confirmCallMutation.mutate()}
             loading={confirmCallMutation.isPending}
             icon={<PhoneOutlined />}
-            label="I've Called the Client"
-            sublabel="Confirm the client is aware you're here"
+            label={t('technicianWorkflow.calledClientLabel')}
+            sublabel={t('technicianWorkflow.calledClientSublabel')}
             color="#08979c"
           />
         </StepCard>
@@ -831,7 +871,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       {step === 'call_confirmed' && (
         <StepCard step={step} icon={<CameraOutlined />}>
           <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 13 }}>
-            Photograph the site and equipment <strong>before</strong> starting work. Then tap Start Work.
+            {t('technicianWorkflow.beforeWorkPhotosPrompt')}
           </Text>
           <Upload.Dragger
             multiple
@@ -844,10 +884,10 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <div style={{ padding: '16px 0' }}>
               {uploadingPhotos ? <Spin size="large" /> : <CameraOutlined style={{ fontSize: 40, color: '#1677ff' }} />}
               <div style={{ marginTop: 8, fontSize: 14, color: '#1677ff', fontWeight: 500 }}>
-                {uploadingPhotos ? 'Uploading…' : 'Tap to add before-work photos'}
+                {uploadingPhotos ? t('technicianWorkflow.uploadingPhotos') : t('technicianWorkflow.addBeforeWorkPhotos')}
               </div>
               <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>
-                JPG · PNG · HEIC · Multiple files
+                {t('technicianWorkflow.photoFileTypes')}
               </div>
             </div>
           </Upload.Dragger>
@@ -855,7 +895,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <Alert
               type="success"
               showIcon
-              message={`${beforePhotoCount} photo${beforePhotoCount > 1 ? 's' : ''} uploaded`}
+              message={t('technicianWorkflow.beforePhotosUploadedSuccess', { count: beforePhotoCount })}
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
           )}
@@ -863,8 +903,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             onClick={() => startWorkMutation.mutate()}
             loading={startWorkMutation.isPending}
             icon={<ToolOutlined />}
-            label={beforePhotoCount > 0 ? 'Photos Added — Start Work' : 'Skip Photos & Start Work'}
-            sublabel="Begin the actual work on site"
+            label={beforePhotoCount > 0 ? t('technicianWorkflow.photosAddedStartWorkLabel') : t('technicianWorkflow.skipPhotosStartWorkLabel')}
+            sublabel={t('technicianWorkflow.beginActualWorkSublabel')}
             color="#389e0d"
           />
         </StepCard>
@@ -876,16 +916,16 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
           <div style={{ padding: '10px 12px', background: 'rgba(82, 196, 26, 0.1)', borderRadius: 8, marginBottom: 12, border: '1px solid rgba(82, 196, 26, 0.25)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <ToolOutlined style={{ color: '#52c41a', fontSize: 20 }} />
             <div>
-              <Text strong style={{ color: '#52c41a', fontSize: 14 }}>Work is in progress</Text>
+              <Text strong style={{ color: '#52c41a', fontSize: 14 }}>{t('technicianWorkflow.workInProgressStatus')}</Text>
               {session.work_started_at && (
                 <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-                  Started {new Date(session.work_started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {t('technicianWorkflow.workStartedAt', { time: new Date(session.work_started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}
                 </Text>
               )}
             </div>
           </div>
           <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 13 }}>
-            Optionally photograph the job in progress. When work is complete, tap Finish Work.
+            {t('technicianWorkflow.duringWorkPhotosPrompt')}
           </Text>
           <Upload.Dragger
             multiple
@@ -898,7 +938,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <div style={{ padding: '14px 0' }}>
               {uploadingPhotos ? <Spin size="large" /> : <CameraOutlined style={{ fontSize: 36, color: '#52c41a' }} />}
               <div style={{ marginTop: 8, fontSize: 13, color: '#52c41a', fontWeight: 500 }}>
-                {uploadingPhotos ? 'Uploading…' : 'During-work photos (optional)'}
+                {uploadingPhotos ? t('technicianWorkflow.uploadingPhotos') : t('technicianWorkflow.duringWorkPhotosOptional')}
               </div>
             </div>
           </Upload.Dragger>
@@ -906,7 +946,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <Alert
               type="success"
               showIcon
-              message={`${afterPhotoCount} photo${afterPhotoCount > 1 ? 's' : ''} added`}
+              message={t('technicianWorkflow.afterPhotosAddedSuccess', { count: afterPhotoCount })}
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
           )}
@@ -914,8 +954,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             onClick={() => markBeforePhotosMutation.mutate()}
             loading={markBeforePhotosMutation.isPending}
             icon={<CheckOutlined />}
-            label="Finish Work — Proceed to After Photos"
-            sublabel="Move to the after-work documentation step"
+            label={t('technicianWorkflow.finishWorkProceedAfterPhotosLabel')}
+            sublabel={t('technicianWorkflow.moveToDocumentationStepSublabel')}
             color="#389e0d"
           />
         </StepCard>
@@ -925,7 +965,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
       {step === 'after_photos' && (
         <StepCard step={step} icon={<CameraOutlined />}>
           <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 13 }}>
-            Photograph the completed work. These photos confirm the quality of your work to the client.
+            {t('technicianWorkflow.afterWorkPhotosPrompt')}
           </Text>
           <Upload.Dragger
             multiple
@@ -938,10 +978,10 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <div style={{ padding: '16px 0' }}>
               {uploadingPhotos ? <Spin size="large" /> : <CameraOutlined style={{ fontSize: 40, color: '#1677ff' }} />}
               <div style={{ marginTop: 8, fontSize: 14, color: '#1677ff', fontWeight: 500 }}>
-                {uploadingPhotos ? 'Uploading…' : 'Tap to add after-work photos'}
+                {uploadingPhotos ? t('technicianWorkflow.uploadingPhotos') : t('technicianWorkflow.addAfterWorkPhotos')}
               </div>
               <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>
-                JPG · PNG · HEIC · Multiple files
+                {t('technicianWorkflow.photoFileTypes')}
               </div>
             </div>
           </Upload.Dragger>
@@ -949,7 +989,7 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             <Alert
               type="success"
               showIcon
-              message={`${afterPhotoCount} photo${afterPhotoCount > 1 ? 's' : ''} uploaded`}
+              message={t('technicianWorkflow.afterPhotosUploadedSuccess', { count: afterPhotoCount })}
               style={{ marginBottom: 12, borderRadius: 8 }}
             />
           )}
@@ -957,8 +997,8 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
             onClick={handleFinish}
             loading={finishJobMutation.isPending}
             icon={<TrophyOutlined />}
-            label={afterPhotoCount > 0 ? 'Photos Done — Finish Job' : 'Skip — Finish Job'}
-            sublabel="Complete the work order"
+            label={afterPhotoCount > 0 ? t('technicianWorkflow.photosDoneFinishJobLabel') : t('technicianWorkflow.skipFinishJobLabel')}
+            sublabel={t('technicianWorkflow.completeWorkOrderSublabel')}
             color="#52c41a"
           />
         </StepCard>
@@ -987,13 +1027,13 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
           }}>
             <TrophyOutlined style={{ fontSize: 32, color: '#fff' }} />
           </div>
-          <Title level={3} style={{ color: '#52c41a', margin: '0 0 8px' }}>Job Complete!</Title>
+          <Title level={3} style={{ color: '#52c41a', margin: '0 0 8px' }}>{t('technicianWorkflow.jobCompleteTitle')}</Title>
           <Text style={{ fontSize: 15, color: '#52c41a', display: 'block', marginBottom: 16 }}>
-            Work order <strong>{workOrder.wo_number}</strong> has been finished.
+            {t('technicianWorkflow.workOrderFinishedMessage', { woNumber: workOrder.wo_number })}
           </Text>
           {session.finished_at && (
             <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
-              Completed at {new Date(session.finished_at).toLocaleString()}
+              {t('technicianWorkflow.completedAt', { datetime: new Date(session.finished_at).toLocaleString() })}
             </Text>
           )}
         </div>
@@ -1001,21 +1041,21 @@ export function TechnicianWorkflowPanel({ workOrderId, workOrder, session, isLoa
 
       {/* ── Reject modal ─────────────────────────────────────────────────────── */}
       <Modal
-        title={<Space><WarningOutlined style={{ color: '#faad14' }} /> Reject Work Order</Space>}
+        title={<Space><WarningOutlined style={{ color: '#faad14' }} /> {t('technicianWorkflow.rejectModal.title')}</Space>}
         open={rejectModalOpen}
         onCancel={() => setRejectModalOpen(false)}
         onOk={handleReject}
-        okText="Reject"
+        okText={t('technicianWorkflow.rejectModal.okText')}
         okButtonProps={{ danger: true, loading: rejectMutation.isPending }}
         destroyOnClose
       >
         <Form layout="vertical">
-          <Form.Item label="Reason for rejection" required>
+          <Form.Item label={t('technicianWorkflow.rejectModal.reasonLabel')} required>
             <Input.TextArea
               rows={3}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Please explain why you cannot take this job…"
+              placeholder={t('technicianWorkflow.rejectModal.reasonPlaceholder')}
               autoFocus
               style={{ borderRadius: 8 }}
             />

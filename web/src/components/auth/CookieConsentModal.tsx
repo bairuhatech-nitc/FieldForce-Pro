@@ -1,12 +1,14 @@
 import { Button, Typography } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
 
 const COOKIE_CONSENT_KEY = 'cookie_consent_accepted';
 
 export default function CookieConsentModal() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function CookieConsentModal() {
               fontWeight: 600,
             }}
           >
-            We use cookies to keep you logged in
+            {t('cookieConsent.title')}
           </Title>
 
           <Paragraph
@@ -92,7 +94,7 @@ export default function CookieConsentModal() {
               lineHeight: 1.6,
             }}
           >
-            We use secure HTTP-only cookies for authentication. These cookies are essential for the app to work and protect your account from security threats.
+            {t('cookieConsent.message')}
           </Paragraph>
         </div>
 
@@ -119,7 +121,7 @@ export default function CookieConsentModal() {
               boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
             }}
           >
-            Accept & Continue
+            {t('cookieConsent.accept')}
           </Button>
 
           <Button

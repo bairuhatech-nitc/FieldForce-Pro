@@ -6,21 +6,28 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/auth.store';
 import { useTenant, useUpdateTenant } from '@/hooks/use-tenants';
 import PageHeader from '@/components/common/PageHeader';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  domain: z.string().optional().or(z.literal('')),
-  is_active: z.boolean(),
-});
+type SettingsForm = {
+  name: string;
+  domain?: string;
+  is_active: boolean;
+};
 
-type SettingsForm = z.infer<typeof schema>;
-
-export default function GeneralSettingsPage() {
+export default function GeneralSettingsPage() { 
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const { data: tenant, isLoading } = useTenant(user?.tenant_id || '');
   const updateMutation = useUpdateTenant();
+
+  const schema = useMemo(() => 
+    z.object({
+      name: z.string().min(1, t('settings.nameRequired')),
+      domain: z.string().optional().or(z.literal('')),
+      is_active: z.boolean(),
+    }),
+    [t]
+  );
 
   const {
     control,
@@ -58,7 +65,7 @@ export default function GeneralSettingsPage() {
       <Card style={{ maxWidth: 600 }}>
         <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
           <Form.Item
-            label="Company Name"
+            label={t('settings.companyName')}
             validateStatus={errors.name ? 'error' : ''}
             help={errors.name?.message}
           >
@@ -69,15 +76,15 @@ export default function GeneralSettingsPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Custom Domain">
+          <Form.Item label={t('settings.customDomain')}>
             <Controller
               name="domain"
               control={control}
-              render={({ field }) => <Input {...field} placeholder="app.yourcompany.com" />}
+              render={({ field }) => <Input {...field} placeholder={t('settings.domainPlaceholder')} />}
             />
           </Form.Item>
 
-          <Form.Item label="Active">
+          <Form.Item label={t('settings.active')}>
             <Controller
               name="is_active"
               control={control}

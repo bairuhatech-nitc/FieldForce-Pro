@@ -4,18 +4,20 @@ import { Result, Spin, Typography, Button, Space } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { magicLinksApi } from '@/api/magic-links.api';
 import { useAuthStore } from '@/store/auth.store';
+import { useTranslation } from 'react-i18next';
 import type { User } from '@/types/models.types';
 
 const { Text } = Typography;
 
 type VerifyState = 'loading' | 'success' | 'error';
 
-function extractErrorMessage(err: unknown): string {
+function extractErrorMessage(err: unknown, t: (key: string) => string): string {
   const e = err as { response?: { data?: { message?: string } }; message?: string };
-  return e?.response?.data?.message || e?.message || 'An unexpected error occurred. Please try again.';
+  return e?.response?.data?.message || e?.message || t('magicLink.errors.unexpected');
 }
 
 export default function MagicLinkVerifyPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
@@ -27,7 +29,7 @@ export default function MagicLinkVerifyPage() {
     const token = searchParams.get('token');
     if (!token) {
       setState('error');
-      setErrorMsg('No token found in this link. Please check the URL and try again.');
+      setErrorMsg(t('magicLink.errors.noToken'));
       return;
     }
 
@@ -40,7 +42,7 @@ export default function MagicLinkVerifyPage() {
         const { user, purpose } = res.data.data ?? {};
         if (!user) {
           setState('error');
-          setErrorMsg('Verification failed. Please request a new link.');
+          setErrorMsg(t('magicLink.errors.verificationFailed'));
           return;
         }
 
@@ -63,13 +65,13 @@ export default function MagicLinkVerifyPage() {
       .catch((err) => {
         if (cancelled) return;
         setState('error');
-        setErrorMsg(extractErrorMessage(err));
+        setErrorMsg(extractErrorMessage(err, t));
       });
 
     return () => {
       cancelled = true;
     };
-  }, [searchParams, navigate, login]);
+  }, [searchParams, navigate, login, t]);
 
   if (state === 'loading') {
     return (
@@ -84,7 +86,7 @@ export default function MagicLinkVerifyPage() {
         }}
       >
         <Spin size="large" />
-        <Text type="secondary">Verifying your link…</Text>
+        <Text type="secondary">{t('magicLink.status.verifying')}</Text>
       </div>
     );
   }
@@ -113,16 +115,16 @@ export default function MagicLinkVerifyPage() {
           }
           title={
             isAlreadyUsed
-              ? 'Link Already Used'
+              ? t('magicLink.errors.linkAlreadyUsed')
               : isExpired
-                ? 'Link Expired'
-                : 'Invalid Link'
+                ? t('magicLink.errors.linkExpired')
+                : t('magicLink.errors.invalidLink')
           }
           subTitle={errorMsg}
           extra={
             <Space direction="vertical" align="center">
               <Button type="primary" onClick={() => navigate('/login', { replace: true })}>
-                Go to Login
+                {t('magicLink.buttons.goToLogin')}
               </Button>
             </Space>
           }
@@ -142,8 +144,8 @@ export default function MagicLinkVerifyPage() {
     >
       <Result
         icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-        title="Verified!"
-        subTitle="Redirecting you now…"
+        title={t('magicLink.status.verified')}
+        subTitle={t('magicLink.status.redirecting')}
       />
     </div>
   );

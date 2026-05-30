@@ -1,6 +1,7 @@
 import { Card, Empty, Select, Space, Typography } from 'antd';
 import { LineChartOutlined } from '@ant-design/icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -36,6 +37,7 @@ export default function IoTSensorChart({
   loading = false,
   title = 'IoT Sensor Data',
 }: IoTSensorChartProps) {
+  const { t } = useTranslation();
   const sensorTypes = [...new Set(readings.map((r) => r.sensor_type))];
   const [selectedSensor, setSelectedSensor] = useState<string>(sensorTypes[0] || '');
 
@@ -46,7 +48,7 @@ export default function IoTSensorChart({
   if (!readings.length && !loading) {
     return (
       <Card title={<><LineChartOutlined /> {title}</>}>
-        <Empty description="No sensor data available" />
+        <Empty description={t('iotSensorChart.noDataAvailable')} />
       </Card>
     );
   }
@@ -81,7 +83,7 @@ export default function IoTSensorChart({
           return (
             <div
               key={i}
-              title={`${r.value.toFixed(1)}${unit} at ${new Date(r.recorded_at).toLocaleTimeString()}`}
+              title={t('iotSensorChart.tooltip', { value: r.value.toFixed(1), unit, time: new Date(r.recorded_at).toLocaleTimeString() })}
               style={{
                 flex: 1,
                 height,
@@ -95,9 +97,9 @@ export default function IoTSensorChart({
         })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-        <Text type="secondary">Min: {minVal.toFixed(1)}{unit}</Text>
-        <Text type="secondary">Max: {maxVal.toFixed(1)}{unit}</Text>
-        <Text type="secondary">Readings: {filteredReadings.length}</Text>
+        <Text type="secondary">{t('iotSensorChart.min')}: {minVal.toFixed(1)}{unit}</Text>
+        <Text type="secondary">{t('iotSensorChart.max')}: {maxVal.toFixed(1)}{unit}</Text>
+        <Text type="secondary">{t('iotSensorChart.readings')}: {filteredReadings.length}</Text>
       </div>
     </Card>
   );

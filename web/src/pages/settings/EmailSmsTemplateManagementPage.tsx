@@ -25,6 +25,7 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { formatDateTime } from '@/utils/format-date';
+import { useTranslation } from 'react-i18next'; // Rule 1: Import useTranslation
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -64,6 +65,9 @@ const AVAILABLE_VARIABLES = {
 };
 
 export default function EmailSmsTemplateManagementPage() {
+  // Rule 2: Declare t()
+  const { t } = useTranslation();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [form] = Form.useForm();
@@ -119,8 +123,8 @@ export default function EmailSmsTemplateManagementPage() {
 
   const handleDelete = (template: Template) => {
     showConfirmDialog({
-      title: 'Delete Template',
-      content: `Are you sure you want to delete template "${template.name}"?`,
+      title: t('emailSmsTemplateManagement.deleteTemplateTitle'),
+      content: t('emailSmsTemplateManagement.deleteTemplateContent', { templateName: template.name }),
       onOk: async () => {
         console.log('Delete template', template.id);
       },
@@ -141,13 +145,13 @@ export default function EmailSmsTemplateManagementPage() {
 
   const emailColumns: ColumnsType<Template> = [
     {
-      title: 'Template Name',
+      title: t('emailSmsTemplateManagement.templateNameColumn'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
     },
     {
-      title: 'Event Type',
+      title: t('emailSmsTemplateManagement.eventTypeColumn'),
       dataIndex: 'event_type',
       key: 'event_type',
       render: (type: string) => (
@@ -155,13 +159,13 @@ export default function EmailSmsTemplateManagementPage() {
       ),
     },
     {
-      title: 'Subject',
+      title: t('emailSmsTemplateManagement.subjectColumn'),
       dataIndex: 'subject',
       key: 'subject',
       ellipsis: true,
     },
     {
-      title: 'Variables',
+      title: t('emailSmsTemplateManagement.variablesColumn'),
       dataIndex: 'variables',
       key: 'variables',
       render: (vars: string[]) => (
@@ -171,28 +175,28 @@ export default function EmailSmsTemplateManagementPage() {
               {`{{${v}}}`}
             </Tag>
           ))}
-          {vars.length > 3 && <Text type="secondary">+{vars.length - 3} more</Text>}
+          {vars.length > 3 && <Text type="secondary">{t('emailSmsTemplateManagement.moreVariables', { count: vars.length - 3 })}</Text>}
         </Space>
       ),
     },
     {
-      title: 'Status',
+      title: t('emailSmsTemplateManagement.statusColumn'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (active: boolean) => (
         <Tag color={active ? 'success' : 'default'}>
-          {active ? 'Active' : 'Inactive'}
+          {active ? t('common.active') : t('common.inactive')}
         </Tag>
       ),
     },
     {
-      title: 'Updated',
+      title: t('emailSmsTemplateManagement.updatedColumn'),
       dataIndex: 'updated_at',
       key: 'updated_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Actions',
+      title: t('emailSmsTemplateManagement.actionsColumn'),
       key: 'actions',
       render: (_, record) => (
         <Space size="small">
@@ -212,13 +216,13 @@ export default function EmailSmsTemplateManagementPage() {
 
   const smsColumns: ColumnsType<Template> = [
     {
-      title: 'Template Name',
+      title: t('emailSmsTemplateManagement.templateNameColumn'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
     },
     {
-      title: 'Event Type',
+      title: t('emailSmsTemplateManagement.eventTypeColumn'),
       dataIndex: 'event_type',
       key: 'event_type',
       render: (type: string) => (
@@ -226,34 +230,34 @@ export default function EmailSmsTemplateManagementPage() {
       ),
     },
     {
-      title: 'Message Preview',
+      title: t('emailSmsTemplateManagement.messagePreviewColumn'),
       dataIndex: 'body',
       key: 'body',
       ellipsis: true,
       render: (body: string) => <Text type="secondary">{body.substring(0, 50)}...</Text>,
     },
     {
-      title: 'Length',
+      title: t('emailSmsTemplateManagement.lengthColumn'),
       dataIndex: 'body',
       key: 'length',
       render: (body: string) => {
         const length = body.length;
         const color = length > 160 ? 'error' : length > 140 ? 'warning' : 'success';
-        return <Tag color={color}>{length} chars</Tag>;
+        return <Tag color={color}>{t('emailSmsTemplateManagement.chars', { count: length })}</Tag>;
       },
     },
     {
-      title: 'Status',
+      title: t('emailSmsTemplateManagement.statusColumn'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (active: boolean) => (
         <Tag color={active ? 'success' : 'default'}>
-          {active ? 'Active' : 'Inactive'}
+          {active ? t('common.active') : t('common.inactive')}
         </Tag>
       ),
     },
     {
-      title: 'Actions',
+      title: t('emailSmsTemplateManagement.actionsColumn'),
       key: 'actions',
       render: (_, record) => (
         <Space size="small">
@@ -280,7 +284,7 @@ export default function EmailSmsTemplateManagementPage() {
       label: (
         <Space>
           <MailOutlined />
-          Email Templates
+          {t('emailSmsTemplateManagement.emailTemplatesTab')}
           <Tag>{emailTemplates.length}</Tag>
         </Space>
       ),
@@ -298,7 +302,7 @@ export default function EmailSmsTemplateManagementPage() {
       label: (
         <Space>
           <MessageOutlined />
-          SMS Templates
+          {t('emailSmsTemplateManagement.smsTemplatesTab')}
           <Tag>{smsTemplates.length}</Tag>
         </Space>
       ),
@@ -316,11 +320,11 @@ export default function EmailSmsTemplateManagementPage() {
   return (
     <div>
       <PageHeader
-        title="Email & SMS Templates"
-        subtitle="Manage notification templates for automated communications"
+        title={t('emailSmsTemplateManagement.pageTitle')}
+        subtitle={t('emailSmsTemplateManagement.pageSubtitle')}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            Create Template
+            {t('emailSmsTemplateManagement.createTemplateButton')}
           </Button>
         }
       />
@@ -331,7 +335,7 @@ export default function EmailSmsTemplateManagementPage() {
 
       {/* Template Modal */}
       <Modal
-        title={editingTemplate ? 'Edit Template' : 'Create Template'}
+        title={editingTemplate ? t('emailSmsTemplateManagement.editTemplateModalTitle') : t('emailSmsTemplateManagement.createTemplateModalTitle')}
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -343,28 +347,28 @@ export default function EmailSmsTemplateManagementPage() {
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="name"
-            label="Template Name"
-            rules={[{ required: true, message: 'Name is required' }]}
+            label={t('emailSmsTemplateManagement.templateNameLabel')}
+            rules={[{ required: true, message: t('emailSmsTemplateManagement.templateNameRequired') }]}
           >
-            <Input placeholder="e.g., Work Order Assigned Notification" />
+            <Input placeholder={t('emailSmsTemplateManagement.templateNamePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="type"
-            label="Template Type"
-            rules={[{ required: true, message: 'Type is required' }]}
+            label={t('emailSmsTemplateManagement.templateTypeLabel')}
+            rules={[{ required: true, message: t('emailSmsTemplateManagement.templateTypeRequired') }]}
           >
             <Select onChange={(value) => setTemplateType(value as 'email' | 'sms')}>
               <Select.Option value="email">
                 <Space>
                   <MailOutlined />
-                  Email
+                  {t('emailSmsTemplateManagement.emailOption')}
                 </Space>
               </Select.Option>
               <Select.Option value="sms">
                 <Space>
                   <MessageOutlined />
-                  SMS
+                  {t('emailSmsTemplateManagement.smsOption')}
                 </Space>
               </Select.Option>
             </Select>
@@ -372,40 +376,46 @@ export default function EmailSmsTemplateManagementPage() {
 
           <Form.Item
             name="event_type"
-            label="Trigger Event"
-            rules={[{ required: true, message: 'Event type is required' }]}
+            label={t('emailSmsTemplateManagement.triggerEventLabel')}
+            rules={[{ required: true, message: t('emailSmsTemplateManagement.eventTypeRequired') }]}
           >
-            <Select placeholder="Select when this template should be used" options={EVENT_TYPES} />
+            <Select
+              placeholder={t('emailSmsTemplateManagement.triggerEventPlaceholder')}
+              options={EVENT_TYPES.map(eventType => ({
+                ...eventType,
+                label: t(`emailSmsTemplateManagement.eventType${eventType.value.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}`),
+              }))}
+            />
           </Form.Item>
 
           {templateType === 'email' && (
             <Form.Item
               name="subject"
-              label="Email Subject"
-              rules={[{ required: true, message: 'Subject is required for emails' }]}
+              label={t('emailSmsTemplateManagement.emailSubjectLabel')}
+              rules={[{ required: true, message: t('emailSmsTemplateManagement.emailSubjectRequired') }]}
             >
-              <Input placeholder="e.g., Your Work Order {{wo_number}} is Ready" />
+              <Input placeholder={t('emailSmsTemplateManagement.emailSubjectPlaceholder')} />
             </Form.Item>
           )}
 
           <Form.Item
             name="body"
-            label={templateType === 'email' ? 'Email Body' : 'SMS Message'}
-            rules={[{ required: true, message: 'Message body is required' }]}
+            label={templateType === 'email' ? t('emailSmsTemplateManagement.emailBodyLabel') : t('emailSmsTemplateManagement.smsMessageLabel')}
+            rules={[{ required: true, message: t('emailSmsTemplateManagement.messageBodyRequired') }]}
           >
             <TextArea
               rows={templateType === 'email' ? 8 : 4}
               placeholder={
                 templateType === 'email'
-                  ? 'Enter email content...'
-                  : 'Enter SMS message (max 160 characters recommended)'
+                  ? t('emailSmsTemplateManagement.emailBodyPlaceholder')
+                  : t('emailSmsTemplateManagement.smsMessagePlaceholder')
               }
               maxLength={templateType === 'sms' ? 320 : undefined}
               showCount={templateType === 'sms'}
             />
           </Form.Item>
 
-          <Card size="small" title="Available Variables" style={{ marginBottom: 16 }}>
+          <Card size="small" title={t('emailSmsTemplateManagement.availableVariablesCardTitle')} style={{ marginBottom: 16 }}>
             <Space wrap>
               {AVAILABLE_VARIABLES.work_order.map((variable) => (
                 <Button
@@ -418,12 +428,12 @@ export default function EmailSmsTemplateManagementPage() {
               ))}
             </Space>
             <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-              Click a variable to insert it into your template
+              {t('emailSmsTemplateManagement.insertVariableInstruction')}
             </Text>
           </Card>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked" initialValue={true}>
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+          <Form.Item name="is_active" label={t('emailSmsTemplateManagement.activeLabel')} valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} />
           </Form.Item>
         </Form>
       </Modal>

@@ -21,6 +21,7 @@ import {
   CopyOutlined,
   KeyOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey, useDeleteApiKey } from '@/hooks/use-api-keys';
 import type { ApiKey, CreateApiKeyPayload } from '@/api/api-keys.api';
 import PageHeader from '@/components/common/PageHeader';
@@ -42,6 +43,7 @@ const AVAILABLE_SCOPES = [
 ];
 
 export default function ApiKeysPage() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [createOpen, setCreateOpen] = useState(false);
@@ -76,8 +78,8 @@ export default function ApiKeysPage() {
 
   const handleRevoke = (record: ApiKey) => {
     showConfirmDialog({
-      title: 'Revoke API Key',
-      content: `Revoke "${record.name}"? Any integrations using this key will stop working immediately.`,
+      title: t('apiKeys.revokeTitle'),
+      content: t('apiKeys.revokeContent', { name: record.name }),
       onOk: async () => {
         await revokeApiKey.mutateAsync(record.id);
       },
@@ -87,8 +89,8 @@ export default function ApiKeysPage() {
 
   const handleDelete = (record: ApiKey) => {
     showConfirmDialog({
-      title: 'Delete API Key',
-      content: `Permanently delete "${record.name}"? This cannot be undone.`,
+      title: t('apiKeys.deleteTitle'),
+      content: t('apiKeys.deleteContent', { name: record.name }),
       onOk: async () => {
         await deleteApiKey.mutateAsync(record.id);
       },
@@ -102,13 +104,13 @@ export default function ApiKeysPage() {
 
   const columns: ColumnsType<ApiKey> = [
     {
-      title: 'Name',
+      title: t('apiKeys.columns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
     },
     {
-      title: 'Key Prefix',
+      title: t('apiKeys.columns.keyPrefix'),
       dataIndex: 'key_prefix',
       key: 'key_prefix',
       render: (prefix: string) => (
@@ -118,50 +120,50 @@ export default function ApiKeysPage() {
       ),
     },
     {
-      title: 'Scopes',
+      title: t('apiKeys.columns.scopes'),
       dataIndex: 'scopes',
       key: 'scopes',
       render: (scopes: string[]) => (
         <Space size="small" wrap>
           {scopes?.length
             ? scopes.slice(0, 3).map((s) => <Tag key={s} color="blue">{s}</Tag>)
-            : <Tag color="default">No scopes</Tag>}
+            : <Tag color="default">{t('apiKeys.noScopes')}</Tag>}
           {scopes?.length > 3 && <Tag>+{scopes.length - 3}</Tag>}
         </Space>
       ),
     },
     {
-      title: 'Status',
+      title: t('apiKeys.columns.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean) =>
         isActive
-          ? <Tag color="green">Active</Tag>
-          : <Tag color="red">Revoked</Tag>,
+          ? <Tag color="green">{t('apiKeys.status.active')}</Tag>
+          : <Tag color="red">{t('apiKeys.status.revoked')}</Tag>,
     },
     {
-      title: 'Last Used',
+      title: t('apiKeys.columns.lastUsed'),
       dataIndex: 'last_used_at',
       key: 'last_used_at',
       render: (date: string | null) =>
-        date ? formatDateTime(date) : <Text type="secondary">Never</Text>,
+        date ? formatDateTime(date) : <Text type="secondary">{t('apiKeys.never')}</Text>,
     },
     {
-      title: 'Expires',
+      title: t('apiKeys.columns.expires'),
       dataIndex: 'expires_at',
       key: 'expires_at',
       render: (date: string | null) =>
-        date ? formatDateTime(date) : <Text type="secondary">Never</Text>,
+        date ? formatDateTime(date) : <Text type="secondary">{t('apiKeys.never')}</Text>,
     },
     {
-      title: 'Actions',
+      title: t('apiKeys.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 120,
       render: (_, record) => (
         <Space size="small">
           {record.is_active && (
-            <Tooltip title="Revoke">
+            <Tooltip title={t('apiKeys.actions.revoke')}>
               <Button
                 type="text"
                 icon={<StopOutlined />}
@@ -170,7 +172,7 @@ export default function ApiKeysPage() {
               />
             </Tooltip>
           )}
-          <Tooltip title="Delete">
+          <Tooltip title={t('apiKeys.actions.delete')}>
             <Button
               type="text"
               danger
@@ -187,11 +189,11 @@ export default function ApiKeysPage() {
   return (
     <div>
       <PageHeader
-        title="API Keys"
-        subtitle="Manage API keys for external integrations and inbound service requests"
+        title={t('apiKeys.title')}
+        subtitle={t('apiKeys.subtitle')}
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            Create API Key
+            {t('apiKeys.createButton')}
           </Button>
         }
       />
@@ -206,7 +208,7 @@ export default function ApiKeysPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} API keys`,
+          showTotal: (total) => t('apiKeys.tableTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {
@@ -217,28 +219,27 @@ export default function ApiKeysPage() {
         }}
       />
 
-      {/* Create API Key Modal */}
       <Modal
-        title={<Space><KeyOutlined /> Create API Key</Space>}
+        title={<Space><KeyOutlined /> {t('apiKeys.modal.createTitle')}</Space>}
         open={createOpen}
         onOk={handleCreate}
         onCancel={() => { setCreateOpen(false); form.resetFields(); }}
         confirmLoading={createApiKey.isPending}
-        okText="Create"
+        okText={t('apiKeys.modal.create')}
         destroyOnClose
       >
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="name"
-            label="Key Name"
-            rules={[{ required: true, message: 'Please enter a name' }]}
+            label={t('apiKeys.form.nameLabel')}
+            rules={[{ required: true, message: t('apiKeys.form.nameRequired') }]}
           >
-            <Input placeholder="e.g. Production Integration, CRM Sync" />
+            <Input placeholder={t('apiKeys.form.namePlaceholder')} />
           </Form.Item>
-          <Form.Item name="scopes" label="Scopes">
+          <Form.Item name="scopes" label={t('apiKeys.form.scopesLabel')}>
             <Checkbox.Group options={AVAILABLE_SCOPES} style={{ display: 'flex', flexDirection: 'column', gap: 8 }} />
           </Form.Item>
-          <Form.Item name="expires_at" label="Expiry Date (optional)">
+          <Form.Item name="expires_at" label={t('apiKeys.form.expiryLabel')}>
             <DatePicker
               style={{ width: '100%' }}
               disabledDate={(d) => d && d < dayjs().startOf('day')}
@@ -247,18 +248,17 @@ export default function ApiKeysPage() {
         </Form>
       </Modal>
 
-      {/* Reveal Raw Key Modal — shown once after creation */}
       <Modal
-        title="Save Your API Key"
+        title={t('apiKeys.revealModal.title')}
         open={!!createdKey}
         onOk={() => setCreatedKey(null)}
         onCancel={() => setCreatedKey(null)}
-        okText="I've saved it"
+        okText={t('apiKeys.revealModal.savedButton')}
         cancelButtonProps={{ style: { display: 'none' } }}
       >
         <Alert
           type="warning"
-          message="This key will only be shown once. Copy and store it securely."
+          message={t('apiKeys.revealModal.warning')}
           style={{ marginBottom: 16 }}
         />
         <div
@@ -279,7 +279,7 @@ export default function ApiKeysPage() {
           >
             {createdKey}
           </Paragraph>
-          <Tooltip title="Copy">
+          <Tooltip title={t('apiKeys.revealModal.copy')}>
             <Button
               icon={<CopyOutlined />}
               size="small"

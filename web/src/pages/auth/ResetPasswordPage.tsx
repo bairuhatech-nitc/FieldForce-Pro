@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { useResetPassword } from '@/hooks/use-auth';
 
 const { Title, Text } = Typography;
@@ -12,21 +13,22 @@ const schema = z
   .object({
     new_password: z
       .string()
-      .min(8, 'Password must be at least 8 characters')
+      .min(8, 'resetPassword.errors.minLength')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/,
-        'Password must contain uppercase, lowercase, number, and special character',
+        'resetPassword.errors.complexity',
       ),
     confirm_password: z.string(),
   })
   .refine((data) => data.new_password === data.confirm_password, {
-    message: 'Passwords do not match',
+    message: 'resetPassword.errors.mismatch',
     path: ['confirm_password'],
   });
 
 type ResetPasswordForm = z.infer<typeof schema>;
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const mutation = useResetPassword();
@@ -59,9 +61,9 @@ export default function ResetPasswordPage() {
         <Card style={{ width: 420 }}>
           <Result
             status="error"
-            title="Invalid Reset Link"
-            subTitle="The password reset link is invalid or missing a token. Please request a new one."
-            extra={<Link to="/forgot-password">Request New Link</Link>}
+            title={t('resetPassword.invalidLink.title')}
+            subTitle={t('resetPassword.invalidLink.subTitle')}
+            extra={<Link to="/forgot-password">{t('resetPassword.invalidLink.action')}</Link>}
           />
         </Card>
       </div>
@@ -82,12 +84,12 @@ export default function ResetPasswordPage() {
         <Card style={{ width: 420 }}>
           <Result
             status="success"
-            title="Password Reset Successful"
-            subTitle="Your password has been reset and all active sessions have been logged out. Please login with your new password."
+            title={t('resetPassword.success.title')}
+            subTitle={t('resetPassword.success.subTitle')}
             extra={
               <Link to="/login">
                 <Button type="primary" size="large">
-                  Go to Login
+                  {t('resetPassword.success.action')}
                 </Button>
               </Link>
             }
@@ -110,16 +112,16 @@ export default function ResetPasswordPage() {
       <Card style={{ width: 420, padding: 8 }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Title level={2} style={{ marginBottom: 4 }}>
-            Reset Password
+            {t('resetPassword.title')}
           </Title>
-          <Text type="secondary">Enter your new password below</Text>
+          <Text type="secondary">{t('resetPassword.subtitle')}</Text>
         </div>
 
         <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
           <Form.Item
-            label="New Password"
+            label={t('resetPassword.fields.newPassword.label')}
             validateStatus={errors.new_password ? 'error' : ''}
-            help={errors.new_password?.message}
+            help={errors.new_password ? t(errors.new_password.message as any) : ''}
           >
             <Controller
               name="new_password"
@@ -128,7 +130,7 @@ export default function ResetPasswordPage() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Enter new password"
+                  placeholder={t('resetPassword.fields.newPassword.placeholder')}
                   size="large"
                 />
               )}
@@ -136,9 +138,9 @@ export default function ResetPasswordPage() {
           </Form.Item>
 
           <Form.Item
-            label="Confirm Password"
+            label={t('resetPassword.fields.confirmPassword.label')}
             validateStatus={errors.confirm_password ? 'error' : ''}
-            help={errors.confirm_password?.message}
+            help={errors.confirm_password ? t(errors.confirm_password.message as any) : ''}
           >
             <Controller
               name="confirm_password"
@@ -147,7 +149,7 @@ export default function ResetPasswordPage() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Confirm new password"
+                  placeholder={t('resetPassword.fields.confirmPassword.placeholder')}
                   size="large"
                 />
               )}
@@ -162,13 +164,13 @@ export default function ResetPasswordPage() {
               block
               size="large"
             >
-              Reset Password
+              {t('resetPassword.submit')}
             </Button>
           </Form.Item>
         </Form>
 
         <div style={{ textAlign: 'center' }}>
-          <Link to="/login">Back to Login</Link>
+          <Link to="/login">{t('resetPassword.backToLogin')}</Link>
         </div>
       </Card>
     </div>

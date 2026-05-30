@@ -20,13 +20,6 @@ const statusColors: Record<string, string> = {
   refunded: 'orange',
 };
 
-const statusOptions = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'refunded', label: 'Refunded' },
-];
-
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }
@@ -39,6 +32,13 @@ export default function PaymentListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+
+  const statusOptions = [
+    { value: 'pending', label: t('payments.status.pending') },
+    { value: 'completed', label: t('payments.status.completed') },
+    { value: 'failed', label: t('payments.status.failed') },
+    { value: 'refunded', label: t('payments.status.refunded') },
+  ];
 
   const { data, isLoading } = usePayments({ page, take: pageSize, search });
   const deletePayment = useDeletePayment();
@@ -62,8 +62,8 @@ export default function PaymentListPage() {
 
   const handleDelete = (payment: Payment) => {
     showConfirmDialog({
-      title: 'Delete Payment',
-      content: 'Are you sure you want to delete this payment record?',
+      title: t('payments.deleteTitle'),
+      content: t('payments.deleteContent'),
       onOk: async () => {
         await deletePayment.mutateAsync(payment.id);
       },
@@ -73,7 +73,7 @@ export default function PaymentListPage() {
 
   const columns: ColumnsType<Payment> = [
     {
-      title: 'Invoice',
+      title: t('payments.table.invoice'),
       key: 'invoice',
       render: (_, record) =>
         record.invoice?.invoice_number
@@ -81,7 +81,7 @@ export default function PaymentListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Amount',
+      title: t('payments.table.amount'),
       dataIndex: 'amount',
       key: 'amount',
       render: (amount: number) => (
@@ -90,13 +90,13 @@ export default function PaymentListPage() {
       sorter: (a, b) => (a.amount || 0) - (b.amount || 0),
     },
     {
-      title: 'Method',
+      title: t('payments.table.method'),
       dataIndex: 'method',
       key: 'method',
       render: (method: string) => <Tag>{formatStatus(method)}</Tag>,
     },
     {
-      title: 'Status',
+      title: t('payments.table.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -106,13 +106,13 @@ export default function PaymentListPage() {
       ),
     },
     {
-      title: 'Transaction ID',
+      title: t('payments.table.transactionId'),
       dataIndex: 'gateway_transaction_id',
       key: 'gateway_transaction_id',
       render: (txId: string) => txId || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Paid At',
+      title: t('payments.table.paidAt'),
       dataIndex: 'paid_at',
       key: 'paid_at',
       render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
@@ -123,24 +123,24 @@ export default function PaymentListPage() {
       },
     },
     {
-      title: 'Actions',
+      title: t('payments.table.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="payments:read">
-            <Tooltip title="View">
+            <Tooltip title={t('common.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/payments/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="payments:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('common.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/payments/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="payments:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -153,17 +153,17 @@ export default function PaymentListPage() {
     <div>
       <PageHeader
         title={t('nav.payments')}
-        subtitle="Manage payments"
+        subtitle={t('payments.managePayments')}
       />
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <SearchFilter
-          placeholder="Search payments by transaction ID..."
+          placeholder={t('payments.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <Select
-          placeholder="Filter by status"
+          placeholder={t('payments.filterPlaceholder')}
           allowClear
           value={statusFilter}
           onChange={(value) => setStatusFilter(value)}
@@ -183,7 +183,7 @@ export default function PaymentListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} payments`,
+          showTotal: (total) => t('payments.totalPayments', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

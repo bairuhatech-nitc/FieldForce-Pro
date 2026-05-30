@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Space, Skeleton, Tag, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next'; // Rule 1
 import { useInvoice, useDeleteInvoice, useUpdateInvoiceStatus, useInvoiceLineItems } from '@/hooks/use-invoices';
 import { useInvoicePayments } from '@/hooks/use-payments';
 import type { InvoiceLineItem, Payment } from '@/types/models.types';
@@ -46,6 +47,7 @@ function formatStatus(status: string): string {
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation(); // Rule 2
   const { data: invoice, isLoading } = useInvoice(id!);
   const { data: lineItems, isLoading: lineItemsLoading } = useInvoiceLineItems(id!);
   const { data: payments, isLoading: paymentsLoading } = useInvoicePayments(id!);
@@ -55,8 +57,8 @@ export default function InvoiceDetailPage() {
   const handleDelete = () => {
     if (!invoice) return;
     showConfirmDialog({
-      title: 'Delete Invoice',
-      content: `Are you sure you want to delete invoice ${invoice.invoice_number || invoice.id}?`,
+      title: t('invoiceDetails.deleteInvoiceTitle'),
+      content: t('invoiceDetails.deleteInvoiceContent', { invoiceNumber: invoice.invoice_number || invoice.id }),
       onOk: async () => {
         await deleteInvoice.mutateAsync(invoice.id);
         navigate('/invoices');
@@ -73,7 +75,7 @@ export default function InvoiceDetailPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Invoice Details" />
+        <PageHeader title={t('invoiceDetails.invoiceDetailsTitle')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -82,8 +84,8 @@ export default function InvoiceDetailPage() {
   if (!invoice) {
     return (
       <div>
-        <PageHeader title="Invoice Not Found" />
-        <Card>Invoice not found</Card>
+        <PageHeader title={t('invoiceDetails.invoiceNotFoundTitle')} />
+        <Card>{t('invoiceDetails.invoiceNotFoundMessage')}</Card>
       </div>
     );
   }
@@ -93,42 +95,42 @@ export default function InvoiceDetailPage() {
 
   const lineItemColumns: ColumnsType<InvoiceLineItem> = [
     {
-      title: 'Type',
+      title: t('invoiceDetails.lineItemColumns.type'),
       dataIndex: 'type',
       key: 'type',
       render: (type: string) => <Tag>{type.charAt(0).toUpperCase() + type.slice(1)}</Tag>,
     },
     {
-      title: 'Name',
+      title: t('invoiceDetails.lineItemColumns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
     },
     {
-      title: 'Description',
+      title: t('invoiceDetails.lineItemColumns.description'),
       dataIndex: 'description',
       key: 'description',
       render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Quantity',
+      title: t('invoiceDetails.lineItemColumns.quantity'),
       dataIndex: 'quantity',
       key: 'quantity',
     },
     {
-      title: 'Unit Price',
+      title: t('invoiceDetails.lineItemColumns.unitPrice'),
       dataIndex: 'unit_price',
       key: 'unit_price',
       render: (price: number) => formatCurrency(price, currency),
     },
     {
-      title: 'Tax Rate',
+      title: t('invoiceDetails.lineItemColumns.taxRate'),
       dataIndex: 'tax_rate',
       key: 'tax_rate',
       render: (rate: number) => `${rate || 0}%`,
     },
     {
-      title: 'Discount',
+      title: t('invoiceDetails.lineItemColumns.discount'),
       dataIndex: 'discount',
       key: 'discount',
       render: (discount: number, record: InvoiceLineItem) => {
@@ -138,7 +140,7 @@ export default function InvoiceDetailPage() {
       },
     },
     {
-      title: 'Total',
+      title: t('invoiceDetails.lineItemColumns.total'),
       dataIndex: 'total',
       key: 'total',
       render: (total: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(total, currency)}</span>,
@@ -147,19 +149,19 @@ export default function InvoiceDetailPage() {
 
   const paymentColumns: ColumnsType<Payment> = [
     {
-      title: 'Amount',
+      title: t('invoiceDetails.paymentColumns.amount'),
       dataIndex: 'amount',
       key: 'amount',
       render: (amount: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(amount, currency)}</span>,
     },
     {
-      title: 'Method',
+      title: t('invoiceDetails.paymentColumns.method'),
       dataIndex: 'method',
       key: 'method',
       render: (method: string) => <Tag>{formatStatus(method)}</Tag>,
     },
     {
-      title: 'Status',
+      title: t('invoiceDetails.paymentColumns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -169,19 +171,19 @@ export default function InvoiceDetailPage() {
       ),
     },
     {
-      title: 'Transaction ID',
+      title: t('invoiceDetails.paymentColumns.transactionId'),
       dataIndex: 'gateway_transaction_id',
       key: 'gateway_transaction_id',
       render: (txId: string) => txId || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Paid At',
+      title: t('invoiceDetails.paymentColumns.paidAt'),
       dataIndex: 'paid_at',
       key: 'paid_at',
       render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Notes',
+      title: t('invoiceDetails.paymentColumns.notes'),
       dataIndex: 'notes',
       key: 'notes',
       render: (notes: string) => notes || <span style={{ opacity: 0.5 }}>-</span>,
@@ -191,18 +193,18 @@ export default function InvoiceDetailPage() {
   return (
     <div>
       <PageHeader
-        title={`Invoice ${invoice.invoice_number || ''}`}
+        title={t('invoiceDetails.pageHeaderTitle', { invoiceNumber: invoice.invoice_number || '' })}
         onBack={() => navigate('/invoices')}
         extra={
           <Space>
             <PermissionGuard permission="invoices:update">
               <Button icon={<EditOutlined />} onClick={() => navigate(`/invoices/${invoice.id}/edit`)}>
-                Edit
+                {t('common.edit')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="invoices:delete">
               <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-                Delete
+                {t('common.delete')}
               </Button>
             </PermissionGuard>
           </Space>
@@ -212,7 +214,7 @@ export default function InvoiceDetailPage() {
       {availableTransitions.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
           <Space>
-            <span style={{ fontWeight: 500 }}>Transition to:</span>
+            <span style={{ fontWeight: 500 }}>{t('invoiceDetails.transitionTo')}</span>
             {availableTransitions.map((status) => (
               <Button
                 key={status}
@@ -228,92 +230,92 @@ export default function InvoiceDetailPage() {
         </Card>
       )}
 
-      <Card title="Invoice Information">
+      <Card title={t('invoiceDetails.invoiceInformationCardTitle')}>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="Invoice Number">
+          <Descriptions.Item label={t('invoiceDetails.invoiceNumberLabel')}>
             {invoice.invoice_number || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label={t('invoiceDetails.statusLabel')}>
             <Tag color={statusColors[invoice.status] || 'default'}>
               {formatStatus(invoice.status)}
             </Tag>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Customer">
+          <Descriptions.Item label={t('invoiceDetails.customerLabel')}>
             {invoice.contact
               ? `${invoice.contact.first_name} ${invoice.contact.last_name}`
               : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Work Order">
+          <Descriptions.Item label={t('invoiceDetails.workOrderLabel')}>
             {invoice.work_order
               ? invoice.work_order.wo_number || invoice.work_order.summary
               : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Due Date">
+          <Descriptions.Item label={t('invoiceDetails.dueDateLabel')}>
             {invoice.due_date ? formatDateTime(invoice.due_date) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Currency">
+          <Descriptions.Item label={t('invoiceDetails.currencyLabel')}>
             <Tag>{currency}</Tag>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Subtotal">
+          <Descriptions.Item label={t('invoiceDetails.subtotalLabel')}>
             {formatCurrency(invoice.subtotal || 0, currency)}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Tax">
+          <Descriptions.Item label={t('invoiceDetails.taxLabel')}>
             {formatCurrency(invoice.tax || 0, currency)}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Discount">
+          <Descriptions.Item label={t('invoiceDetails.discountLabel')}>
             {formatCurrency(invoice.discount || 0, currency)}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Total">
+          <Descriptions.Item label={t('invoiceDetails.totalLabel')}>
             <span style={{ fontWeight: 600, fontSize: 16 }}>{formatCurrency(invoice.total || 0, currency)}</span>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Paid Amount">
+          <Descriptions.Item label={t('invoiceDetails.paidAmountLabel')}>
             <span style={{ fontWeight: 500, color: invoice.paid_amount >= invoice.total ? '#52c41a' : '#faad14' }}>
               {formatCurrency(invoice.paid_amount || 0, currency)}
             </span>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Balance Due">
+          <Descriptions.Item label={t('invoiceDetails.balanceDueLabel')}>
             <span style={{ fontWeight: 500 }}>
               {formatCurrency((invoice.total || 0) - (invoice.paid_amount || 0), currency)}
             </span>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Notes" span={2}>
+          <Descriptions.Item label={t('invoiceDetails.notesLabel')} span={2}>
             {invoice.notes || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Created At">
+          <Descriptions.Item label={t('invoiceDetails.createdAtLabel')}>
             {formatDateTime(invoice.created_at)}
           </Descriptions.Item>
-          <Descriptions.Item label="Updated At">
+          <Descriptions.Item label={t('invoiceDetails.updatedAtLabel')}>
             {formatDateTime(invoice.updated_at)}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card title="Line Items" style={{ marginTop: 16 }}>
+      <Card title={t('invoiceDetails.lineItemsCardTitle')} style={{ marginTop: 16 }}>
         <Table
           columns={lineItemColumns}
           dataSource={lineItems || invoice.line_items || []}
           rowKey="id"
           loading={lineItemsLoading}
           pagination={false}
-          locale={{ emptyText: 'No line items added' }}
+          locale={{ emptyText: t('invoiceDetails.noLineItems') }}
           summary={() => (
             <Table.Summary>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={7} align="right">
-                  <strong>Subtotal</strong>
+                  <strong>{t('invoiceDetails.summarySubtotal')}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1}>
                   <strong>{formatCurrency(invoice.subtotal || 0, currency)}</strong>
@@ -321,7 +323,7 @@ export default function InvoiceDetailPage() {
               </Table.Summary.Row>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={7} align="right">
-                  Tax
+                  {t('invoiceDetails.summaryTax')}
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1}>
                   {formatCurrency(invoice.tax || 0, currency)}
@@ -329,7 +331,7 @@ export default function InvoiceDetailPage() {
               </Table.Summary.Row>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={7} align="right">
-                  Discount
+                  {t('invoiceDetails.summaryDiscount')}
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1}>
                   -{formatCurrency(invoice.discount || 0, currency)}
@@ -337,7 +339,7 @@ export default function InvoiceDetailPage() {
               </Table.Summary.Row>
               <Table.Summary.Row>
                 <Table.Summary.Cell index={0} colSpan={7} align="right">
-                  <strong style={{ fontSize: 16 }}>Total</strong>
+                  <strong style={{ fontSize: 16 }}>{t('invoiceDetails.summaryTotal')}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={1}>
                   <strong style={{ fontSize: 16 }}>{formatCurrency(invoice.total || 0, currency)}</strong>
@@ -348,14 +350,14 @@ export default function InvoiceDetailPage() {
         />
       </Card>
 
-      <Card title="Payments" style={{ marginTop: 16 }}>
+      <Card title={t('invoiceDetails.paymentsCardTitle')} style={{ marginTop: 16 }}>
         <Table
           columns={paymentColumns}
           dataSource={payments || []}
           rowKey="id"
           loading={paymentsLoading}
           pagination={false}
-          locale={{ emptyText: 'No payments recorded' }}
+          locale={{ emptyText: t('invoiceDetails.noPayments') }}
         />
       </Card>
     </div>

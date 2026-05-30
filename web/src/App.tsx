@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useRoutes } from 'react-router-dom';
 import { ConfigProvider, theme as antTheme, App as AntApp } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/store/ui.store';
 import { routes } from '@/routes';
 import NotificationToast from '@/components/common/NotificationToast';
@@ -8,8 +9,16 @@ import { ChatbotWidget } from '@/components/chat/ChatbotWidget';
 import './index.css';
 
 export default function App() {
+  const { i18n } = useTranslation();
   const themeMode = useUiStore((s) => s.theme);
   const element = useRoutes(routes);
+
+  const direction = i18n.language === 'ar' ? 'rtl' : 'ltr';
+
+  useEffect(() => {
+    document.documentElement.dir = direction;
+    document.documentElement.lang = i18n.language;
+  }, [direction, i18n.language]);
 
   // Note: User authentication is checked in PrivateRoute component
 
@@ -24,6 +33,7 @@ export default function App() {
 
   return (
     <ConfigProvider
+      direction={direction}
       theme={{
         algorithm: themeMode === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
         token: {

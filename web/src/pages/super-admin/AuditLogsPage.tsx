@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, Table, Typography, Space, Tag, Input, Select, Button } from 'antd';
 import { SearchOutlined, DownloadOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import PageHeader from '@/components/common/PageHeader';
 import { useSuperAdminAuditLogs, useExportSuperAdminAuditLogs } from '@/hooks/use-super-admin-audit-logs';
@@ -9,6 +10,7 @@ import { formatDateTime } from '@/utils/format-date';
 const { Text } = Typography;
 
 export default function AuditLogsPage() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [actionFilter, setActionFilter] = useState<string | undefined>(undefined);
@@ -20,7 +22,14 @@ export default function AuditLogsPage() {
     const { data } = await exportMutation.refetch();
     if (data) {
       // Basic CSV export logic
-      const headers = ['ID', 'Action', 'Resource', 'Target ID', 'IP Address', 'Created At'];
+      const headers = [
+        t('auditLogs.id'), 
+        t('auditLogs.action'), 
+        t('auditLogs.resource'), 
+        t('auditLogs.targetId'), 
+        t('auditLogs.ipAddress'), 
+        t('auditLogs.createdAt')
+      ];
       const csvData = data.map((log: any) => [
         log.id,
         log.action,
@@ -42,35 +51,35 @@ export default function AuditLogsPage() {
 
   const columns: ColumnsType<any> = [
     {
-      title: 'Date',
+      title: t('auditLogs.date'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => <Text>{formatDateTime(date)}</Text>,
     },
     {
-      title: 'Action',
+      title: t('auditLogs.action'),
       dataIndex: 'action',
       key: 'action',
       render: (action: string) => <Tag color="blue">{action}</Tag>,
     },
     {
-      title: 'Resource',
+      title: t('auditLogs.resource'),
       dataIndex: 'resource',
       key: 'resource',
     },
     {
-      title: 'Target ID',
+      title: t('auditLogs.targetId'),
       dataIndex: 'target_id',
       key: 'target_id',
       render: (id: string) => <Text copyable>{id}</Text>,
     },
     {
-      title: 'IP Address',
+      title: t('auditLogs.ipAddress'),
       dataIndex: 'ip_address',
       key: 'ip_address',
     },
     {
-      title: 'Details',
+      title: t('auditLogs.details'),
       dataIndex: 'details',
       key: 'details',
       render: (details: any) => (
@@ -84,8 +93,8 @@ export default function AuditLogsPage() {
   return (
     <div>
       <PageHeader
-        title="Audit Logs"
-        subtitle="Platform-wide activity tracking for super admins"
+        title={t('auditLogs.title')}
+        subtitle={t('auditLogs.subtitle')}
         extra={[
           <Button 
             key="export" 
@@ -93,7 +102,7 @@ export default function AuditLogsPage() {
             onClick={handleExport}
             loading={exportMutation.isFetching}
           >
-            Export CSV
+            {t('auditLogs.exportCsv')}
           </Button>
         ]}
       />
@@ -103,13 +112,12 @@ export default function AuditLogsPage() {
           <Select
             allowClear
             style={{ width: 200 }}
-            placeholder="Filter by Action"
+            placeholder={t('auditLogs.filterByAction')}
             onChange={setActionFilter}
             options={[
-              { value: 'CREATE_API_KEY', label: 'Create API Key' },
-              { value: 'REVOKE_API_KEY', label: 'Revoke API Key' },
-              { value: 'REGENERATE_API_KEY', label: 'Regenerate API Key' },
-              // Add other actions here
+              { value: 'CREATE_API_KEY', label: t('auditLogs.actions.createApiKey') },
+              { value: 'REVOKE_API_KEY', label: t('auditLogs.actions.revokeApiKey') },
+              { value: 'REGENERATE_API_KEY', label: t('auditLogs.actions.regenerateApiKey') },
             ]}
           />
         </Space>

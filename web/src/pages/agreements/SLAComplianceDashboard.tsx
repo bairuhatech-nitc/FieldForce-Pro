@@ -8,6 +8,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useServiceAgreements } from '@/hooks/use-service-agreements';
 import PageHeader from '@/components/common/PageHeader';
 import { formatDate } from '@/utils/format-date';
@@ -56,17 +57,18 @@ const statusColors: Record<string, string> = {
   critical: '#ff4d4f',
 };
 
-const statusLabels: Record<string, string> = {
-  excellent: 'Excellent',
-  good: 'Good',
-  warning: 'At Risk',
-  critical: 'Critical',
-};
-
 export default function SLAComplianceDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('30d');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+
+  const statusLabels: Record<string, string> = {
+    excellent: t('slaDashboard.status.excellent'),
+    good: t('slaDashboard.status.good'),
+    warning: t('slaDashboard.status.warning'),
+    critical: t('slaDashboard.status.critical'),
+  };
 
   const { data: agreementsData, isLoading, refetch } = useServiceAgreements({ page: 1, take: 100 });
   const agreements = agreementsData?.data || [];
@@ -96,7 +98,7 @@ export default function SLAComplianceDashboard() {
 
   const columns = [
     {
-      title: 'Agreement',
+      title: t('slaDashboard.table.agreement'),
       dataIndex: 'agreementName',
       key: 'agreementName',
       render: (text: string, record: SLAMetrics) => (
@@ -110,7 +112,7 @@ export default function SLAComplianceDashboard() {
       ),
     },
     {
-      title: 'Status',
+      title: t('slaDashboard.table.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -119,15 +121,15 @@ export default function SLAComplianceDashboard() {
         </Tag>
       ),
       filters: [
-        { text: 'Excellent', value: 'excellent' },
-        { text: 'Good', value: 'good' },
-        { text: 'At Risk', value: 'warning' },
-        { text: 'Critical', value: 'critical' },
+        { text: t('slaDashboard.status.excellent'), value: 'excellent' },
+        { text: t('slaDashboard.status.good'), value: 'good' },
+        { text: t('slaDashboard.status.warning'), value: 'warning' },
+        { text: t('slaDashboard.status.critical'), value: 'critical' },
       ],
       onFilter: (value: string | number | boolean, record: SLAMetrics) => record.status === value,
     },
     {
-      title: 'Response Time Compliance',
+      title: t('slaDashboard.table.responseTimeCompliance'),
       dataIndex: 'responseTimeCompliance',
       key: 'responseTimeCompliance',
       render: (value: number) => (
@@ -144,7 +146,7 @@ export default function SLAComplianceDashboard() {
       sorter: (a: SLAMetrics, b: SLAMetrics) => a.responseTimeCompliance - b.responseTimeCompliance,
     },
     {
-      title: 'Resolution Time Compliance',
+      title: t('slaDashboard.table.resolutionTimeCompliance'),
       dataIndex: 'resolutionTimeCompliance',
       key: 'resolutionTimeCompliance',
       render: (value: number) => (
@@ -161,13 +163,13 @@ export default function SLAComplianceDashboard() {
       sorter: (a: SLAMetrics, b: SLAMetrics) => a.resolutionTimeCompliance - b.resolutionTimeCompliance,
     },
     {
-      title: 'Total Requests',
+      title: t('slaDashboard.table.totalRequests'),
       dataIndex: 'totalRequests',
       key: 'totalRequests',
       sorter: (a: SLAMetrics, b: SLAMetrics) => a.totalRequests - b.totalRequests,
     },
     {
-      title: 'Breaches',
+      title: t('slaDashboard.table.breaches'),
       dataIndex: 'breaches',
       key: 'breaches',
       render: (value: number) => (
@@ -182,45 +184,45 @@ export default function SLAComplianceDashboard() {
   return (
     <div>
       <PageHeader
-        title="SLA Compliance Dashboard"
-        subtitle="Monitor service level agreement performance"
+        title={t('slaDashboard.title')}
+        subtitle={t('slaDashboard.subtitle')}
       />
 
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={16} align="middle">
           <Col flex={1}>
             <Space>
-              <Text type="secondary">Time Range:</Text>
+              <Text type="secondary">{t('slaDashboard.filters.timeRange')}:</Text>
               <Select
                 value={timeRange}
                 onChange={setTimeRange}
                 style={{ width: 150 }}
                 options={[
-                  { value: '7d', label: 'Last 7 days' },
-                  { value: '30d', label: 'Last 30 days' },
-                  { value: '90d', label: 'Last 90 days' },
-                  { value: '1y', label: 'Last year' },
+                  { value: '7d', label: t('slaDashboard.ranges.7d') },
+                  { value: '30d', label: t('slaDashboard.ranges.30d') },
+                  { value: '90d', label: t('slaDashboard.ranges.90d') },
+                  { value: '1y', label: t('slaDashboard.ranges.1y') },
                 ]}
               />
-              <Text type="secondary">Status:</Text>
+              <Text type="secondary">{t('slaDashboard.filters.status')}:</Text>
               <Select
-                placeholder="All Statuses"
+                placeholder={t('slaDashboard.filters.allStatuses')}
                 allowClear
                 value={statusFilter}
                 onChange={setStatusFilter}
                 style={{ width: 150 }}
                 options={[
-                  { value: 'excellent', label: 'Excellent' },
-                  { value: 'good', label: 'Good' },
-                  { value: 'warning', label: 'At Risk' },
-                  { value: 'critical', label: 'Critical' },
+                  { value: 'excellent', label: t('slaDashboard.status.excellent') },
+                  { value: 'good', label: t('slaDashboard.status.good') },
+                  { value: 'warning', label: t('slaDashboard.status.warning') },
+                  { value: 'critical', label: t('slaDashboard.status.critical') },
                 ]}
               />
             </Space>
           </Col>
           <Col>
             <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
-              Refresh
+              {t('common.refresh')}
             </Button>
           </Col>
         </Row>
@@ -230,7 +232,7 @@ export default function SLAComplianceDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Avg Response Compliance"
+              title={t('slaDashboard.stats.avgResponseCompliance')}
               value={avgResponseCompliance.toFixed(1)}
               suffix="%"
               prefix={<TrophyOutlined />}
@@ -241,7 +243,7 @@ export default function SLAComplianceDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Avg Resolution Compliance"
+              title={t('slaDashboard.stats.avgResolutionCompliance')}
               value={avgResolutionCompliance.toFixed(1)}
               suffix="%"
               prefix={<CheckCircleOutlined />}
@@ -252,7 +254,7 @@ export default function SLAComplianceDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="At Risk Agreements"
+              title={t('slaDashboard.stats.atRiskAgreements')}
               value={warningCount + criticalCount}
               prefix={<WarningOutlined />}
               valueStyle={{ color: warningCount + criticalCount > 0 ? '#faad14' : '#52c41a' }}
@@ -262,7 +264,7 @@ export default function SLAComplianceDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Total Breaches"
+              title={t('slaDashboard.stats.totalBreaches')}
               value={totalBreaches}
               prefix={<CloseCircleOutlined />}
               valueStyle={{ color: totalBreaches > 0 ? '#ff4d4f' : '#52c41a' }}
@@ -283,21 +285,21 @@ export default function SLAComplianceDashboard() {
             <WarningOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />
             <div>
               <Text strong style={{ color: '#ff4d4f' }}>
-                Critical Alert:
+                {t('slaDashboard.alerts.criticalTitle')}:
               </Text>
               <Text style={{ marginLeft: 8 }}>
-                {criticalCount} agreement{criticalCount > 1 ? 's' : ''} require immediate attention
+                {t('slaDashboard.alerts.criticalMessage', { count: criticalCount })}
               </Text>
             </div>
           </Space>
         </Card>
       )}
 
-      <Card title="SLA Compliance by Agreement">
+      <Card title={t('slaDashboard.table.title')}>
         {isLoading ? (
-          <div style={{ textAlign: 'center', padding: 50 }}>Loading...</div>
+          <div style={{ textAlign: 'center', padding: 50 }}>{t('common.loading')}</div>
         ) : filteredMetrics.length === 0 ? (
-          <Empty description="No service agreements found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <Empty description={t('slaDashboard.table.noData')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         ) : (
           <Table
             columns={columns}
@@ -306,7 +308,7 @@ export default function SLAComplianceDashboard() {
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
-              showTotal: (total) => `Total ${total} agreements`,
+              showTotal: (total) => t('slaDashboard.table.paginationTotal', { total }),
             }}
           />
         )}

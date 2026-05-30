@@ -46,8 +46,8 @@ export default function WebformListPage() {
 
   const handleDelete = (record: WebformRecord) => {
     showConfirmDialog({
-      title: 'Delete Webform',
-      content: `Are you sure you want to delete "${record.name}"?`,
+      title: t('webforms.deleteWebform'),
+      content: t('webforms.confirmDelete', { name: record.name }),
       onOk: async () => {
         await deleteWebform.mutateAsync(record.id);
       },
@@ -61,69 +61,69 @@ export default function WebformListPage() {
 
   const columns: ColumnsType<WebformRecord> = [
     {
-      title: 'Name',
+      title: t('webforms.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Description',
+      title: t('webforms.description'),
       dataIndex: 'description',
       key: 'description',
       render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Submissions',
+      title: t('webforms.submissions'),
       dataIndex: 'submission_count',
       key: 'submission_count',
       render: (count: number) => count || 0,
       sorter: (a, b) => (a.submission_count || 0) - (b.submission_count || 0),
     },
     {
-      title: 'Status',
+      title: t('webforms.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean, record) => (
         <Switch
           checked={isActive}
           onChange={(checked) => handleToggleActive(record, checked)}
-          checkedChildren="Active"
-          unCheckedChildren="Inactive"
+          checkedChildren={t('webforms.active')}
+          unCheckedChildren={t('webforms.inactive')}
         />
       ),
     },
     {
-      title: 'Last Updated',
+      title: t('webforms.lastUpdated'),
       dataIndex: 'updated_at',
       key: 'updated_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('webforms.actions'),
       key: 'actions',
       fixed: 'right',
       width: 180,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="webforms:read">
-            <Tooltip title="View">
+            <Tooltip title={t('webforms.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/webforms/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="webforms:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('webforms.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/webforms/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="webforms:read">
-            <Tooltip title="Embed Code">
+            <Tooltip title={t('webforms.embedCode')}>
               <Button type="text" icon={<CodeOutlined />} size="small" onClick={() => navigate(`/webforms/${record.id}/embed`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="webforms:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('webforms.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -135,12 +135,12 @@ export default function WebformListPage() {
   return (
     <div>
       <PageHeader
-        title="Webforms"
-        subtitle="Create and manage customer-facing web forms"
+        title={t('webforms.title')}
+        subtitle={t('webforms.subtitle')}
         extra={
           <PermissionGuard permission="webforms:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/webforms/new')}>
-              Create Webform
+              {t('webforms.createWebform')}
             </Button>
           </PermissionGuard>
         }
@@ -148,7 +148,7 @@ export default function WebformListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search webforms..."
+          placeholder={t('webforms.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -164,7 +164,7 @@ export default function WebformListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} webforms`,
+          showTotal: (total) => t('webforms.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

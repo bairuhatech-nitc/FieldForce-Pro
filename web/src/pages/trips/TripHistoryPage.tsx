@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Avatar,
@@ -69,13 +70,8 @@ const km = (v: unknown) => Number(v) || 0;
 const getInitials = (u?: TripRecord['user']) =>
   u ? `${u.first_name?.[0] || ''}${u.last_name?.[0] || ''}`.toUpperCase() : '?';
 
-const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-  in_progress: { color: 'processing', label: 'In Transit' },
-  completed:   { color: 'success',    label: 'Completed' },
-  cancelled:   { color: 'default',    label: 'Cancelled' },
-};
-
 export default function TripHistoryPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -85,6 +81,13 @@ export default function TripHistoryPage() {
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null]>([null, null]);
   const [selectedTrip, setSelectedTrip] = useState<TripRecord | null>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
+
+  // Define STATUS_CONFIG inside the component to use t()
+  const STATUS_CONFIG_TRANSLATED: Record<string, { color: string; label: string }> = {
+    in_progress: { color: 'processing', label: t('tripHistory.status.inTransit') },
+    completed:   { color: 'success',    label: t('tripHistory.status.completed') },
+    cancelled:   { color: 'default',    label: t('tripHistory.status.cancelled') },
+  };
 
   const { data, isLoading, error, refetch } = useTrips({ page, take: pageSize, search } as Record<string, unknown> & {
     page: number;
@@ -138,7 +141,7 @@ export default function TripHistoryPage() {
   // ── Table columns ──────────────────────────────────────────────────────────
   const columns: ColumnsType<TripRecord> = [
     {
-      title: 'Technician',
+      title: t('tripHistory.table.technician'),
       dataIndex: 'user',
       key: 'user',
       width: 220,
@@ -157,16 +160,16 @@ export default function TripHistoryPage() {
           </Avatar>
           <div style={{ lineHeight: 1.3 }}>
             <Text strong style={{ fontSize: 13 }}>
-              {user ? `${user.first_name} ${user.last_name}` : 'Unknown'}
+              {user ? `${user.first_name} ${user.last_name}` : t('tripHistory.table.unknown')}
             </Text>
             <br />
-            <Text type="secondary" style={{ fontSize: 11 }}>Field Technician</Text>
+            <Text type="secondary" style={{ fontSize: 11 }}>{t('tripHistory.table.fieldTechnician')}</Text>
           </div>
         </Space>
       ),
     },
     {
-      title: 'Work Order',
+      title: t('tripHistory.table.workOrder'),
       dataIndex: 'work_order',
       key: 'work_order',
       width: 160,
@@ -191,7 +194,7 @@ export default function TripHistoryPage() {
         ),
     },
     {
-      title: 'Date & Time',
+      title: t('tripHistory.table.dateTime'),
       dataIndex: 'start_time',
       key: 'start_time',
       width: 180,
@@ -214,7 +217,7 @@ export default function TripHistoryPage() {
       defaultSortOrder: 'descend',
     },
     {
-      title: 'Duration',
+      title: t('tripHistory.table.duration'),
       dataIndex: 'duration_minutes',
       key: 'duration_minutes',
       width: 110,
@@ -229,11 +232,11 @@ export default function TripHistoryPage() {
             {formatDuration(minutes * 60)}
           </Tag>
         ) : (
-          <Tag color="processing" style={{ borderRadius: 12, margin: 0 }}>In Transit</Tag>
+          <Tag color="processing" style={{ borderRadius: 12, margin: 0 }}>{t('tripHistory.status.inTransit')}</Tag>
         ),
     },
     {
-      title: 'Distance',
+      title: t('tripHistory.table.distance'),
       dataIndex: 'distance_km',
       key: 'distance_km',
       width: 100,
@@ -247,13 +250,13 @@ export default function TripHistoryPage() {
       sorter: (a, b) => km(a.distance_km) - km(b.distance_km),
     },
     {
-      title: 'Status',
+      title: t('tripHistory.table.status'),
       dataIndex: 'status',
       key: 'status',
       width: 110,
       align: 'center',
       render: (status: string) => {
-        const cfg = STATUS_CONFIG[status] || { color: 'default', label: status };
+        const cfg = STATUS_CONFIG_TRANSLATED[status] || { color: 'default', label: status };
         return <Tag color={cfg.color} style={{ borderRadius: 12, margin: 0 }}>{cfg.label}</Tag>;
       },
     },
@@ -263,7 +266,7 @@ export default function TripHistoryPage() {
       fixed: 'right',
       width: 50,
       render: (_, record) => (
-        <Tooltip title="View Details">
+        <Tooltip title={t('tripHistory.table.viewDetails')}>
           <Button
             type="text"
             icon={<EyeOutlined />}
@@ -279,12 +282,12 @@ export default function TripHistoryPage() {
   return (
     <div>
       <PageHeader
-        title="Trip History"
-        subtitle="Track and analyze technician field trips"
+        title={t('tripHistory.pageHeader.title')}
+        subtitle={t('tripHistory.pageHeader.subtitle')}
         extra={
           <Space>
             <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
-              Refresh
+              {t('tripHistory.pageHeader.refresh')}
             </Button>
           </Space>
         }
@@ -294,7 +297,7 @@ export default function TripHistoryPage() {
       <Row gutter={16} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} lg={6}>
           <StatsCard
-            title="Total Trips"
+            title={t('tripHistory.stats.totalTrips')}
             value={totalTrips}
             icon={<CarOutlined style={{ fontSize: 22 }} />}
             color="#2563eb"
@@ -302,7 +305,7 @@ export default function TripHistoryPage() {
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatsCard
-            title="Completed"
+            title={t('tripHistory.stats.completed')}
             value={completedTrips}
             icon={<AimOutlined style={{ fontSize: 22 }} />}
             color="#16a34a"
@@ -310,7 +313,7 @@ export default function TripHistoryPage() {
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatsCard
-            title="Total Distance"
+            title={t('tripHistory.stats.totalDistance')}
             value={`${totalDistance.toFixed(1)} km`}
             icon={<DashboardOutlined style={{ fontSize: 22 }} />}
             color="#f59e0b"
@@ -318,7 +321,7 @@ export default function TripHistoryPage() {
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatsCard
-            title="Avg Distance"
+            title={t('tripHistory.stats.avgDistance')}
             value={`${avgDistance.toFixed(1)} km`}
             icon={<EnvironmentOutlined style={{ fontSize: 22 }} />}
             color="#8b5cf6"
@@ -329,14 +332,14 @@ export default function TripHistoryPage() {
       {/* ── Filters ───────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <SearchFilter
-          placeholder="Search by WO number or status..."
+          placeholder={t('tripHistory.filters.searchPlaceholder')}
           allowClear
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ width: 260 }}
         />
         <Select
-          placeholder="All Technicians"
+          placeholder={t('tripHistory.filters.allTechnicians')}
           allowClear
           value={selectedAgent}
           onChange={setSelectedAgent}
@@ -347,32 +350,32 @@ export default function TripHistoryPage() {
           }))}
         />
         <Select
-          placeholder="All Status"
+          placeholder={t('tripHistory.filters.allStatus')}
           allowClear
           value={statusFilter}
           onChange={setStatusFilter}
           style={{ width: 150 }}
           options={[
-            { value: 'in_progress', label: 'In Transit' },
-            { value: 'completed', label: 'Completed' },
-            { value: 'cancelled', label: 'Cancelled' },
+            { value: 'in_progress', label: t('tripHistory.status.inTransit') },
+            { value: 'completed', label: t('tripHistory.status.completed') },
+            { value: 'cancelled', label: t('tripHistory.status.cancelled') },
           ]}
         />
         <RangePicker
           value={dateRange}
           onChange={(dates) => setDateRange(dates as [dayjs.Dayjs | null, dayjs.Dayjs | null])}
           style={{ width: 260 }}
-          placeholder={['Start Date', 'End Date']}
+          placeholder={[t('tripHistory.filters.startDate'), t('tripHistory.filters.endDate')]}
         />
         {hasFilters && (
           <Button icon={<FilterOutlined />} onClick={clearFilters} size="small" type="link">
-            Clear
+            {t('tripHistory.filters.clear')}
           </Button>
         )}
 
         {activeTrips > 0 && (
           <Tag color="processing" style={{ marginLeft: 'auto', borderRadius: 12 }}>
-            <CarOutlined /> {activeTrips} active {activeTrips === 1 ? 'trip' : 'trips'}
+            <CarOutlined /> {t('tripHistory.filters.activeTrips', { count: activeTrips, activeTrips: activeTrips })}
           </Tag>
         )}
       </div>
@@ -384,11 +387,11 @@ export default function TripHistoryPage() {
           showIcon
           closable
           style={{ marginBottom: 16 }}
-          message="Failed to load trips"
+          message={t('tripHistory.alert.failedToLoadTrips')}
           description={
             (error as any)?.response?.status === 403
-              ? 'You don\'t have the "trips:read" permission. Contact an admin.'
-              : (error as any)?.message || 'Unexpected error loading trip data.'
+              ? t('tripHistory.alert.permissionDenied')
+              : (error as any)?.message || t('tripHistory.alert.unexpectedError')
           }
         />
       )}
@@ -415,9 +418,9 @@ export default function TripHistoryPage() {
                 style={{ padding: '40px 0' }}
                 description={
                   <Space direction="vertical" size={4}>
-                    <Text type="secondary">No trip records found</Text>
+                    <Text type="secondary">{t('tripHistory.empty.noRecordsFound')}</Text>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Trips are recorded automatically when technicians navigate to work orders.
+                      {t('tripHistory.empty.recordsDescription')}
                     </Text>
                   </Space>
                 }
@@ -429,7 +432,7 @@ export default function TripHistoryPage() {
             pageSize,
             total: meta?.itemCount || 0,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} trips`,
+            showTotal: (total) => t('tripHistory.pagination.totalTrips', { total, count: total }),
             onChange: (p, ps) => {
               setPage(p);
               if (ps !== pageSize) { setPageSize(ps); setPage(1); }
@@ -462,7 +465,16 @@ function TripDetailPanel({
   trip: TripRecord;
   navigate: ReturnType<typeof useNavigate>;
 }) {
-  const status = STATUS_CONFIG[trip.status] || { color: 'default', label: trip.status };
+  const { t } = useTranslation();
+
+  // Define STATUS_CONFIG locally here as well
+  const STATUS_CONFIG_TRANSLATED: Record<string, { color: string; label: string }> = {
+    in_progress: { color: 'processing', label: t('tripHistory.status.inTransit') },
+    completed:   { color: 'success',    label: t('tripHistory.status.completed') },
+    cancelled:   { color: 'default',    label: t('tripHistory.status.cancelled') },
+  };
+
+  const status = STATUS_CONFIG_TRANSLATED[trip.status] || { color: 'default', label: trip.status };
   const durationMin = Number(trip.duration_minutes) || 0;
   const distKm = km(trip.distance_km);
 
@@ -485,7 +497,7 @@ function TripDetailPanel({
           </Avatar>
           <div>
             <Text strong style={{ color: '#fff', fontSize: 18, display: 'block' }}>
-              {trip.user ? `${trip.user.first_name} ${trip.user.last_name}` : 'Unknown'}
+              {trip.user ? `${trip.user.first_name} ${trip.user.last_name}` : t('tripHistory.table.unknown')}
             </Text>
             <Space size={8} style={{ marginTop: 4 }}>
               <Tag color={status.color} style={{ borderRadius: 10, margin: 0 }}>{status.label}</Tag>
@@ -506,26 +518,26 @@ function TripDetailPanel({
         <Row gutter={24} style={{ marginTop: 20 }}>
           <Col span={8}>
             <div style={{ textAlign: 'center' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, display: 'block' }}>Distance</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, display: 'block' }}>{t('tripHistory.detail.distance')}</Text>
               <Text strong style={{ color: '#fff', fontSize: 20 }}>{distKm > 0 ? `${distKm.toFixed(1)}` : '-'}</Text>
-              {distKm > 0 && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}> km</Text>}
+              {distKm > 0 && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}> {t('tripHistory.detail.kmLabel')}</Text>}
             </div>
           </Col>
           <Col span={8}>
             <div style={{ textAlign: 'center' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, display: 'block' }}>Duration</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, display: 'block' }}>{t('tripHistory.detail.duration')}</Text>
               <Text strong style={{ color: '#fff', fontSize: 20 }}>{durationMin > 0 ? formatDuration(durationMin * 60) : '-'}</Text>
             </div>
           </Col>
           <Col span={8}>
             <div style={{ textAlign: 'center' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, display: 'block' }}>Avg Speed</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, display: 'block' }}>{t('tripHistory.detail.avgSpeed')}</Text>
               <Text strong style={{ color: '#fff', fontSize: 20 }}>
                 {distKm > 0 && durationMin > 0
                   ? `${(distKm / (durationMin / 60)).toFixed(0)}`
                   : '-'}
               </Text>
-              {distKm > 0 && durationMin > 0 && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}> km/h</Text>}
+              {distKm > 0 && durationMin > 0 && <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}> {t('tripHistory.detail.kmhLabel')}</Text>}
             </div>
           </Col>
         </Row>
@@ -540,14 +552,14 @@ function TripDetailPanel({
           style={{ marginBottom: 20 }}
           labelStyle={{ fontWeight: 500, color: '#666' }}
         >
-          <Descriptions.Item label={<><CalendarOutlined /> Start</>}>
+          <Descriptions.Item label={<><CalendarOutlined /> {t('tripHistory.detail.start')}</>}>
             {formatDateTime(trip.start_time)}
           </Descriptions.Item>
-          <Descriptions.Item label={<><CalendarOutlined /> End</>}>
-            {trip.end_time ? formatDateTime(trip.end_time) : <Tag color="processing">In Transit</Tag>}
+          <Descriptions.Item label={<><CalendarOutlined /> {t('tripHistory.detail.end')}</>}>
+            {trip.end_time ? formatDateTime(trip.end_time) : <Tag color="processing">{t('tripHistory.status.inTransit')}</Tag>}
           </Descriptions.Item>
           {trip.work_order && (
-            <Descriptions.Item label="Work Order" span={2}>
+            <Descriptions.Item label={t('tripHistory.table.workOrder')} span={2}>
               <Button
                 type="link"
                 size="small"
@@ -563,14 +575,14 @@ function TripDetailPanel({
         <Divider style={{ margin: '16px 0' }} />
 
         {/* Timeline */}
-        <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 16 }}>Trip Timeline</Text>
+        <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 16 }}>{t('tripHistory.detail.tripTimeline')}</Text>
         <Timeline
           items={[
             {
               color: '#16a34a',
               children: (
                 <div>
-                  <Text strong style={{ fontSize: 13 }}>Trip Started</Text>
+                  <Text strong style={{ fontSize: 13 }}>{t('tripHistory.detail.tripStarted')}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>{formatDateTime(trip.start_time)}</Text>
                   {trip.start_lat != null && Number(trip.start_lat) !== 0 && (
@@ -589,7 +601,7 @@ function TripDetailPanel({
                   color: '#1677ff',
                   children: (
                     <div>
-                      <Text strong style={{ fontSize: 13 }}>Arrived at Destination</Text>
+                      <Text strong style={{ fontSize: 13 }}>{t('tripHistory.detail.arrivedAtDestination')}</Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: 12 }}>{formatDateTime(trip.end_time)}</Text>
                       {trip.end_lat != null && Number(trip.end_lat) !== 0 && (
@@ -607,9 +619,9 @@ function TripDetailPanel({
                   color: 'blue' as const,
                   children: (
                     <div>
-                      <Text strong style={{ fontSize: 13 }}>In Transit</Text>
+                      <Text strong style={{ fontSize: 13 }}>{t('tripHistory.status.inTransit')}</Text>
                       <br />
-                      <Tag color="processing" style={{ borderRadius: 10 }}>Active</Tag>
+                      <Tag color="processing" style={{ borderRadius: 10 }}>{t('tripHistory.detail.active')}</Tag>
                     </div>
                   ),
                 }]),
@@ -619,15 +631,15 @@ function TripDetailPanel({
         <Divider style={{ margin: '16px 0' }} />
 
         {/* Map */}
-        <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>Route Map</Text>
+        <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>{t('tripHistory.detail.routeMap')}</Text>
         <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
           <ServiceLocationMap
             serviceLat={trip.end_lat != null ? Number(trip.end_lat) : null}
             serviceLng={trip.end_lng != null ? Number(trip.end_lng) : null}
-            serviceAddress={trip.work_order ? `Destination — WO ${trip.work_order.wo_number}` : undefined}
+            serviceAddress={trip.work_order ? t('tripHistory.detail.destinationWO', { woNumber: trip.work_order.wo_number }) : undefined}
             originLat={trip.start_lat != null ? Number(trip.start_lat) : null}
             originLng={trip.start_lng != null ? Number(trip.start_lng) : null}
-            originLabel="Trip Start"
+            originLabel={t('tripHistory.detail.tripStartLabel')}
           />
         </div>
       </div>

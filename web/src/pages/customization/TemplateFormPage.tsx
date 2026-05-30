@@ -1,22 +1,24 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, Switch } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useTemplate, useCreateTemplate, useUpdateTemplate } from '@/hooks/use-templates';
 import PageHeader from '@/components/common/PageHeader';
 
 const { TextArea } = Input;
 
-const TEMPLATE_TYPES = [
-  { value: 'invoice', label: 'Invoice' },
-  { value: 'estimate', label: 'Estimate' },
-  { value: 'email', label: 'Email' },
-  { value: 'report', label: 'Report' },
-  { value: 'job_sheet', label: 'Job Sheet' },
-  { value: 'work_order', label: 'Work Order' },
-  { value: 'contract', label: 'Contract' },
-];
-
 export default function TemplateFormPage() {
+  const { t } = useTranslation();
+  const TEMPLATE_TYPES = [
+    { value: 'invoice', label: t('templateForm.types.invoice') },
+    { value: 'estimate', label: t('templateForm.types.estimate') },
+    { value: 'email', label: t('templateForm.types.email') },
+    { value: 'report', label: t('templateForm.types.report') },
+    { value: 'job_sheet', label: t('templateForm.types.jobSheet') },
+    { value: 'work_order', label: t('templateForm.types.workOrder') },
+    { value: 'contract', label: t('templateForm.types.contract') },
+  ];
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -53,7 +55,7 @@ export default function TemplateFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('templateForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -62,7 +64,7 @@ export default function TemplateFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Template' : 'Create Template'}
+        title={isEdit ? t('templateForm.editTemplate') : t('templateForm.createTemplate')}
         onBack={() => navigate('/customization/templates')}
       />
 
@@ -78,40 +80,40 @@ export default function TemplateFormPage() {
           <Space size="large" style={{ display: 'flex' }}>
             <Form.Item
               name="type"
-              label="Type"
+              label={t('templateForm.fields.type')}
               style={{ flex: 1 }}
-              rules={[{ required: true, message: 'Please select a type' }]}
+              rules={[{ required: true, message: t('templateForm.rules.selectType') }]}
             >
               <Select
-                placeholder="Select type"
+                placeholder={t('templateForm.placeholders.selectType')}
                 options={TEMPLATE_TYPES}
               />
             </Form.Item>
             <Form.Item
               name="name"
-              label="Name"
+              label={t('templateForm.fields.name')}
               style={{ flex: 1 }}
-              rules={[{ required: true, message: 'Please enter a name' }]}
+              rules={[{ required: true, message: t('templateForm.rules.enterName') }]}
             >
-              <Input placeholder="e.g. Standard Invoice Template" />
+              <Input placeholder={t('templateForm.placeholders.name')} />
             </Form.Item>
           </Space>
 
           <Form.Item
             name="content"
-            label="Content"
-            rules={[{ required: true, message: 'Please enter template content' }]}
-            extra="Use template variables like {{work_order.summary}}, {{contact.name}}, etc."
+            label={t('templateForm.fields.content')}
+            rules={[{ required: true, message: t('templateForm.rules.enterContent') }]}
+            extra={t('templateForm.extra.contentVariables')}
           >
             <TextArea
               rows={12}
-              placeholder="Enter your template content here..."
+              placeholder={t('templateForm.placeholders.content')}
               style={{ fontFamily: 'monospace' }}
             />
           </Form.Item>
 
-          <Form.Item name="is_default" label="Default Template" valuePropName="checked">
-            <Switch checkedChildren="Default" unCheckedChildren="Not Default" />
+          <Form.Item name="is_default" label={t('templateForm.fields.isDefault')} valuePropName="checked">
+            <Switch checkedChildren={t('templateForm.common.default')} unCheckedChildren={t('templateForm.common.notDefault')} />
           </Form.Item>
 
           <Form.Item>
@@ -121,9 +123,9 @@ export default function TemplateFormPage() {
                 htmlType="submit"
                 loading={createTemplate.isPending || updateTemplate.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('templateForm.actions.update') : t('templateForm.actions.create')}
               </Button>
-              <Button onClick={() => navigate('/customization/templates')}>Cancel</Button>
+              <Button onClick={() => navigate('/customization/templates')}>{t('templateForm.actions.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

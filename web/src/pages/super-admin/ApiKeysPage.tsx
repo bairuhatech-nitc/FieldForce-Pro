@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Table, Typography, Space, Tag, Button, Popconfirm, Modal, Form, Input, InputNumber } from 'antd';
 import { DeleteOutlined, SyncOutlined, PlusOutlined, CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 import { 
   useSuperAdminApiKeys, 
@@ -15,6 +16,7 @@ import { SuperAdminApiKey } from '@/api/super-admin-api-keys.api';
 const { Text, Paragraph } = Typography;
 
 export default function ApiKeysPage() {
+  const { t } = useTranslation();
   const { data: keys, isLoading } = useSuperAdminApiKeys();
   const createMutation = useCreateSuperAdminApiKey();
   const revokeMutation = useRevokeSuperAdminApiKey();
@@ -43,49 +45,49 @@ export default function ApiKeysPage() {
 
   const columns: ColumnsType<SuperAdminApiKey> = [
     {
-      title: 'Key Name',
+      title: t('apiKeys.keyName'),
       dataIndex: 'key_name',
       key: 'key_name',
       render: (text) => <Text strong>{text}</Text>,
     },
     {
-      title: 'Status',
+      title: t('apiKeys.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean) => (
         <Tag color={isActive ? 'success' : 'error'}>
-          {isActive ? 'Active' : 'Revoked'}
+          {isActive ? t('apiKeys.active') : t('apiKeys.revoked')}
         </Tag>
       ),
     },
     {
-      title: 'Created At',
+      title: t('apiKeys.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Last Used',
+      title: t('apiKeys.lastUsed'),
       dataIndex: 'last_used_at',
       key: 'last_used_at',
-      render: (date?: string) => date ? formatDateTime(date) : <Text type="secondary">Never</Text>,
+      render: (date?: string) => date ? formatDateTime(date) : <Text type="secondary">{t('apiKeys.never')}</Text>,
     },
     {
-      title: 'Expires At',
+      title: t('apiKeys.expiresAt'),
       dataIndex: 'expires_at',
       key: 'expires_at',
-      render: (date?: string) => date ? formatDateTime(date) : <Text type="secondary">Never</Text>,
+      render: (date?: string) => date ? formatDateTime(date) : <Text type="secondary">{t('apiKeys.never')}</Text>,
     },
     {
-      title: 'Actions',
+      title: t('apiKeys.actions'),
       key: 'actions',
       render: (_, record) => (
         <Space size="small">
           {record.is_active && (
             <>
               <Popconfirm
-                title="Regenerate Key"
-                description="This will revoke the current key and generate a new one. Are you sure?"
+                title={t('apiKeys.regenerateKey')}
+                description={t('apiKeys.regenerateConfirmation')}
                 onConfirm={async () => {
                   const res = await regenerateMutation.mutateAsync({ id: record.id, key_name: record.key_name });
                   if (res.api_key) {
@@ -97,8 +99,8 @@ export default function ApiKeysPage() {
                 <Button type="text" icon={<SyncOutlined />} />
               </Popconfirm>
               <Popconfirm
-                title="Revoke Key"
-                description="Are you sure you want to revoke this key?"
+                title={t('apiKeys.revokeKey')}
+                description={t('apiKeys.revokeConfirmation')}
                 onConfirm={() => revokeMutation.mutate(record.id)}
                 okButtonProps={{ danger: true }}
               >
@@ -114,8 +116,8 @@ export default function ApiKeysPage() {
   return (
     <div>
       <PageHeader
-        title="Super Admin API Keys"
-        subtitle="Manage keys for programmatic access to super admin APIs"
+        title={t('apiKeys.title')}
+        subtitle={t('apiKeys.subtitle')}
         extra={[
           <Button 
             key="create" 
@@ -123,7 +125,7 @@ export default function ApiKeysPage() {
             icon={<PlusOutlined />} 
             onClick={() => setIsModalVisible(true)}
           >
-            Generate New Key
+            {t('apiKeys.generateNewKey')}
           </Button>
         ]}
       />
@@ -138,12 +140,12 @@ export default function ApiKeysPage() {
       </Card>
 
       <Modal
-        title={generatedKey ? "API Key Generated" : "Generate API Key"}
+        title={generatedKey ? t('apiKeys.apiKeyGenerated') : t('apiKeys.generateApiKey')}
         open={isModalVisible}
         onCancel={handleModalClose}
         footer={generatedKey ? [
           <Button key="close" type="primary" onClick={handleModalClose}>
-            Done
+            {t('apiKeys.done')}
           </Button>
         ] : undefined}
         onOk={() => form.submit()}
@@ -152,7 +154,7 @@ export default function ApiKeysPage() {
         {generatedKey ? (
           <div>
             <Paragraph type="warning" strong>
-              Please copy this key now. You will not be able to see it again!
+              {t('apiKeys.copyWarning')}
             </Paragraph>
             <div style={{ padding: '16px', background: 'rgba(128, 128, 128, 0.1)', borderRadius: '4px', marginBottom: '16px' }}>
               <Text copyable style={{ fontSize: '16px', fontFamily: 'monospace' }}>{generatedKey}</Text>
@@ -162,16 +164,16 @@ export default function ApiKeysPage() {
           <Form form={form} layout="vertical" onFinish={handleCreate}>
             <Form.Item 
               name="key_name" 
-              label="Key Name" 
-              rules={[{ required: true, message: 'Please provide a name for this key' }]}
+              label={t('apiKeys.keyName')} 
+              rules={[{ required: true, message: t('apiKeys.keyNameRequired') }]}
             >
-              <Input placeholder="e.g. CI/CD Script" />
+              <Input placeholder={t('apiKeys.keyNamePlaceholder')} />
             </Form.Item>
             <Form.Item 
               name="expires_in_days" 
-              label="Expires In (Days)"
+              label={t('apiKeys.expiresInDays')}
             >
-              <InputNumber placeholder="Leave blank for no expiration" min={1} style={{ width: '100%' }} />
+              <InputNumber placeholder={t('apiKeys.expiresInDaysPlaceholder')} min={1} style={{ width: '100%' }} />
             </Form.Item>
           </Form>
         )}

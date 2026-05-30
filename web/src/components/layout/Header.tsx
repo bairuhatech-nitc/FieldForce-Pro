@@ -8,18 +8,21 @@ import {
   BellOutlined,
   SearchOutlined,
   CheckOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { useLogout } from '@/hooks/use-auth';
 import { useUnreadNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/use-notifications';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
 const { Header: AntHeader } = Layout;
 
 export default function Header() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const theme = useUiStore((s) => s.theme);
@@ -28,6 +31,25 @@ export default function Header() {
   const { data: unreadNotifications } = useUnreadNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
+
+  const handleLanguageChange = (lang: string) => {
+    i18n.changeLanguage(lang);
+    localStorage.setItem('i18nextLng', lang);
+  };
+
+  const currentLanguageLabel = {
+    en: 'English',
+    ar: 'العربية',
+    ml: 'മലയാളം',
+    hi: 'हिन्दी',
+  }[i18n.language] || 'English';
+
+  const languageMenuItems = [
+    { key: 'en', label: 'English', onClick: () => handleLanguageChange('en') },
+    { key: 'ar', label: 'العربية', onClick: () => handleLanguageChange('ar') },
+    { key: 'ml', label: 'മലയാളം', onClick: () => handleLanguageChange('ml') },
+    { key: 'hi', label: 'हिन्दी', onClick: () => handleLanguageChange('hi') },
+  ];
 
   const unreadCount = unreadNotifications?.length || 0;
 
@@ -41,19 +63,19 @@ export default function Header() {
       ? {
           key: 'profile',
           icon: <UserOutlined />,
-          label: 'My Profile',
+          label: t('header.myProfile'),
           onClick: () => navigate('/admin/profile'),
         }
       : {
           key: 'settings',
           icon: <SettingOutlined />,
-          label: 'Settings',
+          label: t('header.settings'),
           onClick: () => navigate('/settings'),
         },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Logout',
+      label: t('header.logout'),
       onClick: handleLogout,
     },
   ];
@@ -82,7 +104,7 @@ export default function Header() {
       <div style={{ flex: 1, maxWidth: 400 }}>
         <Input
           prefix={<SearchOutlined style={{ color: '#9ca3af' }} />}
-          placeholder="Search ..."
+          placeholder={t('header.search')}
           style={{
             borderRadius: 999, // Pill shape
             backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f9fafb',
@@ -96,6 +118,26 @@ export default function Header() {
 
       {/* Right: Actions & Profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        {/* Language Switcher */}
+        <Dropdown menu={{ items: languageMenuItems }} placement="bottomRight">
+          <Button
+            type="text"
+            icon={<GlobalOutlined style={{ fontSize: 18, color: theme === 'dark' ? '#9ca3af' : '#6b7280' }} />}
+            style={{
+              borderRadius: 8,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              color: theme === 'dark' ? '#fff' : '#111827',
+              border: `1px solid ${theme === 'dark' ? '#303030' : '#e5e7eb'}`,
+              backgroundColor: theme === 'dark' ? '#1f1f1f' : '#f9fafb',
+            }}
+          >
+            {currentLanguageLabel}
+          </Button>
+        </Dropdown>
+
         {/* Theme Toggle (Segmented Control) */}
         <div
           style={{
@@ -172,7 +214,7 @@ export default function Header() {
                   alignItems: 'center',
                 }}
               >
-                <Text strong>Notifications</Text>
+                <Text strong>{t('header.notifications')}</Text>
                 {unreadCount > 0 && (
                   <Button
                     type="link"
@@ -183,7 +225,7 @@ export default function Header() {
                       markAllAsRead.mutate();
                     }}
                   >
-                    Mark all read
+                    {t('header.markAllRead')}
                   </Button>
                 )}
               </div>
@@ -191,7 +233,7 @@ export default function Header() {
                 {!unreadNotifications || unreadNotifications.length === 0 ? (
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="No new notifications"
+                    description={t('header.noNewNotifications')}
                     style={{ padding: '24px 0' }}
                   />
                 ) : (

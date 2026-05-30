@@ -1,6 +1,7 @@
 import React from 'react';
 import { Upload, message, List, Button, Typography, Space, Skeleton } from 'antd';
 import { InboxOutlined, PaperClipOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useRequestAttachments, useUploadAttachments } from '@/hooks/use-attachments';
 import type { UploadProps } from 'antd';
 
@@ -12,6 +13,7 @@ interface FileUploadZoneProps {
 }
 
 export default function FileUploadZone({ requestId }: FileUploadZoneProps) {
+  const { t } = useTranslation();
   const { data: attachments, isLoading } = useRequestAttachments(requestId);
   const { mutate: uploadAttachments, isPending } = useUploadAttachments();
 
@@ -22,12 +24,12 @@ export default function FileUploadZone({ requestId }: FileUploadZoneProps) {
     beforeUpload: (file, fileList) => {
       const isAllowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'video/mp4'].includes(file.type);
       if (!isAllowed) {
-        message.error(`${file.name} is not a supported file type`);
+        message.error(t('fileUploadZone.fileNotSupported', { name: file.name }));
         return Upload.LIST_IGNORE;
       }
       const isLt10M = file.size / 1024 / 1024 < 10;
       if (!isLt10M) {
-        message.error(`File must smaller than 10MB!`);
+        message.error(t('fileUploadZone.fileSizeExceeded'));
         return Upload.LIST_IGNORE;
       }
       return false; // Prevent automatic upload
@@ -57,15 +59,14 @@ export default function FileUploadZone({ requestId }: FileUploadZoneProps) {
         <p className="ant-upload-drag-icon">
           <InboxOutlined />
         </p>
-        <p className="ant-upload-text">Click or drag file to this area to upload</p>
+        <p className="ant-upload-text">{t('fileUploadZone.clickOrDrag')}</p>
         <p className="ant-upload-hint">
-          Support for a single or bulk upload. Maximum 5 files, 10MB each.
-          Allowed formats: JPG, PNG, WEBP, PDF, MP4.
+          {t('fileUploadZone.uploadHint')}
         </p>
       </Dragger>
 
       <div className="mt-6">
-        <Text strong>Attached Files</Text>
+        <Text strong>{t('fileUploadZone.attachedFiles')}</Text>
         {isLoading ? (
           <Skeleton active paragraph={{ rows: 2 }} className="mt-4" />
         ) : (
@@ -73,12 +74,12 @@ export default function FileUploadZone({ requestId }: FileUploadZoneProps) {
             className="mt-4"
             itemLayout="horizontal"
             dataSource={attachments?.data || []}
-            locale={{ emptyText: 'No files attached yet' }}
+            locale={{ emptyText: t('fileUploadZone.noFilesAttached') }}
             renderItem={(item: any) => (
               <List.Item
                 actions={[
                   <Button type="link" icon={<DownloadOutlined />} href={`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '')}${item.file_url}`} target="_blank" download>
-                    Download
+                    {t('fileUploadZone.download')}
                   </Button>
                 ]}
               >

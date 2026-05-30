@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Switch } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useWebform, useCreateWebform, useUpdateWebform } from '@/hooks/use-webforms';
 import PageHeader from '@/components/common/PageHeader';
 
 const { TextArea } = Input;
 
 export default function WebformFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -50,7 +52,7 @@ export default function WebformFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('webforms.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -59,7 +61,7 @@ export default function WebformFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Webform' : 'Create Webform'}
+        title={isEdit ? t('webforms.editWebform') : t('webforms.createWebform')}
         onBack={() => navigate('/webforms')}
       />
 
@@ -74,24 +76,24 @@ export default function WebformFormPage() {
         >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a name' }]}
+            label={t('webforms.name')}
+            rules={[{ required: true, message: t('webforms.pleaseEnterName') }]}
           >
-            <Input placeholder="e.g. Contact Form" />
+            <Input placeholder={t('webforms.namePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="fields"
-            label="Fields (JSON)"
+            label={t('webforms.fieldsJson')}
             rules={[
-              { required: true, message: 'Please enter fields configuration' },
+              { required: true, message: t('webforms.pleaseEnterFields') },
               {
                 validator: (_, value) => {
                   try {
                     if (value) JSON.parse(value);
                     return Promise.resolve();
                   } catch {
-                    return Promise.reject(new Error('Invalid JSON format'));
+                    return Promise.reject(new Error(t('webforms.invalidJson')));
                   }
                 },
               },
@@ -106,7 +108,7 @@ export default function WebformFormPage() {
 
           <Form.Item
             name="styling"
-            label="Styling (JSON)"
+            label={t('webforms.stylingJson')}
             rules={[
               {
                 validator: (_, value) => {
@@ -114,7 +116,7 @@ export default function WebformFormPage() {
                     if (value) JSON.parse(value);
                     return Promise.resolve();
                   } catch {
-                    return Promise.reject(new Error('Invalid JSON format'));
+                    return Promise.reject(new Error(t('webforms.invalidJson')));
                   }
                 },
               },
@@ -127,12 +129,12 @@ export default function WebformFormPage() {
             />
           </Form.Item>
 
-          <Form.Item name="redirect_url" label="Redirect URL">
+          <Form.Item name="redirect_url" label={t('webforms.redirectUrl')}>
             <Input placeholder="https://example.com/thank-you" />
           </Form.Item>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked">
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+          <Form.Item name="is_active" label={t('webforms.active')} valuePropName="checked">
+            <Switch checkedChildren={t('webforms.active')} unCheckedChildren={t('webforms.inactive')} />
           </Form.Item>
 
           <Form.Item>
@@ -142,9 +144,9 @@ export default function WebformFormPage() {
                 htmlType="submit"
                 loading={createWebform.isPending || updateWebform.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('webforms.update') : t('webforms.create')}
               </Button>
-              <Button onClick={() => navigate('/webforms')}>Cancel</Button>
+              <Button onClick={() => navigate('/webforms')}>{t('webforms.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

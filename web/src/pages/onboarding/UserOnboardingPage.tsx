@@ -7,31 +7,33 @@ import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useCompleteOnboarding } from '@/hooks/use-magic-links';
 import { useAuthStore } from '@/store/auth.store';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
 const schema = z
   .object({
-    first_name: z.string().trim().min(1, 'First name is required').max(100),
-    last_name: z.string().trim().min(1, 'Last name is required').max(100),
+    first_name: z.string().trim().min(1, 'first_name_required').max(100),
+    last_name: z.string().trim().min(1, 'last_name_required').max(100),
     phone: z.string().trim().max(30).optional(),
     new_password: z
       .string()
-      .min(8, 'Password must be at least 8 characters')
+      .min(8, 'password_min_length')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/,
-        'Must contain uppercase, lowercase, number, and special character',
+        'password_requirements',
       ),
     confirm_password: z.string(),
   })
   .refine((d) => d.new_password === d.confirm_password, {
-    message: 'Passwords do not match',
+    message: 'passwords_match',
     path: ['confirm_password'],
   });
 
 type FormValues = z.infer<typeof schema>;
 
 export default function UserOnboardingPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const completeOnboarding = useCompleteOnboarding();
   const setUser = useAuthStore((s) => s.setUser);
@@ -92,14 +94,14 @@ export default function UserOnboardingPage() {
       <Card style={{ width: '100%', maxWidth: 480 }}>
         <Space direction="vertical" style={{ width: '100%', marginBottom: 24 }} size={4}>
           <Title level={3} style={{ margin: 0 }}>
-            Welcome to FieldForce Pro
+            {t('userOnboarding.welcomeTitle')}
           </Title>
-          <Text type="secondary">Complete your profile to activate your account.</Text>
+          <Text type="secondary">{t('userOnboarding.subtitle')}</Text>
         </Space>
 
         <Alert
-          message="You've been invited to join the team"
-          description="Set your name, phone, and create a password to get started."
+          message={t('userOnboarding.invitationMessage')}
+          description={t('userOnboarding.invitationDescription')}
           type="info"
           showIcon
           style={{ marginBottom: 24 }}
@@ -107,35 +109,35 @@ export default function UserOnboardingPage() {
 
         <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
           <Form.Item
-            label="First Name"
+            label={t('userOnboarding.firstName')}
             validateStatus={errors.first_name ? 'error' : ''}
-            help={errors.first_name?.message}
+            help={errors.first_name ? t(`userOnboarding.${errors.first_name.message}`) : ''}
           >
             <Controller
               name="first_name"
               control={control}
               render={({ field }) => (
-                <Input {...field} prefix={<UserOutlined />} placeholder="First name" size="large" />
+                <Input {...field} prefix={<UserOutlined />} placeholder={t('userOnboarding.firstNamePlaceholder')} size="large" />
               )}
             />
           </Form.Item>
 
           <Form.Item
-            label="Last Name"
+            label={t('userOnboarding.lastName')}
             validateStatus={errors.last_name ? 'error' : ''}
-            help={errors.last_name?.message}
+            help={errors.last_name ? t(`userOnboarding.${errors.last_name.message}`) : ''}
           >
             <Controller
               name="last_name"
               control={control}
               render={({ field }) => (
-                <Input {...field} prefix={<UserOutlined />} placeholder="Last name" size="large" />
+                <Input {...field} prefix={<UserOutlined />} placeholder={t('userOnboarding.lastNamePlaceholder')} size="large" />
               )}
             />
           </Form.Item>
 
           <Form.Item
-            label="Phone (optional)"
+            label={t('userOnboarding.phoneOptional')}
             validateStatus={errors.phone ? 'error' : ''}
             help={errors.phone?.message}
           >
@@ -149,9 +151,9 @@ export default function UserOnboardingPage() {
           </Form.Item>
 
           <Form.Item
-            label="Password"
+            label={t('userOnboarding.password')}
             validateStatus={errors.new_password ? 'error' : ''}
-            help={errors.new_password?.message}
+            help={errors.new_password ? t(`userOnboarding.${errors.new_password.message}`) : ''}
           >
             <Controller
               name="new_password"
@@ -160,7 +162,7 @@ export default function UserOnboardingPage() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Create a strong password"
+                  placeholder={t('userOnboarding.passwordPlaceholder')}
                   size="large"
                 />
               )}
@@ -168,9 +170,9 @@ export default function UserOnboardingPage() {
           </Form.Item>
 
           <Form.Item
-            label="Confirm Password"
+            label={t('userOnboarding.confirmPassword')}
             validateStatus={errors.confirm_password ? 'error' : ''}
-            help={errors.confirm_password?.message}
+            help={errors.confirm_password ? t(`userOnboarding.${errors.confirm_password.message}`) : ''}
           >
             <Controller
               name="confirm_password"
@@ -179,7 +181,7 @@ export default function UserOnboardingPage() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Confirm your password"
+                  placeholder={t('userOnboarding.confirmPasswordPlaceholder')}
                   size="large"
                 />
               )}
@@ -195,7 +197,7 @@ export default function UserOnboardingPage() {
               icon={<CheckOutlined />}
               block
             >
-              Activate Account
+              {t('userOnboarding.activateAccount')}
             </Button>
           </Form.Item>
         </Form>

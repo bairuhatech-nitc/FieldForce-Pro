@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, Switch } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useWorkflowRule, useCreateWorkflowRule, useUpdateWorkflowRule } from '@/hooks/use-workflow-rules';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -26,6 +27,7 @@ const TRIGGER_EVENTS = [
 ];
 
 export default function WorkflowRuleFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -70,7 +72,7 @@ export default function WorkflowRuleFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('workflowRuleForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -79,7 +81,7 @@ export default function WorkflowRuleFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Workflow Rule' : 'Create Workflow Rule'}
+        title={isEdit ? t('workflowRuleForm.editTitle') : t('workflowRuleForm.createTitle')}
         onBack={() => navigate('/customization/workflow-rules')}
       />
 
@@ -94,32 +96,32 @@ export default function WorkflowRuleFormPage() {
         >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a name' }]}
+            label={t('workflowRuleForm.name')}
+            rules={[{ required: true, message: t('workflowRuleForm.nameRequired') }]}
           >
-            <Input placeholder="e.g. Auto-assign urgent work orders" />
+            <Input placeholder={t('workflowRuleForm.namePlaceholder')} />
           </Form.Item>
 
           <Space size="large" style={{ display: 'flex' }}>
             <Form.Item
               name="module"
-              label="Module"
+              label={t('workflowRuleForm.module')}
               style={{ flex: 1 }}
-              rules={[{ required: true, message: 'Please select a module' }]}
+              rules={[{ required: true, message: t('workflowRuleForm.moduleRequired') }]}
             >
               <Select
-                placeholder="Select module"
+                placeholder={t('workflowRuleForm.selectModule')}
                 options={MODULES}
               />
             </Form.Item>
             <Form.Item
               name="trigger_event"
-              label="Trigger Event"
+              label={t('workflowRuleForm.triggerEvent')}
               style={{ flex: 1 }}
-              rules={[{ required: true, message: 'Please select a trigger event' }]}
+              rules={[{ required: true, message: t('workflowRuleForm.triggerRequired') }]}
             >
               <Select
-                placeholder="Select trigger"
+                placeholder={t('workflowRuleForm.selectTrigger')}
                 options={TRIGGER_EVENTS}
               />
             </Form.Item>
@@ -127,21 +129,21 @@ export default function WorkflowRuleFormPage() {
 
           <Form.Item
             name="conditions"
-            label="Conditions (JSON)"
+            label={t('workflowRuleForm.conditionsJson')}
             rules={[
-              { required: true, message: 'Please enter conditions' },
+              { required: true, message: t('workflowRuleForm.conditionsRequired') },
               {
                 validator: (_, value) => {
                   try {
                     if (value) JSON.parse(value);
                     return Promise.resolve();
                   } catch {
-                    return Promise.reject(new Error('Invalid JSON format'));
+                    return Promise.reject(new Error(t('workflowRuleForm.invalidJson')));
                   }
                 },
               },
             ]}
-            extra="Define conditions that must be met for the rule to trigger"
+            extra={t('workflowRuleForm.conditionsHint')}
           >
             <TextArea
               rows={6}
@@ -152,21 +154,21 @@ export default function WorkflowRuleFormPage() {
 
           <Form.Item
             name="actions"
-            label="Actions (JSON)"
+            label={t('workflowRuleForm.actionsJson')}
             rules={[
-              { required: true, message: 'Please enter actions' },
+              { required: true, message: t('workflowRuleForm.actionsRequired') },
               {
                 validator: (_, value) => {
                   try {
                     if (value) JSON.parse(value);
                     return Promise.resolve();
                   } catch {
-                    return Promise.reject(new Error('Invalid JSON format'));
+                    return Promise.reject(new Error(t('workflowRuleForm.invalidJson')));
                   }
                 },
               },
             ]}
-            extra="Define actions to execute when conditions are met"
+            extra={t('workflowRuleForm.actionsHint')}
           >
             <TextArea
               rows={6}
@@ -175,8 +177,8 @@ export default function WorkflowRuleFormPage() {
             />
           </Form.Item>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked">
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+          <Form.Item name="is_active" label={t('workflowRuleForm.active')} valuePropName="checked">
+            <Switch checkedChildren={t('workflowRuleForm.active')} unCheckedChildren={t('workflowRuleForm.inactive')} />
           </Form.Item>
 
           <Form.Item>
@@ -186,9 +188,9 @@ export default function WorkflowRuleFormPage() {
                 htmlType="submit"
                 loading={createWorkflowRule.isPending || updateWorkflowRule.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('workflowRuleForm.update') : t('workflowRuleForm.create')}
               </Button>
-              <Button onClick={() => navigate('/customization/workflow-rules')}>Cancel</Button>
+              <Button onClick={() => navigate('/customization/workflow-rules')}>{t('workflowRuleForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

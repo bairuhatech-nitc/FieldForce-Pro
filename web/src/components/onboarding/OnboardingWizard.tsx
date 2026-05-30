@@ -3,10 +3,12 @@ import { Modal, Steps, Button, Typography, Result } from 'antd';
 import { useAuthStore } from '@/store/auth.store';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '@/api/axios-instance';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
 
 export default function OnboardingWizard() {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const user = useAuthStore((s) => s.user);
@@ -41,36 +43,34 @@ export default function OnboardingWizard() {
 
   const steps = [
     {
-      title: 'Welcome',
+      title: t('onboardingWizard.steps.welcome.title'),
       content: (
         <div className="text-center py-8">
-          <Title level={3}>Welcome to FieldForce Pro!</Title>
+          <Title level={3}>{t('onboardingWizard.steps.welcome.header')}</Title>
           <Paragraph>
-            Let's get you set up to manage your field operations efficiently.
-            This quick guide will help you configure your account.
+            {t('onboardingWizard.steps.welcome.description')}
           </Paragraph>
         </div>
       ),
     },
     {
-      title: 'Profile Setup',
+      title: t('onboardingWizard.steps.profileSetup.title'),
       content: (
         <div className="py-8">
-          <Title level={4}>Complete Your Profile</Title>
+          <Title level={4}>{t('onboardingWizard.steps.profileSetup.header')}</Title>
           <Paragraph>
-            Make sure your contact information is up to date in the Settings tab.
-            This helps your team stay in touch.
+            {t('onboardingWizard.steps.profileSetup.description')}
           </Paragraph>
         </div>
       ),
     },
     {
-      title: 'Ready',
+      title: t('onboardingWizard.steps.ready.title'),
       content: (
         <Result
           status="success"
-          title="All Set!"
-          subTitle="You are now ready to explore FieldForce Pro."
+          title={t('onboardingWizard.steps.ready.header')}
+          subTitle={t('onboardingWizard.steps.ready.description')}
         />
       ),
     },
@@ -80,7 +80,7 @@ export default function OnboardingWizard() {
 
   return (
     <Modal
-      title="Setup Guide"
+      title={t('onboardingWizard.modalTitle')}
       open={isModalOpen}
       closable={false}
       maskClosable={false}
@@ -93,16 +93,16 @@ export default function OnboardingWizard() {
       <div className="min-h-[150px]">{steps[currentStep].content}</div>
       <div className="mt-8 flex justify-end gap-3">
         {currentStep > 0 && (
-          <Button onClick={() => setCurrentStep((c) => c - 1)}>Back</Button>
+          <Button onClick={() => setCurrentStep((c) => c - 1)}>{t('onboardingWizard.buttons.back')}</Button>
         )}
         {currentStep < steps.length - 1 && (
           <Button type="primary" onClick={() => setCurrentStep((c) => c + 1)}>
-            Next
+            {t('onboardingWizard.buttons.next')}
           </Button>
         )}
         {currentStep === steps.length - 1 && (
           <Button type="primary" loading={isPending} onClick={() => completeOnboarding()}>
-            Finish Setup
+            {t('onboardingWizard.buttons.finish')}
           </Button>
         )}
       </div>

@@ -23,12 +23,14 @@ import {
   EyeOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useVerifyWork, useIdentifyEquipment, useCompareBeforeAfter } from '../../hooks/use-vision';
 import type { WorkVerificationResult, EquipmentDetectionResult, BeforeAfterResult } from '../../api/vision.api';
 
 const { Title, Text, Paragraph } = Typography;
 
 export default function VisionDashboardPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('verify');
   const [verifyResult, setVerifyResult] = useState<WorkVerificationResult | null>(null);
   const [detectResult, setDetectResult] = useState<EquipmentDetectionResult | null>(null);
@@ -65,13 +67,13 @@ export default function VisionDashboardPage() {
       label: (
         <Space>
           <CheckCircleOutlined />
-          Work Verification
+          {t('vision.workVerification')}
         </Space>
       ),
       children: (
         <Row gutter={[16, 16]}>
           <Col span={12}>
-            <Card title="Upload Work Photo">
+            <Card title={t('vision.uploadWorkPhoto')}>
               <Upload
                 beforeUpload={(file) => {
                   handleVerify(file);
@@ -81,23 +83,23 @@ export default function VisionDashboardPage() {
                 accept="image/*"
               >
                 <Button icon={<CameraOutlined />} loading={verifyWork.isPending} type="primary" size="large">
-                  Upload Photo for Verification
+                  {t('vision.uploadPhotoForVerification')}
                 </Button>
               </Upload>
             </Card>
           </Col>
           <Col span={12}>
             {verifyResult && (
-              <Card title="Verification Result">
+              <Card title={t('vision.verificationResult')}>
                 <Result
                   status={verifyResult.verified ? 'success' : 'warning'}
-                  title={verifyResult.verified ? 'Work Verified' : 'Issues Found'}
-                  subTitle={`Confidence: ${(verifyResult.confidence * 100).toFixed(1)}%`}
+                  title={verifyResult.verified ? t('vision.workVerified') : t('vision.issuesFound')}
+                  subTitle={`${t('vision.confidence')}: ${(verifyResult.confidence * 100).toFixed(1)}%`}
                 />
                 {verifyResult.issues.length > 0 && (
                   <List
                     size="small"
-                    header={<Text strong>Issues</Text>}
+                    header={<Text strong>{t('vision.issues')}</Text>}
                     dataSource={verifyResult.issues}
                     renderItem={(issue) => (
                       <List.Item>
@@ -109,7 +111,7 @@ export default function VisionDashboardPage() {
                 {verifyResult.findings.length > 0 && (
                   <List
                     size="small"
-                    header={<Text strong>Findings ({verifyResult.findings.length})</Text>}
+                    header={<Text strong>{t('vision.findings', { count: verifyResult.findings.length })}</Text>}
                     dataSource={verifyResult.findings}
                     renderItem={(finding) => (
                       <List.Item>
@@ -132,13 +134,13 @@ export default function VisionDashboardPage() {
       label: (
         <Space>
           <EyeOutlined />
-          Equipment Detection
+          {t('vision.equipmentDetection')}
         </Space>
       ),
       children: (
         <Row gutter={[16, 16]}>
           <Col span={12}>
-            <Card title="Upload Equipment Photo">
+            <Card title={t('vision.uploadEquipmentPhoto')}>
               <Upload
                 beforeUpload={(file) => {
                   handleDetect(file);
@@ -148,14 +150,14 @@ export default function VisionDashboardPage() {
                 accept="image/*"
               >
                 <Button icon={<CameraOutlined />} loading={identifyEquipment.isPending} type="primary" size="large">
-                  Upload Photo for Detection
+                  {t('vision.uploadPhotoForDetection')}
                 </Button>
               </Upload>
             </Card>
           </Col>
           <Col span={12}>
             {detectResult && (
-              <Card title={`Equipment Detected: ${detectResult.equipment_count}`}>
+              <Card title={t('vision.equipmentDetected', { count: detectResult.equipment_count })}>
                 {detectResult.labels.length > 0 && (
                   <Space wrap style={{ marginBottom: 16 }}>
                     {detectResult.labels.map((label) => (
@@ -171,14 +173,14 @@ export default function VisionDashboardPage() {
                       <List.Item>
                         <Space>
                           <Tag color="blue">{det.label}</Tag>
-                          <Text>{(det.confidence * 100).toFixed(0)}% confidence</Text>
+                          <Text>{(det.confidence * 100).toFixed(0)}% {t('vision.confidenceLabel')}</Text>
                           {det.category && <Tag>{det.category}</Tag>}
                         </Space>
                       </List.Item>
                     )}
                   />
                 ) : (
-                  <Text type="secondary">No equipment detected. Try a clearer photo.</Text>
+                  <Text type="secondary">{t('vision.noEquipmentDetected')}</Text>
                 )}
               </Card>
             )}
@@ -191,13 +193,13 @@ export default function VisionDashboardPage() {
       label: (
         <Space>
           <SwapOutlined />
-          Before/After
+          {t('vision.beforeAfter')}
         </Space>
       ),
       children: (
         <Row gutter={[16, 16]}>
           <Col span={8}>
-            <Card title="Before Photo">
+            <Card title={t('vision.beforePhoto')}>
               <Upload
                 beforeUpload={(file) => {
                   setBeforeFile(file);
@@ -207,12 +209,12 @@ export default function VisionDashboardPage() {
                 maxCount={1}
                 accept="image/*"
               >
-                <Button icon={<UploadOutlined />}>Select Before</Button>
+                <Button icon={<UploadOutlined />}>{t('vision.selectBefore')}</Button>
               </Upload>
             </Card>
           </Col>
           <Col span={8}>
-            <Card title="After Photo">
+            <Card title={t('vision.afterPhoto')}>
               <Upload
                 beforeUpload={(file) => {
                   setAfterFile(file);
@@ -222,7 +224,7 @@ export default function VisionDashboardPage() {
                 maxCount={1}
                 accept="image/*"
               >
-                <Button icon={<UploadOutlined />}>Select After</Button>
+                <Button icon={<UploadOutlined />}>{t('vision.selectAfter')}</Button>
               </Upload>
             </Card>
           </Col>
@@ -237,27 +239,27 @@ export default function VisionDashboardPage() {
                 size="large"
                 icon={<SwapOutlined />}
               >
-                Compare
+                {t('vision.compare')}
               </Button>
             </Card>
           </Col>
           {compareResult && (
             <Col span={24}>
-              <Card title="Comparison Result">
+              <Card title={t('vision.comparisonResult')}>
                 <Descriptions bordered column={3} size="small">
-                  <Descriptions.Item label="Change Detected">
+                  <Descriptions.Item label={t('vision.changeDetected')}>
                     <Tag color={compareResult.significant_change ? 'green' : 'orange'}>
-                      {compareResult.significant_change ? 'Yes' : 'No'}
+                      {compareResult.significant_change ? t('vision.yes') : t('vision.no')}
                     </Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Change Percentage">
+                  <Descriptions.Item label={t('vision.changePercentage')}>
                     <Progress
                       percent={Math.min(100, compareResult.change_percentage)}
                       size="small"
                       status={compareResult.significant_change ? 'active' : 'normal'}
                     />
                   </Descriptions.Item>
-                  <Descriptions.Item label="Similarity">
+                  <Descriptions.Item label={t('vision.similarity')}>
                     {(compareResult.similarity_score * 100).toFixed(1)}%
                   </Descriptions.Item>
                 </Descriptions>
@@ -265,15 +267,15 @@ export default function VisionDashboardPage() {
                 <Paragraph>{compareResult.analysis}</Paragraph>
                 {compareResult.changed_regions.length > 0 && (
                   <>
-                    <Text strong>Changed Regions: {compareResult.changed_regions.length}</Text>
+                    <Text strong>{t('vision.changedRegions', { count: compareResult.changed_regions.length })}</Text>
                     <List
                       size="small"
                       dataSource={compareResult.changed_regions}
                       renderItem={(region, idx) => (
                         <List.Item>
                           <Space>
-                            <Tag>Region {idx + 1}</Tag>
-                            <Text>{region.change_percentage.toFixed(1)}% change</Text>
+                            <Tag>{t('vision.region')} {idx + 1}</Tag>
+                            <Text>{region.change_percentage.toFixed(1)}% {t('vision.change')}</Text>
                             <Tag color={region.significance === 'high' ? 'red' : 'orange'}>
                               {region.significance}
                             </Tag>
@@ -293,7 +295,7 @@ export default function VisionDashboardPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>AI Vision & Verification</Title>
+      <Title level={3}>{t('vision.title')}</Title>
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
     </div>
   );

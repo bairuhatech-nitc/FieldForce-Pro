@@ -36,21 +36,23 @@ import type { UserDocument, DocumentType } from '@/api/user-documents.api';
 import { formatDateTime } from '@/utils/format-date';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PermissionGuard } from '@/components/permissions';
+import { useTranslation } from 'react-i18next'; // Rule 1
 
 interface UserDocumentsSectionProps {
   userId: string;
 }
 
-const documentTypeOptions: { value: DocumentType; label: string }[] = [
-  { value: 'certification', label: 'Certification' },
-  { value: 'license', label: 'License' },
-  { value: 'id_proof', label: 'ID Proof' },
-  { value: 'insurance', label: 'Insurance' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'other', label: 'Other' },
+const documentTypeOptions: { value: DocumentType; labelKey: string }[] = [
+  { value: 'certification', labelKey: 'userDocuments.documentTypeOptions.certification' },
+  { value: 'license', labelKey: 'userDocuments.documentTypeOptions.license' },
+  { value: 'id_proof', labelKey: 'userDocuments.documentTypeOptions.idProof' },
+  { value: 'insurance', labelKey: 'userDocuments.documentTypeOptions.insurance' },
+  { value: 'contract', labelKey: 'userDocuments.documentTypeOptions.contract' },
+  { value: 'other', labelKey: 'userDocuments.documentTypeOptions.other' },
 ];
 
 export default function UserDocumentsSection({ userId }: UserDocumentsSectionProps) {
+  const { t } = useTranslation(); // Rule 2
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [form] = Form.useForm();
@@ -71,7 +73,7 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
     notes?: string;
   }) => {
     if (fileList.length === 0) {
-      message.error('Please select a file to upload');
+      message.error(t('userDocuments.pleaseSelectFileToUpload')); // Rule 5
       return;
     }
 
@@ -101,8 +103,8 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
 
   const handleDelete = async (id: string) => {
     showConfirmDialog({
-      title: 'Delete Document',
-      content: 'Are you sure you want to delete this document?',
+      title: t('userDocuments.deleteDocumentTitle'), // Rule 5
+      content: t('userDocuments.deleteDocumentConfirmContent'), // Rule 5
       onOk: async () => {
         await deleteDocument.mutateAsync(id);
       },
@@ -120,16 +122,16 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
 
   const columns: ColumnsType<UserDocument> = [
     {
-      title: 'Type',
+      title: t('userDocuments.columns.type'), // Rule 5
       dataIndex: 'document_type',
       key: 'document_type',
       render: (type: DocumentType) => {
         const option = documentTypeOptions.find((opt) => opt.value === type);
-        return <Tag color="blue">{option?.label || type}</Tag>;
+        return <Tag color="blue">{option ? t(option.labelKey) : type}</Tag>; // Rule 3
       },
     },
     {
-      title: 'Name',
+      title: t('userDocuments.columns.name'), // Rule 5
       dataIndex: 'document_name',
       key: 'document_name',
       render: (name: string) => (
@@ -140,61 +142,61 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
       ),
     },
     {
-      title: 'Document Number',
+      title: t('userDocuments.columns.documentNumber'), // Rule 5
       dataIndex: 'document_number',
       key: 'document_number',
-      render: (val: string) => val || '-',
+      render: (val: string) => val || t('userDocuments.notApplicable'), // Rule 5
     },
     {
-      title: 'Issuing Authority',
+      title: t('userDocuments.columns.issuingAuthority'), // Rule 5
       dataIndex: 'issuing_authority',
       key: 'issuing_authority',
-      render: (val: string) => val || '-',
+      render: (val: string) => val || t('userDocuments.notApplicable'), // Rule 5
     },
     {
-      title: 'Issue Date',
+      title: t('userDocuments.columns.issueDate'), // Rule 5
       dataIndex: 'issue_date',
       key: 'issue_date',
-      render: (val: string) => (val ? formatDateTime(val) : '-'),
+      render: (val: string) => (val ? formatDateTime(val) : t('userDocuments.notApplicable')), // Rule 5
     },
     {
-      title: 'Expiry Date',
+      title: t('userDocuments.columns.expiryDate'), // Rule 5
       dataIndex: 'expiry_date',
       key: 'expiry_date',
       render: (val: string) => {
-        if (!val) return '-';
+        if (!val) return t('userDocuments.notApplicable'); // Rule 5
         const isExpired = dayjs(val).isBefore(dayjs());
         const isExpiringSoon = dayjs(val).diff(dayjs(), 'days') <= 30;
         return (
           <span style={{ color: isExpired ? 'red' : isExpiringSoon ? 'orange' : undefined }}>
             {formatDateTime(val)}
-            {isExpired && ' (Expired)'}
-            {!isExpired && isExpiringSoon && ' (Expiring Soon)'}
+            {isExpired && ` (${t('userDocuments.status.expired')})`} {/* Rule 5 */}
+            {!isExpired && isExpiringSoon && ` (${t('userDocuments.status.expiringSoon')})`} {/* Rule 5 */}
           </span>
         );
       },
     },
     {
-      title: 'Verified',
+      title: t('userDocuments.columns.verified'), // Rule 5
       dataIndex: 'is_verified',
       key: 'is_verified',
       render: (isVerified: boolean) =>
         isVerified ? (
           <Tag icon={<CheckCircleOutlined />} color="success">
-            Verified
+            {t('userDocuments.status.verified')} {/* Rule 3 */}
           </Tag>
         ) : (
           <Tag icon={<CloseCircleOutlined />} color="default">
-            Not Verified
+            {t('userDocuments.status.notVerified')} {/* Rule 3 */}
           </Tag>
         ),
     },
     {
-      title: 'Actions',
+      title: t('userDocuments.columns.actions'), // Rule 5
       key: 'actions',
       render: (_: unknown, record: UserDocument) => (
         <Space size="small">
-          <Tooltip title="Download">
+          <Tooltip title={t('userDocuments.tooltip.download')}> {/* Rule 4 */}
             <Button
               type="text"
               icon={<DownloadOutlined />}
@@ -204,7 +206,7 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
           </Tooltip>
           <PermissionGuard permission="users:update">
             {record.is_verified ? (
-              <Tooltip title="Unverify">
+              <Tooltip title={t('userDocuments.tooltip.unverify')}> {/* Rule 4 */}
                 <Button
                   type="text"
                   icon={<CloseCircleOutlined />}
@@ -213,7 +215,7 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
                 />
               </Tooltip>
             ) : (
-              <Tooltip title="Verify">
+              <Tooltip title={t('userDocuments.tooltip.verify')}> {/* Rule 4 */}
                 <Button
                   type="text"
                   icon={<CheckCircleOutlined />}
@@ -225,7 +227,7 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
             )}
           </PermissionGuard>
           <PermissionGuard permission="users:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('userDocuments.tooltip.delete')}> {/* Rule 4 */}
               <Button
                 type="text"
                 danger
@@ -243,11 +245,11 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
   return (
     <>
       <Card
-        title="Documents"
+        title={t('userDocuments.cardTitle')} // Rule 4
         extra={
           <PermissionGuard permission="users:update">
             <Button type="primary" icon={<UploadOutlined />} onClick={() => setIsModalOpen(true)}>
-              Upload Document
+              {t('userDocuments.uploadDocumentButton')} {/* Rule 3 */}
             </Button>
           </PermissionGuard>
         }
@@ -263,7 +265,7 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
       </Card>
 
       <Modal
-        title="Upload Document"
+        title={t('userDocuments.uploadDocumentModalTitle')} // Rule 4
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -277,21 +279,24 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
         <Form form={form} layout="vertical" onFinish={handleUpload}>
           <Form.Item
             name="document_type"
-            label="Document Type"
-            rules={[{ required: true, message: 'Please select document type' }]}
+            label={t('userDocuments.form.documentTypeLabel')} // Rule 4
+            rules={[{ required: true, message: t('userDocuments.form.documentTypeRequired') }]} // Rule 5
           >
-            <Select options={documentTypeOptions} placeholder="Select document type" />
+            <Select
+              options={documentTypeOptions.map(opt => ({ value: opt.value, label: t(opt.labelKey) }))}
+              placeholder={t('userDocuments.form.documentTypePlaceholder')} // Rule 4
+            />
           </Form.Item>
 
           <Form.Item
             name="document_name"
-            label="Document Name"
-            rules={[{ required: true, message: 'Please enter document name' }]}
+            label={t('userDocuments.form.documentNameLabel')} // Rule 4
+            rules={[{ required: true, message: t('userDocuments.form.documentNameRequired') }]} // Rule 5
           >
-            <Input placeholder="e.g., Driver's License, Certification" />
+            <Input placeholder={t('userDocuments.form.documentNamePlaceholder')} /> {/* Rule 4 */}
           </Form.Item>
 
-          <Form.Item label="File" required>
+          <Form.Item label={t('userDocuments.form.fileLabel')} required> {/* Rule 4 */}
             <Upload
               beforeUpload={(file) => {
                 setFileList([file]);
@@ -301,28 +306,28 @@ export default function UserDocumentsSection({ userId }: UserDocumentsSectionPro
               onRemove={() => setFileList([])}
               maxCount={1}
             >
-              <Button icon={<UploadOutlined />}>Select File</Button>
+              <Button icon={<UploadOutlined />}>{t('userDocuments.form.selectFileButton')}</Button> {/* Rule 3 */}
             </Upload>
           </Form.Item>
 
-          <Form.Item name="document_number" label="Document Number">
-            <Input placeholder="e.g., License number, Certificate ID" />
+          <Form.Item name="document_number" label={t('userDocuments.form.documentNumberLabel')}> {/* Rule 4 */}
+            <Input placeholder={t('userDocuments.form.documentNumberPlaceholder')} /> {/* Rule 4 */}
           </Form.Item>
 
-          <Form.Item name="issuing_authority" label="Issuing Authority">
-            <Input placeholder="e.g., DMV, Certification body" />
+          <Form.Item name="issuing_authority" label={t('userDocuments.form.issuingAuthorityLabel')}> {/* Rule 4 */}
+            <Input placeholder={t('userDocuments.form.issuingAuthorityPlaceholder')} /> {/* Rule 4 */}
           </Form.Item>
 
-          <Form.Item name="issue_date" label="Issue Date">
+          <Form.Item name="issue_date" label={t('userDocuments.form.issueDateLabel')}> {/* Rule 4 */}
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item name="expiry_date" label="Expiry Date">
+          <Form.Item name="expiry_date" label={t('userDocuments.form.expiryDateLabel')}> {/* Rule 4 */}
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item name="notes" label="Notes">
-            <Input.TextArea rows={3} placeholder="Additional notes" />
+          <Form.Item name="notes" label={t('userDocuments.form.notesLabel')}> {/* Rule 4 */}
+            <Input.TextArea rows={3} placeholder={t('userDocuments.form.notesPlaceholder')} /> {/* Rule 4 */}
           </Form.Item>
         </Form>
       </Modal>

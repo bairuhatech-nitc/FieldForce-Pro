@@ -37,8 +37,8 @@ export default function JobSheetTemplateListPage() {
 
   const handleDelete = (template: JobSheetTemplate) => {
     showConfirmDialog({
-      title: 'Delete Job Sheet Template',
-      content: `Are you sure you want to delete template "${template.name}"?`,
+      title: t('jobSheetTemplates.deleteDialogTitle'),
+      content: t('jobSheetTemplates.deleteDialogContent', { name: template.name }),
       onOk: async () => {
         await deleteTemplate.mutateAsync(template.id);
       },
@@ -48,51 +48,51 @@ export default function JobSheetTemplateListPage() {
 
   const columns: ColumnsType<JobSheetTemplate> = [
     {
-      title: 'Name',
+      title: t('jobSheetTemplates.columns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Category',
+      title: t('jobSheetTemplates.columns.category'),
       dataIndex: 'category',
       key: 'category',
       render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Active',
+      title: t('jobSheetTemplates.columns.active'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (active: boolean) =>
-        active ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>,
+        active ? <Tag color="green">{t('jobSheetTemplates.status.active')}</Tag> : <Tag color="red">{t('jobSheetTemplates.status.inactive')}</Tag>,
     },
     {
-      title: 'Created',
+      title: t('jobSheetTemplates.columns.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('jobSheetTemplates.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="job-sheets:read">
-            <Tooltip title="View">
+            <Tooltip title={t('common.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/job-sheets/templates/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="job-sheets:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('common.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/job-sheets/templates/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="job-sheets:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -104,12 +104,12 @@ export default function JobSheetTemplateListPage() {
   return (
     <div>
       <PageHeader
-        title="Job Sheet Templates"
-        subtitle="Manage job sheet templates"
+        title={t('jobSheetTemplates.title')}
+        subtitle={t('jobSheetTemplates.subtitle')}
         extra={
           <PermissionGuard permission="job-sheets:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/job-sheets/templates/new')}>
-              Add Template
+              {t('jobSheetTemplates.addTemplate')}
             </Button>
           </PermissionGuard>
         }
@@ -117,7 +117,7 @@ export default function JobSheetTemplateListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <SearchFilter
-          placeholder="Search templates by name..."
+          placeholder={t('jobSheetTemplates.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -136,7 +136,7 @@ export default function JobSheetTemplateListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} templates`,
+          showTotal: (total) => t('jobSheetTemplates.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

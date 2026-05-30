@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Form,
@@ -38,6 +39,7 @@ interface GatewayConfig {
 }
 
 export default function PaymentGatewaySettingsPage() {
+  const { t } = useTranslation();
   const [stripeForm] = Form.useForm();
   const [squareForm] = Form.useForm();
   const [paypalForm] = Form.useForm();
@@ -62,9 +64,9 @@ export default function PaymentGatewaySettingsPage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setStripeConfig(values);
-      addNotification({ type: 'success', message: 'Stripe settings saved successfully' });
+      addNotification({ type: 'success', message: t('paymentGatewaySettings.stripeSaved') });
     } catch (error) {
-      addNotification({ type: 'error', message: 'Failed to save settings' });
+      addNotification({ type: 'error', message: t('paymentGatewaySettings.saveFailed') });
     } finally {
       setSaving(false);
     }
@@ -74,7 +76,7 @@ export default function PaymentGatewaySettingsPage() {
     setSaving(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      addNotification({ type: 'success', message: 'Square settings saved successfully' });
+      addNotification({ type: 'success', message: t('paymentGatewaySettings.squareSaved') });
     } finally {
       setSaving(false);
     }
@@ -84,7 +86,7 @@ export default function PaymentGatewaySettingsPage() {
     setSaving(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      addNotification({ type: 'success', message: 'PayPal settings saved successfully' });
+      addNotification({ type: 'success', message: t('paymentGatewaySettings.paypalSaved') });
     } finally {
       setSaving(false);
     }
@@ -94,7 +96,7 @@ export default function PaymentGatewaySettingsPage() {
     setSaving(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      addNotification({ type: 'success', message: 'Authorize.Net settings saved successfully' });
+      addNotification({ type: 'success', message: t('paymentGatewaySettings.authorizeSaved') });
     } finally {
       setSaving(false);
     }
@@ -113,12 +115,12 @@ export default function PaymentGatewaySettingsPage() {
             {stripeConfig.enabled ? (
               <>
                 <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                <span>Stripe is enabled and configured</span>
+                <span>{t('paymentGatewaySettings.stripeEnabledDesc')}</span>
               </>
             ) : (
               <>
                 <WarningOutlined style={{ color: '#faad14' }} />
-                <span>Stripe is disabled</span>
+                <span>{t('paymentGatewaySettings.stripeDisabledDesc')}</span>
               </>
             )}
           </Space>
@@ -128,58 +130,58 @@ export default function PaymentGatewaySettingsPage() {
         style={{ marginBottom: 24 }}
       />
 
-      <Form.Item name="enabled" label="Enable Stripe" valuePropName="checked">
-        <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+      <Form.Item name="enabled" label={t('paymentGatewaySettings.enableStripe')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.enabled')} unCheckedChildren={t('paymentGatewaySettings.disabled')} />
       </Form.Item>
 
-      <Form.Item name="test_mode" label="Test Mode" valuePropName="checked">
-        <Switch checkedChildren="Test" unCheckedChildren="Live" />
+      <Form.Item name="test_mode" label={t('paymentGatewaySettings.testMode')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.test')} unCheckedChildren={t('paymentGatewaySettings.live')} />
       </Form.Item>
 
       <Divider />
 
       <Form.Item
         name="api_key"
-        label="Publishable Key"
-        rules={[{ required: true, message: 'API key is required' }]}
+        label={t('paymentGatewaySettings.publishableKey')}
+        rules={[{ required: true, message: t('paymentGatewaySettings.apiKeyRequired') }]}
       >
-        <Input.Password placeholder="pk_test_..." />
+        <Input.Password placeholder={t('paymentGatewaySettings.publishableKeyPlaceholder')} />
       </Form.Item>
 
       <Form.Item
         name="api_secret"
-        label="Secret Key"
-        rules={[{ required: true, message: 'Secret key is required' }]}
+        label={t('paymentGatewaySettings.secretKey')}
+        rules={[{ required: true, message: t('paymentGatewaySettings.secretKeyRequired') }]}
       >
-        <Input.Password placeholder="sk_test_..." />
+        <Input.Password placeholder={t('paymentGatewaySettings.secretKeyPlaceholder')} />
       </Form.Item>
 
-      <Form.Item name="webhook_secret" label="Webhook Secret">
-        <Input.Password placeholder="whsec_..." />
+      <Form.Item name="webhook_secret" label={t('paymentGatewaySettings.webhookSecret')}>
+        <Input.Password placeholder={t('paymentGatewaySettings.webhookSecretPlaceholder')} />
       </Form.Item>
 
       <Divider />
 
-      <Form.Item name="currency" label="Default Currency">
+      <Form.Item name="currency" label={t('paymentGatewaySettings.defaultCurrency')}>
         <Select>
-          <Select.Option value="USD">USD - US Dollar</Select.Option>
-          <Select.Option value="EUR">EUR - Euro</Select.Option>
-          <Select.Option value="GBP">GBP - British Pound</Select.Option>
-          <Select.Option value="CAD">CAD - Canadian Dollar</Select.Option>
-          <Select.Option value="AUD">AUD - Australian Dollar</Select.Option>
+          <Select.Option value="USD">{t('paymentGatewaySettings.currencyUSD')}</Select.Option>
+          <Select.Option value="EUR">{t('paymentGatewaySettings.currencyEUR')}</Select.Option>
+          <Select.Option value="GBP">{t('paymentGatewaySettings.currencyGBP')}</Select.Option>
+          <Select.Option value="CAD">{t('paymentGatewaySettings.currencyCAD')}</Select.Option>
+          <Select.Option value="AUD">{t('paymentGatewaySettings.currencyAUD')}</Select.Option>
         </Select>
       </Form.Item>
 
-      <Form.Item name="auto_capture" label="Auto Capture" valuePropName="checked">
+      <Form.Item name="auto_capture" label={t('paymentGatewaySettings.autoCaptureLabel')} valuePropName="checked">
         <Switch
-          checkedChildren="Auto Capture"
-          unCheckedChildren="Manual Capture"
+          checkedChildren={t('paymentGatewaySettings.autoCapture')}
+          unCheckedChildren={t('paymentGatewaySettings.manualCapture')}
         />
       </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-          Save Stripe Settings
+          {t('paymentGatewaySettings.saveStripe')}
         </Button>
       </Form.Item>
     </Form>
@@ -188,36 +190,36 @@ export default function PaymentGatewaySettingsPage() {
   const SquareSettings = () => (
     <Form form={squareForm} layout="vertical" onFinish={handleSaveSquare}>
       <Alert
-        message="Square Integration"
-        description="Configure your Square payment gateway settings"
+        message={t('paymentGatewaySettings.squareIntegration')}
+        description={t('paymentGatewaySettings.squareIntegrationDesc')}
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
       />
 
-      <Form.Item name="enabled" label="Enable Square" valuePropName="checked">
-        <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+      <Form.Item name="enabled" label={t('paymentGatewaySettings.enableSquare')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.enabled')} unCheckedChildren={t('paymentGatewaySettings.disabled')} />
       </Form.Item>
 
-      <Form.Item name="test_mode" label="Sandbox Mode" valuePropName="checked">
-        <Switch checkedChildren="Sandbox" unCheckedChildren="Production" />
+      <Form.Item name="test_mode" label={t('paymentGatewaySettings.sandboxMode')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.sandbox')} unCheckedChildren={t('paymentGatewaySettings.production')} />
       </Form.Item>
 
-      <Form.Item name="application_id" label="Application ID">
-        <Input.Password placeholder="sq0idp-..." />
+      <Form.Item name="application_id" label={t('paymentGatewaySettings.applicationId')}>
+        <Input.Password placeholder={t('paymentGatewaySettings.applicationIdPlaceholder')} />
       </Form.Item>
 
-      <Form.Item name="access_token" label="Access Token">
-        <Input.Password placeholder="Enter your Square access token" />
+      <Form.Item name="access_token" label={t('paymentGatewaySettings.accessToken')}>
+        <Input.Password placeholder={t('paymentGatewaySettings.accessTokenPlaceholder')} />
       </Form.Item>
 
-      <Form.Item name="location_id" label="Location ID">
-        <Input placeholder="Enter your Square location ID" />
+      <Form.Item name="location_id" label={t('paymentGatewaySettings.locationId')}>
+        <Input placeholder={t('paymentGatewaySettings.locationIdPlaceholder')} />
       </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-          Save Square Settings
+          {t('paymentGatewaySettings.saveSquare')}
         </Button>
       </Form.Item>
     </Form>
@@ -226,32 +228,32 @@ export default function PaymentGatewaySettingsPage() {
   const PayPalSettings = () => (
     <Form form={paypalForm} layout="vertical" onFinish={handleSavePayPal}>
       <Alert
-        message="PayPal Integration"
-        description="Configure your PayPal payment gateway settings"
+        message={t('paymentGatewaySettings.paypalIntegration')}
+        description={t('paymentGatewaySettings.paypalIntegrationDesc')}
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
       />
 
-      <Form.Item name="enabled" label="Enable PayPal" valuePropName="checked">
-        <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+      <Form.Item name="enabled" label={t('paymentGatewaySettings.enablePaypal')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.enabled')} unCheckedChildren={t('paymentGatewaySettings.disabled')} />
       </Form.Item>
 
-      <Form.Item name="test_mode" label="Sandbox Mode" valuePropName="checked">
-        <Switch checkedChildren="Sandbox" unCheckedChildren="Live" />
+      <Form.Item name="test_mode" label={t('paymentGatewaySettings.sandboxMode')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.sandbox')} unCheckedChildren={t('paymentGatewaySettings.live')} />
       </Form.Item>
 
-      <Form.Item name="client_id" label="Client ID">
-        <Input.Password placeholder="Enter your PayPal client ID" />
+      <Form.Item name="client_id" label={t('paymentGatewaySettings.clientId')}>
+        <Input.Password placeholder={t('paymentGatewaySettings.clientIdPlaceholder')} />
       </Form.Item>
 
-      <Form.Item name="client_secret" label="Client Secret">
-        <Input.Password placeholder="Enter your PayPal client secret" />
+      <Form.Item name="client_secret" label={t('paymentGatewaySettings.clientSecret')}>
+        <Input.Password placeholder={t('paymentGatewaySettings.clientSecretPlaceholder')} />
       </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-          Save PayPal Settings
+          {t('paymentGatewaySettings.savePaypal')}
         </Button>
       </Form.Item>
     </Form>
@@ -260,32 +262,32 @@ export default function PaymentGatewaySettingsPage() {
   const AuthorizeNetSettings = () => (
     <Form form={authorizeForm} layout="vertical" onFinish={handleSaveAuthorize}>
       <Alert
-        message="Authorize.Net Integration"
-        description="Configure your Authorize.Net payment gateway settings"
+        message={t('paymentGatewaySettings.authorizeIntegration')}
+        description={t('paymentGatewaySettings.authorizeIntegrationDesc')}
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
       />
 
-      <Form.Item name="enabled" label="Enable Authorize.Net" valuePropName="checked">
-        <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+      <Form.Item name="enabled" label={t('paymentGatewaySettings.enableAuthorize')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.enabled')} unCheckedChildren={t('paymentGatewaySettings.disabled')} />
       </Form.Item>
 
-      <Form.Item name="test_mode" label="Sandbox Mode" valuePropName="checked">
-        <Switch checkedChildren="Sandbox" unCheckedChildren="Production" />
+      <Form.Item name="test_mode" label={t('paymentGatewaySettings.sandboxMode')} valuePropName="checked">
+        <Switch checkedChildren={t('paymentGatewaySettings.sandbox')} unCheckedChildren={t('paymentGatewaySettings.production')} />
       </Form.Item>
 
-      <Form.Item name="api_login_id" label="API Login ID">
-        <Input placeholder="Enter your API Login ID" />
+      <Form.Item name="api_login_id" label={t('paymentGatewaySettings.apiLoginId')}>
+        <Input placeholder={t('paymentGatewaySettings.apiLoginIdPlaceholder')} />
       </Form.Item>
 
-      <Form.Item name="transaction_key" label="Transaction Key">
-        <Input.Password placeholder="Enter your transaction key" />
+      <Form.Item name="transaction_key" label={t('paymentGatewaySettings.transactionKey')}>
+        <Input.Password placeholder={t('paymentGatewaySettings.transactionKeyPlaceholder')} />
       </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-          Save Authorize.Net Settings
+          {t('paymentGatewaySettings.saveAuthorize')}
         </Button>
       </Form.Item>
     </Form>
@@ -297,8 +299,8 @@ export default function PaymentGatewaySettingsPage() {
       label: (
         <Space>
           <CreditCardOutlined />
-          Stripe
-          {stripeConfig.enabled && <Tag color="success">Active</Tag>}
+          {t('paymentGatewaySettings.stripe')}
+          {stripeConfig.enabled && <Tag color="success">{t('paymentGatewaySettings.active')}</Tag>}
         </Space>
       ),
       children: <StripeSettings />,
@@ -308,7 +310,7 @@ export default function PaymentGatewaySettingsPage() {
       label: (
         <Space>
           <ApiOutlined />
-          Square
+          {t('paymentGatewaySettings.square')}
         </Space>
       ),
       children: <SquareSettings />,
@@ -318,7 +320,7 @@ export default function PaymentGatewaySettingsPage() {
       label: (
         <Space>
           <DollarOutlined />
-          PayPal
+          {t('paymentGatewaySettings.paypal')}
         </Space>
       ),
       children: <PayPalSettings />,
@@ -328,7 +330,7 @@ export default function PaymentGatewaySettingsPage() {
       label: (
         <Space>
           <CreditCardOutlined />
-          Authorize.Net
+          {t('paymentGatewaySettings.authorize')}
         </Space>
       ),
       children: <AuthorizeNetSettings />,
@@ -338,13 +340,13 @@ export default function PaymentGatewaySettingsPage() {
   return (
     <div>
       <PageHeader
-        title="Payment Gateway Settings"
-        subtitle="Configure payment processors and gateways"
+        title={t('paymentGatewaySettings.title')}
+        subtitle={t('paymentGatewaySettings.subtitle')}
       />
 
       <Alert
-        message="Security Notice"
-        description="All API keys and secrets are encrypted and stored securely. Never share your production keys."
+        message={t('paymentGatewaySettings.securityNotice')}
+        description={t('paymentGatewaySettings.securityNoticeDesc')}
         type="warning"
         showIcon
         closable

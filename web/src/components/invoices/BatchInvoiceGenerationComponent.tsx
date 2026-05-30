@@ -24,6 +24,7 @@ import {
 import { formatDateTime } from '@/utils/format-date';
 import { formatCurrency } from '@/utils/format-currency';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 
 const { RangePicker } = DatePicker;
 
@@ -48,6 +49,7 @@ export default function BatchInvoiceGenerationComponent({
   onClose,
   onGenerate,
 }: BatchInvoiceGenerationProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>([
@@ -95,31 +97,31 @@ export default function BatchInvoiceGenerationComponent({
 
   const columns: ColumnsType<WorkOrderForInvoicing> = [
     {
-      title: 'Work Order',
+      title: t('batchInvoice.columns.workOrder'),
       dataIndex: 'wo_number',
       key: 'wo_number',
       render: (number: string) => <Tag color="blue">{number}</Tag>,
     },
     {
-      title: 'Customer',
+      title: t('batchInvoice.columns.customer'),
       dataIndex: 'customer_name',
       key: 'customer_name',
     },
     {
-      title: 'Service Date',
+      title: t('batchInvoice.columns.serviceDate'),
       dataIndex: 'service_date',
       key: 'service_date',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Amount',
+      title: t('batchInvoice.columns.amount'),
       dataIndex: 'total_amount',
       key: 'total_amount',
       align: 'right',
       render: (amount: number) => formatCurrency(amount),
     },
     {
-      title: 'Status',
+      title: t('batchInvoice.columns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -127,17 +129,17 @@ export default function BatchInvoiceGenerationComponent({
       ),
     },
     {
-      title: 'Invoice',
+      title: t('batchInvoice.columns.invoice'),
       dataIndex: 'has_invoice',
       key: 'has_invoice',
       render: (hasInvoice: boolean) =>
         hasInvoice ? (
           <Tag color="success">
-            <CheckCircleOutlined /> Invoiced
+            <CheckCircleOutlined /> {t('batchInvoice.status.invoiced')}
           </Tag>
         ) : (
           <Tag color="default">
-            <WarningOutlined /> Pending
+            <WarningOutlined /> {t('batchInvoice.status.pending')}
           </Tag>
         ),
     },
@@ -169,7 +171,6 @@ export default function BatchInvoiceGenerationComponent({
     setGenerationProgress(0);
 
     try {
-      // Simulate batch generation
       const workOrderIds = selectedRowKeys as string[];
       const total = workOrderIds.length;
 
@@ -185,7 +186,7 @@ export default function BatchInvoiceGenerationComponent({
 
       setCurrentStep(2);
     } catch (error) {
-      console.error('Failed to generate invoices', error);
+      console.error(t('batchInvoice.errors.generationFailed'), error);
     } finally {
       setGenerating(false);
     }
@@ -205,7 +206,7 @@ export default function BatchInvoiceGenerationComponent({
 
   return (
     <Modal
-      title="Batch Invoice Generation"
+      title={t('batchInvoice.title')}
       open={visible}
       onCancel={onClose}
       width={900}
@@ -215,16 +216,16 @@ export default function BatchInvoiceGenerationComponent({
         current={currentStep}
         style={{ marginBottom: 24 }}
         items={[
-          { title: 'Select Work Orders', icon: <FileTextOutlined /> },
-          { title: 'Configure Settings', icon: <CheckCircleOutlined /> },
-          { title: 'Generate Invoices', icon: <LoadingOutlined /> },
+          { title: t('batchInvoice.steps.selectWorkOrders'), icon: <FileTextOutlined /> },
+          { title: t('batchInvoice.steps.configureSettings'), icon: <CheckCircleOutlined /> },
+          { title: t('batchInvoice.steps.generateInvoices'), icon: <LoadingOutlined /> },
         ]}
       />
 
       {currentStep === 0 && (
         <div>
           <Alert
-            message={`Found ${eligibleWorkOrders.length} completed work orders without invoices`}
+            message={t('batchInvoice.alerts.foundWorkOrders', { count: eligibleWorkOrders.length })}
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
@@ -236,9 +237,9 @@ export default function BatchInvoiceGenerationComponent({
               onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
             />
             <Button onClick={() => setSelectedRowKeys(eligibleWorkOrders.map((wo) => wo.id))}>
-              Select All Eligible
+              {t('batchInvoice.buttons.selectAllEligible')}
             </Button>
-            <Button onClick={() => setSelectedRowKeys([])}>Clear Selection</Button>
+            <Button onClick={() => setSelectedRowKeys([])}>{t('batchInvoice.buttons.clearSelection')}</Button>
           </Space>
 
           <Table
@@ -251,21 +252,21 @@ export default function BatchInvoiceGenerationComponent({
 
           <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <strong>{selectedRowKeys.length} work orders selected</strong>
+              <strong>{t('batchInvoice.labels.selectedCount', { count: selectedRowKeys.length })}</strong>
               {selectedRowKeys.length > 0 && (
                 <span style={{ marginLeft: 16, color: '#52c41a' }}>
-                  Total: {formatCurrency(totalAmount)}
+                  {t('batchInvoice.labels.total', { amount: formatCurrency(totalAmount) })}
                 </span>
               )}
             </div>
             <Space>
-              <Button onClick={onClose}>Cancel</Button>
+              <Button onClick={onClose}>{t('batchInvoice.buttons.cancel')}</Button>
               <Button
                 type="primary"
                 onClick={handleNext}
                 disabled={selectedRowKeys.length === 0}
               >
-                Next
+                {t('batchInvoice.buttons.next')}
               </Button>
             </Space>
           </div>
@@ -275,14 +276,14 @@ export default function BatchInvoiceGenerationComponent({
       {currentStep === 1 && (
         <div>
           <Alert
-            message={`Generating ${selectedRowKeys.length} invoices`}
+            message={t('batchInvoice.alerts.generatingCount', { count: selectedRowKeys.length })}
             type="info"
             showIcon
             style={{ marginBottom: 24 }}
           />
 
           <Form form={form} layout="vertical">
-            <Form.Item label="Invoice Due Date" required>
+            <Form.Item label={t('batchInvoice.fields.dueDate')} required>
               <DatePicker
                 value={dueDate}
                 onChange={(date) => date && setDueDate(date)}
@@ -291,28 +292,28 @@ export default function BatchInvoiceGenerationComponent({
               />
             </Form.Item>
 
-            <Form.Item label="Default Payment Terms" initialValue={30}>
+            <Form.Item label={t('batchInvoice.fields.paymentTerms')} initialValue={30}>
               <Select>
-                <Select.Option value={0}>Due on Receipt</Select.Option>
-                <Select.Option value={7}>Net 7</Select.Option>
-                <Select.Option value={15}>Net 15</Select.Option>
-                <Select.Option value={30}>Net 30</Select.Option>
-                <Select.Option value={60}>Net 60</Select.Option>
-                <Select.Option value={90}>Net 90</Select.Option>
+                <Select.Option value={0}>{t('batchInvoice.terms.dueOnReceipt')}</Select.Option>
+                <Select.Option value={7}>{t('batchInvoice.terms.net7')}</Select.Option>
+                <Select.Option value={15}>{t('batchInvoice.terms.net15')}</Select.Option>
+                <Select.Option value={30}>{t('batchInvoice.terms.net30')}</Select.Option>
+                <Select.Option value={60}>{t('batchInvoice.terms.net60')}</Select.Option>
+                <Select.Option value={90}>{t('batchInvoice.terms.net90')}</Select.Option>
               </Select>
             </Form.Item>
 
-            <Form.Item label="Late Fee Percentage (%)" initialValue={0}>
+            <Form.Item label={t('batchInvoice.fields.lateFee')} initialValue={0}>
               <InputNumber min={0} max={25} step={0.5} style={{ width: '100%' }} />
             </Form.Item>
           </Form>
 
           <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
-            <Button onClick={handlePrevious}>Previous</Button>
+            <Button onClick={handlePrevious}>{t('batchInvoice.buttons.previous')}</Button>
             <Space>
-              <Button onClick={onClose}>Cancel</Button>
+              <Button onClick={onClose}>{t('batchInvoice.buttons.cancel')}</Button>
               <Button type="primary" onClick={handleGenerate} loading={generating}>
-                Generate {selectedRowKeys.length} Invoices
+                {t('batchInvoice.buttons.generateInvoices', { count: selectedRowKeys.length })}
               </Button>
             </Space>
           </div>
@@ -330,24 +331,24 @@ export default function BatchInvoiceGenerationComponent({
                 strokeColor={{ '0%': '#108ee9', '100%': '#87d068' }}
               />
               <div style={{ marginTop: 24, fontSize: 16 }}>
-                Generating invoices... {generatedCount} / {selectedRowKeys.length}
+                {t('batchInvoice.status.generating')} {generatedCount} / {selectedRowKeys.length}
               </div>
             </div>
           ) : (
             <div>
               <CheckCircleOutlined style={{ fontSize: 64, color: '#52c41a', marginBottom: 24 }} />
               <div style={{ fontSize: 18, fontWeight: 500, marginBottom: 8 }}>
-                Successfully Generated!
+                {t('batchInvoice.status.successTitle')}
               </div>
               <div style={{ color: '#8c8c8c', marginBottom: 24 }}>
-                {generatedCount} invoices have been created successfully
+                {t('batchInvoice.status.successDescription', { count: generatedCount })}
               </div>
               <Space>
                 <Button onClick={() => window.location.href = '/invoices'}>
-                  View Invoices
+                  {t('batchInvoice.buttons.viewInvoices')}
                 </Button>
                 <Button type="primary" onClick={handleFinish}>
-                  Done
+                  {t('batchInvoice.buttons.done')}
                 </Button>
               </Space>
             </div>

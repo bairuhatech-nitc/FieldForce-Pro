@@ -8,6 +8,7 @@ import {
   MessageOutlined,
 } from '@ant-design/icons';
 import { formatDateTime } from '@/utils/format-date';
+import { useTranslation } from 'react-i18next';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -39,6 +40,7 @@ export default function WorkOrderNotesComponent({
   onUpdateNote,
   onDeleteNote,
 }: WorkOrderNotesComponentProps) {
+  const { t } = useTranslation();
   const [newNoteContent, setNewNoteContent] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -90,7 +92,7 @@ export default function WorkOrderNotesComponent({
       title={
         <Space>
           <MessageOutlined />
-          <span>Work Order Notes</span>
+          <span>{t('workOrderNotes.title')}</span>
           <Tag color="blue">{notes.length}</Tag>
         </Space>
       }
@@ -100,7 +102,7 @@ export default function WorkOrderNotesComponent({
         <TextArea
           value={newNoteContent}
           onChange={(e) => setNewNoteContent(e.target.value)}
-          placeholder="Add a note to this work order..."
+          placeholder={t('workOrderNotes.placeholder')}
           rows={3}
           style={{ marginBottom: 12 }}
         />
@@ -112,18 +114,18 @@ export default function WorkOrderNotesComponent({
             loading={isAdding}
             disabled={!newNoteContent.trim()}
           >
-            Add Note
+            {t('workOrderNotes.addNote')}
           </Button>
           <Button
             type={isInternal ? 'default' : 'dashed'}
             onClick={() => setIsInternal(!isInternal)}
           >
-            {isInternal ? '🔒 Internal Note' : '📝 Public Note'}
+            {isInternal ? t('workOrderNotes.internalNoteLabel') : t('workOrderNotes.publicNoteLabel')}
           </Button>
         </Space>
         {isInternal && (
           <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-            Internal notes are only visible to staff members
+            {t('workOrderNotes.internalNoteDescription')}
           </Text>
         )}
       </div>
@@ -136,7 +138,7 @@ export default function WorkOrderNotesComponent({
       ) : notes.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No notes yet"
+          description={t('workOrderNotes.noNotes')}
         />
       ) : (
         <List
@@ -148,10 +150,10 @@ export default function WorkOrderNotesComponent({
                 editingNoteId === note.id
                   ? [
                       <Button key="save" type="primary" size="small" onClick={() => handleSaveEdit(note.id)}>
-                        Save
+                        {t('workOrderNotes.save')}
                       </Button>,
                       <Button key="cancel" size="small" onClick={handleCancelEdit}>
-                        Cancel
+                        {t('workOrderNotes.cancel')}
                       </Button>,
                     ]
                   : [
@@ -177,10 +179,10 @@ export default function WorkOrderNotesComponent({
                 avatar={<Avatar icon={<UserOutlined />} />}
                 title={
                   <Space>
-                    <span>{note.user_name || 'User'}</span>
+                    <span>{note.user_name || t('workOrderNotes.user')}</span>
                     {note.is_internal && (
                       <Tag color="orange" style={{ fontSize: 11 }}>
-                        Internal
+                        {t('workOrderNotes.internal')}
                       </Tag>
                     )}
                     <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>

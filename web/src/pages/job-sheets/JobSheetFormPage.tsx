@@ -29,6 +29,7 @@ import {
   PlusOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 import {
   useJobSheetInstance,
@@ -54,16 +55,18 @@ const typeIcons: Record<string, React.ReactNode> = {
   date: <CalendarOutlined />,
 };
 
-const ITEM_TYPE_OPTIONS = [
-  { value: 'checkbox', label: 'Checkbox' },
-  { value: 'text', label: 'Text' },
-  { value: 'number', label: 'Number' },
-  { value: 'photo', label: 'Photo' },
-  { value: 'signature', label: 'Signature' },
-  { value: 'date', label: 'Date' },
-];
-
 export default function JobSheetFormPage() {
+  const { t } = useTranslation();
+  
+  const ITEM_TYPE_OPTIONS = [
+    { value: 'checkbox', label: t('jobSheetForm.types.checkbox') },
+    { value: 'text', label: t('jobSheetForm.types.text') },
+    { value: 'number', label: t('jobSheetForm.types.number') },
+    { value: 'photo', label: t('jobSheetForm.types.photo') },
+    { value: 'signature', label: t('jobSheetForm.types.signature') },
+    { value: 'date', label: t('jobSheetForm.types.date') },
+  ];
+
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -184,7 +187,7 @@ export default function JobSheetFormPage() {
   if (!instance) {
     return (
       <div style={{ textAlign: 'center', padding: 80 }}>
-        <Text type="secondary">Job sheet not found.</Text>
+        <Text type="secondary">{t('jobSheetForm.notFound')}</Text>
       </div>
     );
   }
@@ -195,11 +198,11 @@ export default function JobSheetFormPage() {
     ? `${linkedWo.wo_number || linkedWo.id.slice(0, 8)} - ${linkedWo.summary}`
     : instance.work_order_id
       ? instance.work_order_id.slice(0, 8) + '...'
-      : 'No work order linked';
+      : t('jobSheetForm.noWorkOrderLinked');
 
   const columns: ColumnsType<JobSheetItem> = [
     {
-      title: 'Position',
+      title: t('jobSheetForm.columns.position'),
       key: 'position',
       width: 120,
       render: (_, _record, index) => (
@@ -223,23 +226,23 @@ export default function JobSheetFormPage() {
       ),
     },
     {
-      title: 'Type',
+      title: t('jobSheetForm.columns.type'),
       dataIndex: 'type',
       key: 'type',
       width: 100,
       render: (type: string) => <Tag icon={typeIcons[type]}>{type}</Tag>,
     },
     {
-      title: 'Label',
+      title: t('jobSheetForm.columns.label'),
       dataIndex: 'label',
       key: 'label',
     },
     {
-      title: 'Required',
+      title: t('jobSheetForm.columns.required'),
       dataIndex: 'is_required',
       key: 'is_required',
       width: 90,
-      render: (req: boolean) => req ? <Tag color="red">Required</Tag> : <Tag>Optional</Tag>,
+      render: (req: boolean) => req ? <Tag color="red">{t('jobSheetForm.required')}</Tag> : <Tag>{t('jobSheetForm.optional')}</Tag>,
     },
     {
       title: '',
@@ -260,28 +263,28 @@ export default function JobSheetFormPage() {
   return (
     <div>
       <PageHeader
-        title="Complete Job Sheet"
-        subtitle={`Template: ${instance.template?.name || (instance.template_id ? instance.template_id.slice(0, 8) + '...' : 'N/A')}`}
+        title={t('jobSheetForm.title')}
+        subtitle={`${t('jobSheetForm.template')}: ${instance.template?.name || (instance.template_id ? instance.template_id.slice(0, 8) + '...' : 'N/A')}`}
         extra={
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/job-sheets')}>
-            Back
+            {t('common.back')}
           </Button>
         }
       />
 
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Card title="Details" style={{ marginBottom: 24 }}>
-          <Form.Item label="Work Order" required>
+        <Card title={t('jobSheetForm.details')} style={{ marginBottom: 24 }}>
+          <Form.Item label={t('jobSheetForm.workOrder')} required>
             <Input value={workOrderLabel} disabled />
           </Form.Item>
 
-          <Form.Item name="notes" label="Notes (optional)">
-            <TextArea rows={3} placeholder="Add any notes..." />
+          <Form.Item name="notes" label={t('jobSheetForm.notes')}>
+            <TextArea rows={3} placeholder={t('jobSheetForm.notesPlaceholder')} />
           </Form.Item>
         </Card>
 
         <Card
-          title="Items"
+          title={t('jobSheetForm.items')}
           style={{ marginBottom: 24 }}
           extra={
             <Button
@@ -290,7 +293,7 @@ export default function JobSheetFormPage() {
               size="small"
               onClick={() => setAddItemOpen(true)}
             >
-              Add Item
+              {t('jobSheetForm.addItem')}
             </Button>
           }
         >
@@ -306,7 +309,7 @@ export default function JobSheetFormPage() {
 
         <Card>
           <Space>
-            <Button onClick={() => navigate('/job-sheets')}>Cancel</Button>
+            <Button onClick={() => navigate('/job-sheets')}>{t('common.cancel')}</Button>
             <Form.Item name="status" noStyle initialValue={instance.status}>
               <Input type="hidden" />
             </Form.Item>
@@ -318,7 +321,7 @@ export default function JobSheetFormPage() {
                 form.submit();
               }}
             >
-              Save Draft
+              {t('jobSheetForm.saveDraft')}
             </Button>
             <Button
               type="primary"
@@ -328,14 +331,14 @@ export default function JobSheetFormPage() {
                 form.submit();
               }}
             >
-              Submit for Review
+              {t('jobSheetForm.submitReview')}
             </Button>
           </Space>
         </Card>
       </Form>
 
       <Modal
-        title="Add Item"
+        title={t('jobSheetForm.addItem')}
         open={addItemOpen}
         onCancel={() => { setAddItemOpen(false); addItemForm.resetFields(); }}
         footer={null}
@@ -349,27 +352,27 @@ export default function JobSheetFormPage() {
         >
           <Form.Item
             name="label"
-            label="Label"
-            rules={[{ required: true, message: 'Please enter a label' }]}
+            label={t('jobSheetForm.columns.label')}
+            rules={[{ required: true, message: t('jobSheetForm.validation.enterLabel') }]}
           >
-            <Input placeholder="e.g. Equipment Serial Number" />
+            <Input placeholder={t('jobSheetForm.placeholder.label')} />
           </Form.Item>
 
-          <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+          <Form.Item name="type" label={t('jobSheetForm.columns.type')} rules={[{ required: true }]}>
             <Select options={ITEM_TYPE_OPTIONS} />
           </Form.Item>
 
-          <Form.Item name="is_required" label="Required" valuePropName="checked">
+          <Form.Item name="is_required" label={t('jobSheetForm.columns.required')} valuePropName="checked">
             <Switch />
           </Form.Item>
 
           <Form.Item>
             <Space>
               <Button onClick={() => { setAddItemOpen(false); addItemForm.resetFields(); }}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button type="primary" htmlType="submit" loading={addingItem}>
-                Add
+                {t('jobSheetForm.add')}
               </Button>
             </Space>
           </Form.Item>

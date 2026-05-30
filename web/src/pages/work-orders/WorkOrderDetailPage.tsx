@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { EditOutlined, DeleteOutlined, PlusOutlined, PaperClipOutlined, FileTextOutlined, UploadOutlined, UserAddOutlined, CheckCircleOutlined, CloseCircleOutlined, PlayCircleOutlined, EnvironmentOutlined, CarOutlined, PhoneOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { useWorkOrder, useDeleteWorkOrder, useUpdateWorkOrderStatus, useAcceptJob, useDeclineJob } from '@/hooks/use-work-orders';
 import { useCreateAgentLocation } from '@/hooks/use-agent-locations';
 import { useAuthStore } from '@/store/auth.store';
@@ -65,6 +66,7 @@ function formatStatus(status: string): string {
 }
 
 export default function WorkOrderDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [noteForm] = Form.useForm();
@@ -120,13 +122,13 @@ export default function WorkOrderDetailPage() {
 
   const startTrip = () => {
     if (!navigator.geolocation) {
-      message.error('Geolocation is not supported by your browser');
+      message.error(t('workOrderDetails.messages.geolocationNotSupported'));
       return;
     }
     sendLocation();
     tripIntervalRef.current = setInterval(sendLocation, 30000);
     setIsTripActive(true);
-    message.success('Trip started — sharing location every 30 seconds');
+    message.success(t('workOrderDetails.messages.tripStarted'));
   };
 
   const stopTrip = () => {
@@ -135,7 +137,7 @@ export default function WorkOrderDetailPage() {
       tripIntervalRef.current = null;
     }
     setIsTripActive(false);
-    message.info('Trip stopped');
+    message.info(t('workOrderDetails.messages.tripStopped'));
   };
 
   useEffect(() => {
@@ -157,19 +159,19 @@ export default function WorkOrderDetailPage() {
           })
         )
       );
-      message.success('Technicians assigned successfully!');
+      message.success(t('workOrderDetails.messages.assignSuccess'));
       setAssignModalOpen(false);
       assignForm.resetFields();
     } catch {
-      message.error('Failed to assign one or more technicians');
+      message.error(t('workOrderDetails.messages.assignFailed'));
     }
   };
 
   const handleDelete = () => {
     if (!workOrder) return;
     showConfirmDialog({
-      title: 'Delete Work Order',
-      content: `Are you sure you want to delete work order ${workOrder.wo_number || workOrder.id}?`,
+      title: t('workOrderDetails.dialogs.deleteWorkOrderTitle'),
+      content: t('workOrderDetails.dialogs.deleteWorkOrderConfirm', { id: workOrder.wo_number || workOrder.id }),
       onOk: async () => {
         await deleteWorkOrder.mutateAsync(workOrder.id);
         navigate('/work-orders');
@@ -196,7 +198,7 @@ export default function WorkOrderDetailPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Work Order Details" />
+        <PageHeader title={t('workOrderDetails.pageTitle')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -205,8 +207,8 @@ export default function WorkOrderDetailPage() {
   if (!workOrder) {
     return (
       <div>
-        <PageHeader title="Work Order Not Found" />
-        <Card>Work order not found</Card>
+        <PageHeader title={t('workOrderDetails.notFoundTitle')} />
+        <Card>{t('workOrderDetails.notFoundMessage')}</Card>
       </div>
     );
   }
@@ -215,48 +217,48 @@ export default function WorkOrderDetailPage() {
 
   const lineItemColumns: ColumnsType<WorkOrderLineItem> = [
     {
-      title: 'Type',
+      title: t('workOrderDetails.lineItems.type'),
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => <Tag>{type.charAt(0).toUpperCase() + type.slice(1)}</Tag>,
+      render: (type: string) => <Tag>{t(`workOrderDetails.lineItemTypes.${type}`, { defaultValue: type.charAt(0).toUpperCase() + type.slice(1) })}</Tag>,
     },
     {
-      title: 'Name',
+      title: t('workOrderDetails.lineItems.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
     },
     {
-      title: 'Description',
+      title: t('workOrderDetails.lineItems.description'),
       dataIndex: 'description',
       key: 'description',
       render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Quantity',
+      title: t('workOrderDetails.lineItems.quantity'),
       dataIndex: 'quantity',
       key: 'quantity',
     },
     {
-      title: 'Unit Price',
+      title: t('workOrderDetails.lineItems.unitPrice'),
       dataIndex: 'unit_price',
       key: 'unit_price',
       render: (price: number) => formatCurrency(price),
     },
     {
-      title: 'Tax Rate',
+      title: t('workOrderDetails.lineItems.taxRate'),
       dataIndex: 'tax_rate',
       key: 'tax_rate',
       render: (rate: number) => `${rate || 0}%`,
     },
     {
-      title: 'Total',
+      title: t('workOrderDetails.lineItems.total'),
       dataIndex: 'total',
       key: 'total',
       render: (total: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(total)}</span>,
     },
     {
-      title: 'Actions',
+      title: t('workOrderDetails.actions'),
       key: 'actions',
       width: 80,
       render: (_, record) => (
@@ -268,9 +270,9 @@ export default function WorkOrderDetailPage() {
             size="small"
             onClick={() => {
               showConfirmDialog({
-                title: 'Delete Line Item',
-                content: `Are you sure you want to delete "${record.name}"?`,
-                onOk: () => deleteLineItem.mutateAsync(record.id),
+                title: t('workOrderDetails.dialogs.deleteLineItemTitle'),
+                content: t('workOrderDetails.dialogs.deleteLineItemConfirm', { name: record.name }),
+                onOk: async () => { await deleteLineItem.mutateAsync(record.id); },
                 danger: true,
               });
             }}
@@ -282,25 +284,25 @@ export default function WorkOrderDetailPage() {
 
   const noteColumns: ColumnsType<WorkOrderNote> = [
     {
-      title: 'Note',
+      title: t('workOrderDetails.notes.note'),
       dataIndex: 'content',
       key: 'content',
     },
     {
-      title: 'Internal',
+      title: t('workOrderDetails.notes.internal'),
       dataIndex: 'is_internal',
       key: 'is_internal',
       render: (internal: boolean) =>
-        internal ? <Tag color="orange">Internal</Tag> : <Tag color="blue">External</Tag>,
+        internal ? <Tag color="orange">{t('workOrderDetails.notes.internalLabel')}</Tag> : <Tag color="blue">{t('workOrderDetails.notes.externalLabel')}</Tag>,
     },
     {
-      title: 'Created',
+      title: t('workOrderDetails.notes.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Actions',
+      title: t('workOrderDetails.actions'),
       key: 'actions',
       width: 80,
       render: (_, record) => (
@@ -312,9 +314,9 @@ export default function WorkOrderDetailPage() {
             size="small"
             onClick={() => {
               showConfirmDialog({
-                title: 'Delete Note',
-                content: 'Are you sure you want to delete this note?',
-                onOk: () => deleteNote.mutateAsync(record.id),
+                title: t('workOrderDetails.dialogs.deleteNoteTitle'),
+                content: t('workOrderDetails.dialogs.deleteNoteConfirm'),
+                onOk: async () => { await deleteNote.mutateAsync(record.id); },
                 danger: true,
               });
             }}
@@ -326,7 +328,7 @@ export default function WorkOrderDetailPage() {
 
   const attachmentColumns: ColumnsType<WorkOrderAttachment> = [
     {
-      title: 'File Name',
+      title: t('workOrderDetails.attachments.fileName'),
       dataIndex: 'file_name',
       key: 'file_name',
       render: (name: string, record) => (
@@ -337,13 +339,13 @@ export default function WorkOrderDetailPage() {
       ),
     },
     {
-      title: 'Type',
+      title: t('workOrderDetails.attachments.type'),
       dataIndex: 'file_type',
       key: 'file_type',
       render: (type: string) => type || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Size',
+      title: t('workOrderDetails.attachments.size'),
       dataIndex: 'file_size',
       key: 'file_size',
       render: (size: number | null) => {
@@ -354,13 +356,13 @@ export default function WorkOrderDetailPage() {
       },
     },
     {
-      title: 'Created',
+      title: t('workOrderDetails.attachments.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Actions',
+      title: t('workOrderDetails.actions'),
       key: 'actions',
       width: 80,
       render: (_, record) => (
@@ -372,9 +374,9 @@ export default function WorkOrderDetailPage() {
             size="small"
             onClick={() => {
               showConfirmDialog({
-                title: 'Delete Attachment',
-                content: `Are you sure you want to delete "${record.file_name}"?`,
-                onOk: () => deleteAttachment.mutateAsync(record.id),
+                title: t('workOrderDetails.dialogs.deleteAttachmentTitle'),
+                content: t('workOrderDetails.dialogs.deleteAttachmentConfirm', { name: record.file_name }),
+                onOk: async () => { await deleteAttachment.mutateAsync(record.id); },
                 danger: true,
               });
             }}
@@ -387,86 +389,86 @@ export default function WorkOrderDetailPage() {
   const tabItems = [
     {
       key: 'details',
-      label: 'Details',
+      label: t('workOrderDetails.tabs.details'),
       children: (
         <Card>
           <Descriptions column={2} bordered>
-            <Descriptions.Item label="WO Number">
+            <Descriptions.Item label={t('workOrderDetails.fields.woNumber')}>
               {workOrder.wo_number || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Status">
+            <Descriptions.Item label={t('workOrderDetails.fields.status')}>
               <Tag color={statusColors[workOrder.status] || 'default'}>
-                {formatStatus(workOrder.status)}
+                {t(`workOrderDetails.statuses.${workOrder.status}`, { defaultValue: formatStatus(workOrder.status) })}
               </Tag>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Summary" span={2}>
+            <Descriptions.Item label={t('workOrderDetails.fields.summary')} span={2}>
               {workOrder.summary}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Priority">
+            <Descriptions.Item label={t('workOrderDetails.fields.priority')}>
               <Tag color={priorityColors[workOrder.priority] || 'default'}>
-                {workOrder.priority?.charAt(0).toUpperCase() + workOrder.priority?.slice(1)}
+                {t(`workOrderDetails.priorities.${workOrder.priority}`, { defaultValue: workOrder.priority?.charAt(0).toUpperCase() + workOrder.priority?.slice(1) })}
               </Tag>
             </Descriptions.Item>
 
-            <Descriptions.Item label="Category">
+            <Descriptions.Item label={t('workOrderDetails.fields.category')}>
               {workOrder.category ? <Tag>{workOrder.category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Customer">
+            <Descriptions.Item label={t('workOrderDetails.fields.customer')}>
               {workOrder.contact
                 ? `${workOrder.contact.first_name} ${workOrder.contact.last_name}`
                 : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Location">
+            <Descriptions.Item label={t('workOrderDetails.fields.location')}>
               {workOrder.location?.address || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Asset">
+            <Descriptions.Item label={t('workOrderDetails.fields.asset')}>
               {workOrder.asset?.name || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Assigned To">
+            <Descriptions.Item label={t('workOrderDetails.fields.assignedTo')}>
               {workOrder.assigned_to || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Scheduled Date">
+            <Descriptions.Item label={t('workOrderDetails.fields.scheduledDate')}>
               {workOrder.scheduled_start ? formatDateTime(workOrder.scheduled_start) : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Actual Start">
+            <Descriptions.Item label={t('workOrderDetails.fields.actualStart')}>
               {workOrder.actual_start ? formatDateTime(workOrder.actual_start) : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Actual End">
+            <Descriptions.Item label={t('workOrderDetails.fields.actualEnd')}>
               {workOrder.actual_end ? formatDateTime(workOrder.actual_end) : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Description" span={2}>
+            <Descriptions.Item label={t('workOrderDetails.fields.description')} span={2}>
               {workOrder.description || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Tags" span={2}>
+            <Descriptions.Item label={t('workOrderDetails.fields.tags')} span={2}>
               {workOrder.tags && workOrder.tags.length > 0
                 ? workOrder.tags.map((tag) => <Tag key={tag}>{tag}</Tag>)
                 : <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Recurring">
-              {workOrder.is_recurring ? <Tag color="blue">Yes</Tag> : <Tag>No</Tag>}
+            <Descriptions.Item label={t('workOrderDetails.fields.recurring')}>
+              {workOrder.is_recurring ? <Tag color="blue">{t('workOrderDetails.yes')}</Tag> : <Tag>{t('workOrderDetails.no')}</Tag>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Recurrence Rule">
+            <Descriptions.Item label={t('workOrderDetails.fields.recurrenceRule')}>
               {workOrder.recurrence_rule || <span style={{ opacity: 0.5 }}>-</span>}
             </Descriptions.Item>
 
-            <Descriptions.Item label="Created At">
+            <Descriptions.Item label={t('workOrderDetails.fields.createdAt')}>
               {formatDateTime(workOrder.created_at)}
             </Descriptions.Item>
-            <Descriptions.Item label="Updated At">
+            <Descriptions.Item label={t('workOrderDetails.fields.updatedAt')}>
               {formatDateTime(workOrder.updated_at)}
             </Descriptions.Item>
           </Descriptions>
@@ -475,7 +477,7 @@ export default function WorkOrderDetailPage() {
     },
     {
       key: 'location',
-      label: <span><EnvironmentOutlined style={{ marginRight: 4 }} />Location</span>,
+      label: <span><EnvironmentOutlined style={{ marginRight: 4 }} />{t('workOrderDetails.tabs.location')}</span>,
       children: (() => {
         const lat = workOrder.location?.lat as number | undefined;
         const lng = workOrder.location?.lng as number | undefined;
@@ -484,7 +486,7 @@ export default function WorkOrderDetailPage() {
           return (
             <Card>
               <p style={{ color: '#999', textAlign: 'center', padding: '32px 0' }}>
-                No GPS location available for this work order.
+                {t('workOrderDetails.noGpsLocation')}
               </p>
             </Card>
           );
@@ -495,16 +497,16 @@ export default function WorkOrderDetailPage() {
           <Card>
             {address && <p style={{ marginBottom: 8, fontWeight: 500, fontSize: 15 }}>{address}</p>}
             <p style={{ marginBottom: 12, color: '#666', fontSize: 13 }}>
-              GPS: {Number(lat).toFixed(6)}, {Number(lng).toFixed(6)}
+              {t('workOrderDetails.gpsCoordinates', { lat: Number(lat).toFixed(6), lng: Number(lng).toFixed(6) })}
             </p>
             <iframe
               src={mapSrc}
-              title="Work Order Location Map"
+              title={t('workOrderDetails.mapTitle')}
               style={{ width: '100%', height: 300, border: '1px solid #e8e8e8', borderRadius: 4, marginBottom: 16 }}
               loading="lazy"
             />
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-              <Button type="primary" icon={<EnvironmentOutlined />}>Get Directions</Button>
+              <Button type="primary" icon={<EnvironmentOutlined />}>{t('workOrderDetails.getDirections')}</Button>
             </a>
           </Card>
         );
@@ -512,7 +514,7 @@ export default function WorkOrderDetailPage() {
     },
     {
       key: 'line-items',
-      label: 'Line Items',
+      label: t('workOrderDetails.tabs.lineItems'),
       children: (
         <Card>
           <Table
@@ -521,7 +523,7 @@ export default function WorkOrderDetailPage() {
             rowKey="id"
             loading={lineItemsLoading}
             pagination={false}
-            locale={{ emptyText: 'No line items added' }}
+            locale={{ emptyText: t('workOrderDetails.noLineItems') }}
           />
         </Card>
       ),
@@ -531,12 +533,12 @@ export default function WorkOrderDetailPage() {
       label: (
         <span>
           <FileTextOutlined style={{ marginRight: 4 }} />
-          Notes
+          {t('workOrderDetails.tabs.notes')}
         </span>
       ),
       children: (
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
-          <Card title="Add Note">
+          <Card title={t('workOrderDetails.addNoteTitle')}>
             <Form
               form={noteForm}
               onFinish={handleAddNote}
@@ -545,17 +547,17 @@ export default function WorkOrderDetailPage() {
             >
               <Form.Item
                 name="content"
-                label="Note"
-                rules={[{ required: true, message: 'Please enter a note' }]}
+                label={t('workOrderDetails.notes.note')}
+                rules={[{ required: true, message: t('workOrderDetails.errors.enterNote') }]}
               >
-                <TextArea rows={3} placeholder="Write a note..." />
+                <TextArea rows={3} placeholder={t('workOrderDetails.placeholders.writeNote')} />
               </Form.Item>
               <Space>
                 <Form.Item name="is_internal" valuePropName="checked" style={{ marginBottom: 0 }}>
-                  <Switch checkedChildren="Internal" unCheckedChildren="External" />
+                  <Switch checkedChildren={t('workOrderDetails.notes.internalLabel')} unCheckedChildren={t('workOrderDetails.notes.externalLabel')} />
                 </Form.Item>
                 <Button type="primary" htmlType="submit" icon={<PlusOutlined />} loading={createNote.isPending}>
-                  Add Note
+                  {t('workOrderDetails.buttons.addNote')}
                 </Button>
               </Space>
             </Form>
@@ -567,7 +569,7 @@ export default function WorkOrderDetailPage() {
               rowKey="id"
               loading={notesLoading}
               pagination={false}
-              locale={{ emptyText: 'No notes added' }}
+              locale={{ emptyText: t('workOrderDetails.noNotes') }}
             />
           </Card>
         </Space>
@@ -578,12 +580,12 @@ export default function WorkOrderDetailPage() {
       label: (
         <span>
           <PaperClipOutlined style={{ marginRight: 4 }} />
-          Attachments
+          {t('workOrderDetails.tabs.attachments')}
         </span>
       ),
       children: (
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
-          <Card title="Upload Attachment">
+          <Card title={t('workOrderDetails.uploadAttachmentTitle')}>
             <Space>
               <Upload
                 fileList={fileList}
@@ -594,7 +596,7 @@ export default function WorkOrderDetailPage() {
                 onRemove={() => setFileList([])}
                 maxCount={1}
               >
-                <Button icon={<UploadOutlined />}>Select File</Button>
+                <Button icon={<UploadOutlined />}>{t('workOrderDetails.buttons.selectFile')}</Button>
               </Upload>
               <Button
                 type="primary"
@@ -614,7 +616,7 @@ export default function WorkOrderDetailPage() {
                   }
                 }}
               >
-                Upload
+                {t('workOrderDetails.buttons.upload')}
               </Button>
             </Space>
           </Card>
@@ -625,7 +627,7 @@ export default function WorkOrderDetailPage() {
               rowKey="id"
               loading={attachmentsLoading}
               pagination={false}
-              locale={{ emptyText: 'No attachments added' }}
+              locale={{ emptyText: t('workOrderDetails.noAttachments') }}
             />
           </Card>
         </Space>
@@ -636,7 +638,7 @@ export default function WorkOrderDetailPage() {
       label: (
         <span>
           <FileTextOutlined style={{ marginRight: 4 }} />
-          Estimates
+          {t('workOrderDetails.tabs.estimates')}
         </span>
       ),
       children: (
@@ -649,7 +651,7 @@ export default function WorkOrderDetailPage() {
                   icon={<PlusOutlined />}
                   onClick={() => navigate(`/estimates/new?work_order_id=${workOrder.id}`)}
                 >
-                  Create Estimate
+                  {t('workOrderDetails.buttons.createEstimate')}
                 </Button>
               </PermissionGuard>
             }
@@ -657,7 +659,7 @@ export default function WorkOrderDetailPage() {
             <Table
               columns={[
                 {
-                  title: 'Estimate #',
+                  title: t('workOrderDetails.estimates.estimateNum'),
                   dataIndex: 'estimate_number',
                   key: 'estimate_number',
                   render: (num: string, record: Estimate) => (
@@ -667,7 +669,7 @@ export default function WorkOrderDetailPage() {
                   ),
                 },
                 {
-                  title: 'Status',
+                  title: t('workOrderDetails.estimates.status'),
                   dataIndex: 'status',
                   key: 'status',
                   render: (status: string) => {
@@ -684,25 +686,25 @@ export default function WorkOrderDetailPage() {
                     };
                     return (
                       <Tag color={colors[status] || 'default'}>
-                        {status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                        {t(`workOrderDetails.estimateStatuses.${status}`, { defaultValue: status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) })}
                       </Tag>
                     );
                   },
                 },
                 {
-                  title: 'Total',
+                  title: t('workOrderDetails.estimates.total'),
                   dataIndex: 'total',
                   key: 'total',
                   render: (total: number) => formatCurrency(total),
                 },
                 {
-                  title: 'Created',
+                  title: t('workOrderDetails.estimates.created'),
                   dataIndex: 'created_at',
                   key: 'created_at',
                   render: (date: string) => formatDateTime(date),
                 },
                 {
-                  title: 'Actions',
+                  title: t('workOrderDetails.actions'),
                   key: 'actions',
                   width: 240,
                   render: (_: unknown, record: Estimate) => (
@@ -716,13 +718,13 @@ export default function WorkOrderDetailPage() {
                             loading={adminApproveEstimate.isPending}
                             onClick={() => {
                               showConfirmDialog({
-                                title: 'Approve Estimate',
-                                content: `Approve estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+                                title: t('workOrderDetails.dialogs.approveEstimateTitle'),
+                                content: t('workOrderDetails.dialogs.approveEstimateConfirm', { id: record.estimate_number || record.id.slice(0, 8) }),
                                 onOk: async () => { await adminApproveEstimate.mutateAsync(record.id); },
                               });
                             }}
                           >
-                            Approve
+                            {t('workOrderDetails.buttons.approve')}
                           </Button>
                           <Button
                             size="small"
@@ -731,14 +733,14 @@ export default function WorkOrderDetailPage() {
                             loading={adminRejectEstimate.isPending}
                             onClick={() => {
                               showConfirmDialog({
-                                title: 'Reject Estimate',
-                                content: `Reject estimate ${record.estimate_number || record.id.slice(0, 8)}?`,
+                                title: t('workOrderDetails.dialogs.rejectEstimateTitle'),
+                                content: t('workOrderDetails.dialogs.rejectEstimateConfirm', { id: record.estimate_number || record.id.slice(0, 8) }),
                                 onOk: async () => { await adminRejectEstimate.mutateAsync({ id: record.id }); },
                                 danger: true,
                               });
                             }}
                           >
-                            Reject
+                            {t('workOrderDetails.buttons.reject')}
                           </Button>
                         </PermissionGuard>
                       )}
@@ -754,7 +756,7 @@ export default function WorkOrderDetailPage() {
                               if (inv?.id) navigate(`/invoices/${inv.id}`);
                             }}
                           >
-                            Generate Invoice
+                            {t('workOrderDetails.buttons.generateInvoice')}
                           </Button>
                         </PermissionGuard>
                       )}
@@ -766,7 +768,7 @@ export default function WorkOrderDetailPage() {
               rowKey="id"
               loading={woEstimatesLoading}
               pagination={false}
-              locale={{ emptyText: 'No estimates for this work order' }}
+              locale={{ emptyText: t('workOrderDetails.noEstimates') }}
             />
           </Card>
         </Space>
@@ -777,7 +779,7 @@ export default function WorkOrderDetailPage() {
   return (
     <div>
       <PageHeader
-        title={`Work Order ${workOrder.wo_number || ''}`}
+        title={t('workOrderDetails.mainPageTitle', { num: workOrder.wo_number || '' })}
         onBack={() => navigate('/work-orders')}
         extra={
           <Space>
@@ -787,17 +789,17 @@ export default function WorkOrderDetailPage() {
                 icon={<UserAddOutlined />}
                 onClick={() => setAssignModalOpen(true)}
               >
-                Assign Technician
+                {t('workOrderDetails.buttons.assignTechnician')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="work-orders:update">
               <Button icon={<EditOutlined />} onClick={() => navigate(`/work-orders/${workOrder.id}/edit`)}>
-                Edit
+                {t('workOrderDetails.buttons.edit')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="work-orders:delete">
               <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-                Delete
+                {t('workOrderDetails.buttons.delete')}
               </Button>
             </PermissionGuard>
           </Space>
@@ -807,7 +809,7 @@ export default function WorkOrderDetailPage() {
       {availableTransitions.length > 0 && (
         <Card style={{ marginBottom: 16 }}>
           <Space>
-            <span style={{ fontWeight: 500 }}>Transition to:</span>
+            <span style={{ fontWeight: 500 }}>{t('workOrderDetails.transitionTo')}</span>
             {availableTransitions.map((status) => (
               <Button
                 key={status}
@@ -816,7 +818,7 @@ export default function WorkOrderDetailPage() {
                 loading={updateStatus.isPending}
                 onClick={() => handleStatusChange(status)}
               >
-                {formatStatus(status)}
+                {t(`workOrderDetails.statuses.${status}`, { defaultValue: formatStatus(status) })}
               </Button>
             ))}
           </Space>
@@ -835,20 +837,20 @@ export default function WorkOrderDetailPage() {
                     loading={acceptJob.isPending}
                     onClick={() => {
                       showConfirmDialog({
-                        title: 'Accept Job',
-                        content: 'Accept this work order? It will be marked as Scheduled.',
+                        title: t('workOrderDetails.dialogs.acceptJobTitle'),
+                        content: t('workOrderDetails.dialogs.acceptJobConfirm'),
                         onOk: async () => { await acceptJob.mutateAsync(workOrder.id); },
                       });
                     }}
                   >
-                    Accept Job
+                    {t('workOrderDetails.buttons.acceptJob')}
                   </Button>
                   <Button
                     danger
                     icon={<CloseCircleOutlined />}
                     onClick={() => setDeclineModalOpen(true)}
                   >
-                    Decline Job
+                    {t('workOrderDetails.buttons.declineJob')}
                   </Button>
                 </>
               )}
@@ -856,7 +858,7 @@ export default function WorkOrderDetailPage() {
                 <>
                   <Tag color="green" style={{ padding: '4px 8px', fontSize: 13 }}>
                     <CheckCircleOutlined style={{ marginRight: 4 }} />
-                    Job Accepted
+                    {t('workOrderDetails.jobAccepted')}
                   </Tag>
                   <Button
                     type="primary"
@@ -864,14 +866,14 @@ export default function WorkOrderDetailPage() {
                     loading={updateStatus.isPending}
                     onClick={() => handleStatusChange('in_progress')}
                   >
-                    Start Job
+                    {t('workOrderDetails.buttons.startJob')}
                   </Button>
                   <Button
                     danger
                     icon={<CloseCircleOutlined />}
                     onClick={() => setDeclineModalOpen(true)}
                   >
-                    Decline Job
+                    {t('workOrderDetails.buttons.declineJob')}
                   </Button>
                 </>
               )}
@@ -883,7 +885,7 @@ export default function WorkOrderDetailPage() {
                   loading={updateStatus.isPending}
                   onClick={() => handleStatusChange('completed')}
                 >
-                  Complete Job
+                  {t('workOrderDetails.buttons.completeJob')}
                 </Button>
               )}
             </Space>
@@ -897,20 +899,20 @@ export default function WorkOrderDetailPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Button icon={<CarOutlined />}>Google Maps</Button>
+                      <Button icon={<CarOutlined />}>{t('workOrderDetails.buttons.googleMaps')}</Button>
                     </a>
                     <a
                       href={`https://waze.com/ul?ll=${workOrder.location.lat},${workOrder.location.lng}&navigate=yes`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Button icon={<CarOutlined />}>Waze</Button>
+                      <Button icon={<CarOutlined />}>{t('workOrderDetails.buttons.waze')}</Button>
                     </a>
                   </>
                 )}
                 {workOrder.contact?.phone && (
                   <a href={`tel:${workOrder.contact.phone}`}>
-                    <Button icon={<PhoneOutlined />}>Call Customer</Button>
+                    <Button icon={<PhoneOutlined />}>{t('workOrderDetails.buttons.callCustomer')}</Button>
                   </a>
                 )}
                 <Button
@@ -919,7 +921,7 @@ export default function WorkOrderDetailPage() {
                   icon={<EnvironmentOutlined />}
                   onClick={isTripActive ? stopTrip : startTrip}
                 >
-                  {isTripActive ? 'Stop Trip' : 'Start Trip'}
+                  {isTripActive ? t('workOrderDetails.buttons.stopTrip') : t('workOrderDetails.buttons.startTrip')}
                 </Button>
               </Space>
             )}
@@ -934,18 +936,18 @@ export default function WorkOrderDetailPage() {
       )}
 
       {feedbackData && feedbackData.length > 0 && (
-        <Card style={{ marginBottom: 16 }} title="Feedback">
+        <Card style={{ marginBottom: 16 }} title={t('workOrderDetails.feedback.title')}>
           {feedbackData.map((fb: any) => (
             <Alert
               key={fb.id}
               message={
                 <Space>
-                  <span>Rating:</span>
+                  <span>{t('workOrderDetails.feedback.ratingLabel')}</span>
                   <Rate disabled defaultValue={Number(fb.rating)} allowHalf />
-                  {fb.is_customer_facing && <Tag color="blue">Shared with Customer</Tag>}
+                  {fb.is_customer_facing && <Tag color="blue">{t('workOrderDetails.feedback.sharedWithCustomer')}</Tag>}
                 </Space>
               }
-              description={fb.comments || 'No comments provided.'}
+              description={fb.comments || t('workOrderDetails.feedback.noComments')}
               type="info"
               style={{ marginBottom: 8 }}
             />
@@ -956,9 +958,9 @@ export default function WorkOrderDetailPage() {
       {workOrder.status === 'completed' && (!feedbackData || feedbackData.length === 0) && (
         <Card style={{ marginBottom: 16, backgroundColor: '#f6ffed', borderColor: '#b7eb8f' }}>
           <Space>
-            <span>Great job completing this work order! Please provide some feedback.</span>
+            <span>{t('workOrderDetails.feedback.successBanner')}</span>
             <Button type="primary" onClick={() => setIsFeedbackModalOpen(true)}>
-              Submit Feedback
+              {t('workOrderDetails.buttons.submitFeedback')}
             </Button>
           </Space>
         </Card>
@@ -971,19 +973,19 @@ export default function WorkOrderDetailPage() {
       />
 
       <Modal
-        title="Assign Technicians"
+        title={t('workOrderDetails.assignModal.title')}
         open={assignModalOpen}
         onCancel={() => { setAssignModalOpen(false); assignForm.resetFields(); }}
         onOk={() => assignForm.submit()}
-        okText="Assign"
+        okText={t('workOrderDetails.buttons.assign')}
         confirmLoading={createAppointment.isPending}
       >
         <Form form={assignForm} layout="vertical" onFinish={handleAssignTechnician}>
-          <Form.Item name="agent_ids" label="Technicians" rules={[{ required: true, message: 'Please select at least one technician' }]}>
+          <Form.Item name="agent_ids" label={t('workOrderDetails.assignModal.fields.technicians')} rules={[{ required: true, message: t('workOrderDetails.errors.selectTechnician') }]}>
             <Select
               mode="multiple"
               showSearch
-              placeholder="Select technicians"
+              placeholder={t('workOrderDetails.placeholders.selectTechnicians')}
               optionFilterProp="label"
               options={(usersData?.data || []).map((u: any) => ({
                 value: u.id,
@@ -991,10 +993,10 @@ export default function WorkOrderDetailPage() {
               }))}
             />
           </Form.Item>
-          <Form.Item name="scheduled_start" label="Scheduled Start" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="scheduled_start" label={t('workOrderDetails.assignModal.fields.scheduledStart')} rules={[{ required: true, message: t('workOrderDetails.errors.required') }]}>
             <DatePicker showTime style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="scheduled_end" label="Scheduled End" rules={[{ required: true, message: 'Required' }]}>
+          <Form.Item name="scheduled_end" label={t('workOrderDetails.assignModal.fields.scheduledEnd')} rules={[{ required: true, message: t('workOrderDetails.errors.required') }]}>
             <DatePicker showTime style={{ width: '100%' }} />
           </Form.Item>
         </Form>
@@ -1008,11 +1010,11 @@ export default function WorkOrderDetailPage() {
       />
 
       <Modal
-        title="Decline Job"
+        title={t('workOrderDetails.declineModal.title')}
         open={declineModalOpen}
         onCancel={() => { setDeclineModalOpen(false); declineForm.resetFields(); }}
         onOk={() => declineForm.submit()}
-        okText="Decline"
+        okText={t('workOrderDetails.buttons.decline')}
         okButtonProps={{ danger: true, loading: declineJob.isPending }}
       >
         <Form
@@ -1026,10 +1028,10 @@ export default function WorkOrderDetailPage() {
         >
           <Form.Item
             name="reason"
-            label="Reason for declining"
-            rules={[{ required: true, message: 'Please provide a reason' }, { min: 5, message: 'Reason must be at least 5 characters' }]}
+            label={t('workOrderDetails.declineModal.fields.reason')}
+            rules={[{ required: true, message: t('workOrderDetails.errors.provideReason') }, { min: 5, message: t('workOrderDetails.errors.minReasonLength') }]}
           >
-            <Input.TextArea rows={4} placeholder="Enter reason..." />
+            <Input.TextArea rows={4} placeholder={t('workOrderDetails.placeholders.enterReason')} />
           </Form.Item>
         </Form>
       </Modal>

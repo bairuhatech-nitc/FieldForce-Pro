@@ -9,6 +9,7 @@ import {
   HistoryOutlined,
 } from '@ant-design/icons';
 import type { SlaTimerData } from '@/api/sla-timers.api';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -18,6 +19,7 @@ interface SlaTimerBadgeProps {
 }
 
 export function SlaTimerBadge({ timer, compact = false }: SlaTimerBadgeProps) {
+  const { t } = useTranslation();
   const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [remainingMs, setRemainingMs] = useState<number>(0);
   const [percentUsed, setPercentUsed] = useState<number>(0);
@@ -70,17 +72,17 @@ export function SlaTimerBadge({ timer, compact = false }: SlaTimerBadgeProps) {
   const getStatusConfig = () => {
     switch (timer.status) {
       case 'completed_on_time':
-        return { color: '#52c41a', icon: <CheckCircleOutlined />, label: 'Completed On Time' };
+        return { color: '#52c41a', icon: <CheckCircleOutlined />, label: t('slaTimerBadge.status.completedOnTime') };
       case 'completed_late':
-        return { color: '#ff4d4f', icon: <WarningOutlined />, label: 'Completed Late' };
+        return { color: '#ff4d4f', icon: <WarningOutlined />, label: t('slaTimerBadge.status.completedLate') };
       case 'breached':
-        return { color: '#ff4d4f', icon: <WarningOutlined />, label: 'Breached' };
+        return { color: '#ff4d4f', icon: <WarningOutlined />, label: t('slaTimerBadge.status.breached') };
       case 'paused':
-        return { color: '#faad14', icon: <PauseCircleOutlined />, label: 'Paused' };
+        return { color: '#faad14', icon: <PauseCircleOutlined />, label: t('slaTimerBadge.status.paused') };
       case 'warning':
-        return { color: '#fa8c16', icon: <ClockCircleOutlined />, label: 'Warning' };
+        return { color: '#fa8c16', icon: <ClockCircleOutlined />, label: t('slaTimerBadge.status.warning') };
       default: // running
-        return { color: '#1677ff', icon: <ClockCircleOutlined />, label: 'Running' };
+        return { color: '#1677ff', icon: <ClockCircleOutlined />, label: t('slaTimerBadge.status.running') };
     }
   };
 
@@ -100,7 +102,7 @@ export function SlaTimerBadge({ timer, compact = false }: SlaTimerBadgeProps) {
 
   if (compact) {
     return (
-      <Tooltip title={`${config.label} - ${formatDuration(remainingMs)} remaining`}>
+      <Tooltip title={t('slaTimerBadge.compactTooltip', { label: config.label, time: formatDuration(remainingMs) })}>
         <Tag color={config.color} icon={config.icon}>
           {formatDuration(remainingMs)}
         </Tag>
@@ -135,22 +137,22 @@ export function SlaTimerBadge({ timer, compact = false }: SlaTimerBadgeProps) {
           <Space>
             <FieldTimeOutlined style={{ color: config.color, fontSize: '18px' }} />
             <Text strong style={{ fontSize: '16px' }}>
-              SLA Timer
+              {t('slaTimerBadge.title')}
             </Text>
             <Tag color={config.color} style={{ margin: 0 }}>
               {config.label}
             </Tag>
           </Space>
-          <Tooltip title={timer.source === 'historical_avg' ? `Calculated from average of last ${timer.sample_count} similar jobs` : 'Default fallback due to insufficient historical data'}>
+          <Tooltip title={timer.source === 'historical_avg' ? t('slaTimerBadge.source.historicalAvgTooltip', { count: timer.sample_count }) : t('slaTimerBadge.source.defaultTooltip')}>
             <Tag icon={<HistoryOutlined />} style={{ cursor: 'help' }}>
-              {timer.source === 'historical_avg' ? 'Historical Avg' : 'Default'}
+              {timer.source === 'historical_avg' ? t('slaTimerBadge.source.historicalAvg') : t('slaTimerBadge.source.default')}
             </Tag>
           </Tooltip>
         </div>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
           <div>
-            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>Time Remaining</Text>
+            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>{t('slaTimerBadge.labels.timeRemaining')}</Text>
             <Text strong style={{ fontSize: '16px', color: progressColor }}>
               {timer.status === 'completed_on_time' || timer.status === 'completed_late' 
                 ? '—' 
@@ -158,11 +160,11 @@ export function SlaTimerBadge({ timer, compact = false }: SlaTimerBadgeProps) {
             </Text>
           </div>
           <div>
-            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>Elapsed Time</Text>
+            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>{t('slaTimerBadge.labels.elapsedTime')}</Text>
             <Text strong>{formatDuration(elapsedMs)}</Text>
           </div>
           <div>
-            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>Allocated Time</Text>
+            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>{t('slaTimerBadge.labels.allocatedTime')}</Text>
             <Text strong>{formatDuration(timer.sla_duration_ms)}</Text>
           </div>
         </div>

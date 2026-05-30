@@ -18,6 +18,7 @@ import {
 import { useWorkOrderSession } from '@/hooks/use-work-order-technician';
 import type { TechnicianSession } from '@/api/work-order-technician.api';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -86,7 +87,6 @@ const STEP_DEFS: StepDef[] = [
 ];
 
 const STEP_ORDER = STEP_DEFS.map((s) => s.step);
-// Insert paused/resumed which may appear between work_started and after_photos
 const EXTENDED_ORDER = [
   'pending_approval', 'approved', 'trip_started', 'reached',
   'items_confirmed', 'call_confirmed', 'work_started', 'paused',
@@ -115,6 +115,7 @@ interface Props {
 }
 
 export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
+  const { t } = useTranslation();
   const { data: session, isLoading, refetch, isFetching } = useWorkOrderSession(workOrderId);
 
   if (isLoading) {
@@ -122,7 +123,7 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
       <div style={{ textAlign: 'center', padding: '32px 0' }}>
         <Spin />
         <div style={{ marginTop: 8 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>Loading workflow…</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{t('technicianWorkflow.loadingWorkflow')}</Text>
         </div>
       </div>
     );
@@ -132,7 +133,7 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
     return (
       <div style={{ textAlign: 'center', padding: '24px 0' }}>
         <Empty
-          description={<Text type="secondary" style={{ fontSize: 13 }}>Workflow not started yet</Text>}
+          description={<Text type="secondary" style={{ fontSize: 13 }}>{t('technicianWorkflow.notStarted')}</Text>}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         />
         <Button
@@ -142,7 +143,7 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
           size="small"
           style={{ marginTop: 12 }}
         >
-          Refresh
+          {t('technicianWorkflow.refresh')}
         </Button>
       </div>
     );
@@ -155,13 +156,13 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
           type="error"
           icon={<CloseCircleOutlined />}
           showIcon
-          message="Work Order Rejected"
+          message={t('technicianWorkflow.workOrderRejected')}
           description={
             <div>
-              <Text style={{ fontSize: 13 }}>The technician rejected this work order.</Text>
+              <Text style={{ fontSize: 13 }}>{t('technicianWorkflow.technicianRejected')}</Text>
               {session.rejection_reason && (
                 <div style={{ marginTop: 6 }}>
-                  <Text strong style={{ fontSize: 12 }}>Reason: </Text>
+                  <Text strong style={{ fontSize: 12 }}>{t('technicianWorkflow.reason')}: </Text>
                   <Text style={{ fontSize: 12 }}>{session.rejection_reason}</Text>
                 </div>
               )}
@@ -177,7 +178,7 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
           style={{ marginBottom: 12 }}
         />
         <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching} size="small">
-          Refresh
+          {t('technicianWorkflow.refresh')}
         </Button>
       </div>
     );
@@ -187,14 +188,13 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
   const doneCount = STEP_DEFS.filter((s) => getStatus(s.step, currentStep) === 'done').length;
   const progressPct = Math.round((doneCount / STEP_DEFS.length) * 100);
 
-  // Build display list, inserting paused/resumed entries if they happened
   const displaySteps: { step: string; label: string; icon: React.ReactNode; ts: string | null | undefined }[] = [];
   for (const def of STEP_DEFS) {
-    displaySteps.push({ step: def.step, label: def.label, icon: def.icon, ts: def.getTimestamp(session) });
+    displaySteps.push({ step: def.step, label: t(`technicianWorkflow.${def.step}`), icon: def.icon, ts: def.getTimestamp(session) });
     if (def.step === 'work_started' && session.paused_at) {
       displaySteps.push({
         step: 'paused',
-        label: 'Work Paused',
+        label: t('technicianWorkflow.workPaused'),
         icon: <PauseCircleOutlined />,
         ts: session.paused_at,
       });
@@ -202,7 +202,7 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
     if (def.step === 'work_started' && session.resumed_at) {
       displaySteps.push({
         step: 'resumed',
-        label: 'Work Resumed',
+        label: t('technicianWorkflow.workResumed'),
         icon: <PlayCircleOutlined />,
         ts: session.resumed_at,
       });
@@ -210,16 +210,15 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
   }
 
   const currentStepDef = STEP_DEFS.find((s) => s.step === currentStep);
-  const currentLabel = currentStepDef?.label ?? currentStep.replace(/_/g, ' ');
+  const currentLabel = currentStepDef ? t(`technicianWorkflow.${currentStep}`) : currentStep.replace(/_/g, ' ');
 
   return (
     <div>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <Text strong style={{ fontSize: 13, display: 'block' }}>Field Progress</Text>
+          <Text strong style={{ fontSize: 13, display: 'block' }}>{t('technicianWorkflow.fieldProgress')}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {doneCount} of {STEP_DEFS.length} steps done
+            {t('technicianWorkflow.stepsDone', { count: doneCount, total: STEP_DEFS.length })}
           </Text>
         </div>
         <Button
@@ -231,7 +230,6 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
         />
       </div>
 
-      {/* Progress bar */}
       <div style={{ marginBottom: 16 }}>
         <div style={{
           height: 6,
@@ -250,7 +248,7 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
           }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-          <Text type="secondary" style={{ fontSize: 11 }}>{progressPct}% complete</Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>{t('technicianWorkflow.percentComplete', { pct: progressPct })}</Text>
           <Tag
             color={currentStep === 'finished' ? 'success' : currentStep === 'rejected' ? 'error' : 'processing'}
             style={{ fontSize: 11, lineHeight: '18px', height: 20 }}
@@ -260,7 +258,6 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
         </div>
       </div>
 
-      {/* Step list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {displaySteps.map((item, idx) => {
           const status = getStatus(item.step, currentStep);
@@ -278,9 +275,7 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
 
           return (
             <div key={`${item.step}-${idx}`} style={{ display: 'flex', gap: 0 }}>
-              {/* Left: dot + connector */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 32, flexShrink: 0 }}>
-                {/* Dot */}
                 <div style={{
                   width: 28,
                   height: 28,
@@ -303,7 +298,6 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
                     : React.cloneElement(item.icon as React.ReactElement, { style: { fontSize: 12 } })
                   }
                 </div>
-                {/* Connector line */}
                 {!isLast && (
                   <div style={{
                     width: 2,
@@ -316,7 +310,6 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
                 )}
               </div>
 
-              {/* Right: label + timestamp */}
               <div style={{
                 flex: 1,
                 paddingLeft: 10,
@@ -344,7 +337,6 @@ export function TechnicianWorkflowTimeline({ workOrderId }: Props) {
           );
         })}
       </div>
-
     </div>
   );
 }

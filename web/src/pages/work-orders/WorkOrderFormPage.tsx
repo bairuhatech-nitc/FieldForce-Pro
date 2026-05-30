@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, DatePicker, Row, Col } from 'antd';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useWorkOrder, useCreateWorkOrder, useUpdateWorkOrder } from '@/hooks/use-work-orders';
 import { useAllContacts } from '@/hooks/use-contacts';
@@ -11,6 +12,7 @@ import PageHeader from '@/components/common/PageHeader';
 const { TextArea } = Input;
 
 export default function WorkOrderFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -61,7 +63,7 @@ export default function WorkOrderFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('workOrders.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -70,7 +72,7 @@ export default function WorkOrderFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Work Order' : 'Create Work Order'}
+        title={isEdit ? t('workOrders.editWorkOrder') : t('workOrders.createWorkOrder')}
         onBack={() => navigate('/work-orders')}
       />
 
@@ -85,21 +87,21 @@ export default function WorkOrderFormPage() {
         >
           <Form.Item
             name="summary"
-            label="Summary"
-            rules={[{ required: true, message: 'Please enter a summary' }]}
+            label={t('workOrders.summary')}
+            rules={[{ required: true, message: t('workOrders.pleaseEnterSummary') }]}
           >
-            <Input placeholder="e.g. HVAC repair at 123 Main St" />
+            <Input placeholder={t('workOrders.summaryPlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="description" label="Description">
-            <TextArea rows={4} placeholder="Describe the work to be performed" />
+          <Form.Item name="description" label={t('workOrders.description')}>
+            <TextArea rows={4} placeholder={t('workOrders.descriptionPlaceholder')} />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="contact_id" label="Customer (Contact)">
+              <Form.Item name="contact_id" label={t('workOrders.customerContact')}>
                 <Select
-                  placeholder="Select customer"
+                  placeholder={t('workOrders.selectCustomer')}
                   allowClear
                   showSearch
                   optionFilterProp="label"
@@ -111,9 +113,9 @@ export default function WorkOrderFormPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="location_id" label="Service Location">
+              <Form.Item name="location_id" label={t('workOrders.serviceLocation')}>
                 <Select
-                  placeholder="Select location"
+                  placeholder={t('workOrders.selectLocation')}
                   allowClear
                   showSearch
                   optionFilterProp="label"
@@ -128,9 +130,9 @@ export default function WorkOrderFormPage() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="asset_id" label="Asset">
+              <Form.Item name="asset_id" label={t('workOrders.asset')}>
                 <Select
-                  placeholder="Select asset"
+                  placeholder={t('workOrders.selectAsset')}
                   allowClear
                   showSearch
                   optionFilterProp="label"
@@ -142,34 +144,34 @@ export default function WorkOrderFormPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="priority" label="Priority">
-                <Select placeholder="Select priority">
-                  <Select.Option value="low">Low</Select.Option>
-                  <Select.Option value="medium">Medium</Select.Option>
-                  <Select.Option value="high">High</Select.Option>
-                  <Select.Option value="urgent">Urgent</Select.Option>
+              <Form.Item name="priority" label={t('workOrders.priority')}>
+                <Select placeholder={t('workOrders.selectPriority')}>
+                  <Select.Option value="low">{t('workOrders.priorities.low')}</Select.Option>
+                  <Select.Option value="medium">{t('workOrders.priorities.medium')}</Select.Option>
+                  <Select.Option value="high">{t('workOrders.priorities.high')}</Select.Option>
+                  <Select.Option value="urgent">{t('workOrders.priorities.urgent')}</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="category" label="Category">
-            <Select placeholder="Select category" allowClear>
-              <Select.Option value="HVAC">HVAC</Select.Option>
-              <Select.Option value="Plumbing">Plumbing</Select.Option>
-              <Select.Option value="Electrical">Electrical</Select.Option>
-              <Select.Option value="Appliance">Appliance</Select.Option>
-              <Select.Option value="General">General</Select.Option>
-              <Select.Option value="Preventive Maintenance">Preventive Maintenance</Select.Option>
-              <Select.Option value="Emergency">Emergency</Select.Option>
-              <Select.Option value="Other">Other</Select.Option>
+          <Form.Item name="category" label={t('workOrders.category')}>
+            <Select placeholder={t('workOrders.selectCategory')} allowClear>
+              <Select.Option value="HVAC">{t('workOrders.categories.hvac')}</Select.Option>
+              <Select.Option value="Plumbing">{t('workOrders.categories.plumbing')}</Select.Option>
+              <Select.Option value="Electrical">{t('workOrders.categories.electrical')}</Select.Option>
+              <Select.Option value="Appliance">{t('workOrders.categories.appliance')}</Select.Option>
+              <Select.Option value="General">{t('workOrders.categories.general')}</Select.Option>
+              <Select.Option value="Preventive Maintenance">{t('workOrders.categories.preventiveMaintenance')}</Select.Option>
+              <Select.Option value="Emergency">{t('workOrders.categories.emergency')}</Select.Option>
+              <Select.Option value="Other">{t('workOrders.categories.other')}</Select.Option>
             </Select>
           </Form.Item>
 
           <Form.Item
             name="scheduled_start"
-            label="Scheduled Date"
-            tooltip={workOrder?.estimate_id ? "This field is locked because the work order was converted from an estimate" : undefined}
+            label={t('workOrders.scheduledDate')}
+            tooltip={workOrder?.estimate_id ? t('workOrders.lockedEstimateTooltip') : undefined}
           >
             <DatePicker
               format="YYYY-MM-DD"
@@ -185,9 +187,9 @@ export default function WorkOrderFormPage() {
                 htmlType="submit"
                 loading={createWorkOrder.isPending || updateWorkOrder.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('workOrders.update') : t('workOrders.create')}
               </Button>
-              <Button onClick={() => navigate('/work-orders')}>Cancel</Button>
+              <Button onClick={() => navigate('/work-orders')}>{t('workOrders.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

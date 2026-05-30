@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Table, Space, Tooltip, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useServicesCatalog, useDeleteServiceCatalog } from '@/hooks/use-services-catalog';
 import type { ServiceCatalogItem } from '@/types/models.types';
 import PageHeader from '@/components/common/PageHeader';
@@ -12,6 +13,7 @@ import { formatCurrency } from '@/utils/format-currency';
 import SearchFilter from '@/components/common/SearchFilter';
 
 export default function ServicesCatalogPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -35,8 +37,8 @@ export default function ServicesCatalogPage() {
 
   const handleDelete = (service: ServiceCatalogItem) => {
     showConfirmDialog({
-      title: 'Delete Service',
-      content: `Are you sure you want to delete ${service.name}?`,
+      title: t('servicesCatalog.deleteService'),
+      content: t('servicesCatalog.confirmDelete', { name: service.name }),
       onOk: async () => {
         await deleteService.mutateAsync(service.id);
       },
@@ -46,20 +48,20 @@ export default function ServicesCatalogPage() {
 
   const columns: ColumnsType<ServiceCatalogItem> = [
     {
-      title: 'Name',
+      title: t('servicesCatalog.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Category',
+      title: t('servicesCatalog.category'),
       dataIndex: 'category',
       key: 'category',
       render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Price',
+      title: t('servicesCatalog.price'),
       dataIndex: 'default_price',
       key: 'default_price',
       render: (price: number | null) =>
@@ -67,45 +69,45 @@ export default function ServicesCatalogPage() {
       sorter: (a, b) => (a.default_price || 0) - (b.default_price || 0),
     },
     {
-      title: 'Duration (min)',
+      title: t('servicesCatalog.duration'),
       dataIndex: 'duration_minutes',
       key: 'duration_minutes',
       render: (duration: number | null) =>
-        duration !== null && duration !== undefined ? `${duration} min` : <span style={{ opacity: 0.5 }}>-</span>,
+        duration !== null && duration !== undefined ? t('servicesCatalog.durationUnit', { duration }) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Tax Rate',
+      title: t('servicesCatalog.taxRate'),
       dataIndex: 'tax_rate',
       key: 'tax_rate',
       render: (rate: number | null) =>
         rate !== null && rate !== undefined ? `${rate}%` : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Active',
+      title: t('servicesCatalog.active'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (active: boolean) =>
-        active ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>,
+        active ? <Tag color="green">{t('servicesCatalog.statusActive')}</Tag> : <Tag color="red">{t('servicesCatalog.statusInactive')}</Tag>,
     },
     {
-      title: 'Actions',
+      title: t('servicesCatalog.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="services-catalog:read">
-            <Tooltip title="View">
+            <Tooltip title={t('servicesCatalog.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/catalog/services/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="services-catalog:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('servicesCatalog.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/catalog/services/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="services-catalog:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('servicesCatalog.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -117,12 +119,12 @@ export default function ServicesCatalogPage() {
   return (
     <div>
       <PageHeader
-        title="Services Catalog"
-        subtitle="Manage your service offerings"
+        title={t('servicesCatalog.title')}
+        subtitle={t('servicesCatalog.subtitle')}
         extra={
           <PermissionGuard permission="services-catalog:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/catalog/services/new')}>
-              Add Service
+              {t('servicesCatalog.addService')}
             </Button>
           </PermissionGuard>
         }
@@ -130,7 +132,7 @@ export default function ServicesCatalogPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search services by name or category"
+          placeholder={t('servicesCatalog.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -148,7 +150,7 @@ export default function ServicesCatalogPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} services`,
+          showTotal: (total) => t('servicesCatalog.totalServices', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

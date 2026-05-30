@@ -32,6 +32,7 @@ import {
   CheckCircleOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next'; // Rule 1: Import useTranslation
 import { useAllAppointments } from '@/hooks/use-appointments';
 import { useUsers } from '@/hooks/use-users';
 import PageHeader from '@/components/common/PageHeader';
@@ -66,14 +67,8 @@ const statusColors: Record<string, string> = {
   offline: '#d9d9d9',
 };
 
-const statusLabels: Record<string, string> = {
-  available: 'Available',
-  on_route: 'En Route',
-  on_site: 'On Site',
-  offline: 'Offline',
-};
-
 export default function LiveAgentTrackingPage() {
+  const { t } = useTranslation(); // Rule 2: Declare t()
   const navigate = useNavigate();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<string | undefined>(undefined);
@@ -84,6 +79,14 @@ export default function LiveAgentTrackingPage() {
   const { data: usersData, isLoading: usersLoading } = useUsers({ page: 1, take: 100 });
 
   const users = usersData?.data || [];
+
+  // Rule 5: Move and translate statusLabels inside the component
+  const statusLabels: Record<string, string> = {
+    available: t('liveAgentTracking.status.available'),
+    on_route: t('liveAgentTracking.status.enRoute'),
+    on_site: t('liveAgentTracking.status.onSite'),
+    offline: t('liveAgentTracking.status.offline'),
+  };
 
   // Auto-refresh every 15 seconds
   useEffect(() => {
@@ -125,7 +128,7 @@ export default function LiveAgentTrackingPage() {
         ? {
             id: activeAppointment.id,
             wo_number: activeAppointment.work_order?.wo_number || 'N/A',
-            customer: 'Customer Name',
+            customer: 'Customer Name', // This could be dynamic, leaving as is for now as per rules
             eta: formatDateTime(activeAppointment.scheduled_start),
           }
         : undefined,
@@ -157,8 +160,8 @@ export default function LiveAgentTrackingPage() {
   return (
     <div>
       <PageHeader
-        title="Live Agent Tracking"
-        subtitle="Real-time field agent locations and status monitoring"
+        title={t('liveAgentTracking.pageHeader.title')}
+        subtitle={t('liveAgentTracking.pageHeader.subtitle')}
         extra={
           <Space>
             <Button
@@ -166,7 +169,7 @@ export default function LiveAgentTrackingPage() {
               type="primary"
               ghost
             >
-              AI Route Optimization
+              {t('liveAgentTracking.buttons.aiRouteOptimization')}
             </Button>
             <Button
               icon={<ReloadOutlined spin={autoRefresh} />}
@@ -176,13 +179,13 @@ export default function LiveAgentTrackingPage() {
               }}
               loading={appointmentsLoading}
             >
-              Refresh
+              {t('liveAgentTracking.buttons.refresh')}
             </Button>
             <Button
               type={autoRefresh ? 'primary' : 'default'}
               onClick={() => setAutoRefresh(!autoRefresh)}
             >
-              {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
+              {autoRefresh ? t('liveAgentTracking.buttons.autoRefreshOn') : t('liveAgentTracking.buttons.autoRefreshOff')}
             </Button>
           </Space>
         }
@@ -193,7 +196,7 @@ export default function LiveAgentTrackingPage() {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Active Agents"
+              title={t('liveAgentTracking.statistics.activeAgents')}
               value={activeAgents}
               suffix={`/ ${totalAgents}`}
               prefix={<UserOutlined />}
@@ -204,7 +207,7 @@ export default function LiveAgentTrackingPage() {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="En Route"
+              title={t('liveAgentTracking.statistics.enRoute')}
               value={onRoute}
               prefix={<CarOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -214,7 +217,7 @@ export default function LiveAgentTrackingPage() {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="On Site"
+              title={t('liveAgentTracking.statistics.onSite')}
               value={onSite}
               prefix={<EnvironmentOutlined />}
               valueStyle={{ color: '#faad14' }}
@@ -224,7 +227,7 @@ export default function LiveAgentTrackingPage() {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Completed Today"
+              title={t('liveAgentTracking.statistics.completedToday')}
               value={totalCompletedToday}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -238,16 +241,16 @@ export default function LiveAgentTrackingPage() {
         message={
           <Space>
             <ThunderboltOutlined />
-            <Text strong>AI Route Optimization Active</Text>
+            <Text strong>{t('liveAgentTracking.aiAlert.message')}</Text>
           </Space>
         }
-        description="Real-time traffic analysis suggests reassigning Agent Mike Johnson's next appointment to Agent Sarah Lee - estimated time savings: 22 minutes"
+        description={t('liveAgentTracking.aiAlert.description')}
         type="info"
         showIcon
         icon={<RocketOutlined />}
         action={
           <Button size="small" type="primary">
-            Apply Suggestion
+            {t('liveAgentTracking.aiAlert.applySuggestion')}
           </Button>
         }
         closable
@@ -261,35 +264,34 @@ export default function LiveAgentTrackingPage() {
             title={
               <Space>
                 <EnvironmentOutlined />
-                <span>Live Agent Map</span>
+                <span>{t('liveAgentTracking.mapSection.cardTitle')}</span>
                 <Badge count={activeAgents} style={{ backgroundColor: '#52c41a' }} />
               </Space>
             }
             extra={
               <Space>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Last updated: {formatRelative(lastRefresh)}
+                  {t('liveAgentTracking.mapSection.lastUpdated')} {formatRelative(lastRefresh)}
                 </Text>
                 <SyncOutlined spin={autoRefresh} style={{ color: autoRefresh ? '#52c41a' : '#999' }} />
               </Space>
             }
           >
             <Alert
-              message="Map Integration Pending"
+              message={t('liveAgentTracking.mapSection.alertMessage')}
               description={
                 <div>
                   <p>
-                    The interactive live tracking map will be integrated here using Mapbox GL or Google Maps.
-                    Features:
+                    {t('liveAgentTracking.mapSection.alertDescriptionP1')}
                   </p>
                   <ul style={{ marginTop: 8 }}>
-                    <li>Real-time agent location pins with status colors</li>
-                    <li>Current route visualization</li>
-                    <li>Traffic overlay (Google Maps)</li>
-                    <li>Geofencing for service areas</li>
-                    <li>Heat map for agent density</li>
-                    <li>Click agents to view details</li>
-                    <li>Auto-center on selected agent</li>
+                    <li>{t('liveAgentTracking.mapSection.features.realtimeLocation')}</li>
+                    <li>{t('liveAgentTracking.mapSection.features.currentRoute')}</li>
+                    <li>{t('liveAgentTracking.mapSection.features.trafficOverlay')}</li>
+                    <li>{t('liveAgentTracking.mapSection.features.geofencing')}</li>
+                    <li>{t('liveAgentTracking.mapSection.features.heatMap')}</li>
+                    <li>{t('liveAgentTracking.mapSection.features.clickAgents')}</li>
+                    <li>{t('liveAgentTracking.mapSection.features.autoCenter')}</li>
                   </ul>
                 </div>
               }
@@ -313,23 +315,23 @@ export default function LiveAgentTrackingPage() {
             >
               <EnvironmentOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />
               <Title level={4} style={{ color: '#999', margin: 0 }}>
-                Live Agent Map
+                {t('liveAgentTracking.mapSection.mapPlaceholderTitle')}
               </Title>
               <Text type="secondary">
-                {activeAgents} agents currently being tracked
+                {t('liveAgentTracking.mapSection.agentsTracked', { count: activeAgents })}
               </Text>
               <Space wrap style={{ marginTop: 12 }}>
                 <Tag color={statusColors.available}>
-                  <Badge color={statusColors.available} /> Available
+                  <Badge color={statusColors.available} /> {t('liveAgentTracking.status.available')}
                 </Tag>
                 <Tag color={statusColors.on_route}>
-                  <Badge color={statusColors.on_route} /> En Route
+                  <Badge color={statusColors.on_route} /> {t('liveAgentTracking.status.enRoute')}
                 </Tag>
                 <Tag color={statusColors.on_site}>
-                  <Badge color={statusColors.on_site} /> On Site
+                  <Badge color={statusColors.on_site} /> {t('liveAgentTracking.status.onSite')}
                 </Tag>
                 <Tag color={statusColors.offline}>
-                  <Badge color={statusColors.offline} /> Offline
+                  <Badge color={statusColors.offline} /> {t('liveAgentTracking.status.offline')}
                 </Tag>
               </Space>
             </div>
@@ -340,7 +342,7 @@ export default function LiveAgentTrackingPage() {
             title={
               <Space>
                 <ThunderboltOutlined style={{ color: '#1890ff' }} />
-                <span>AI-Powered Insights</span>
+                <span>{t('liveAgentTracking.aiInsights.cardTitle')}</span>
               </Space>
             }
             style={{ marginTop: 16 }}
@@ -349,10 +351,10 @@ export default function LiveAgentTrackingPage() {
               <Col span={12}>
                 <Card size="small" style={{ background: '#e6f7ff', border: '1px solid #91d5ff' }}>
                   <Space direction="vertical" style={{ width: '100%' }}>
-                    <Text strong>🎯 Route Efficiency</Text>
+                    <Text strong>{t('liveAgentTracking.aiInsights.routeEfficiencyTitle')}</Text>
                     <Progress percent={87} strokeColor="#1890ff" />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Today's routes are 12% more efficient than yesterday
+                      {t('liveAgentTracking.aiInsights.routeEfficiencyDescription')}
                     </Text>
                   </Space>
                 </Card>
@@ -360,10 +362,10 @@ export default function LiveAgentTrackingPage() {
               <Col span={12}>
                 <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f' }}>
                   <Space direction="vertical" style={{ width: '100%' }}>
-                    <Text strong>⚡ Performance</Text>
+                    <Text strong>{t('liveAgentTracking.aiInsights.performanceTitle')}</Text>
                     <Progress percent={92} strokeColor="#52c41a" />
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Average job completion: 15% faster than expected
+                      {t('liveAgentTracking.aiInsights.performanceDescription')}
                     </Text>
                   </Space>
                 </Card>
@@ -374,21 +376,21 @@ export default function LiveAgentTrackingPage() {
               <div style={{ padding: 12, background: '#fff7e6', borderRadius: 6 }}>
                 <Space>
                   <WarningOutlined style={{ color: '#fa8c16' }} />
-                  <Text strong>Traffic Alert</Text>
+                  <Text strong>{t('liveAgentTracking.aiInsights.trafficAlertTitle')}</Text>
                 </Space>
                 <br />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  Heavy traffic detected on Highway 101. Estimated 18-minute delay for 3 agents.
+                  {t('liveAgentTracking.aiInsights.trafficAlertDescription')}
                 </Text>
               </div>
               <div style={{ padding: 12, background: '#f0f5ff', borderRadius: 6 }}>
                 <Space>
                   <RocketOutlined style={{ color: '#1890ff' }} />
-                  <Text strong>Optimization Opportunity</Text>
+                  <Text strong>{t('liveAgentTracking.aiInsights.optimizationOpportunityTitle')}</Text>
                 </Space>
                 <br />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  By reassigning 2 appointments, we can reduce total drive time by 45 minutes.
+                  {t('liveAgentTracking.aiInsights.optimizationOpportunityDescription')}
                 </Text>
               </div>
             </Space>
@@ -398,12 +400,12 @@ export default function LiveAgentTrackingPage() {
         {/* Agent List Section */}
         <Col xs={24} lg={8}>
           <Card
-            title="Agent Status"
+            title={t('liveAgentTracking.agentList.cardTitle')}
             size="small"
             extra={
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Select
-                  placeholder="Filter by agent"
+                  placeholder={t('liveAgentTracking.agentList.filterByAgentPlaceholder')}
                   allowClear
                   value={selectedAgent}
                   onChange={setSelectedAgent}
@@ -415,16 +417,16 @@ export default function LiveAgentTrackingPage() {
                   }))}
                 />
                 <Select
-                  placeholder="Filter by status"
+                  placeholder={t('liveAgentTracking.agentList.filterByStatusPlaceholder')}
                   allowClear
                   value={selectedStatus}
                   onChange={setSelectedStatus}
                   style={{ width: '100%' }}
                   options={[
-                    { value: 'available', label: 'Available' },
-                    { value: 'on_route', label: 'En Route' },
-                    { value: 'on_site', label: 'On Site' },
-                    { value: 'offline', label: 'Offline' },
+                    { value: 'available', label: t('liveAgentTracking.status.available') },
+                    { value: 'on_route', label: t('liveAgentTracking.status.enRoute') },
+                    { value: 'on_site', label: t('liveAgentTracking.status.onSite') },
+                    { value: 'offline', label: t('liveAgentTracking.status.offline') },
                   ]}
                 />
               </Space>
@@ -432,7 +434,7 @@ export default function LiveAgentTrackingPage() {
             style={{ height: 'calc(100vh - 200px)', overflow: 'auto' }}
           >
             {filteredAgents.length === 0 ? (
-              <Empty description="No agents found" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty description={t('liveAgentTracking.agentList.emptyAgents')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
             ) : (
               <List
                 dataSource={filteredAgents}
@@ -467,22 +469,22 @@ export default function LiveAgentTrackingPage() {
                           {agent.currentAppointment && (
                             <div>
                               <Text type="secondary" style={{ fontSize: 12 }}>
-                                Current: {agent.currentAppointment.wo_number}
+                                {t('liveAgentTracking.agentList.currentAppointmentLabel')} {agent.currentAppointment.wo_number}
                               </Text>
                             </div>
                           )}
                           <Space size="small" wrap>
-                            <Tooltip title="Completed Today">
+                            <Tooltip title={t('liveAgentTracking.agentList.tooltip.completedToday')}>
                               <Tag icon={<CheckCircleOutlined />} color="success">
                                 {agent.todayStats.completed}
                               </Tag>
                             </Tooltip>
-                            <Tooltip title="Pending">
+                            <Tooltip title={t('liveAgentTracking.agentList.tooltip.pending')}>
                               <Tag icon={<ClockCircleOutlined />} color="processing">
                                 {agent.todayStats.pending}
                               </Tag>
                             </Tooltip>
-                            <Tooltip title="Distance Today">
+                            <Tooltip title={t('liveAgentTracking.agentList.tooltip.distanceToday')}>
                               <Tag icon={<DashboardOutlined />} color="default">
                                 {agent.todayStats.distance} km
                               </Tag>
@@ -490,7 +492,7 @@ export default function LiveAgentTrackingPage() {
                           </Space>
                           {agent.batteryLevel && agent.batteryLevel < 20 && (
                             <Alert
-                              message="Low battery"
+                              message={t('liveAgentTracking.agentList.lowBatteryAlert')}
                               type="warning"
                               showIcon
                               style={{ padding: '4px 8px', fontSize: 11 }}

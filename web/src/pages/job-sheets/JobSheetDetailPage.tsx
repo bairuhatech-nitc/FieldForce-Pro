@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -48,6 +49,7 @@ function formatStatus(status: string): string {
 }
 
 export default function JobSheetDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -65,7 +67,7 @@ export default function JobSheetDetailPage() {
   if (!instance) {
     return (
       <div style={{ textAlign: 'center', padding: 80 }}>
-        <Text type="secondary">Job sheet not found.</Text>
+        <Text type="secondary">{t('jobSheetDetail.notFound')}</Text>
       </div>
     );
   }
@@ -74,7 +76,7 @@ export default function JobSheetDetailPage() {
 
   const columns: ColumnsType<JobSheetItem> = [
     {
-      title: 'Position',
+      title: t('jobSheetDetail.columns.position'),
       dataIndex: 'sort_order',
       key: 'sort_order',
       width: 80,
@@ -83,7 +85,7 @@ export default function JobSheetDetailPage() {
       sorter: (a: JobSheetItem, b: JobSheetItem) => a.sort_order - b.sort_order,
     },
     {
-      title: 'Type',
+      title: t('jobSheetDetail.columns.type'),
       dataIndex: 'type',
       key: 'type',
       width: 120,
@@ -92,55 +94,55 @@ export default function JobSheetDetailPage() {
       ),
     },
     {
-      title: 'Label',
+      title: t('jobSheetDetail.columns.label'),
       dataIndex: 'label',
       key: 'label',
     },
     {
-      title: 'Value',
+      title: t('jobSheetDetail.columns.value'),
       dataIndex: 'value',
       key: 'value',
       render: (val: string | null) =>
         val ? <Text>{val}</Text> : <Text type="secondary">-</Text>,
     },
     {
-      title: 'Required',
+      title: t('jobSheetDetail.columns.required'),
       dataIndex: 'is_required',
       key: 'is_required',
       width: 100,
       render: (req: boolean) =>
-        req ? <Tag color="red">Required</Tag> : <Tag>Optional</Tag>,
+        req ? <Tag color="red">{t('jobSheetDetail.required')}</Tag> : <Tag>{t('jobSheetDetail.optional')}</Tag>,
     },
   ];
 
   return (
     <div>
       <PageHeader
-        title="Job Sheet"
-        subtitle={`ID: ${instance.id.slice(0, 8)}...`}
+        title={t('jobSheetDetail.title')}
+        subtitle={`${t('jobSheetDetail.id')}: ${instance.id.slice(0, 8)}...`}
         extra={
           <Space>
             <Tag color={statusColors[instance.status] || 'default'} style={{ fontSize: 14, padding: '2px 10px' }}>
               {formatStatus(instance.status)}
             </Tag>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/job-sheets')}>
-              Back
+              {t('jobSheetDetail.back')}
             </Button>
           </Space>
         }
       />
 
-      <Card title="Details" style={{ marginBottom: 24 }}>
+      <Card title={t('jobSheetDetail.details')} style={{ marginBottom: 24 }}>
         <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="Template">
-            {instance.template?.name || (instance.template_id ? instance.template_id.slice(0, 8) + '...' : 'N/A')}
+          <Descriptions.Item label={t('jobSheetDetail.fields.template')}>
+            {instance.template?.name || (instance.template_id ? instance.template_id.slice(0, 8) + '...' : t('jobSheetDetail.na'))}
           </Descriptions.Item>
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label={t('jobSheetDetail.fields.status')}>
             <Tag color={statusColors[instance.status] || 'default'}>
               {formatStatus(instance.status)}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Work Order">
+          <Descriptions.Item label={t('jobSheetDetail.fields.workOrder')}>
             {instance.work_order_id ? (
               <Link to={`/work-orders/${instance.work_order_id}`}>
                 {instance.work_order_id.slice(0, 8)}...
@@ -149,33 +151,33 @@ export default function JobSheetDetailPage() {
               <Text type="secondary">-</Text>
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="Appointment">
+          <Descriptions.Item label={t('jobSheetDetail.fields.appointment')}>
             {instance.appointment_id ? (
               <Text>{instance.appointment_id.slice(0, 8)}...</Text>
             ) : (
               <Text type="secondary">-</Text>
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="Created">
+          <Descriptions.Item label={t('jobSheetDetail.fields.created')}>
             {formatDateTime(instance.created_at)}
           </Descriptions.Item>
-          <Descriptions.Item label="Updated">
+          <Descriptions.Item label={t('jobSheetDetail.fields.updated')}>
             {formatDateTime(instance.updated_at)}
           </Descriptions.Item>
           {instance.completed_at && (
-            <Descriptions.Item label="Completed">
+            <Descriptions.Item label={t('jobSheetDetail.fields.completed')}>
               {formatDateTime(instance.completed_at)}
             </Descriptions.Item>
           )}
           {notes && (
-            <Descriptions.Item label="Notes" span={2}>
+            <Descriptions.Item label={t('jobSheetDetail.fields.notes')} span={2}>
               {notes}
             </Descriptions.Item>
           )}
         </Descriptions>
       </Card>
 
-      <Card title="Items">
+      <Card title={t('jobSheetDetail.items')}>
         <Table
           columns={columns}
           dataSource={items || []}

@@ -43,8 +43,8 @@ export default function ServiceLocationListPage() {
 
   const handleDelete = (location: ServiceLocation) => {
     showConfirmDialog({
-      title: 'Delete Service Location',
-      content: `Are you sure you want to delete this location at ${location.address}?`,
+      title: t('serviceLocations.deleteTitle'),
+      content: t('serviceLocations.deleteConfirm', { address: location.address }),
       onOk: async () => {
         await deleteServiceLocation.mutateAsync(location.id);
       },
@@ -54,7 +54,7 @@ export default function ServiceLocationListPage() {
 
   const columns: ColumnsType<ServiceLocation> = [
     {
-      title: 'Address',
+      title: t('serviceLocations.columns.address'),
       dataIndex: 'address',
       key: 'address',
       render: (address: string) => (
@@ -65,13 +65,13 @@ export default function ServiceLocationListPage() {
       ),
     },
     {
-      title: 'Access Notes',
+      title: t('serviceLocations.columns.accessNotes'),
       dataIndex: 'access_notes',
       key: 'access_notes',
       render: (notes: string | null) => notes || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Gate Code',
+      title: t('serviceLocations.columns.gateCode'),
       dataIndex: 'gate_code',
       key: 'gate_code',
       render: (code: string | null) => code ? (
@@ -79,12 +79,12 @@ export default function ServiceLocationListPage() {
       ) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Coordinates',
+      title: t('serviceLocations.columns.coordinates'),
       key: 'coordinates',
       render: (_, record) => {
         if (record.lat && record.lng) {
           return (
-            <Tooltip title="Click to view on map">
+            <Tooltip title={t('serviceLocations.tooltips.viewOnMap')}>
               <a onClick={(e) => {
                 e.preventDefault();
                 window.open(`https://maps.google.com/?q=${record.lat},${record.lng}`, '_blank');
@@ -94,25 +94,25 @@ export default function ServiceLocationListPage() {
             </Tooltip>
           );
         }
-        return <span style={{ color: '#999' }}>Not set</span>;
+        return <span style={{ color: '#999' }}>{t('serviceLocations.notSet')}</span>;
       },
     },
     {
-      title: 'Created',
+      title: t('serviceLocations.columns.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('serviceLocations.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="service_locations:read">
-            <Tooltip title="View">
+            <Tooltip title={t('common.view')}>
               <Button
                 type="text"
                 icon={<EyeOutlined />}
@@ -122,7 +122,7 @@ export default function ServiceLocationListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="service_locations:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('common.edit')}>
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -132,7 +132,7 @@ export default function ServiceLocationListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="service_locations:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button
                 type="text"
                 danger
@@ -151,7 +151,7 @@ export default function ServiceLocationListPage() {
     <div>
       <PageHeader
         title={t('nav.serviceLocations')}
-        subtitle="Manage service locations"
+        subtitle={t('serviceLocations.manageSubtitle')}
         extra={
           <PermissionGuard permission="service_locations:create">
             <Button
@@ -159,7 +159,7 @@ export default function ServiceLocationListPage() {
               icon={<PlusOutlined />}
               onClick={() => navigate('/service-locations/new')}
             >
-              Add Service Location
+              {t('serviceLocations.addServiceLocation')}
             </Button>
           </PermissionGuard>
         }
@@ -167,7 +167,7 @@ export default function ServiceLocationListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search service locations by name, address, or city"
+          placeholder={t('serviceLocations.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -185,7 +185,7 @@ export default function ServiceLocationListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} service locations`,
+          showTotal: (total) => t('serviceLocations.totalLocations', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

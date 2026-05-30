@@ -28,6 +28,7 @@ import {
   InfoCircleOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useOptimizeSchedule, useOptimizationStatus } from '../../hooks/use-scheduling';
 import { WorkOrderInput, TechnicianInput } from '../../api/scheduling.api';
 
@@ -44,6 +45,7 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
   technicians,
   onOptimizationComplete,
 }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [optimizationSettings, setOptimizationSettings] = useState({
@@ -98,9 +100,9 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
       title={
         <Space>
           <RobotOutlined style={{ fontSize: 20, color: '#1890ff' }} />
-          <Text strong>AI Scheduling Assistant</Text>
+          <Text strong>{t('aiScheduling.title')}</Text>
           <Badge
-            count={optimizationPotential > 60 ? 'High Potential' : optimizationPotential > 30 ? 'Medium' : 'Low'}
+            count={optimizationPotential > 60 ? t('aiScheduling.highPotential') : optimizationPotential > 30 ? t('aiScheduling.medium') : t('aiScheduling.low')}
             style={{
               backgroundColor: optimizationPotential > 60 ? '#52c41a' : optimizationPotential > 30 ? '#faad14' : '#d9d9d9',
             }}
@@ -109,7 +111,7 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
       }
       extra={
         <Space>
-          <Tooltip title="Settings">
+          <Tooltip title={t('aiScheduling.settings')}>
             <Button
               icon={<SettingOutlined />}
               onClick={() => setShowSettings(true)}
@@ -121,7 +123,7 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
             onClick={() => setIsExpanded(!isExpanded)}
             size="small"
           >
-            {isExpanded ? 'Collapse' : 'Expand'}
+            {isExpanded ? t('aiScheduling.collapse') : t('aiScheduling.expand')}
           </Button>
         </Space>
       }
@@ -132,21 +134,21 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
         <Row gutter={16}>
           <Col span={6}>
             <Statistic
-              title="Jobs to Schedule"
+              title={t('aiScheduling.jobsToSchedule')}
               value={workOrders.length}
               prefix={<ClockCircleOutlined />}
             />
           </Col>
           <Col span={6}>
             <Statistic
-              title="Available Technicians"
+              title={t('aiScheduling.availableTechnicians')}
               value={technicians.length}
               prefix={<TeamOutlined />}
             />
           </Col>
           <Col span={6}>
             <Statistic
-              title="Optimization Potential"
+              title={t('aiScheduling.optimizationPotential')}
               value={optimizationPotential}
               suffix="%"
               valueStyle={{ color: optimizationPotential > 60 ? '#3f8600' : undefined }}
@@ -154,9 +156,9 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
           </Col>
           <Col span={6}>
             <Statistic
-              title="Est. Time Savings"
+              title={t('aiScheduling.estTimeSavings')}
               value={Math.round((optimizationPotential / 100) * 45)}
-              suffix="min"
+              suffix={t('aiScheduling.minutes')}
               prefix={<ThunderboltOutlined />}
             />
           </Col>
@@ -166,25 +168,22 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
           <>
             {/* AI Insights */}
             <Alert
-              message="AI Recommendations"
+              message={t('aiScheduling.aiRecommendations')}
               description={
                 <Space direction="vertical">
                   {optimizationPotential > 60 && (
                     <Text>
-                      <CheckCircleOutlined style={{ color: '#52c41a' }} /> High optimization potential detected.
-                      AI can reduce travel time by up to 30% and improve technician utilization.
+                      <CheckCircleOutlined style={{ color: '#52c41a' }} /> {t('aiScheduling.highPotentialDetected')}
                     </Text>
                   )}
                   {workOrders.length > technicians.length * 8 && (
                     <Text>
-                      <WarningOutlined style={{ color: '#faad14' }} /> Workload exceeds capacity.
-                      Consider adding {Math.ceil((workOrders.length - technicians.length * 8) / 8)} more technicians.
+                      <WarningOutlined style={{ color: '#faad14' }} /> {t('aiScheduling.workloadExceeds', { count: Math.ceil((workOrders.length - technicians.length * 8) / 8) })}
                     </Text>
                   )}
                   {optimizationSettings.use_traffic_data && (
                     <Text>
-                      <InfoCircleOutlined style={{ color: '#1890ff' }} /> Real-time traffic data will be used
-                      to optimize routes and avoid congestion.
+                      <InfoCircleOutlined style={{ color: '#1890ff' }} /> {t('aiScheduling.trafficDataUsed')}
                     </Text>
                   )}
                 </Space>
@@ -196,16 +195,16 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
             {/* Optimization Settings Preview */}
             <Space wrap>
               <Tag icon={<ClockCircleOutlined />}>
-                {optimizationSettings.optimization_time_limit}s time limit
+                {t('aiScheduling.timeLimit', { seconds: optimizationSettings.optimization_time_limit })}
               </Tag>
               <Tag icon={<ThunderboltOutlined />} color={optimizationSettings.use_traffic_data ? 'green' : 'default'}>
-                Traffic: {optimizationSettings.use_traffic_data ? 'ON' : 'OFF'}
+                {t('aiScheduling.traffic')}: {optimizationSettings.use_traffic_data ? t('aiScheduling.on') : t('aiScheduling.off')}
               </Tag>
               <Tag icon={<TeamOutlined />} color={optimizationSettings.allow_overtime ? 'orange' : 'default'}>
-                Overtime: {optimizationSettings.allow_overtime ? 'Allowed' : 'Normal Hours'}
+                {t('aiScheduling.overtime')}: {optimizationSettings.allow_overtime ? t('aiScheduling.allowed') : t('aiScheduling.normalHours')}
               </Tag>
               <Tag icon={<InfoCircleOutlined />}>
-                {optimizationSettings.buffer_percentage}% buffer
+                {t('aiScheduling.buffer', { percent: optimizationSettings.buffer_percentage })}
               </Tag>
             </Space>
 
@@ -213,15 +212,15 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
             {currentTaskId && taskStatus && (
               <Card size="small" style={{ backgroundColor: '#f0f2f5' }}>
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <Text strong>Optimization in Progress...</Text>
+                  <Text strong>{t('aiScheduling.optimizationInProgress')}</Text>
                   <Progress
                     percent={taskStatus.progress || 0}
                     status={taskStatus.status === 'completed' ? 'success' : 'active'}
                   />
                   {taskStatus.status === 'completed' && (
                     <Alert
-                      message="Optimization Complete!"
-                      description={`Successfully optimized ${taskStatus.result?.assigned_jobs || 0} jobs`}
+                      message={t('aiScheduling.optimizationComplete')}
+                      description={t('aiScheduling.optimizedJobs', { count: taskStatus.result?.assigned_jobs || 0 })}
                       type="success"
                       showIcon
                     />
@@ -242,20 +241,20 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
             disabled={!workOrders.length || !technicians.length}
             size="large"
           >
-            Optimize with AI
+            {t('aiScheduling.optimizeWithAi')}
           </Button>
           <Button
             icon={<SyncOutlined />}
             onClick={() => window.location.reload()}
           >
-            Refresh Data
+            {t('aiScheduling.refreshData')}
           </Button>
         </Space>
       </Space>
 
       {/* Settings Modal */}
       <Modal
-        title="AI Optimization Settings"
+        title={t('aiScheduling.settingsTitle')}
         open={showSettings}
         onCancel={() => setShowSettings(false)}
         onOk={() => setShowSettings(false)}
@@ -263,7 +262,7 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <div>
-            <Text strong>Optimization Time Limit (seconds)</Text>
+            <Text strong>{t('aiScheduling.timeLimitSeconds')}</Text>
             <InputNumber
               min={5}
               max={300}
@@ -277,13 +276,13 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
               style={{ width: '100%', marginTop: 8 }}
             />
             <Text type="secondary">
-              Longer time limits allow for better optimization but take more time
+              {t('aiScheduling.timeLimitHelper')}
             </Text>
           </div>
 
           <div>
             <Space>
-              <Text strong>Use Real-Time Traffic Data</Text>
+              <Text strong>{t('aiScheduling.useTrafficData')}</Text>
               <Switch
                 checked={optimizationSettings.use_traffic_data}
                 onChange={(checked) =>
@@ -296,13 +295,13 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
             </Space>
             <br />
             <Text type="secondary">
-              Consider current traffic conditions when optimizing routes
+              {t('aiScheduling.trafficDataHelper')}
             </Text>
           </div>
 
           <div>
             <Space>
-              <Text strong>Allow Overtime</Text>
+              <Text strong>{t('aiScheduling.allowOvertime')}</Text>
               <Switch
                 checked={optimizationSettings.allow_overtime}
                 onChange={(checked) =>
@@ -315,12 +314,12 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
             </Space>
             <br />
             <Text type="secondary">
-              Allow scheduling beyond normal working hours if needed
+              {t('aiScheduling.allowOvertimeHelper')}
             </Text>
           </div>
 
           <div>
-            <Text strong>Buffer Percentage (%)</Text>
+            <Text strong>{t('aiScheduling.bufferPercentage')}</Text>
             <InputNumber
               min={0}
               max={50}
@@ -334,7 +333,7 @@ export const AISchedulingSuggestions: React.FC<AISchedulingSuggestionsProps> = (
               style={{ width: '100%', marginTop: 8 }}
             />
             <Text type="secondary">
-              Extra time buffer between appointments for delays
+              {t('aiScheduling.bufferHelper')}
             </Text>
           </div>
         </Space>

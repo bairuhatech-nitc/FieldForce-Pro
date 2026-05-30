@@ -32,7 +32,7 @@ class PageErrorBoundary extends Component<
         <Alert
           type="error"
           showIcon
-          message="This page encountered an error"
+          message="This page encountered an error" // Error boundary - class component, cannot use hooks
           description={
             <div>
               <p>{this.state.error?.message}</p>

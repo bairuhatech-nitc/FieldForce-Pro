@@ -27,21 +27,21 @@ export default function UserDetailPage() {
 
   const sessionColumns = [
     {
-      title: 'Device',
+      title: t('userDetailPage.device'),
       key: 'device',
       render: (_: unknown, record: LoginSession) =>
-        record.device_name || `${record.browser || ''} on ${record.os || 'Unknown'}`,
+        record.device_name || `${record.browser || ''} on ${record.os || t('userDetailPage.unknown')}`,
     },
-    { title: 'IP Address', dataIndex: 'ip_address', key: 'ip_address' },
-    { title: 'Location', dataIndex: 'location', key: 'location' },
+    { title: t('userDetailPage.ipAddress'), dataIndex: 'ip_address', key: 'ip_address' },
+    { title: t('userDetailPage.location'), dataIndex: 'location', key: 'location' },
     {
-      title: 'Last Activity',
+      title: t('userDetailPage.lastActivity'),
       dataIndex: 'last_activity_at',
       key: 'last_activity_at',
       render: (val: string) => formatRelative(val),
     },
     {
-      title: 'Actions',
+      title: t('userDetailPage.actions'),
       key: 'actions',
       render: (_: unknown, record: LoginSession) => (
         <Button
@@ -49,14 +49,14 @@ export default function UserDetailPage() {
           size="small"
           onClick={() =>
             showConfirmDialog({
-              title: 'Terminate Session',
-              content: 'Are you sure you want to terminate this session?',
+              title: t('userDetailPage.terminateSession'),
+              content: t('userDetailPage.terminateSessionConfirm'),
               onOk: async () => { await terminateSession.mutateAsync(record.id); },
               danger: true,
             })
           }
         >
-          Terminate
+          {t('userDetailPage.terminate')}
         </Button>
       ),
     },
@@ -88,12 +88,12 @@ export default function UserDetailPage() {
             {user.first_name} {user.last_name}
           </Descriptions.Item>
           <Descriptions.Item label={t('users.email')}>{user.email}</Descriptions.Item>
-          <Descriptions.Item label="Phone">{user.phone || '-'}</Descriptions.Item>
+          <Descriptions.Item label={t('userDetailPage.phone')}>{user.phone || '-'}</Descriptions.Item>
           <Descriptions.Item label={t('users.status')}>
             <StatusBadge status={user.is_active ? 'active' : 'inactive'} />
           </Descriptions.Item>
-          <Descriptions.Item label="Timezone">{user.timezone}</Descriptions.Item>
-          <Descriptions.Item label="Language">{user.language}</Descriptions.Item>
+          <Descriptions.Item label={t('userDetailPage.timezone')}>{user.timezone}</Descriptions.Item>
+          <Descriptions.Item label={t('userDetailPage.language')}>{user.language}</Descriptions.Item>
           <Descriptions.Item label={t('users.role')}>
             {user.roles
               ?.filter((r): r is Role => typeof r !== 'string')
@@ -102,13 +102,13 @@ export default function UserDetailPage() {
           <Descriptions.Item label={t('users.lastLogin')}>
             {formatDateTime(user.last_login_at)}
           </Descriptions.Item>
-          <Descriptions.Item label="Created">
+          <Descriptions.Item label={t('userDetailPage.created')}>
             {formatDateTime(user.created_at)}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card title="Active Sessions" style={{ marginBottom: 24 }}>
+      <Card title={t('userDetailPage.activeSessions')} style={{ marginBottom: 24 }}>
         <Table
           columns={sessionColumns}
           dataSource={sessions || []}

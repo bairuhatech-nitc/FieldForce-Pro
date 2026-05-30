@@ -45,8 +45,8 @@ export default function BlueprintListPage() {
 
   const handleDelete = (record: BlueprintRecord) => {
     showConfirmDialog({
-      title: 'Delete Blueprint',
-      content: `Are you sure you want to delete "${record.name}"?`,
+      title: t('blueprints.deleteTitle'),
+      content: t('blueprints.deleteContent', { name: record.name }),
       onOk: async () => {
         await deleteBlueprint.mutateAsync(record.id);
       },
@@ -56,60 +56,60 @@ export default function BlueprintListPage() {
 
   const columns: ColumnsType<BlueprintRecord> = [
     {
-      title: 'Name',
+      title: t('blueprints.columns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Entity Type',
+      title: t('blueprints.columns.entityType'),
       dataIndex: 'entity_type',
       key: 'entity_type',
       render: (type: string) => <Tag>{type}</Tag>,
     },
     {
-      title: 'Description',
+      title: t('blueprints.columns.description'),
       dataIndex: 'description',
       key: 'description',
       render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Status',
+      title: t('blueprints.columns.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean) => (
         <Tag color={isActive ? 'green' : 'default'}>
-          {isActive ? 'Active' : 'Inactive'}
+          {isActive ? t('blueprints.status.active') : t('blueprints.status.inactive')}
         </Tag>
       ),
     },
     {
-      title: 'Last Updated',
+      title: t('blueprints.columns.lastUpdated'),
       dataIndex: 'updated_at',
       key: 'updated_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('blueprints.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="blueprints:read">
-            <Tooltip title="View">
+            <Tooltip title={t('blueprints.actions.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/blueprints/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="blueprints:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('blueprints.actions.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/blueprints/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="blueprints:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('blueprints.actions.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -121,12 +121,12 @@ export default function BlueprintListPage() {
   return (
     <div>
       <PageHeader
-        title="Blueprints"
-        subtitle="Visual state machine definitions for workflow automation"
+        title={t('blueprints.title')}
+        subtitle={t('blueprints.subtitle')}
         extra={
           <PermissionGuard permission="blueprints:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/blueprints/new')}>
-              Create Blueprint
+              {t('blueprints.createButton')}
             </Button>
           </PermissionGuard>
         }
@@ -134,7 +134,7 @@ export default function BlueprintListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search blueprints..."
+          placeholder={t('blueprints.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -150,7 +150,7 @@ export default function BlueprintListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} blueprints`,
+          showTotal: (total) => t('blueprints.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

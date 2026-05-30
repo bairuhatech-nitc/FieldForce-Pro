@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Select, Skeleton } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useContact, useCreateContact, useUpdateContact } from '@/hooks/use-contacts';
 import PageHeader from '@/components/common/PageHeader';
 
 const { TextArea } = Input;
 
 export default function ContactFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -45,7 +47,7 @@ export default function ContactFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('contactForm.loading')} />
         <Card>
           <Skeleton active />
         </Card>
@@ -56,7 +58,7 @@ export default function ContactFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Contact' : 'Create Contact'}
+        title={isEdit ? t('contactForm.editContact') : t('contactForm.createContact')}
         onBack={() => navigate('/contacts')}
       />
 
@@ -69,40 +71,40 @@ export default function ContactFormPage() {
         >
           <Form.Item
             name="first_name"
-            label="First Name"
-            rules={[{ required: true, message: 'Please enter first name' }]}
+            label={t('contactForm.firstName')}
+            rules={[{ required: true, message: t('contactForm.pleaseEnterFirstName') }]}
           >
-            <Input placeholder="John" />
+            <Input placeholder={t('contactForm.johnPlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="last_name"
-            label="Last Name"
-            rules={[{ required: true, message: 'Please enter last name' }]}
+            label={t('contactForm.lastName')}
+            rules={[{ required: true, message: t('contactForm.pleaseEnterLastName') }]}
           >
-            <Input placeholder="Doe" />
+            <Input placeholder={t('contactForm.doePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="email"
-            label="Email"
-            rules={[{ type: 'email', message: 'Please enter a valid email' }]}
+            label={t('contactForm.email')}
+            rules={[{ type: 'email', message: t('contactForm.pleaseEnterValidEmail') }]}
           >
-            <Input placeholder="john.doe@example.com" />
+            <Input placeholder={t('contactForm.emailPlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="phone" label="Phone">
-            <Input placeholder="+1234567890" />
+          <Form.Item name="phone" label={t('contactForm.phone')}>
+            <Input placeholder={t('contactForm.phonePlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="address" label="Address">
-            <TextArea rows={3} placeholder="123 Main St, City, State, 12345" />
+          <Form.Item name="address" label={t('contactForm.address')}>
+            <TextArea rows={3} placeholder={t('contactForm.addressPlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="tags" label="Tags">
+          <Form.Item name="tags" label={t('contactForm.tags')}>
             <Select
               mode="tags"
-              placeholder="Add tags (press Enter to add)"
+              placeholder={t('contactForm.tagsPlaceholder')}
               style={{ width: '100%' }}
             />
           </Form.Item>
@@ -114,9 +116,9 @@ export default function ContactFormPage() {
                 htmlType="submit"
                 loading={createContact.isPending || updateContact.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('contactForm.update') : t('contactForm.create')}
               </Button>
-              <Button onClick={() => navigate('/contacts')}>Cancel</Button>
+              <Button onClick={() => navigate('/contacts')}>{t('contactForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

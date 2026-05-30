@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
+import { useTranslation } from 'react-i18next';
 import { useAllWorkOrders } from '@/hooks/use-work-orders';
 import { useAllInvoices } from '@/hooks/use-invoices';
 import { useAllPayments } from '@/hooks/use-payments';
@@ -67,11 +68,11 @@ const estimateStatusColors: Record<string, string> = {
   converted_to_wo: '#722ed1',
 };
 
-function getGreeting(): string {
+function getGreeting(t: (key: string) => string): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return t('dashboard.goodMorning');
+  if (hour < 17) return t('dashboard.goodAfternoon');
+  return t('dashboard.goodEvening');
 }
 
 function formatCurrency(value: unknown): string {
@@ -113,6 +114,7 @@ function getMonthlyRevenue(invoices: Invoice[]): Array<{ name: string; revenue: 
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
@@ -243,10 +245,10 @@ export default function DashboardPage() {
       <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-            Dashboard
+            {t('dashboard.title')}
           </Title>
           <Text type="secondary" style={{ fontSize: 14 }}>
-            {getGreeting()}, {user?.first_name || 'User'} &middot;{' '}
+            {getGreeting(t)}, {user?.first_name || 'User'} &middot;{' '}
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </div>
@@ -263,12 +265,12 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Total Revenue</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.totalRevenue')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.totalRevenue)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  From {invoices.filter((i) => i.status === 'paid').length} paid invoices
+                  {t('dashboard.fromPaidInvoices', { count: invoices.filter((i) => i.status === 'paid').length })}
                 </Text>
               </div>
               <div
@@ -294,12 +296,12 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Payments Collected</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.paymentsCollected')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.paymentsCollected)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {payments.filter((p) => p.status === 'completed').length} completed payments
+                  {t('dashboard.completedPayments', { count: payments.filter((p) => p.status === 'completed').length })}
                 </Text>
               </div>
               <div
@@ -325,12 +327,12 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Outstanding</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.outstanding')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, color: '#fa8c16', marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.outstandingAmount)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {financialStats.outstandingCount} unpaid invoice{financialStats.outstandingCount !== 1 ? 's' : ''}
+                  {t('dashboard.unpaidInvoices', { count: financialStats.outstandingCount })}
                 </Text>
               </div>
               <div
@@ -361,12 +363,12 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Overdue</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.overdueLabel')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, color: '#f5222d', marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.overdueAmount)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {financialStats.overdueCount} overdue invoice{financialStats.overdueCount !== 1 ? 's' : ''}
+                  {t('dashboard.overdueInvoices', { count: financialStats.overdueCount })}
                 </Text>
               </div>
               <div
@@ -395,12 +397,12 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Active Jobs</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.activeJobs')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : opsStats.activeWOs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  of {workOrders.length} total work orders
+                  {t('dashboard.ofTotalWorkOrders', { count: workOrders.length })}
                 </Text>
               </div>
               <div
@@ -426,7 +428,7 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Completion Rate</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.completionRate')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : `${opsStats.completionRate}%`}
                 </div>
@@ -461,12 +463,12 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Today's Appointments</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.todaysAppointments')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {statsLoading ? <Spin size="small" /> : opsStats.todayAppointments}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {opsStats.totalAppointments} total scheduled
+                  {t('dashboard.totalScheduled', { count: opsStats.totalAppointments })}
                 </Text>
               </div>
               <div
@@ -492,12 +494,12 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Pending Requests</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.pendingRequests')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {statsLoading ? <Spin size="small" /> : opsStats.pendingSRs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {0} total requests
+                  {t('dashboard.totalRequests', { count: 0 })}
                 </Text>
               </div>
               <div
@@ -520,8 +522,8 @@ export default function DashboardPage() {
         {/* Revenue Trend */}
         <Col xs={24} lg={14}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Revenue & Collections</Text>}
-            extra={<Text type="secondary" style={{ fontSize: 12 }}>Last 6 months</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.revenueCollections')}</Text>}
+            extra={<Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.last6Months')}</Text>}
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
             styles={{ body: { padding: '16px 24px 24px' } }}
           >
@@ -548,19 +550,19 @@ export default function DashboardPage() {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     formatter={((value: number) => `$${value.toLocaleString()}`) as any}
                   />
-                  <Area type="monotone" dataKey="revenue" name="Invoiced" stroke="#52c41a" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
-                  <Area type="monotone" dataKey="collected" name="Collected" stroke="#1677ff" strokeWidth={2} fillOpacity={1} fill="url(#colorCollected)" />
+                  <Area type="monotone" dataKey="revenue" name={t('dashboard.invoiced')} stroke="#52c41a" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                  <Area type="monotone" dataKey="collected" name={t('dashboard.collected')} stroke="#1677ff" strokeWidth={2} fillOpacity={1} fill="url(#colorCollected)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
             <Flex gap={24} justify="center" style={{ marginTop: 8 }}>
               <Flex align="center" gap={6}>
                 <div style={{ width: 12, height: 3, backgroundColor: '#52c41a', borderRadius: 2 }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Invoiced</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.invoiced')}</Text>
               </Flex>
               <Flex align="center" gap={6}>
                 <div style={{ width: 12, height: 3, backgroundColor: '#1677ff', borderRadius: 2 }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Collected</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.collected')}</Text>
               </Flex>
             </Flex>
           </Card>
@@ -569,10 +571,10 @@ export default function DashboardPage() {
         {/* Work Order Status Distribution */}
         <Col xs={24} lg={10}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Work Order Pipeline</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.workOrderPipeline')}</Text>}
             extra={
               <Button type="link" size="small" onClick={() => navigate('/work-orders')} style={{ padding: 0 }}>
-                View All <RightOutlined style={{ fontSize: 10 }} />
+                {t('common.viewAll')} <RightOutlined style={{ fontSize: 10 }} />
               </Button>
             }
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
@@ -581,7 +583,7 @@ export default function DashboardPage() {
             {woLoading ? (
               <Flex justify="center" align="center" style={{ height: 280 }}><Spin /></Flex>
             ) : woStatusData.length === 0 ? (
-              <Empty description="No work orders" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ paddingTop: 60 }} />
+              <Empty description={t('dashboard.noWorkOrders')} image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ paddingTop: 60 }} />
             ) : (
               <Flex vertical>
                 <div style={{ height: 200 }}>
@@ -627,10 +629,10 @@ export default function DashboardPage() {
         {/* Invoice Breakdown + AR Aging */}
         <Col xs={24} lg={12}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Invoice Overview</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.invoiceOverview')}</Text>}
             extra={
               <Button type="link" size="small" onClick={() => navigate('/invoices')} style={{ padding: 0 }}>
-                View All <RightOutlined style={{ fontSize: 10 }} />
+                {t('common.viewAll')} <RightOutlined style={{ fontSize: 10 }} />
               </Button>
             }
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
@@ -639,13 +641,13 @@ export default function DashboardPage() {
             {invLoading ? (
               <Flex justify="center" align="center" style={{ height: 200 }}><Spin /></Flex>
             ) : invoices.length === 0 ? (
-              <Empty description="No invoices" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty description={t('dashboard.noInvoices')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
             ) : (
               <>
                 {/* Invoice status bars */}
                 <div style={{ marginBottom: 20 }}>
                   <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    By Status
+                    {t('dashboard.byStatus')}
                   </Text>
                   <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {invoiceBreakdown.map((item) => (
@@ -679,37 +681,37 @@ export default function DashboardPage() {
         {/* Estimate Pipeline + Payment Methods */}
         <Col xs={24} lg={12}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Estimate Pipeline</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.estimatePipeline')}</Text>}
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
             styles={{ body: { padding: '16px 24px 24px' } }}
           >
             {/* Estimate Pipeline */}
             <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Estimate Pipeline
+              {t('dashboard.estimatePipeline')}
             </Text>
             {estLoading ? (
               <Flex justify="center" style={{ padding: 20 }}><Spin size="small" /></Flex>
             ) : estimates.length === 0 ? (
-              <Empty description="No estimates" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '12px 0' }} />
+              <Empty description={t('dashboard.noEstimates')} image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '12px 0' }} />
             ) : (
               <div style={{ marginTop: 12, marginBottom: 20 }}>
                 <Row gutter={[12, 12]}>
                   <Col span={8}>
                     <div style={{ background: 'rgba(82, 196, 26, 0.1)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#52c41a' }}>{estimatePipeline.winRate}%</div>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Win Rate</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>{t('dashboard.winRate')}</Text>
                     </div>
                   </Col>
                   <Col span={8}>
                     <div style={{ background: 'rgba(22, 119, 255, 0.08)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#1677ff' }}>{estimatePipeline.totalEstimates}</div>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Total</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>{t('common.total')}</Text>
                     </div>
                   </Col>
                   <Col span={8}>
                     <div style={{ background: 'rgba(114, 46, 209, 0.1)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#722ed1' }}>{formatCurrency(estimatePipeline.pipelineValue)}</div>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Pipeline</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>{t('dashboard.pipeline')}</Text>
                     </div>
                   </Col>
                 </Row>
