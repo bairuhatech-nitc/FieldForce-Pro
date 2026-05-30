@@ -438,6 +438,9 @@
     },
     "category": "Category",
     "selectCategory": "Select category",
+    "slaHours": "SLA (Hours)",
+    "selectSla": "Select SLA",
+    "defaultSla": "{{hours}} (Default)",
     "categories": {
       "hvac": "HVAC",
       "plumbing": "Plumbing",

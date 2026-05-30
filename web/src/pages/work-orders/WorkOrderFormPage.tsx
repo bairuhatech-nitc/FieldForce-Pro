@@ -35,6 +35,7 @@ export default function WorkOrderFormPage() {
         asset_id: workOrder.asset_id,
         priority: workOrder.priority,
         category: workOrder.category,
+        slaHours: (workOrder as any).slaHours ?? 24,
         scheduled_start: workOrder.scheduled_start ? dayjs(workOrder.scheduled_start) : null,
       });
     }
@@ -83,7 +84,7 @@ export default function WorkOrderFormPage() {
           onFinish={handleSubmit}
           autoComplete="off"
           style={{ maxWidth: 800 }}
-          initialValues={{ priority: 'medium' }}
+          initialValues={{ priority: 'medium', slaHours: 24 }}
         >
           <Form.Item
             name="summary"
@@ -155,18 +156,33 @@ export default function WorkOrderFormPage() {
             </Col>
           </Row>
 
-          <Form.Item name="category" label={t('workOrders.category')}>
-            <Select placeholder={t('workOrders.selectCategory')} allowClear>
-              <Select.Option value="HVAC">{t('workOrders.categories.hvac')}</Select.Option>
-              <Select.Option value="Plumbing">{t('workOrders.categories.plumbing')}</Select.Option>
-              <Select.Option value="Electrical">{t('workOrders.categories.electrical')}</Select.Option>
-              <Select.Option value="Appliance">{t('workOrders.categories.appliance')}</Select.Option>
-              <Select.Option value="General">{t('workOrders.categories.general')}</Select.Option>
-              <Select.Option value="Preventive Maintenance">{t('workOrders.categories.preventiveMaintenance')}</Select.Option>
-              <Select.Option value="Emergency">{t('workOrders.categories.emergency')}</Select.Option>
-              <Select.Option value="Other">{t('workOrders.categories.other')}</Select.Option>
-            </Select>
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="category" label={t('workOrders.category')}>
+                <Select placeholder={t('workOrders.selectCategory')} allowClear>
+                  <Select.Option value="HVAC">{t('workOrders.categories.hvac')}</Select.Option>
+                  <Select.Option value="Plumbing">{t('workOrders.categories.plumbing')}</Select.Option>
+                  <Select.Option value="Electrical">{t('workOrders.categories.electrical')}</Select.Option>
+                  <Select.Option value="Appliance">{t('workOrders.categories.appliance')}</Select.Option>
+                  <Select.Option value="General">{t('workOrders.categories.general')}</Select.Option>
+                  <Select.Option value="Preventive Maintenance">{t('workOrders.categories.preventiveMaintenance')}</Select.Option>
+                  <Select.Option value="Emergency">{t('workOrders.categories.emergency')}</Select.Option>
+                  <Select.Option value="Other">{t('workOrders.categories.other')}</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="slaHours" label={t('workOrders.slaHours')}>
+                <Select placeholder={t('workOrders.selectSla')}>
+                  <Select.Option value={2}>2</Select.Option>
+                  <Select.Option value={4}>4</Select.Option>
+                  <Select.Option value={8}>8</Select.Option>
+                  <Select.Option value={24}>{t('workOrders.defaultSla', { hours: 24 })}</Select.Option>
+                  <Select.Option value={48}>48</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             name="scheduled_start"
