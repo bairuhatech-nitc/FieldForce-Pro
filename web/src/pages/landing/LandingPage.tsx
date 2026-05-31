@@ -153,9 +153,14 @@ export default function LandingPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [isDark, setIsDark] = useState(
-    () => localStorage.getItem('lp-theme') === 'dark'
-  );
+  const [isDark, setIsDark] = useState(() => {
+    // If user has explicitly chosen a theme, respect it
+    const saved = localStorage.getItem('lp-theme');
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    // Otherwise, follow Chrome / OS system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const revealRef = useScrollReveal();
   const heroParallax = useScrollParallax();
   const featuresGlow = useMouseGlow();
@@ -175,6 +180,20 @@ export default function LandingPage() {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Sync with system theme changes (e.g., Chrome switching dark mode)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      // Only auto-follow system if user hasn't manually overridden
+      const saved = localStorage.getItem('lp-theme');
+      if (!saved) {
+        setIsDark(e.matches);
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   // Dark mode toggle — persists to localStorage
@@ -219,7 +238,15 @@ export default function LandingPage() {
           <div className="lp-scroll-progress" style={{ transform: `scaleX(${scrollProgress})`, transformOrigin: i18n.language === 'ar' ? 'right' : 'left' }} />
           <div className="lp-navbar-inner">
             <a href="#" className="lp-logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-              <div className="lp-logo-icon">FF</div>
+              <div className="lp-logo-icon" aria-label="FieldForce Pro icon">
+                <svg width="20" height="20" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  {/* Exact lightning bolt from reference SVG */}
+                  <path
+                    d="M 226,112 L 344,112 A 8,8 0 0,1 351,121 L 297,196 A 4,4 0 0,0 300,202 L 356,202 A 8,8 0 0,1 363,212 L 173,394 A 8,8 0 0,1 160,387 L 218,254 A 4,4 0 0,0 214,248 L 152,248 A 8,8 0 0,1 145,237 L 219,117 A 8,8 0 0,1 226,112 Z"
+                    fill="white"
+                  />
+                </svg>
+              </div>
               {t('app.name')}
             </a>
 
@@ -524,65 +551,109 @@ export default function LandingPage() {
             </div>
 
             <div className="lp-features-grid">
-              {/* Pillar 1 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-1">
-                <div className="lp-feature-icon lp-feature-icon-blue">
-                  <ToolOutlined />
+              {[
+                {
+                  icon: <CustomerServiceOutlined />, color: 'blue',
+                  title: 'AI‑Powered Customer Chatbot',
+                  desc: '24/7 intelligent support that creates tickets, answers FAQs, and generates estimates automatically.',
+                  bullets: ['Ticket creation from chat', 'FAQ knowledge base', 'AI estimate generation', 'Multi-language support'],
+                },
+                {
+                  icon: <ScheduleOutlined />, color: 'cyan',
+                  title: 'Autonomous Scheduling & Dispatch',
+                  desc: 'AI-driven job assignment that optimises routes, skills, and availability — reducing travel time by 30%.',
+                  bullets: ['Skill-based auto-assign', 'AI route optimisation', 'Drag-and-drop board', 'Real-time GPS tracking'],
+                },
+                {
+                  icon: <SyncOutlined />, color: 'green',
+                  title: 'Predictive Maintenance (IoT + LSTM)',
+                  desc: 'IoT sensor data combined with LSTM models to forecast equipment failures before they happen.',
+                  bullets: ['Sensor data ingestion', 'LSTM failure prediction', 'Automated work order creation', 'Asset health dashboards'],
+                },
+                {
+                  icon: <EyeOutlined />, color: 'amber',
+                  title: 'Computer‑Vision Quality Assurance',
+                  desc: 'YOLOv8-powered visual inspection that detects defects, verifies job completion, and flags anomalies.',
+                  bullets: ['YOLOv8 object detection', 'Defect classification', 'Photo-based job verification', 'Compliance photo audit'],
+                },
+                {
+                  icon: <FileTextOutlined />, color: 'blue',
+                  title: 'Document AI (OCR + LLM)',
+                  desc: 'Extract and structure data from invoices, contracts, and job sheets with OCR and large language models.',
+                  bullets: ['Invoice OCR extraction', 'Contract parsing', 'Auto-fill from documents', 'LLM-powered summaries'],
+                },
+                {
+                  icon: <BarChartOutlined />, color: 'cyan',
+                  title: 'Natural‑Language Analytics',
+                  desc: 'Ask questions in plain English and get instant charts, reports, and operational insights.',
+                  bullets: ['Plain-English queries', 'Auto-generated charts', 'KPI trend analysis', 'Exportable reports'],
+                },
+                {
+                  icon: <FundOutlined />, color: 'green',
+                  title: 'Churn & Demand Forecasting',
+                  desc: 'Gradient-boosting + Prophet models predict customer churn and future service demand to keep you ahead.',
+                  bullets: ['Churn risk scoring', 'Demand forecasting', 'Revenue projections', 'Seasonal trend detection'],
+                },
+                {
+                  icon: <CrownOutlined />, color: 'amber',
+                  title: 'Super‑Admin Dashboard',
+                  desc: 'Full-platform oversight with audit logs, API-key management, health monitoring, and billing analytics.',
+                  bullets: ['Complete audit logs', 'API key management', 'System health monitoring', 'Billing analytics'],
+                },
+                {
+                  icon: <ApartmentOutlined />, color: 'blue',
+                  title: 'Full‑Stack FSM Modules',
+                  desc: 'Every module you need: Contacts, Assets, Service Requests, Estimates, Work Orders, Inventory, SLA, Reviews.',
+                  bullets: ['Asset registry & IoT', 'SLA management', 'Inventory tracking', 'Reviews & ratings'],
+                },
+                {
+                  icon: <MailOutlined />, color: 'cyan',
+                  title: 'Multi‑Channel Intake',
+                  desc: 'Capture service requests via email, web form, WhatsApp, SMS, AI chat, and REST API — all in one inbox.',
+                  bullets: ['Email & web form', 'WhatsApp & SMS', 'AI chat intake', 'REST API ingestion'],
+                },
+                {
+                  icon: <BranchesOutlined />, color: 'green',
+                  title: 'Blueprint Workflow Editor',
+                  desc: 'Visual drag-and-drop state-machine editor to design and customise your own service workflows.',
+                  bullets: ['Visual state-machine editor', 'Custom status transitions', 'Conditional logic rules', 'Template library'],
+                },
+                {
+                  icon: <MobileOutlined />, color: 'amber',
+                  title: 'Offline‑First Mobile App',
+                  desc: 'WatermelonDB-powered sync gives field techs full functionality even without internet connectivity.',
+                  bullets: ['WatermelonDB sync engine', 'Offline job management', 'Photo & signature capture', 'Voice notes & AI assist'],
+                },
+                {
+                  icon: <SafetyCertificateOutlined />, color: 'blue',
+                  title: 'Enterprise‑Grade Security',
+                  desc: 'JWT + 2FA authentication, unlimited custom RBAC, full audit trails, and SOC-2-ready infrastructure.',
+                  bullets: ['JWT + 2FA auth', 'Unlimited custom RBAC', 'Full audit trails', 'SOC-2-ready'],
+                },
+                {
+                  icon: <GlobalOutlined />, color: 'cyan',
+                  title: 'Internationalisation (25+ Languages)',
+                  desc: 'Locale-aware UI with RTL support and 25+ languages so your global team works in their own language.',
+                  bullets: ['25+ languages', 'RTL layout support', 'Locale-aware formatting', 'Per-user language setting'],
+                },
+                {
+                  icon: <ApiOutlined />, color: 'green',
+                  title: 'Extensible API Marketplace',
+                  desc: 'REST, GraphQL, and Webhooks give partners and developers a first-class integration platform.',
+                  bullets: ['REST & GraphQL APIs', 'Webhooks engine', 'OAuth 2.0 apps', 'Developer sandbox'],
+                },
+              ].map((feat, idx) => (
+                <div key={idx} className={`lp-feature-card lp-reveal lp-reveal-up lp-stagger-${(idx % 4) + 1}`}>
+                  <div className={`lp-feature-icon lp-feature-icon-${feat.color}`}>{feat.icon}</div>
+                  <h3>{feat.title}</h3>
+                  <p>{feat.desc}</p>
+                  <ul className="lp-feature-list">
+                    {feat.bullets.map((b) => (
+                      <li key={b}><CheckCircleFilled className="lp-check" /> {b}</li>
+                    ))}
+                  </ul>
                 </div>
-                <h3>{t('nav.workOrders')}</h3>
-                <p>{t('landing.features.pillar1.desc')}</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar1.list1')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar1.list2')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar1.list3')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar1.list4')}</li>
-                </ul>
-              </div>
-
-              {/* Pillar 2 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-2">
-                <div className="lp-feature-icon lp-feature-icon-cyan">
-                  <ScheduleOutlined />
-                </div>
-                <h3>{t('landing.features.pillar2.title')}</h3>
-                <p>{t('landing.features.pillar2.desc')}</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar2.list1')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar2.list2')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar2.list3')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar2.list4')}</li>
-                </ul>
-              </div>
-
-              {/* Pillar 3 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-3">
-                <div className="lp-feature-icon lp-feature-icon-green">
-                  <DollarOutlined />
-                </div>
-                <h3>{t('landing.features.pillar3.title')}</h3>
-                <p>{t('landing.features.pillar3.desc')}</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar3.list1')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar3.list2')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar3.list3')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar3.list4')}</li>
-                </ul>
-              </div>
-
-              {/* Pillar 4 */}
-              <div className="lp-feature-card lp-reveal lp-reveal-up lp-stagger-4">
-                <div className="lp-feature-icon lp-feature-icon-amber">
-                  <MobileOutlined />
-                </div>
-                <h3>{t('landing.features.pillar4.title')}</h3>
-                <p>{t('landing.features.pillar4.desc')}</p>
-                <ul className="lp-feature-list">
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar4.list1')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar4.list2')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar4.list3')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.features.pillar4.list4')}</li>
-                </ul>
-              </div>
+              ))}
             </div>
           </div>
         </section>
@@ -964,7 +1035,7 @@ export default function LandingPage() {
         </section>
 
         {/* ========== Integrations ========== */}
-        <section className="lp-section lp-section-alt">
+        <section id="integrations" className="lp-section lp-section-alt">
           <div className="lp-container">
             <div className="lp-section-header lp-reveal lp-reveal-up">
               <span className="lp-section-tag">{t('landing.integrations.tag')}</span>

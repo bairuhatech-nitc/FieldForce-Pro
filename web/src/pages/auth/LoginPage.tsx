@@ -120,6 +120,7 @@ export default function LoginPage() {
           fontFamily: "'Inter', sans-serif",
           position: 'relative',
           overflow: 'hidden',
+          color:'var(--text-color)'
         }}
       >
         <Card style={{ 
@@ -241,6 +242,7 @@ export default function LoginPage() {
           fontFamily: "'Inter', sans-serif",
           position: 'relative',
           overflow: 'hidden',
+          color:'var(--text-color)'
         }}
       >
         {/* Background decorative orbs */}
