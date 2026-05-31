@@ -11,6 +11,13 @@ const { Text } = Typography;
 
 type VerifyState = 'loading' | 'success' | 'error';
 
+// Module-scoped guard: a magic-link token is single-use and consumed server-side
+// on the first verify call. React 18 StrictMode double-invokes effects in dev,
+// which would fire verify twice — the second call sees the token as already used.
+// Tracking fired tokens at module scope survives the StrictMode unmount/remount so
+// the request is sent exactly once per token.
+const verifiedTokens = new Set<string>();
+
 function extractErrorMessage(err: unknown, t: (key: string) => string): string {
   const e = err as { response?: { data?: { message?: string } }; message?: string };
   return e?.response?.data?.message || e?.message || t('magicLink.errors.unexpected');
@@ -33,12 +40,13 @@ export default function MagicLinkVerifyPage() {
       return;
     }
 
-    let cancelled = false;
+    // Guard against StrictMode double-invoke consuming the single-use token twice.
+    if (verifiedTokens.has(token)) return;
+    verifiedTokens.add(token);
 
     magicLinksApi
       .verify(token)
       .then((res) => {
-        if (cancelled) return;
         const { user, purpose } = res.data.data ?? {};
         if (!user) {
           setState('error');
@@ -63,14 +71,11 @@ export default function MagicLinkVerifyPage() {
         }, 1200);
       })
       .catch((err) => {
-        if (cancelled) return;
+        // Verification failed — allow a retry of this token on a future mount.
+        verifiedTokens.delete(token);
         setState('error');
         setErrorMsg(extractErrorMessage(err, t));
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [searchParams, navigate, login, t]);
 
   if (state === 'loading') {
