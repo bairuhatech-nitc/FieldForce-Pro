@@ -166,9 +166,12 @@ export default function App() {
 
   // Note: User authentication is checked in PrivateRoute component
 
-  // Update body class for global CSS support
+  // Update body class for global CSS support.
+  // body.dark (index.css) defines the dark-theme CSS variables, so the class
+  // must be applied when themeMode is 'dark' — matching the Ant Design
+  // darkAlgorithm config below.
   useEffect(() => {
-    if (themeMode === 'light') {
+    if (themeMode === 'dark') {
       document.body.classList.add('dark');
     } else {
       document.body.classList.remove('dark');
