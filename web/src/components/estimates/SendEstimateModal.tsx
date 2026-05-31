@@ -5,6 +5,7 @@ import {
 import {
   SendOutlined, WhatsAppOutlined, MailOutlined, CopyOutlined, LinkOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useEstimate, useGenerateEstimateLink } from '@/hooks/use-estimates';
 
 interface SendEstimateModalProps {
@@ -13,6 +14,7 @@ interface SendEstimateModalProps {
 }
 
 export default function SendEstimateModal({ estimateId, onClose }: SendEstimateModalProps) {
+  const { t } = useTranslation();
   const { data: estimate } = useEstimate(estimateId || '');
   const generateLink = useGenerateEstimateLink();
 
@@ -34,15 +36,15 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
   };
 
   const handleSendWhatsApp = async () => {
-    if (!contactPhone) { Modal.warning({ title: 'No Phone Number', content: 'This customer has no phone number on record.' }); return; }
+    if (!contactPhone) { Modal.warning({ title: t('sendEstimateModal.noPhoneNumber'), content: t('sendEstimateModal.noPhoneOnRecord') }); return; }
     const phone = contactPhone.replace(/\D/g, '');
-    if (!phone) { Modal.warning({ title: 'Invalid Phone Number', content: 'The phone number contains no digits.' }); return; }
+    if (!phone) { Modal.warning({ title: t('sendEstimateModal.invalidPhoneNumber'), content: t('sendEstimateModal.noDigits') }); return; }
     const link = await getMagicLink();
-    const firstName = contactFirstName || 'there';
+    const firstName = contactFirstName || t('sendEstimateModal.there');
     const total = Number(estimate?.total || 0).toFixed(2);
     const ref = estimate?.estimate_number || estimateId?.slice(0, 8) || '';
-    const expiryLine = estimate?.expiry_date ? `\nValid until: ${estimate.expiry_date}` : '';
-    const msg = encodeURIComponent(`Hi ${firstName},\n\nYour estimate *${ref}* is ready for review.\n*Total: $${total}*${expiryLine}\n\nPlease review and sign here:\n${link ?? ''}\n\nLink expires in 30 days.`);
+    const expiryLine = estimate?.expiry_date ? `\n${t('sendEstimateModal.validUntil')}: ${estimate.expiry_date}` : '';
+    const msg = encodeURIComponent(`${t('sendEstimateModal.hi')} ${firstName},\n\n${t('sendEstimateModal.estimate')} *${ref}* ${t('sendEstimateModal.isReady')}.\n*${t('sendEstimateModal.total')}: $${total}*${expiryLine}\n\n${t('sendEstimateModal.pleaseReview')}:\n${link ?? ''}\n\n${t('sendEstimateModal.linkExpires')}`);
     window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
     onClose();
   };
@@ -56,9 +58,9 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
   const handleCopyLink = async () => {
     const link = await getMagicLink();
     if (link) {
-      navigator.clipboard.writeText(link).then(() => { void message.success('Link copied to clipboard'); });
+      navigator.clipboard.writeText(link).then(() => { void message.success(t('sendEstimateModal.linkCopied')); });
     } else {
-      void message.error('Failed to generate link');
+      void message.error(t('sendEstimateModal.failedToGenerate'));
     }
     onClose();
   };
@@ -75,7 +77,7 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
         title={
           <Space>
             <SendOutlined style={{ color: '#1677ff' }} />
-            <span>Send Estimate to Customer</span>
+            <span>{t('sendEstimateModal.title')}</span>
           </Space>
         }
         open={!!estimateId && !emailModalVisible}
@@ -84,8 +86,8 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
         width={440}
       >
         <Alert
-          message="Internal review approved!"
-          description="All approvers have approved this estimate. Choose how you'd like to send it to the customer."
+          message={t('sendEstimateModal.alertMessage')}
+          description={t('sendEstimateModal.alertDescription')}
           type="success"
           showIcon
           style={{ marginBottom: 20 }}
@@ -93,7 +95,7 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
 
         <Space direction="vertical" style={{ width: '100%' }} size={10}>
           {/* WhatsApp */}
-          <Tooltip title={!contactPhone ? 'No phone number on record for this customer' : ''}>
+          <Tooltip title={!contactPhone ? t('sendEstimateModal.noPhoneTooltip') : ''}>
             <Button
               block
               icon={<WhatsAppOutlined />}
@@ -109,13 +111,13 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
               loading={generateLink.isPending}
               disabled={!contactPhone}
             >
-              Send via WhatsApp
+              {t('sendEstimateModal.sendWhatsApp')}
             </Button>
           </Tooltip>
           {contactPhone && <div style={{ fontSize: 11, color: '#aaa', marginTop: -6, paddingLeft: 2 }}>{contactPhone}</div>}
 
           {/* Email */}
-          <Tooltip title={!contactEmail ? 'No email on record for this customer' : ''}>
+          <Tooltip title={!contactEmail ? t('sendEstimateModal.noEmailTooltip') : ''}>
             <Button
               block
               icon={<MailOutlined />}
@@ -124,7 +126,7 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
               loading={generateLink.isPending}
               disabled={!contactEmail}
             >
-              Send via Email
+              {t('sendEstimateModal.sendEmail')}
             </Button>
           </Tooltip>
           {contactEmail && <div style={{ fontSize: 11, color: '#aaa', marginTop: -6, paddingLeft: 2 }}>{contactEmail}</div>}
@@ -137,7 +139,7 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
             onClick={() => void handleCopyLink()}
             loading={generateLink.isPending}
           >
-            Copy Sign Link
+            {t('sendEstimateModal.copyLink')}
           </Button>
 
           {/* Skip */}
@@ -147,40 +149,40 @@ export default function SendEstimateModal({ estimateId, onClose }: SendEstimateM
             style={{ height: 36, color: '#999' }}
             onClick={onClose}
           >
-            Skip — I'll send it later
+            {t('sendEstimateModal.skip')}
           </Button>
         </Space>
       </Modal>
 
       {/* ── Email Link Modal ── */}
       <Modal
-        title={<Space><MailOutlined /><span>Send Estimate via Email</span></Space>}
+        title={<Space><MailOutlined /><span>{t('sendEstimateModal.sendViaEmail')}</span></Space>}
         open={emailModalVisible}
         onCancel={handleEmailModalClose}
         footer={[
-          <Button key="close" onClick={handleEmailModalClose}>Close</Button>,
+          <Button key="close" onClick={handleEmailModalClose}>{t('sendEstimateModal.close')}</Button>,
           generatedLink && (
             <Button key="mailto" type="primary" icon={<MailOutlined />} onClick={() => {
-              const subject = encodeURIComponent(`Estimate ${estimate?.estimate_number || estimateId?.slice(0, 8) || ''} — Review & Sign`);
-              const body = encodeURIComponent(`Hello,\n\nPlease review and sign your estimate here:\n${generatedLink}\n\nThank you.`);
+              const subject = encodeURIComponent(`${t('sendEstimateModal.estimate')} ${estimate?.estimate_number || estimateId?.slice(0, 8) || ''} — ${t('sendEstimateModal.reviewAndSign')}`);
+              const body = encodeURIComponent(`${t('sendEstimateModal.hello')},\n\n${t('sendEstimateModal.pleaseReviewAndSign')}:\n${generatedLink}\n\n${t('sendEstimateModal.thankYou')}.`);
               window.open(`mailto:${contactEmail || ''}?subject=${subject}&body=${body}`, '_blank');
-            }}>Open in Mail App</Button>
+            }}>{t('sendEstimateModal.openInMail')}</Button>
           ),
         ]}
       >
         {generatedLink ? (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            <Alert message="Magic link generated" description="Share this link with the customer. No login required." type="success" showIcon icon={<LinkOutlined />} />
+            <Alert message={t('sendEstimateModal.linkGenerated')} description={t('sendEstimateModal.shareLink')} type="success" showIcon icon={<LinkOutlined />} />
             <div>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Sign Link:</Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>{t('sendEstimateModal.signLink')}:</Typography.Text>
               <Input.Group compact>
                 <Input value={generatedLink} readOnly style={{ width: 'calc(100% - 110px)' }} />
-                <Button icon={<CopyOutlined />} onClick={() => { navigator.clipboard.writeText(generatedLink).then(() => { void message.success('Link copied'); }); }} style={{ width: 110 }}>Copy Link</Button>
+                <Button icon={<CopyOutlined />} onClick={() => { navigator.clipboard.writeText(generatedLink).then(() => { void message.success(t('sendEstimateModal.linkCopied')); }); }} style={{ width: 110 }}>{t('sendEstimateModal.copyLink')}</Button>
               </Input.Group>
             </div>
           </Space>
         ) : (
-          <Alert message="Could not generate magic link. Please try again." type="error" showIcon />
+          <Alert message={t('sendEstimateModal.errorGeneration')} type="error" showIcon />
         )}
       </Modal>
     </>

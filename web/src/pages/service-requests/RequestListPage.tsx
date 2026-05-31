@@ -33,23 +33,6 @@ const statusColors: Record<string, string> = {
   spam: 'red',
 };
 
-const statusLabels: Record<string, string> = {
-  new: 'Pending Approval',
-  triaged: 'Triaged',
-  estimated: 'Estimated',
-  approved: 'Approved',
-  converted_to_wo: 'Converted to WO',
-  rejected: 'Rejected',
-  closed: 'Closed',
-  spam: 'Flagged',
-};
-
-const statusOptions = [
-  { value: 'new', label: 'New' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-];
-
 interface ApprovalRecord {
   id: string;
   status: string;
@@ -102,6 +85,23 @@ export default function RequestListPage() {
   const meta = activeTab === 'queue' ? { itemCount: queueData.length } : currentQuery.data?.meta;
   const isLoading = activeTab === 'queue' ? queueLoading : currentQuery.isLoading;
 
+  const statusLabelsMap: Record<string, string> = {
+    new: t('serviceRequests.status.new'),
+    triaged: t('serviceRequests.status.triaged'),
+    estimated: t('serviceRequests.status.estimated'),
+    approved: t('serviceRequests.status.approved'),
+    converted_to_wo: t('serviceRequests.status.convertedToWo'),
+    rejected: t('serviceRequests.status.rejected'),
+    closed: t('serviceRequests.status.closed'),
+    spam: t('serviceRequests.status.flagged'),
+  };
+
+  const statusOptions = [
+    { value: 'new', label: t('serviceRequests.statusOptions.new') },
+    { value: 'approved', label: t('serviceRequests.statusOptions.approved') },
+    { value: 'rejected', label: t('serviceRequests.statusOptions.rejected') },
+  ];
+
   // Status filter is now handled server-side via the API query param
   useEffect(() => {
     if (activeTab === 'spam') {
@@ -132,8 +132,8 @@ export default function RequestListPage() {
 
   const handleDelete = (request: ServiceRequest) => {
     showConfirmDialog({
-      title: 'Delete Service Request',
-      content: `Are you sure you want to delete "${request.subject}"?`,
+      title: t('serviceRequests.deleteRequestTitle'),
+      content: t('serviceRequests.deleteRequestContent', { subject: request.subject }),
       onOk: async () => {
         await deleteRequest.mutateAsync(request.id);
       },
@@ -161,7 +161,7 @@ export default function RequestListPage() {
       );
 
       if (!myPending) {
-        message.warning('No pending approval found for this request. It may have already been processed.');
+        message.warning(t('serviceRequests.noPendingApprovalWarning'));
         setApprovalModalOpen(false);
         myApprovalsQuery.refetch();
         return;
@@ -172,7 +172,7 @@ export default function RequestListPage() {
         (a) => a.order_no < myPending.order_no && a.status === 'PENDING',
       );
       if (hasPriorPending) {
-        message.warning('A previous approver has not yet acted. Please wait for your turn.');
+        message.warning(t('serviceRequests.previousApproverWarning'));
         setApprovalModalOpen(false);
         return;
       }
@@ -188,16 +188,16 @@ export default function RequestListPage() {
           onSuccess: () => {
             setApprovalModalOpen(false);
             setApprovalProcessing(false);
-            message.success('Approval processed successfully');
+            message.success(t('serviceRequests.approvalSuccess'));
           },
           onError: () => {
-            message.error('Failed to process approval');
+            message.error(t('serviceRequests.approvalError'));
             setApprovalProcessing(false);
           },
         },
       );
     } catch {
-      message.error('Failed to process approval');
+      message.error(t('serviceRequests.approvalError'));
       setApprovalProcessing(false);
     }
   };
@@ -205,7 +205,7 @@ export default function RequestListPage() {
   // Shared columns (everything except Actions)
   const sharedColumns: ColumnsType<ServiceRequest> = [
     {
-      title: 'Request ID',
+      title: t('serviceRequests.table.requestId'),
       dataIndex: 'request_number',
       key: 'request_number',
       width: 140,
@@ -217,14 +217,14 @@ export default function RequestListPage() {
       sorter: (a, b) => (a.request_number || '').localeCompare(b.request_number || ''),
     },
     {
-      title: 'Subject',
+      title: t('serviceRequests.table.subject'),
       dataIndex: 'subject',
       key: 'subject',
       render: (subject: string) => <span style={{ fontWeight: 500 }}>{subject}</span>,
       sorter: (a, b) => a.subject.localeCompare(b.subject),
     },
     {
-      title: 'Priority',
+      title: t('serviceRequests.table.priority'),
       dataIndex: 'priority',
       key: 'priority',
       render: (priority: string) => (
@@ -234,17 +234,17 @@ export default function RequestListPage() {
       ),
     },
     {
-      title: 'Status',
+      title: t('serviceRequests.table.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
         <Tag color={statusColors[status] || 'default'}>
-          {statusLabels[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
         </Tag>
       ),
     },
     {
-      title: 'Channel',
+      title: t('serviceRequests.table.channel'),
       dataIndex: 'channel',
       key: 'channel',
       render: (channel: string) =>
@@ -255,7 +255,7 @@ export default function RequestListPage() {
         ),
     },
     {
-      title: 'Customer',
+      title: t('serviceRequests.table.customer'),
       key: 'contact',
       render: (_, record) =>
         record.contact
@@ -263,7 +263,25 @@ export default function RequestListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Created',
+      title: t('serviceRequests.table.technicians'),
+      key: 'technicians',
+      render: (_, record) =>
+        record.technicians && record.technicians.length > 0 ? (
+          <Space wrap size={[0, 4]}>
+            {record.technicians.map((t) => (
+              <Tooltip key={t.id} title={`${t.first_name} ${t.last_name}`}>
+                <Tag color="blue" style={{ borderRadius: '50%', width: 24, height: 24, textAlign: 'center', lineHeight: '22px', padding: 0 }}>
+                  {t.first_name?.charAt(0)}{t.last_name?.charAt(0)}
+                </Tag>
+              </Tooltip>
+            ))}
+          </Space>
+        ) : (
+          <span style={{ opacity: 0.5 }}>-</span>
+        ),
+    },
+    {
+      title: t('serviceRequests.table.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
@@ -275,21 +293,21 @@ export default function RequestListPage() {
   const allRequestsColumns: ColumnsType<ServiceRequest> = [
     ...sharedColumns,
     {
-      title: 'Actions',
+      title: t('serviceRequests.table.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View">
+          <Tooltip title={t('common.view')}>
             <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
           </Tooltip>
           {isAdmin && (
             <>
-              <Tooltip title="Edit">
+              <Tooltip title={t('common.edit')}>
                 <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}/edit`)} />
               </Tooltip>
-              <Tooltip title="Delete">
+              <Tooltip title={t('common.delete')}>
                 <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
               </Tooltip>
             </>
@@ -303,13 +321,13 @@ export default function RequestListPage() {
   const spamRequestsColumns: ColumnsType<ServiceRequest> = [
     ...sharedColumns,
     {
-      title: 'Actions',
+      title: t('serviceRequests.table.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View Details">
+          <Tooltip title={t('common.viewDetails')}>
             <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
           </Tooltip>
         </Space>
@@ -321,16 +339,16 @@ export default function RequestListPage() {
   const myApprovalsColumns: ColumnsType<ServiceRequest> = [
     ...sharedColumns,
     {
-      title: 'Actions',
+      title: t('serviceRequests.table.actions'),
       key: 'actions',
       fixed: 'right',
       width: 200,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View">
+          <Tooltip title={t('common.view')}>
             <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
           </Tooltip>
-          <Tooltip title="Approve">
+          <Tooltip title={t('common.approve')}>
             <Button
               type="text"
               icon={<CheckCircleOutlined />}
@@ -339,7 +357,7 @@ export default function RequestListPage() {
               onClick={() => openApprovalModal(record, 'APPROVE')}
             />
           </Tooltip>
-          <Tooltip title="Reject">
+          <Tooltip title={t('common.reject')}>
             <Button
               type="text"
               icon={<CloseCircleOutlined />}
@@ -356,22 +374,22 @@ export default function RequestListPage() {
   const tabItems = [
     {
       key: 'all',
-      label: 'All Requests',
+      label: t('serviceRequests.tabs.allRequests'),
     },
     {
       key: 'my-approvals',
-      label: 'My Approvals',
+      label: t('serviceRequests.tabs.myApprovals'),
     },
     {
       key: 'queue',
-      label: 'Priority Queue',
+      label: t('serviceRequests.tabs.priorityQueue'),
     }
   ];
 
   if (isAdmin) {
     tabItems.push({
       key: 'spam',
-      label: 'Flagged Requests',
+      label: t('serviceRequests.tabs.flaggedRequests'),
     });
   }
 
@@ -381,8 +399,8 @@ export default function RequestListPage() {
 
   const handleApproveFromQueue = (record: ServiceRequest) => {
     showConfirmDialog({
-      title: 'Approve & Create Work Order',
-      content: `This will approve "${record.subject}" and create a Work Order. You will be redirected to the new Work Order.`,
+      title: t('serviceRequests.approveAndConvertTitle'),
+      content: t('serviceRequests.approveAndConvertContent', { subject: record.subject }),
       onOk: async () => {
         const response = await approveAndConvert.mutateAsync(record.id);
         const wo = response.data.data?.workOrder;
@@ -395,8 +413,8 @@ export default function RequestListPage() {
 
   const handleRejectFromQueue = (record: ServiceRequest) => {
     showConfirmDialog({
-      title: 'Reject Service Request',
-      content: `Are you sure you want to reject "${record.subject}"?`,
+      title: t('serviceRequests.rejectRequestTitle'),
+      content: t('serviceRequests.rejectRequestContent', { subject: record.subject }),
       onOk: async () => {
         await rejectSr.mutateAsync({ id: record.id, status: 'rejected' });
       },
@@ -406,7 +424,7 @@ export default function RequestListPage() {
 
   const queueColumns: ColumnsType<ServiceRequest> = [
     {
-      title: 'Request ID',
+      title: t('serviceRequests.table.requestId'),
       dataIndex: 'request_number',
       key: 'request_number',
       width: 140,
@@ -417,13 +435,13 @@ export default function RequestListPage() {
       ),
     },
     {
-      title: 'Subject',
+      title: t('serviceRequests.table.subject'),
       dataIndex: 'subject',
       key: 'subject',
       render: (subject: string) => <span style={{ fontWeight: 500 }}>{subject}</span>,
     },
     {
-      title: 'Priority',
+      title: t('serviceRequests.table.priority'),
       dataIndex: 'priority',
       key: 'priority',
       render: (priority: string, record: ServiceRequest) => (
@@ -433,43 +451,43 @@ export default function RequestListPage() {
           style={{ width: 120 }}
           loading={updatePriority.isPending}
           options={[
-            { value: 'low', label: 'Low' },
-            { value: 'medium', label: 'Medium' },
-            { value: 'high', label: 'High' },
-            { value: 'urgent', label: 'Urgent' },
+            { value: 'low', label: t('serviceRequests.priorityOptions.low') },
+            { value: 'medium', label: t('serviceRequests.priorityOptions.medium') },
+            { value: 'high', label: t('serviceRequests.priorityOptions.high') },
+            { value: 'urgent', label: t('serviceRequests.priorityOptions.urgent') },
           ]}
         />
       ),
     },
     {
-      title: 'Status',
+      title: t('serviceRequests.table.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
         <Tag color={statusColors[status] || 'default'}>
-          {statusLabels[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
         </Tag>
       ),
     },
     {
-      title: 'Created',
+      title: t('serviceRequests.table.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Actions',
+      title: t('serviceRequests.table.actions'),
       key: 'actions',
       fixed: 'right',
       width: 160,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View">
+          <Tooltip title={t('common.view')}>
             <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
           </Tooltip>
           {isAdmin && !['converted_to_wo', 'closed', 'spam', 'rejected'].includes(record.status) && (
             <>
-              <Tooltip title="Approve & Create Work Order">
+              <Tooltip title={t('serviceRequests.approveAndConvertTooltip')}>
                 <Button
                   type="text"
                   icon={<CheckCircleOutlined />}
@@ -479,7 +497,7 @@ export default function RequestListPage() {
                   onClick={() => handleApproveFromQueue(record)}
                 />
               </Tooltip>
-              <Tooltip title="Reject">
+              <Tooltip title={t('common.reject')}>
                 <Button
                   type="text"
                   icon={<CloseCircleOutlined />}
@@ -501,11 +519,11 @@ export default function RequestListPage() {
     <div>
       <PageHeader
         title={t('nav.serviceRequests')}
-        subtitle="Manage incoming service requests"
+        subtitle={t('serviceRequests.pageSubtitle')}
         extra={
           <PermissionGuard permission="service_requests:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/service-requests/new')}>
-              Add Request
+              {t('serviceRequests.addRequest')}
             </Button>
           </PermissionGuard>
         }
@@ -520,7 +538,7 @@ export default function RequestListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search requests by subject"
+          placeholder={t('serviceRequests.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -528,7 +546,7 @@ export default function RequestListPage() {
         />
         {activeTab === 'all' && (
           <Select
-            placeholder="Filter by status"
+            placeholder={t('serviceRequests.filterByStatusPlaceholder')}
             allowClear
             value={statusFilter}
             onChange={(value) => {
@@ -556,7 +574,7 @@ export default function RequestListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} requests`,
+          showTotal: (total) => t('serviceRequests.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);
@@ -566,24 +584,24 @@ export default function RequestListPage() {
 
       {/* Approval Action Modal */}
       <Modal
-        title={approvalAction === 'APPROVE' ? 'Approve Service Request' : 'Reject Service Request'}
+        title={approvalAction === 'APPROVE' ? t('serviceRequests.approveRequestTitle') : t('serviceRequests.rejectRequestTitle')}
         open={approvalModalOpen}
         onOk={handleProcessApproval}
         onCancel={() => setApprovalModalOpen(false)}
         confirmLoading={approvalProcessing}
-        okText={approvalAction === 'APPROVE' ? 'Approve' : 'Reject'}
+        okText={approvalAction === 'APPROVE' ? t('common.approve') : t('common.reject')}
         okButtonProps={{
           danger: approvalAction === 'REJECT',
         }}
       >
         <p style={{ marginBottom: 12 }}>
           {approvalAction === 'APPROVE'
-            ? <>Are you sure you want to approve <strong>{approvalSrSubject}</strong>?</>
-            : <>Are you sure you want to reject <strong>{approvalSrSubject}</strong>? This will skip all remaining approvers.</>}
+            ? <>{t('serviceRequests.approveModalContent', { subject: <strong>{approvalSrSubject}</strong> })}</>
+            : <>{t('serviceRequests.rejectModalContent', { subject: <strong>{approvalSrSubject}</strong> })}</>}
         </p>
         <Input.TextArea
           rows={3}
-          placeholder="Add comments (optional)"
+          placeholder={t('common.addCommentsPlaceholder')}
           value={approvalComments}
           onChange={(e) => setApprovalComments(e.target.value)}
         />

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Button,
@@ -64,6 +65,7 @@ const { TabPane } = Tabs;
 
 // Custom Node Component for States
 const StateNode: React.FC<NodeProps> = ({ data, selected }) => {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -83,12 +85,12 @@ const StateNode: React.FC<NodeProps> = ({ data, selected }) => {
           </Text>
           {data.is_initial && (
             <Tag color="green" style={{ marginLeft: 8, fontSize: 10 }}>
-              Initial
+              {t('blueprintEditor.initial')}
             </Tag>
           )}
           {data.is_final && (
             <Tag color="blue" style={{ marginLeft: 8, fontSize: 10 }}>
-              Final
+              {t('blueprintEditor.final')}
             </Tag>
           )}
         </div>
@@ -175,13 +177,14 @@ const edgeTypes = {
 interface BlueprintEditorPageProps {}
 
 export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // Blueprint metadata
-  const [blueprintName, setBlueprintName] = useState('New Blueprint');
+  const [blueprintName, setBlueprintName] = useState(t('blueprintEditor.newBlueprint'));
   const [blueprintDescription, setBlueprintDescription] = useState('');
   const [entityType, setEntityType] = useState('work_order');
 
@@ -263,7 +266,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
       setNodes(flowNodes);
       setEdges(flowEdges);
     } catch (error) {
-      message.error('Failed to load blueprint');
+      message.error(t('blueprintEditor.errorLoadBlueprint'));
     }
   };
 
@@ -301,7 +304,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
       setNodes((nds) => [...nds, newNode]);
       setShowAddStateModal(false);
       form.resetFields();
-      message.success('State added successfully');
+      message.success(t('blueprintEditor.successStateAdded'));
     });
   };
 
@@ -321,12 +324,12 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
       setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
       setEdges((eds) => eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id));
       setSelectedNode(null);
-      message.success('State deleted');
+      message.success(t('blueprintEditor.successStateDeleted'));
     } else if (selectedEdge) {
       setEdges((eds) => eds.filter((e) => e.id !== selectedEdge.id));
       setSelectedEdge(null);
       setShowTransitionDrawer(false);
-      message.success('Transition deleted');
+      message.success(t('blueprintEditor.successTransitionDeleted'));
     }
   };
 
@@ -360,16 +363,16 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
 
       // In production, save to API
       console.log('Saving blueprint:', blueprintData);
-      message.success('Blueprint saved successfully');
+      message.success(t('blueprintEditor.successBlueprintSaved'));
     } catch (error) {
-      message.error('Failed to save blueprint');
+      message.error(t('blueprintEditor.errorSaveBlueprint'));
     }
   };
 
   const handleStartSimulation = () => {
     const initialState = nodes.find((n) => n.data.is_initial);
     if (!initialState) {
-      message.error('Please add an initial state first');
+      message.error(t('blueprintEditor.errorNoInitialState'));
       return;
     }
 
@@ -377,7 +380,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
     setSimulationHistory([initialState.data.label]);
     setIsSimulating(true);
     setShowSimulationModal(true);
-    message.success(`Simulation started from: ${initialState.data.label}`);
+    message.success(t('blueprintEditor.successSimulationStarted', { state: initialState.data.label }));
   };
 
   const handleSimulateTransition = (transitionId: string) => {
@@ -390,8 +393,8 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
     // Check guards (simplified)
     if (edge.data?.guards && edge.data.guards.length > 0) {
       Modal.confirm({
-        title: 'Guard Validation',
-        content: `This transition has guards: ${edge.data.guards.join(', ')}. Proceed anyway?`,
+        title: t('blueprintEditor.guardValidation'),
+        content: t('blueprintEditor.guardWarning', { guards: edge.data.guards.join(', ') }),
         onOk: () => {
           executeTransition(targetNode, edge.data?.label);
         },
@@ -405,11 +408,11 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
     setCurrentState(targetNode.id);
     setSimulationHistory((history) => [
       ...history,
-      `→ ${transitionLabel || 'Transition'} → ${targetNode.data.label}`,
+      `→ ${transitionLabel || t('blueprintEditor.transition')} → ${targetNode.data.label}`,
     ]);
 
     if (targetNode.data.is_final) {
-      message.success(`Reached final state: ${targetNode.data.label}`);
+      message.success(t('blueprintEditor.reachedFinalState', { state: targetNode.data.label }));
     }
   };
 
@@ -429,7 +432,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
     link.href = url;
     link.download = `${blueprintName.replace(/\s+/g, '_')}.json`;
     link.click();
-    message.success('Blueprint exported successfully');
+    message.success(t('blueprintEditor.successBlueprintExported'));
   };
 
   const availableTransitions = edges.filter((e) => e.source === currentState);
@@ -444,30 +447,30 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
           <Space>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/blueprints')}>
-              Back
+              {t('blueprintEditor.back')}
             </Button>
             <Divider type="vertical" />
             <Input
               value={blueprintName}
               onChange={(e) => setBlueprintName(e.target.value)}
               style={{ width: 300, fontWeight: 'bold' }}
-              placeholder="Blueprint Name"
+              placeholder={t('blueprintEditor.blueprintNamePlaceholder')}
             />
             <Select value={entityType} onChange={setEntityType} style={{ width: 150 }}>
-              <Option value="work_order">Work Order</Option>
-              <Option value="service_appointment">Appointment</Option>
-              <Option value="estimate">Estimate</Option>
-              <Option value="invoice">Invoice</Option>
-              <Option value="service_request">Service Request</Option>
+              <Option value="work_order">{t('blueprintEditor.entityTypes.workOrder')}</Option>
+              <Option value="service_appointment">{t('blueprintEditor.entityTypes.appointment')}</Option>
+              <Option value="estimate">{t('blueprintEditor.entityTypes.estimate')}</Option>
+              <Option value="invoice">{t('blueprintEditor.entityTypes.invoice')}</Option>
+              <Option value="service_request">{t('blueprintEditor.entityTypes.serviceRequest')}</Option>
             </Select>
           </Space>
 
           <Space>
             <Button icon={<PlayCircleOutlined />} onClick={handleStartSimulation} type="dashed">
-              Test
+              {t('blueprintEditor.test')}
             </Button>
             <Button icon={<ExportOutlined />} onClick={handleExportBlueprint}>
-              Export
+              {t('blueprintEditor.export')}
             </Button>
             <Button
               icon={<DeleteOutlined />}
@@ -475,10 +478,10 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
               onClick={handleDeleteSelected}
               disabled={!selectedNode && !selectedEdge}
             >
-              Delete
+              {t('blueprintEditor.delete')}
             </Button>
             <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveBlueprint}>
-              Save Blueprint
+              {t('blueprintEditor.saveBlueprint')}
             </Button>
           </Space>
         </Space>
@@ -514,11 +517,11 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
                   block
                   onClick={() => setShowAddStateModal(true)}
                 >
-                  Add State
+                  {t('blueprintEditor.addState')}
                 </Button>
                 <Divider style={{ margin: '8px 0' }} />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  <ApartmentOutlined /> {nodes.length} States, {edges.length} Transitions
+                  <ApartmentOutlined /> {nodes.length} {t('blueprintEditor.states')}, {edges.length} {t('blueprintEditor.transitions')}
                 </Text>
               </Space>
             </Card>
@@ -526,10 +529,10 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
 
           {selectedNode && (
             <Panel position="top-right">
-              <Card size="small" title="State Properties" style={{ width: 300 }}>
+              <Card size="small" title={t('blueprintEditor.stateProperties')} style={{ width: 300 }}>
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div>
-                    <Text strong>Name:</Text>
+                    <Text strong>{t('blueprintEditor.name')}:</Text>
                     <Input
                       value={selectedNode.data.label}
                       onChange={(e) => {
@@ -544,7 +547,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
                     />
                   </div>
                   <div>
-                    <Text strong>Color:</Text>
+                    <Text strong>{t('blueprintEditor.color')}:</Text>
                     <Input
                       type="color"
                       value={selectedNode.data.color}
@@ -573,7 +576,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
                           );
                         }}
                       />
-                      <Text>Initial State</Text>
+                      <Text>{t('blueprintEditor.initialState')}</Text>
                     </Space>
                   </div>
                   <div>
@@ -590,7 +593,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
                           );
                         }}
                       />
-                      <Text>Final State</Text>
+                      <Text>{t('blueprintEditor.finalState')}</Text>
                     </Space>
                   </div>
                 </Space>
@@ -602,7 +605,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
 
       {/* Add State Modal */}
       <Modal
-        title="Add New State"
+        title={t('blueprintEditor.addNewState')}
         open={showAddStateModal}
         onOk={handleAddState}
         onCancel={() => {
@@ -614,26 +617,26 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="name"
-            label="State Name"
-            rules={[{ required: true, message: 'Please enter state name' }]}
+            label={t('blueprintEditor.stateName')}
+            rules={[{ required: true, message: t('blueprintEditor.errorEnterStateName') }]}
           >
-            <Input placeholder="e.g., In Progress, Completed" />
+            <Input placeholder={t('blueprintEditor.stateNamePlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="description" label="Description">
-            <TextArea rows={3} placeholder="Optional description" />
+          <Form.Item name="description" label={t('blueprintEditor.description')}>
+            <TextArea rows={3} placeholder={t('blueprintEditor.descriptionPlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="color" label="Color" initialValue="#1890ff">
+          <Form.Item name="color" label={t('blueprintEditor.color')} initialValue="#1890ff">
             <Input type="color" />
           </Form.Item>
 
           <Form.Item name="is_initial" valuePropName="checked">
-            <Switch /> Initial State
+            <Switch /> {t('blueprintEditor.initialState')}
           </Form.Item>
 
           <Form.Item name="is_final" valuePropName="checked">
-            <Switch /> Final State
+            <Switch /> {t('blueprintEditor.finalState')}
           </Form.Item>
         </Form>
       </Modal>
@@ -652,14 +655,14 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
                   : e
               )
             );
-            message.success('Transition updated');
+            message.success(t('blueprintEditor.successTransitionDeleted'));
           }}
         />
       )}
 
       {/* Simulation Modal */}
       <Modal
-        title="Blueprint Simulation"
+        title={t('blueprintEditor.simulationTitle')}
         open={showSimulationModal}
         onCancel={() => {
           setShowSimulationModal(false);
@@ -674,7 +677,7 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
               handleStartSimulation();
             }}
           >
-            Reset
+            {t('blueprintEditor.reset')}
           </Button>,
           <Button
             key="close"
@@ -684,26 +687,26 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
               setIsSimulating(false);
             }}
           >
-            Close
+            {t('blueprintEditor.close')}
           </Button>,
         ]}
         width={600}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <Alert
-            message="Simulation Mode"
-            description="Test your blueprint by executing transitions and validating guards"
+            message={t('blueprintEditor.simulationMode')}
+            description={t('blueprintEditor.simulationDesc')}
             type="info"
             showIcon
           />
 
-          <Card size="small" title="Current State">
+          <Card size="small" title={t('blueprintEditor.currentState')}>
             <Tag color="blue" style={{ fontSize: 16, padding: '8px 16px' }}>
               {nodes.find((n) => n.id === currentState)?.data.label || 'N/A'}
             </Tag>
           </Card>
 
-          <Card size="small" title="Available Transitions">
+          <Card size="small" title={t('blueprintEditor.availableTransitions')}>
             <Space direction="vertical" style={{ width: '100%' }}>
               {availableTransitions.length > 0 ? (
                 availableTransitions.map((edge) => {
@@ -720,12 +723,12 @@ export const BlueprintEditorPage: React.FC<BlueprintEditorPageProps> = () => {
                   );
                 })
               ) : (
-                <Text type="secondary">No transitions available from this state</Text>
+                <Text type="secondary">{t('blueprintEditor.noTransitions')}</Text>
               )}
             </Space>
           </Card>
 
-          <Card size="small" title="Transition History">
+          <Card size="small" title={t('blueprintEditor.transitionHistory')}>
             <div style={{ maxHeight: 200, overflowY: 'auto' }}>
               {simulationHistory.map((item, index) => (
                 <div key={index} style={{ padding: '4px 0' }}>
@@ -773,6 +776,7 @@ const TransitionConfigDrawer: React.FC<TransitionConfigDrawerProps> = ({
   onClose,
   onUpdate,
 }) => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -800,16 +804,16 @@ const TransitionConfigDrawer: React.FC<TransitionConfigDrawerProps> = ({
 
   return (
     <Drawer
-      title="Transition Configuration"
+      title={t('blueprintEditor.transitionConfig')}
       placement="right"
       width={500}
       open={open}
       onClose={onClose}
       extra={
         <Space>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t('blueprintEditor.cancel')}</Button>
           <Button type="primary" onClick={handleSave}>
-            Save
+            {t('blueprintEditor.save')}
           </Button>
         </Space>
       }
@@ -817,76 +821,76 @@ const TransitionConfigDrawer: React.FC<TransitionConfigDrawerProps> = ({
       <Form form={form} layout="vertical">
         <Form.Item
           name="label"
-          label="Transition Name"
-          rules={[{ required: true, message: 'Please enter transition name' }]}
+          label={t('blueprintEditor.transitionName')}
+          rules={[{ required: true, message: t('blueprintEditor.errorEnterTransitionName') }]}
         >
-          <Input placeholder="e.g., Approve, Reject, Complete" />
+          <Input placeholder={t('blueprintEditor.transitionPlaceholder')} />
         </Form.Item>
 
-        <Divider>Guards & Validation</Divider>
+        <Divider>{t('blueprintEditor.guardsValidation')}</Divider>
 
         <Form.Item
           name="guards"
-          label="Guards (Conditions)"
-          tooltip="Define conditions that must be met for this transition to execute"
+          label={t('blueprintEditor.guardsConditions')}
+          tooltip={t('blueprintEditor.guardsTooltip')}
         >
           <Select
             mode="tags"
-            placeholder="Add guard conditions"
+            placeholder={t('blueprintEditor.addGuardsPlaceholder')}
             options={[
-              { value: 'has_technician', label: 'Has Technician Assigned' },
-              { value: 'has_location', label: 'Has Service Location' },
-              { value: 'all_items_done', label: 'All Line Items Complete' },
-              { value: 'payment_received', label: 'Payment Received' },
-              { value: 'customer_approval', label: 'Customer Approval' },
+              { value: 'has_technician', label: t('blueprintEditor.guards.hasTechnician') },
+              { value: 'has_location', label: t('blueprintEditor.guards.hasLocation') },
+              { value: 'all_items_done', label: t('blueprintEditor.guards.allItemsDone') },
+              { value: 'payment_received', label: t('blueprintEditor.guards.paymentReceived') },
+              { value: 'customer_approval', label: t('blueprintEditor.guards.customerApproval') },
             ]}
           />
         </Form.Item>
 
         <Form.Item
           name="required_fields"
-          label="Required Fields"
-          tooltip="Fields that must be filled before this transition"
+          label={t('blueprintEditor.requiredFields')}
+          tooltip={t('blueprintEditor.requiredFieldsTooltip')}
         >
           <Select
             mode="tags"
-            placeholder="Add required fields"
+            placeholder={t('blueprintEditor.requiredFieldsPlaceholder')}
             options={[
-              { value: 'completion_notes', label: 'Completion Notes' },
-              { value: 'technician_signature', label: 'Technician Signature' },
-              { value: 'customer_signature', label: 'Customer Signature' },
-              { value: 'photos', label: 'Photos' },
-              { value: 'parts_used', label: 'Parts Used' },
+              { value: 'completion_notes', label: t('blueprintEditor.fields.completionNotes') },
+              { value: 'technician_signature', label: t('blueprintEditor.fields.technicianSignature') },
+              { value: 'customer_signature', label: t('blueprintEditor.fields.customerSignature') },
+              { value: 'photos', label: t('blueprintEditor.fields.photos') },
+              { value: 'parts_used', label: t('blueprintEditor.fields.partsUsed') },
             ]}
           />
         </Form.Item>
 
-        <Divider>Webhooks & Actions</Divider>
+        <Divider>{t('blueprintEditor.webhooksActions')}</Divider>
 
         <Form.Item
           name="webhooks"
-          label="Webhook URLs"
-          tooltip="External URLs to call when this transition executes"
+          label={t('blueprintEditor.webhookUrls')}
+          tooltip={t('blueprintEditor.webhookTooltip')}
         >
           <Select
             mode="tags"
-            placeholder="Add webhook URLs"
+            placeholder={t('blueprintEditor.addWebhooksPlaceholder')}
           />
         </Form.Item>
 
         <Form.Item name="auto_execute" valuePropName="checked">
-          <Switch /> Auto-execute transition when guards are met
+          <Switch /> {t('blueprintEditor.autoExecuteLabel')}
         </Form.Item>
 
         <Alert
-          message="Transition Logic"
+          message={t('blueprintEditor.transitionLogic')}
           description={
             <div>
-              <p>This transition will execute when:</p>
+              <p>{t('blueprintEditor.transitionExecutesWhen')}</p>
               <ul>
-                <li>All guards evaluate to true</li>
-                <li>All required fields are filled</li>
-                <li>User has permission to execute this transition</li>
+                <li>{t('blueprintEditor.allGuardsTrue')}</li>
+                <li>{t('blueprintEditor.allRequiredFieldsFilled')}</li>
+                <li>{t('blueprintEditor.hasPermission')}</li>
               </ul>
             </div>
           }

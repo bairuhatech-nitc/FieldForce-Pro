@@ -1,5 +1,6 @@
 import { Button, Dropdown } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { exportToCSV, exportToExcel, exportTableData } from '@/utils/export.utils';
 
 export interface ExportButtonProps<T> {
@@ -13,27 +14,29 @@ export default function ExportButton<T extends Record<string, any>>({
   filename,
   columns,
 }: ExportButtonProps<T>) {
+  const { t } = useTranslation();
+
   const menuItems = [
     {
       key: 'csv',
-      label: 'Export as CSV',
+      label: t('exportButton.exportAsCsv'),
       onClick: () => exportToCSV(data, filename, columns),
     },
     {
       key: 'excel',
-      label: 'Export as Excel',
+      label: t('exportButton.exportAsExcel'),
       onClick: () => exportToExcel(data, filename, columns),
     },
     {
       key: 'pdf',
-      label: 'Export as PDF',
+      label: t('exportButton.exportAsPdf'),
       onClick: () => exportTableData(data, filename, 'pdf'),
     },
   ];
 
   return (
     <Dropdown menu={{ items: menuItems }} placement="bottomRight">
-      <Button icon={<DownloadOutlined />}>Export</Button>
+      <Button icon={<DownloadOutlined />}>{t('exportButton.export')}</Button>
     </Dropdown>
   );
 }

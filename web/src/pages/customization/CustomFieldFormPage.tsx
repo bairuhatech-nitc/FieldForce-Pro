@@ -3,43 +3,45 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, InputNumber, Switch } from 'antd';
 import { useCustomField, useCreateCustomField, useUpdateCustomField } from '@/hooks/use-custom-fields';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next'; // Rule 1
 
 const { TextArea } = Input;
 
-const FIELD_TYPES = [
-  { value: 'text', label: 'Text' },
-  { value: 'number', label: 'Number' },
-  { value: 'email', label: 'Email' },
-  { value: 'phone', label: 'Phone' },
-  { value: 'url', label: 'URL' },
-  { value: 'date', label: 'Date' },
-  { value: 'datetime', label: 'Date & Time' },
-  { value: 'time', label: 'Time' },
-  { value: 'boolean', label: 'Boolean (Yes/No)' },
-  { value: 'select', label: 'Select (Dropdown)' },
-  { value: 'multiselect', label: 'Multi-Select' },
-  { value: 'textarea', label: 'Text Area' },
-  { value: 'currency', label: 'Currency' },
-  { value: 'percentage', label: 'Percentage' },
-  { value: 'file', label: 'File Upload' },
-];
-
-const MODULES = [
-  { value: 'work_orders', label: 'Work Orders' },
-  { value: 'service_requests', label: 'Service Requests' },
-  { value: 'estimates', label: 'Estimates' },
-  { value: 'invoices', label: 'Invoices' },
-  { value: 'contacts', label: 'Contacts' },
-  { value: 'companies', label: 'Companies' },
-  { value: 'assets', label: 'Assets' },
-  { value: 'service_agreements', label: 'Service Agreements' },
-];
-
 export default function CustomFieldFormPage() {
+  const { t } = useTranslation(); // Rule 2
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const isEdit = !!id;
+
+  const FIELD_TYPES = [
+    { value: 'text', label: t('customFields.fieldTypes.text') },
+    { value: 'number', label: t('customFields.fieldTypes.number') },
+    { value: 'email', label: t('customFields.fieldTypes.email') },
+    { value: 'phone', label: t('customFields.fieldTypes.phone') },
+    { value: 'url', label: t('customFields.fieldTypes.url') },
+    { value: 'date', label: t('customFields.fieldTypes.date') },
+    { value: 'datetime', label: t('customFields.fieldTypes.dateTime') },
+    { value: 'time', label: t('customFields.fieldTypes.time') },
+    { value: 'boolean', label: t('customFields.fieldTypes.boolean') },
+    { value: 'select', label: t('customFields.fieldTypes.select') },
+    { value: 'multiselect', label: t('customFields.fieldTypes.multiSelect') },
+    { value: 'textarea', label: t('customFields.fieldTypes.textArea') },
+    { value: 'currency', label: t('customFields.fieldTypes.currency') },
+    { value: 'percentage', label: t('customFields.fieldTypes.percentage') },
+    { value: 'file', label: t('customFields.fieldTypes.fileUpload') },
+  ];
+
+  const MODULES = [
+    { value: 'work_orders', label: t('customFields.modules.workOrders') },
+    { value: 'service_requests', label: t('customFields.modules.serviceRequests') },
+    { value: 'estimates', label: t('customFields.modules.estimates') },
+    { value: 'invoices', label: t('customFields.modules.invoices') },
+    { value: 'contacts', label: t('customFields.modules.contacts') },
+    { value: 'companies', label: t('customFields.modules.companies') },
+    { value: 'assets', label: t('customFields.modules.assets') },
+    { value: 'service_agreements', label: t('customFields.modules.serviceAgreements') },
+  ];
 
   const { data: customField, isLoading } = useCustomField(id!);
   const createCustomField = useCreateCustomField();
@@ -79,7 +81,7 @@ export default function CustomFieldFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('customFields.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -88,7 +90,7 @@ export default function CustomFieldFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Custom Field' : 'Create Custom Field'}
+        title={isEdit ? t('customFields.editCustomField') : t('customFields.createCustomField')}
         onBack={() => navigate('/customization/custom-fields')}
       />
 
@@ -103,11 +105,11 @@ export default function CustomFieldFormPage() {
         >
           <Form.Item
             name="module"
-            label="Module"
-            rules={[{ required: true, message: 'Please select a module' }]}
+            label={t('customFields.moduleLabel')}
+            rules={[{ required: true, message: t('customFields.validation.selectModule') }]}
           >
             <Select
-              placeholder="Select module"
+              placeholder={t('customFields.selectModulePlaceholder')}
               options={MODULES}
             />
           </Form.Item>
@@ -115,20 +117,20 @@ export default function CustomFieldFormPage() {
           <Space size="large" style={{ display: 'flex' }}>
             <Form.Item
               name="field_name"
-              label="Field Name"
+              label={t('customFields.fieldNameLabel')}
               style={{ flex: 1 }}
-              rules={[{ required: true, message: 'Please enter field name' }]}
+              rules={[{ required: true, message: t('customFields.validation.enterFieldName') }]}
             >
               <Input placeholder="e.g. customer_priority" />
             </Form.Item>
             <Form.Item
               name="field_type"
-              label="Field Type"
+              label={t('customFields.fieldTypeLabel')}
               style={{ flex: 1 }}
-              rules={[{ required: true, message: 'Please select field type' }]}
+              rules={[{ required: true, message: t('customFields.validation.selectFieldType') }]}
             >
               <Select
-                placeholder="Select type"
+                placeholder={t('customFields.selectTypePlaceholder')}
                 options={FIELD_TYPES}
               />
             </Form.Item>
@@ -136,7 +138,7 @@ export default function CustomFieldFormPage() {
 
           <Form.Item
             name="options"
-            label="Options (JSON - for select/multiselect fields)"
+            label={t('customFields.optionsLabel')}
             rules={[
               {
                 validator: (_, value) => {
@@ -145,7 +147,7 @@ export default function CustomFieldFormPage() {
                     JSON.parse(value);
                     return Promise.resolve();
                   } catch {
-                    return Promise.reject(new Error('Invalid JSON format'));
+                    return Promise.reject(new Error(t('customFields.validation.invalidJson')));
                   }
                 },
               },
@@ -153,18 +155,18 @@ export default function CustomFieldFormPage() {
           >
             <TextArea
               rows={4}
-              placeholder='["Option 1", "Option 2", "Option 3"]'
+              placeholder={t('customFields.optionsPlaceholder')}
               style={{ fontFamily: 'monospace' }}
             />
           </Form.Item>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="is_required" label="Required" valuePropName="checked" style={{ flex: 1 }}>
-              <Switch checkedChildren="Required" unCheckedChildren="Optional" />
+            <Form.Item name="is_required" label={t('customFields.requiredLabel')} valuePropName="checked" style={{ flex: 1 }}>
+              <Switch checkedChildren={t('customFields.requiredSwitch')} unCheckedChildren={t('customFields.optionalSwitch')} />
             </Form.Item>
             <Form.Item
               name="sort_order"
-              label="Sort Order"
+              label={t('customFields.sortOrderLabel')}
               style={{ flex: 1 }}
             >
               <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
@@ -178,9 +180,9 @@ export default function CustomFieldFormPage() {
                 htmlType="submit"
                 loading={createCustomField.isPending || updateCustomField.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('common.update') : t('common.create')}
               </Button>
-              <Button onClick={() => navigate('/customization/custom-fields')}>Cancel</Button>
+              <Button onClick={() => navigate('/customization/custom-fields')}>{t('common.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

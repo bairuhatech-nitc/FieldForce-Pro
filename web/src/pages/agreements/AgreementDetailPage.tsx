@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Space, Skeleton, Tag, Modal, DatePicker, InputNumber, Form } from 'antd';
 import { EditOutlined, DeleteOutlined, ReloadOutlined, StopOutlined } from '@ant-design/icons';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import {
   useServiceAgreement,
@@ -23,6 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AgreementDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: agreement, isLoading } = useServiceAgreement(id!);
@@ -35,8 +37,8 @@ export default function AgreementDetailPage() {
   const handleDelete = () => {
     if (!agreement) return;
     showConfirmDialog({
-      title: 'Delete Agreement',
-      content: `Are you sure you want to delete "${agreement.name}"?`,
+      title: t('agreementDetail.deleteTitle'),
+      content: t('agreementDetail.deleteConfirm', { name: agreement.name }),
       onOk: async () => {
         await deleteAgreement.mutateAsync(agreement.id);
         navigate('/agreements');
@@ -48,8 +50,8 @@ export default function AgreementDetailPage() {
   const handleCancel = () => {
     if (!agreement) return;
     showConfirmDialog({
-      title: 'Cancel Agreement',
-      content: `Are you sure you want to cancel "${agreement.name}"? This action cannot be undone.`,
+      title: t('agreementDetail.cancelTitle'),
+      content: t('agreementDetail.cancelConfirm', { name: agreement.name }),
       onOk: async () => {
         await updateStatus.mutateAsync({ id: agreement.id, status: 'cancelled' });
       },
@@ -71,7 +73,7 @@ export default function AgreementDetailPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Agreement Details" />
+        <PageHeader title={t('agreementDetail.details')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -80,8 +82,8 @@ export default function AgreementDetailPage() {
   if (!agreement) {
     return (
       <div>
-        <PageHeader title="Agreement Not Found" />
-        <Card>Agreement not found</Card>
+        <PageHeader title={t('agreementDetail.notFoundTitle')} />
+        <Card>{t('agreementDetail.notFoundMessage')}</Card>
       </div>
     );
   }
@@ -97,59 +99,55 @@ export default function AgreementDetailPage() {
           <Space>
             {status === 'active' && (
               <PermissionGuard permission="service-agreements:update">
-                <Button icon={<ReloadOutlined />} onClick={() => setRenewModalOpen(true)}>Renew</Button>
+                <Button icon={<ReloadOutlined />} onClick={() => setRenewModalOpen(true)}>{t('agreementDetail.renew')}</Button>
               </PermissionGuard>
             )}
             {(status === 'active' || status === 'draft') && (
               <PermissionGuard permission="service-agreements:update">
-                <Button danger icon={<StopOutlined />} onClick={handleCancel}>Cancel</Button>
+                <Button danger icon={<StopOutlined />} onClick={handleCancel}>{t('agreementDetail.cancel')}</Button>
               </PermissionGuard>
             )}
             <PermissionGuard permission="service-agreements:update">
-              <Button icon={<EditOutlined />} onClick={() => navigate(`/agreements/${agreement.id}/edit`)}>Edit</Button>
+              <Button icon={<EditOutlined />} onClick={() => navigate(`/agreements/${agreement.id}/edit`)}>{t('agreementDetail.edit')}</Button>
             </PermissionGuard>
             <PermissionGuard permission="service-agreements:delete">
-              <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>Delete</Button>
+              <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>{t('agreementDetail.delete')}</Button>
             </PermissionGuard>
           </Space>
         }
       />
 
-      <Card title="Agreement Information">
+      <Card title={t('agreementDetail.infoTitle')}>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="Name" span={2}>{agreement.name}</Descriptions.Item>
-          <Descriptions.Item label="Type">{agreement.type || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label={t('agreementDetail.name')} span={2}>{agreement.name}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.type')}>{agreement.type || <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.status')}>
             <Tag color={STATUS_COLORS[status] || 'default'}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Contact">
+          <Descriptions.Item label={t('agreementDetail.contact')}>
             {agreement.contact
               ? `${agreement.contact.first_name} ${agreement.contact.last_name}`
               : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
-          <Descriptions.Item label="Value">
+          <Descriptions.Item label={t('agreementDetail.value')}>
             {agreement.value != null ? `$${Number(agreement.value).toLocaleString()}` : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
-          <Descriptions.Item label="Start Date">{formatDate(agreement.start_date)}</Descriptions.Item>
-          <Descriptions.Item label="End Date">{formatDate(agreement.end_date)}</Descriptions.Item>
-          <Descriptions.Item label="SLA Response Hours">
-            {agreement.sla_response_hours != null ? `${agreement.sla_response_hours}h` : <span style={{ opacity: 0.5 }}>-</span>}
-          </Descriptions.Item>
-          <Descriptions.Item label="SLA Resolution Hours">
-            {agreement.sla_resolution_hours != null ? `${agreement.sla_resolution_hours}h` : <span style={{ opacity: 0.5 }}>-</span>}
-          </Descriptions.Item>
-          <Descriptions.Item label="Description" span={2}>
+          <Descriptions.Item label={t('agreementDetail.startDate')}>{formatDate(agreement.start_date)}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.endDate')}>{formatDate(agreement.end_date)}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.slaResponse')}>{agreement.sla_response_hours != null ? `${agreement.sla_response_hours}h` : <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.slaResolution')}>{agreement.sla_resolution_hours != null ? `${agreement.sla_resolution_hours}h` : <span style={{ opacity: 0.5 }}>-</span>}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.description')} span={2}>
             {agreement.description || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
-          <Descriptions.Item label="Created At">{formatDateTime(agreement.created_at)}</Descriptions.Item>
-          <Descriptions.Item label="Updated At">{formatDateTime(agreement.updated_at)}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.createdAt')}>{formatDateTime(agreement.created_at)}</Descriptions.Item>
+          <Descriptions.Item label={t('agreementDetail.updatedAt')}>{formatDateTime(agreement.updated_at)}</Descriptions.Item>
         </Descriptions>
       </Card>
 
       <Modal
-        title="Renew Agreement"
+        title={t('agreementDetail.renewTitle')}
         open={renewModalOpen}
         onCancel={() => { setRenewModalOpen(false); renewForm.resetFields(); }}
         onOk={() => renewForm.submit()}
@@ -158,13 +156,13 @@ export default function AgreementDetailPage() {
         <Form form={renewForm} layout="vertical" onFinish={handleRenew}>
           <Form.Item
             name="end_date"
-            label="New End Date"
-            rules={[{ required: true, message: 'Please select new end date' }]}
+            label={t('agreementDetail.newEndDate')}
+            rules={[{ required: true, message: t('agreementDetail.errorSelectEndDate') }]}
           >
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="value" label="New Value (optional)">
-            <InputNumber min={0} step={0.01} prefix="$" style={{ width: '100%' }} placeholder="Leave blank to keep current value" />
+          <Form.Item name="value" label={t('agreementDetail.newValue')}>
+            <InputNumber min={0} step={0.01} prefix="$" style={{ width: '100%' }} placeholder={t('agreementDetail.placeholderValue')} />
           </Form.Item>
         </Form>
       </Modal>

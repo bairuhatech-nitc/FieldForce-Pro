@@ -6,6 +6,7 @@ import {
   ClusterOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 import { 
   useSuperAdminAnalyticsOverview, 
@@ -16,27 +17,28 @@ import {
 const { Title, Text } = Typography;
 
 export default function AnalyticsDashboardPage() {
+  const { t } = useTranslation();
   const { data: overview, isLoading: overviewLoading } = useSuperAdminAnalyticsOverview();
   const { data: revenueTrends, isLoading: trendsLoading } = useSuperAdminRevenueTrends('monthly');
   const { data: adoption, isLoading: adoptionLoading } = useSuperAdminAdoptionMetrics();
 
   const adoptionColumns = [
-    { title: 'Subscription Plan', dataIndex: 'subscription_plan', key: 'plan', render: (text: string) => <Text style={{ textTransform: 'capitalize' }}>{text}</Text> },
-    { title: 'Number of Tenants', dataIndex: 'count', key: 'count' },
+    { title: t('analytics.subscriptionPlan'), dataIndex: 'subscription_plan', key: 'plan', render: (text: string) => <Text style={{ textTransform: 'capitalize' }}>{text}</Text> },
+    { title: t('analytics.numberOfTenants'), dataIndex: 'count', key: 'count' },
   ];
 
   return (
     <div>
       <PageHeader
-        title="Usage & Billing Analytics"
-        subtitle="Insights into platform adoption and revenue"
+        title={t('analytics.usageBillingAnalytics')}
+        subtitle={t('analytics.insightsIntoPlatformAdoption')}
       />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={6}>
           <Card loading={overviewLoading}>
             <Statistic
-              title="Monthly Recurring Revenue (MRR)"
+              title={t('analytics.monthlyRecurringRevenue')}
               value={overview?.revenue.mrr ?? 0}
               precision={2}
               prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
@@ -46,7 +48,7 @@ export default function AnalyticsDashboardPage() {
         <Col xs={12} sm={6}>
           <Card loading={overviewLoading}>
             <Statistic
-              title="Total Revenue"
+              title={t('analytics.totalRevenue')}
               value={overview?.revenue.total ?? 0}
               precision={2}
               prefix={<DollarOutlined style={{ color: '#1677ff' }} />}
@@ -56,7 +58,7 @@ export default function AnalyticsDashboardPage() {
         <Col xs={12} sm={6}>
           <Card loading={overviewLoading}>
             <Statistic
-              title="Active Users"
+              title={t('analytics.activeUsers')}
               value={overview?.users.active ?? 0}
               prefix={<TeamOutlined style={{ color: '#722ed1' }} />}
             />
@@ -65,7 +67,7 @@ export default function AnalyticsDashboardPage() {
         <Col xs={12} sm={6}>
           <Card loading={overviewLoading}>
             <Statistic
-              title="Total Work Orders"
+              title={t('analytics.totalWorkOrders')}
               value={overview?.work_orders.total ?? 0}
               prefix={<FileTextOutlined style={{ color: '#fa8c16' }} />}
             />
@@ -75,7 +77,7 @@ export default function AnalyticsDashboardPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={16}>
-          <Card title="Revenue Trends" loading={trendsLoading} style={{ height: '100%' }}>
+          <Card title={t('analytics.revenueTrends')} loading={trendsLoading} style={{ height: '100%' }}>
             <div style={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
                 <AreaChart data={revenueTrends || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -96,7 +98,7 @@ export default function AnalyticsDashboardPage() {
           </Card>
         </Col>
         <Col xs={24} lg={8}>
-          <Card title="Adoption by Plan" loading={adoptionLoading} style={{ height: '100%' }}>
+          <Card title={t('analytics.adoptionByPlan')} loading={adoptionLoading} style={{ height: '100%' }}>
             <Table
               dataSource={adoption?.by_plan || []}
               columns={adoptionColumns}

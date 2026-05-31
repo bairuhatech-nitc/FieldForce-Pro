@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Form,
@@ -84,33 +85,33 @@ const { Text } = Typography;
 
 type ItemSource = 'service' | 'part' | 'manual';
 
-const LINE_ITEM_TYPE_META: Record<string, { label: string; color: string }> = {
-  service:   { label: 'Service',   color: 'blue'    },
-  part:      { label: 'Part',      color: 'green'   },
-  labor:     { label: 'Labour',    color: 'purple'  },
-  material:  { label: 'Material',  color: 'cyan'    },
-  equipment: { label: 'Equipment', color: 'gold'    },
-  travel:    { label: 'Travel',    color: 'orange'  },
-  other:     { label: 'Other',     color: 'default' },
+const LINE_ITEM_TYPE_META: Record<string, { color: string }> = {
+  service:   { color: 'blue'    },
+  part:      { color: 'green'   },
+  labor:     { color: 'purple'  },
+  material:  { color: 'cyan'    },
+  equipment: { color: 'gold'    },
+  travel:    { color: 'orange'  },
+  other:     { color: 'default' },
 };
 
 const MANUAL_TYPES = [
-  { value: 'service',   label: 'Service'   },
-  { value: 'part',      label: 'Part'      },
-  { value: 'labor',     label: 'Labour'    },
-  { value: 'material',  label: 'Material'  },
-  { value: 'equipment', label: 'Equipment' },
-  { value: 'travel',    label: 'Travel'    },
-  { value: 'other',     label: 'Other'     },
+  { value: 'service'   },
+  { value: 'part'      },
+  { value: 'labor'     },
+  { value: 'material'  },
+  { value: 'equipment' },
+  { value: 'travel'    },
+  { value: 'other'     },
 ];
 
 const UNITS = ['each', 'hrs', 'days', 'sqft', 'sqm', 'lm', 'kg', 'lot', 'visit', 'month'];
 
 const PRIORITIES = [
-  { value: 'low',    label: 'Low',    dot: '#6b7280' },
-  { value: 'medium', label: 'Medium', dot: '#2563eb' },
-  { value: 'high',   label: 'High',   dot: '#f59e0b' },
-  { value: 'urgent', label: 'Urgent', dot: '#ef4444' },
+  { value: 'low',    dot: '#6b7280' },
+  { value: 'medium', dot: '#2563eb' },
+  { value: 'high',   dot: '#f59e0b' },
+  { value: 'urgent', dot: '#ef4444' },
 ];
 
 interface LineItemFormData extends Partial<EstimateLineItem> {
@@ -129,6 +130,7 @@ function SortableLineItemRow({
   onDelete: (i: number) => void;
   borderColor: string;
 }) {
+  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.tempId || item.id || `item-${index}` });
 
@@ -156,7 +158,7 @@ function SortableLineItemRow({
       </td>
       <td style={{ padding: '10px 8px', width: 110 }}>
         <Tag color={typeMeta.color} style={{ fontSize: 11, margin: 0 }}>
-          {typeMeta.label}
+          {t(`estimateBuilder.types.${item.type || 'other'}`)}
         </Tag>
       </td>
       <td style={{ padding: '10px 8px' }}>
@@ -167,7 +169,7 @@ function SortableLineItemRow({
       </td>
       <td style={{ padding: '10px 8px', textAlign: 'center', width: 80 }}>
         <span style={{ fontSize: 13 }}>{qty}</span>
-        {item.unit && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 3 }}>{item.unit}</span>}
+        {item.unit && <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 3 }}>{t(`estimateBuilder.units.${item.unit}`, { defaultValue: item.unit })}</span>}
       </td>
       <td style={{ padding: '10px 8px', textAlign: 'right', width: 100, fontSize: 13 }}>
         ${price.toFixed(2)}
@@ -183,10 +185,10 @@ function SortableLineItemRow({
       </td>
       <td style={{ padding: '10px 8px', width: 72 }}>
         <Space size={2}>
-          <Tooltip title="Edit">
+          <Tooltip title={t('estimateBuilder.edit')}>
             <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(index)} />
           </Tooltip>
-          <Tooltip title="Remove">
+          <Tooltip title={t('estimateBuilder.remove')}>
             <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(index)} />
           </Tooltip>
         </Space>
@@ -198,6 +200,7 @@ function SortableLineItemRow({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function EstimateBuilderPage() {
+  const { t } = useTranslation();
   const navigate         = useNavigate();
   const { id }           = useParams<{ id: string }>();
   const [searchParams]   = useSearchParams();
@@ -224,10 +227,10 @@ export default function EstimateBuilderPage() {
   // Guard: only assigned creator or admin can create new estimates
   useEffect(() => {
     if (!isEdit && assignedCreatorId !== undefined && !isAdmin && currentUser?.id !== assignedCreatorId) {
-      message.error('Only the assigned estimator can create estimates');
+      message.error(t('estimateBuilder.errors.assignedEstimatorOnly'));
       navigate('/estimates');
     }
-  }, [isEdit, assignedCreatorId, isAdmin, currentUser?.id, navigate]);
+  }, [isEdit, assignedCreatorId, isAdmin, currentUser?.id, navigate, t]);
 
   // Build location options: merge fetched list + SR's embedded location so the
   // dropdown always has at least the SR's location even if allLocations is empty.
@@ -270,12 +273,12 @@ export default function EstimateBuilderPage() {
     if (linkedSR && !isEdit) {
       form.setFieldsValue({
         contact_id: linkedSR.contact_id,
-        title: `Estimate for: ${linkedSR.subject || 'Service Request'}`,
+        title: `${t('estimateBuilder.estimateFor')}: ${linkedSR.subject || t('estimateBuilder.defaultTitle')}`,
         scheduled_start: linkedSR.scheduled_start ? dayjs(linkedSR.scheduled_start) : null,
         location_id: linkedSR.location_id || null,
       });
     }
-  }, [linkedSR, isEdit, form]);
+  }, [linkedSR, isEdit, form, t]);
 
   useEffect(() => {
     if (estimate && isEdit) {
@@ -374,9 +377,9 @@ export default function EstimateBuilderPage() {
 
   const confirmDelete = (index: number) => {
     Modal.confirm({
-      title: 'Remove Line Item',
-      content: 'Remove this item from the estimate?',
-      okText: 'Remove', okType: 'danger',
+      title: t('estimateBuilder.removeLineItemTitle'),
+      content: t('estimateBuilder.removeLineItemContent'),
+      okText: t('estimateBuilder.remove'), okType: 'danger',
       onOk: () => setLineItems((items) => items.filter((_, i) => i !== index)),
     });
   };
@@ -423,7 +426,7 @@ export default function EstimateBuilderPage() {
       try { values = await form.validateFields(); } catch { return; }
 
       if (lineItems.length === 0) {
-        message.error('Please add at least one line item before saving.');
+        message.error(t('estimateBuilder.errors.atLeastOneLineItem'));
         return;
       }
 
@@ -454,7 +457,7 @@ export default function EstimateBuilderPage() {
           estimateId = (res.data?.data as { id?: string } | undefined)?.id;
         }
 
-        if (!estimateId) { message.error('Could not get estimate ID. Please try again.'); return; }
+        if (!estimateId) { message.error(t('estimateBuilder.errors.noId')); return; }
 
         for (const item of lineItems.filter((i) => !i.id)) {
           const qty      = Number(item.quantity)   || 1;
@@ -487,14 +490,14 @@ export default function EstimateBuilderPage() {
 
         navigate('/estimates');
       } catch (err: unknown) {
-        message.error((err as { message?: string })?.message || 'Failed to save estimate');
+        message.error((err as { message?: string })?.message || t('estimateBuilder.errors.failedToSave'));
       } finally {
         setIsSaving(false);
       }
     },
     [form, lineItems, subtotal, totalTax, totalDiscount, grandTotal,
      serviceRequestId, estimate, id, isEdit,
-     updateEstimate, createEstimate, sendEstimate, createLineItem, navigate],
+     updateEstimate, createEstimate, sendEstimate, createLineItem, navigate, t],
   );
 
   if (isEdit && isLoading) {
@@ -512,14 +515,14 @@ export default function EstimateBuilderPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Create Estimate' : 'New Estimate'}
-        subtitle={isEdit ? 'Complete the estimate with details and line items' : 'Create a detailed estimate for the approved service request'}
+        title={isEdit ? t('estimateBuilder.createEstimate') : t('estimateBuilder.newEstimate')}
+        subtitle={isEdit ? t('estimateBuilder.subtitleEdit') : t('estimateBuilder.subtitleCreate')}
         onBack={() => navigate('/estimates')}
         extra={
           <Space>
-            <Button onClick={() => navigate('/estimates')}>Cancel</Button>
+            <Button onClick={() => navigate('/estimates')}>{t('estimateBuilder.cancel')}</Button>
             <Button icon={<SaveOutlined />} onClick={() => doSave(false)} loading={isSaving}>
-              Save Draft
+              {t('estimateBuilder.saveDraft')}
             </Button>
             {isOnSite ? (
               <Button
@@ -536,7 +539,7 @@ export default function EstimateBuilderPage() {
               </Button>
             ) : (
               <Button type="primary" icon={<SendOutlined />} onClick={() => doSave(true)} loading={isSaving}>
-                Save &amp; Send for Review
+                {t('estimateBuilder.saveAndSend')}
               </Button>
             )}
           </Space>
@@ -547,7 +550,7 @@ export default function EstimateBuilderPage() {
         <Alert type="info" showIcon icon={<LinkOutlined />}
           message={
             <span>
-              Linked to Service Request: <Text strong>{linkedSR.subject}</Text>
+              {t('estimateBuilder.linkedToServiceRequest')}: <Text strong>{linkedSR.subject}</Text>
               {linkedSR.priority && <Tag color="orange" style={{ marginLeft: 8 }}>{linkedSR.priority}</Tag>}
             </span>
           }
@@ -559,13 +562,13 @@ export default function EstimateBuilderPage() {
         <Row gutter={24}>
           <Col xs={24} lg={16}>
 
-            <Card title={<Space><UserOutlined /><span>Client &amp; Reference</span></Space>}
+            <Card title={<Space><UserOutlined /><span>{t('estimateBuilder.clientReference')}</span></Space>}
               style={{ marginBottom: 16, background: cardBg, borderColor }}>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
-                  <Form.Item name="contact_id" label="Customer / Contact"
-                    rules={[{ required: true, message: 'Please select a customer' }]}>
-                    <Select showSearch optionFilterProp="label" placeholder="Search and select customer"
+                  <Form.Item name="contact_id" label={t('estimateBuilder.customerContact')}
+                    rules={[{ required: true, message: t('estimateBuilder.pleaseSelectCustomer') }]}>
+                    <Select showSearch optionFilterProp="label" placeholder={t('estimateBuilder.searchCustomer')}
                       options={contacts?.map((c) => ({
                         value: c.id,
                         label: `${c.first_name} ${c.last_name}${c.email ? ` — ${c.email}` : ''}`,
@@ -574,33 +577,33 @@ export default function EstimateBuilderPage() {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item name="title" label="Estimate Title">
-                    <Input placeholder="e.g. HVAC Annual Maintenance Package" />
+                  <Form.Item name="title" label={t('estimateBuilder.estimateTitle')}>
+                    <Input placeholder={t('estimateBuilder.titlePlaceholder')} />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
                 <Col xs={24} md={12}>
-                  <Form.Item name="scheduled_start" label="Scheduled Date">
+                  <Form.Item name="scheduled_start" label={t('estimateBuilder.scheduledDate')}>
                     <DatePicker
                       format="YYYY-MM-DD"
-                      placeholder="Select scheduled date"
+                      placeholder={t('estimateBuilder.selectScheduledDate')}
                       style={{ width: '100%' }}
                     />
                   </Form.Item>
                 </Col>
               </Row>
-              <Form.Item name="location_id" label={<Space size={4}><EnvironmentOutlined />Location</Space>}>
+              <Form.Item name="location_id" label={<Space size={4}><EnvironmentOutlined />{t('estimateBuilder.location')}</Space>}>
                 <Select
                   showSearch
                   allowClear
-                  placeholder="Select service location"
+                  placeholder={t('estimateBuilder.selectLocation')}
                   optionFilterProp="label"
                   options={locationOptions}
                 />
               </Form.Item>
               {linkedSR && (
-                <Form.Item label="Linked Service Request" style={{ marginBottom: 0 }}>
+                <Form.Item label={t('estimateBuilder.linkedServiceRequest')} style={{ marginBottom: 0 }}>
                   <Input readOnly value={linkedSR.subject || ''}
                     prefix={<LinkOutlined style={{ color: '#6b7280' }} />}
                     style={{ background: mutedBg, color: '#6b7280', cursor: 'default' }} />
@@ -609,8 +612,8 @@ export default function EstimateBuilderPage() {
             </Card>
 
             <Card
-              title={<Space><FileTextOutlined /><span>Line Items</span>{lineItems.length === 0 && <Tag color="error" style={{ marginLeft: 4 }}>Required</Tag>}</Space>}
-              extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={openAdd}>Add Item</Button>}
+              title={<Space><FileTextOutlined /><span>{t('estimateBuilder.lineItems')}</span>{lineItems.length === 0 && <Tag color="error" style={{ marginLeft: 4 }}>{t('estimateBuilder.required')}</Tag>}</Space>}
+              extra={<Button type="primary" size="small" icon={<PlusOutlined />} onClick={openAdd}>{t('estimateBuilder.addItem')}</Button>}
               style={{ marginBottom: 16, background: cardBg, borderColor: lineItems.length === 0 ? '#ff4d4f' : borderColor }}
             >
               {/* DndContext is ALWAYS mounted to prevent StrictMode remount crash */}
@@ -620,9 +623,9 @@ export default function EstimateBuilderPage() {
                   strategy={verticalListSortingStrategy}
                 >
                   {lineItems.length === 0 ? (
-                    <Empty description="No line items yet. Add services, parts, or custom items."
+                    <Empty description={t('estimateBuilder.noLineItems')}
                       image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: '24px 0' }}>
-                      <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>Add First Item</Button>
+                      <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>{t('estimateBuilder.addFirstItem')}</Button>
                     </Empty>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
@@ -630,13 +633,13 @@ export default function EstimateBuilderPage() {
                         <thead>
                           <tr style={{ borderBottom: `2px solid ${borderColor}`, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af' }}>
                             <th style={{ padding: '8px 6px', width: 36 }} />
-                            <th style={{ padding: '8px 8px', textAlign: 'left' }}>Type</th>
-                            <th style={{ padding: '8px 8px', textAlign: 'left' }}>Item / Description</th>
-                            <th style={{ padding: '8px 8px', textAlign: 'center' }}>Qty</th>
-                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>Unit Price</th>
-                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>Tax</th>
-                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>Disc</th>
-                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>Total</th>
+                            <th style={{ padding: '8px 8px', textAlign: 'left' }}>{t('estimateBuilder.tableHeaderType')}</th>
+                            <th style={{ padding: '8px 8px', textAlign: 'left' }}>{t('estimateBuilder.tableHeaderDescription')}</th>
+                            <th style={{ padding: '8px 8px', textAlign: 'center' }}>{t('estimateBuilder.tableHeaderQty')}</th>
+                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>{t('estimateBuilder.tableHeaderUnitPrice')}</th>
+                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>{t('estimateBuilder.tableHeaderTax')}</th>
+                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>{t('estimateBuilder.tableHeaderDisc')}</th>
+                            <th style={{ padding: '8px 8px', textAlign: 'right' }}>{t('estimateBuilder.tableHeaderTotal')}</th>
                             <th style={{ padding: '8px 8px', width: 72 }} />
                           </tr>
                         </thead>
@@ -658,9 +661,9 @@ export default function EstimateBuilderPage() {
                         <Col xs={24} sm={14} md={10}>
                           <div style={{ padding: '0 8px' }}>
                             {[
-                              { label: 'Subtotal', value: `$${subtotal.toFixed(2)}` },
-                              { label: 'Total Discount', value: totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : '—', color: totalDiscount > 0 ? '#ef4444' : undefined },
-                              { label: 'Tax', value: `$${totalTax.toFixed(2)}` },
+                              { label: t('estimateBuilder.subtotal'), value: `$${subtotal.toFixed(2)}` },
+                              { label: t('estimateBuilder.totalDiscount'), value: totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : '—', color: totalDiscount > 0 ? '#ef4444' : undefined },
+                              { label: t('estimateBuilder.tax'), value: `$${totalTax.toFixed(2)}` },
                             ].map(({ label, value, color }) => (
                               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontSize: 13 }}>
                                 <Text type="secondary">{label}</Text>
@@ -669,7 +672,7 @@ export default function EstimateBuilderPage() {
                             ))}
                             <Divider style={{ margin: '8px 0' }} />
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                              <Text strong style={{ fontSize: 14 }}>Grand Total</Text>
+                              <Text strong style={{ fontSize: 14 }}>{t('estimateBuilder.grandTotal')}</Text>
                               <Text strong style={{ fontSize: 20, color: '#2563eb' }}>${grandTotal.toFixed(2)}</Text>
                             </div>
                           </div>
@@ -682,19 +685,19 @@ export default function EstimateBuilderPage() {
             </Card>
 
             <Card
-              title={<Space><FileTextOutlined /><span>Notes</span></Space>}
+              title={<Space><FileTextOutlined /><span>{t('estimateBuilder.notes')}</span></Space>}
               style={{ marginBottom: 16, background: cardBg, borderColor }}
             >
               <Form.Item name="notes" style={{ marginBottom: 0 }}>
                 <TextArea
                   rows={3}
-                  placeholder="Any additional notes for the customer (printed on the PDF)..."
+                  placeholder={t('estimateBuilder.notesPlaceholder')}
                 />
               </Form.Item>
             </Card>
 
             <Card
-              title={<Space><FileTextOutlined /><span>Terms &amp; Conditions</span></Space>}
+              title={<Space><FileTextOutlined /><span>{t('estimateBuilder.termsAndConditions')}</span></Space>}
               style={{ marginBottom: 16, background: cardBg, borderColor }}
               extra={
                 <Button
@@ -702,26 +705,26 @@ export default function EstimateBuilderPage() {
                   type="link"
                   onClick={() => {
                     const defaults = [
-                      'Payment Terms: Full payment is due within 30 days of invoice date.',
-                      'Service Delivery: Work will commence within 10 business days of estimate approval.',
-                      'Cancellation: Written notice of 15 days is required. Payment is due for work completed up to the cancellation date.',
-                      'Warranty: All workmanship is warranted for 90 days from the date of service completion.',
-                      'Liability: Our liability is limited to the total value of this estimate.',
+                      t('estimateBuilder.defaultTerms.payment'),
+                      t('estimateBuilder.defaultTerms.delivery'),
+                      t('estimateBuilder.defaultTerms.cancellation'),
+                      t('estimateBuilder.defaultTerms.warranty'),
+                      t('estimateBuilder.defaultTerms.liability'),
                     ].join('\n');
                     form.setFieldValue('terms_and_conditions', defaults);
                   }}
                 >
-                  Use Default Terms
+                  {t('estimateBuilder.useDefaultTerms')}
                 </Button>
               }
             >
               <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-                Each line is printed as a numbered item in the PDF. Use "Label: Description" format to bold the label.
+                {t('estimateBuilder.termsInstructions')}
               </Text>
               <Form.Item name="terms_and_conditions" style={{ marginBottom: 0 }}>
                 <TextArea
                   rows={6}
-                  placeholder={`Payment Terms: Full payment due within 30 days.\nService Delivery: Work starts within 10 days of approval.\nCancellation: 15 days written notice required.\nWarranty: 90-day workmanship warranty.`}
+                  placeholder={t('estimateBuilder.termsPlaceholder')}
                 />
               </Form.Item>
             </Card>
@@ -729,38 +732,38 @@ export default function EstimateBuilderPage() {
           </Col>
 
           <Col xs={24} lg={8}>
-            <Card title={<Space><CalendarOutlined /><span>Estimate Details</span></Space>}
+            <Card title={<Space><CalendarOutlined /><span>{t('estimateBuilder.estimateDetails')}</span></Space>}
               style={{ marginBottom: 16, background: cardBg, borderColor }}>
-              <Form.Item label="Estimate Date">
+              <Form.Item label={t('estimateBuilder.estimateDate')}>
                 <Input readOnly value={dayjs().format('DD MMM YYYY')}
                   style={{ background: mutedBg, color: '#6b7280', cursor: 'default' }} />
               </Form.Item>
-              <Form.Item name="expiry_date" label="Valid Until" rules={[{ required: true, message: 'Expiry date is required' }]}>
+              <Form.Item name="expiry_date" label={t('estimateBuilder.validUntil')} rules={[{ required: true, message: t('estimateBuilder.expiryDateRequired') }]}>
                 <DatePicker style={{ width: '100%' }} format="DD MMM YYYY"
-                  disabledDate={(d) => d && d.isBefore(dayjs(), 'day')} placeholder="Select expiry date" />
+                  disabledDate={(d) => d && d.isBefore(dayjs(), 'day')} placeholder={t('estimateBuilder.selectExpiryDate')} />
               </Form.Item>
-              <Form.Item name="priority" label="Priority" style={{ marginBottom: 0 }}>
-                <Select placeholder="Select priority" allowClear>
+              <Form.Item name="priority" label={t('estimateBuilder.priorityLabel')} style={{ marginBottom: 0 }}>
+                <Select placeholder={t('estimateBuilder.selectPriority')} allowClear>
                   {PRIORITIES.map((p) => (
                     <Select.Option key={p.value} value={p.value}>
-                      <Badge color={p.dot} text={p.label} />
+                      <Badge color={p.dot} text={t(`estimateBuilder.priorities.${p.value}`)} />
                     </Select.Option>
                   ))}
                 </Select>
               </Form.Item>
             </Card>
 
-            <Card title={<Space><DollarOutlined /><span>Financial Summary</span></Space>}
+            <Card title={<Space><DollarOutlined /><span>{t('estimateBuilder.financialSummary')}</span></Space>}
               style={{ marginBottom: 16, background: cardBg, borderColor }}>
               <div style={{ fontSize: 13 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${borderColor}` }}>
-                  <Text type="secondary">Items</Text>
+                  <Text type="secondary">{t('estimateBuilder.itemsCount')}</Text>
                   <Text>{lineItems.length}</Text>
                 </div>
                 {[
-                  { label: 'Subtotal', value: `$${subtotal.toFixed(2)}` },
-                  { label: 'Discount', value: totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : '—', color: totalDiscount > 0 ? '#ef4444' : undefined },
-                  { label: 'Tax', value: `$${totalTax.toFixed(2)}` },
+                  { label: t('estimateBuilder.subtotal'), value: `$${subtotal.toFixed(2)}` },
+                  { label: t('estimateBuilder.discount'), value: totalDiscount > 0 ? `-$${totalDiscount.toFixed(2)}` : '—', color: totalDiscount > 0 ? '#ef4444' : undefined },
+                  { label: t('estimateBuilder.tax'), value: `$${totalTax.toFixed(2)}` },
                 ].map(({ label, value, color }) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
                     <Text type="secondary">{label}</Text>
@@ -769,7 +772,7 @@ export default function EstimateBuilderPage() {
                 ))}
                 <Divider style={{ margin: '8px 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                  <Text strong style={{ fontSize: 14 }}>Total</Text>
+                  <Text strong style={{ fontSize: 14 }}>{t('estimateBuilder.total')}</Text>
                   <Text strong style={{ fontSize: 22, color: '#2563eb' }}>${grandTotal.toFixed(2)}</Text>
                 </div>
               </div>
@@ -781,17 +784,17 @@ export default function EstimateBuilderPage() {
 
       {/* ── LINE ITEM MODAL ── */}
       <Modal
-        title={editingIndex !== null ? 'Edit Line Item' : 'Add Line Item'}
+        title={editingIndex !== null ? t('estimateBuilder.editLineItem') : t('estimateBuilder.addLineItem')}
         open={modalVisible}
         onOk={saveLineItem}
         onCancel={closeModal}
-        okText={editingIndex !== null ? 'Update Item' : 'Add Item'}
+        okText={editingIndex !== null ? t('estimateBuilder.updateItem') : t('estimateBuilder.addItem')}
         width={680}
         destroyOnClose
       >
         {/* Source selector */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 500 }}>ITEM SOURCE</div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 500 }}>{t('estimateBuilder.itemSource')}</div>
           <Radio.Group
             value={itemSource}
             buttonStyle="solid"
@@ -803,13 +806,13 @@ export default function EstimateBuilderPage() {
             }}
           >
             <Radio.Button value="service" style={{ width: '33.33%', textAlign: 'center' }}>
-              <Space size={4}><AppstoreOutlined />Services Catalog</Space>
+              <Space size={4}><AppstoreOutlined />{t('estimateBuilder.servicesCatalog')}</Space>
             </Radio.Button>
             <Radio.Button value="part" style={{ width: '33.33%', textAlign: 'center' }}>
-              <Space size={4}><ToolOutlined />Parts Catalog</Space>
+              <Space size={4}><ToolOutlined />{t('estimateBuilder.partsCatalog')}</Space>
             </Radio.Button>
             <Radio.Button value="manual" style={{ width: '33.34%', textAlign: 'center' }}>
-              <Space size={4}><FormOutlined />Manual Entry</Space>
+              <Space size={4}><FormOutlined />{t('estimateBuilder.manualEntry')}</Space>
             </Radio.Button>
           </Radio.Group>
         </div>
@@ -818,14 +821,14 @@ export default function EstimateBuilderPage() {
 
           {/* Services Catalog */}
           {itemSource === 'service' && (
-            <Form.Item label="Choose from Services Catalog" style={{ marginBottom: 16 }}>
+            <Form.Item label={t('estimateBuilder.chooseServicesCatalog')} style={{ marginBottom: 16 }}>
               <Select
                 showSearch
                 allowClear
-                placeholder="Search services by name or category..."
+                placeholder={t('estimateBuilder.searchServicesPlaceholder')}
                 optionFilterProp="label"
                 options={activeSvcOptions}
-                notFoundContent={<div style={{ padding: '8px 0', color: '#9ca3af', textAlign: 'center' }}>No active services found</div>}
+                notFoundContent={<div style={{ padding: '8px 0', color: '#9ca3af', textAlign: 'center' }}>{t('estimateBuilder.noActiveServices')}</div>}
                 onChange={(serviceId: string) => {
                   if (!serviceId) return;
                   const svc = (servicesCatalog as ServiceCatalogItem[]).find((s) => s.id === serviceId);
@@ -846,14 +849,14 @@ export default function EstimateBuilderPage() {
 
           {/* Parts Catalog */}
           {itemSource === 'part' && (
-            <Form.Item label="Choose from Parts Catalog" style={{ marginBottom: 16 }}>
+            <Form.Item label={t('estimateBuilder.choosePartsCatalog')} style={{ marginBottom: 16 }}>
               <Select
                 showSearch
                 allowClear
-                placeholder="Search parts by name or SKU..."
+                placeholder={t('estimateBuilder.searchPartsPlaceholder')}
                 optionFilterProp="label"
                 options={activePartOptions}
-                notFoundContent={<div style={{ padding: '8px 0', color: '#9ca3af', textAlign: 'center' }}>No active parts found</div>}
+                notFoundContent={<div style={{ padding: '8px 0', color: '#9ca3af', textAlign: 'center' }}>{t('estimateBuilder.noActiveParts')}</div>}
                 onChange={(partId: string) => {
                   if (!partId) return;
                   const part = (partsCatalog as PartsCatalogItem[]).find((p) => p.id === partId);
@@ -874,9 +877,9 @@ export default function EstimateBuilderPage() {
 
           {/* Manual mode — type selector */}
           {itemSource === 'manual' && (
-            <Form.Item name="type" label="Item Type" rules={[{ required: true, message: 'Please select a type' }]} style={{ marginBottom: 16 }}>
-              <Select placeholder="Select type"
-                options={MANUAL_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+            <Form.Item name="type" label={t('estimateBuilder.itemType')} rules={[{ required: true, message: t('estimateBuilder.pleaseSelectType') }]} style={{ marginBottom: 16 }}>
+              <Select placeholder={t('estimateBuilder.selectType')}
+                options={MANUAL_TYPES.map((tItem) => ({ value: tItem.value, label: t(`estimateBuilder.types.${tItem.value}`) }))}
               />
             </Form.Item>
           )}
@@ -886,34 +889,34 @@ export default function EstimateBuilderPage() {
           {/* Common fields */}
           <Row gutter={16}>
             <Col span={16}>
-              <Form.Item name="name" label="Item Name" rules={[{ required: true, message: 'Item name is required' }]}>
-                <Input placeholder="e.g. HVAC Filter Replacement" />
+              <Form.Item name="name" label={t('estimateBuilder.itemName')} rules={[{ required: true, message: t('estimateBuilder.itemNameRequired') }]}>
+                <Input placeholder={t('estimateBuilder.itemNamePlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="unit" label="Unit">
-                <Select placeholder="each" allowClear options={UNITS.map((u) => ({ value: u, label: u }))} />
+              <Form.Item name="unit" label={t('estimateBuilder.unit')}>
+                <Select placeholder={t('estimateBuilder.unitEachPlaceholder')} allowClear options={UNITS.map((u) => ({ value: u, label: t(`estimateBuilder.units.${u}`, { defaultValue: u }) }))} />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="description" label="Description">
-            <TextArea rows={2} placeholder="Optional details about this item..." />
+          <Form.Item name="description" label={t('estimateBuilder.description')}>
+            <TextArea rows={2} placeholder={t('estimateBuilder.descriptionPlaceholder')} />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="quantity" label="Quantity" rules={[{ required: true, message: 'Required' }]}>
+              <Form.Item name="quantity" label={t('estimateBuilder.quantity')} rules={[{ required: true, message: t('estimateBuilder.requiredField') }]}>
                 <InputNumber min={0.01} step={1} style={{ width: '100%' }} precision={2} />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="unit_price" label="Unit Price" rules={[{ required: true, message: 'Required' }]}>
+              <Form.Item name="unit_price" label={t('estimateBuilder.unitPrice')} rules={[{ required: true, message: t('estimateBuilder.requiredField') }]}>
                 <InputNumber min={0} step={0.01} prefix="$" style={{ width: '100%' }} precision={2} />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="tax_rate" label="Tax Rate (%)">
+              <Form.Item name="tax_rate" label={t('estimateBuilder.taxRate')}>
                 <InputNumber min={0} max={100} step={0.5} style={{ width: '100%' }} suffix="%" />
               </Form.Item>
             </Col>
@@ -921,11 +924,11 @@ export default function EstimateBuilderPage() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="discount_type" label="Discount Type" initialValue="fixed">
+              <Form.Item name="discount_type" label={t('estimateBuilder.discountType')} initialValue="fixed">
                 <Select
                   options={[
-                    { value: 'fixed', label: 'Fixed Amount ($)' },
-                    { value: 'percentage', label: 'Percentage (%)' },
+                    { value: 'fixed', label: t('estimateBuilder.fixedAmount') },
+                    { value: 'percentage', label: t('estimateBuilder.percentage') },
                   ]}
                 />
               </Form.Item>
@@ -938,7 +941,7 @@ export default function EstimateBuilderPage() {
                 {({ getFieldValue }) => {
                   const dType = getFieldValue('discount_type') || 'fixed';
                   return (
-                    <Form.Item name="discount" label={dType === 'percentage' ? 'Discount (%)' : 'Discount ($)'} style={{ marginBottom: 0 }}>
+                    <Form.Item name="discount" label={dType === 'percentage' ? t('estimateBuilder.discountPercent') : t('estimateBuilder.discountFixed')} style={{ marginBottom: 0 }}>
                       <InputNumber
                         min={0}
                         max={dType === 'percentage' ? 100 : undefined}

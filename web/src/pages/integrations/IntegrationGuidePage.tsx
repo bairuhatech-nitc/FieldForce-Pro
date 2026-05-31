@@ -1,5 +1,6 @@
 import { Typography, Card, Space, Tag, Alert, Divider, Tabs } from 'antd';
 import { ApiOutlined, KeyOutlined, CodeOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 
 const { Title, Text, Paragraph } = Typography;
@@ -120,22 +121,23 @@ const codeStyle: React.CSSProperties = {
 };
 
 export default function IntegrationGuidePage() {
+  const { t } = useTranslation();
+
   return (
     <div>
       <PageHeader
-        title="Integration Guide"
-        subtitle="Learn how to push service requests from your client systems into FieldForce Pro"
+        title={t('integrationGuide.title')}
+        subtitle={t('integrationGuide.subtitle')}
       />
 
       <Alert
         type="info"
         icon={<KeyOutlined />}
         showIcon
-        message="Authentication"
+        message={t('integrationGuide.authentication')}
         description={
           <>
-            All inbound requests require an <Text code>x-api-key</Text> header.
-            Go to <Text strong>Integrations → API Keys</Text> to create one.
+            {t('integrationGuide.authDescriptionPrefix')} <Text code>x-api-key</Text> {t('integrationGuide.authDescriptionSuffix')} <Text strong>{t('integrationGuide.authNavigation')}</Text> {t('integrationGuide.authDescriptionEnd')}
           </>
         }
         style={{ marginBottom: 24 }}
@@ -145,28 +147,27 @@ export default function IntegrationGuidePage() {
       <Card style={{ marginBottom: 24 }}>
         <Space align="center" style={{ marginBottom: 12 }}>
           <ApiOutlined style={{ fontSize: 20, color: '#1677ff' }} />
-          <Title level={4} style={{ margin: 0 }}>Inbound Endpoint</Title>
+          <Title level={4} style={{ margin: 0 }}>{t('integrationGuide.inboundEndpoint')}</Title>
         </Space>
         <Space size="middle">
           <Tag color="green" style={{ fontSize: 14, padding: '2px 10px' }}>POST</Tag>
           <code style={{ fontSize: 14 }}>{ENDPOINT}</code>
         </Space>
         <Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
-          Accepts a service request from any external system (CRM, customer portal, IoT device, etc.)
-          and creates it inside FieldForce Pro, linked to the correct tenant via the API key.
+          {t('integrationGuide.endpointDescription')}
         </Paragraph>
       </Card>
 
       {/* Request Body Fields */}
       <Card
-        title={<Space><CodeOutlined /> Request Body Fields</Space>}
+        title={<Space><CodeOutlined /> {t('integrationGuide.requestBodyFields')}</Space>}
         style={{ marginBottom: 24 }}
       >
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#fafafa' }}>
-                {['Field', 'Type', 'Required', 'Description'].map((h) => (
+                {[t('integrationGuide.field'), t('integrationGuide.type'), t('integrationGuide.required'), t('integrationGuide.description')].map((h) => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', borderBottom: '1px solid #f0f0f0', fontWeight: 600 }}>
                     {h}
                   </th>
@@ -184,8 +185,8 @@ export default function IntegrationGuidePage() {
                   </td>
                   <td style={{ padding: '10px 14px', borderBottom: '1px solid #f0f0f0' }}>
                     {field.required
-                      ? <Tag color="red">required</Tag>
-                      : <Tag color="default">optional</Tag>}
+                      ? <Tag color="red">{t('integrationGuide.requiredStatus')}</Tag>
+                      : <Tag color="default">{t('integrationGuide.optionalStatus')}</Tag>}
                   </td>
                   <td style={{ padding: '10px 14px', borderBottom: '1px solid #f0f0f0' }}>
                     {field.description}
@@ -199,7 +200,7 @@ export default function IntegrationGuidePage() {
 
       {/* Code Examples */}
       <Card
-        title={<Space><CodeOutlined /> Code Examples</Space>}
+        title={<Space><CodeOutlined /> {t('integrationGuide.codeExamples')}</Space>}
         style={{ marginBottom: 24 }}
       >
         <Tabs
@@ -224,19 +225,19 @@ export default function IntegrationGuidePage() {
       </Card>
 
       {/* Success Response */}
-      <Card title="Success Response (201)" style={{ marginBottom: 24 }}>
+      <Card title={t('integrationGuide.successResponse')} style={{ marginBottom: 24 }}>
         <code style={codeStyle}>{successResponse}</code>
       </Card>
 
       <Divider />
 
       {/* Error Codes */}
-      <Card title="Error Codes">
+      <Card title={t('integrationGuide.errorCodes')}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#fafafa' }}>
-                {['Status', 'Reason'].map((h) => (
+                {[t('integrationGuide.status'), t('integrationGuide.reason')].map((h) => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', borderBottom: '1px solid #f0f0f0', fontWeight: 600 }}>
                     {h}
                   </th>
@@ -245,10 +246,10 @@ export default function IntegrationGuidePage() {
             </thead>
             <tbody>
               {[
-                ['401 Unauthorized', 'Missing, invalid, expired, or revoked x-api-key header'],
-                ['400 Bad Request', 'subject field is missing or payload is malformed JSON'],
-                ['422 Unprocessable Entity', 'Validation error — check individual field constraints'],
-                ['500 Internal Server Error', 'Unexpected server error — contact support'],
+                ['401 Unauthorized', t('integrationGuide.error401')],
+                ['400 Bad Request', t('integrationGuide.error400')],
+                ['422 Unprocessable Entity', t('integrationGuide.error422')],
+                ['500 Internal Server Error', t('integrationGuide.error500')],
               ].map(([code, reason], i) => (
                 <tr key={code} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                   <td style={{ padding: '10px 14px', borderBottom: '1px solid #f0f0f0' }}>

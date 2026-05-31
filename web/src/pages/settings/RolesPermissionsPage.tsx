@@ -127,6 +127,7 @@ interface PermissionsMatrixProps {
 }
 
 function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions }: PermissionsMatrixProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
 
   // Group permissions by module, deduplicated by action
@@ -179,7 +180,7 @@ function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions
       {/* Toolbar */}
       <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-color)' }}>
         <Input
-          placeholder="Search modules..."
+          placeholder={t('rolesPermissions.matrix.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           allowClear
@@ -187,24 +188,26 @@ function PermissionsMatrix({ value = [], onChange, allPermissions, moduleOptions
           size="small"
         />
         <Space size={6}>
-          <span style={{ fontSize: 12, opacity: 0.5 }}>{value.length} selected</span>
-          <Button size="small" onClick={() => toggleAll(true)}>Select All</Button>
-          <Button size="small" onClick={() => toggleAll(false)}>Clear All</Button>
+          <span style={{ fontSize: 12, opacity: 0.5 }}>{t('rolesPermissions.matrix.selected', { count: value.length })}</span>
+          <Button size="small" onClick={() => toggleAll(true)}>{t('rolesPermissions.matrix.selectAll')}</Button>
+          <Button size="small" onClick={() => toggleAll(false)}>{t('rolesPermissions.matrix.clearAll')}</Button>
         </Space>
       </div>
 
       {/* Column headers */}
       <div style={{ display: 'grid', gridTemplateColumns: '180px repeat(5, 1fr)', padding: '8px 14px', background: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
-        <span style={{ fontSize: 12, fontWeight: 600 }}>Module</span>
+        <span style={{ fontSize: 12, fontWeight: 600 }}>{t('rolesPermissions.matrix.module')}</span>
         {ACTIONS.map((a) => (
-          <span key={a} style={{ fontSize: 12, fontWeight: 600, textAlign: 'center', textTransform: 'capitalize' }}>{a}</span>
+          <span key={a} style={{ fontSize: 12, fontWeight: 600, textAlign: 'center', textTransform: 'capitalize' }}>
+            {t(`rolesPermissions.actionTypes.${a}`)}
+          </span>
         ))}
       </div>
 
       {/* Rows */}
       <div style={{ maxHeight: 420, overflowY: 'auto' }}>
         {filteredModules.length === 0 && (
-          <div style={{ padding: '24px', textAlign: 'center', opacity: 0.5 }}>No modules found</div>
+          <div style={{ padding: '24px', textAlign: 'center', opacity: 0.5 }}>{t('rolesPermissions.matrix.noModules')}</div>
         )}
         {filteredModules.map((module, idx) => {
           const moduleLabel = moduleOptions.find((o) => o.value === module)?.label || module;
@@ -301,6 +304,21 @@ export default function RolesPermissionsPage() {
   const createPermission = useCreatePermission();
   const updatePermission = useUpdatePermission();
   const deletePermission = useDeletePermission();
+
+  const translatedModuleOptions = useMemo(() =>
+    MODULE_OPTIONS.map((opt) => ({
+      ...opt,
+      label: t(`rolesPermissions.modules.${opt.value}`, opt.label),
+    })), [t]
+  );
+
+  const translatedActionOptions = useMemo(() =>
+    ACTION_OPTIONS.map((opt) => ({
+      ...opt,
+      label: t(`rolesPermissions.actionTypes.${opt.value}`, opt.label),
+    })), [t]
+  );
+
   // Role handlers
   const handleCreateRole = () => {
     setEditingRole(null);
@@ -355,8 +373,8 @@ export default function RolesPermissionsPage() {
 
   const handleDeleteRole = (role: Role) => {
     showConfirmDialog({
-      title: 'Delete Role',
-      content: `Are you sure you want to delete the role "${role.name}"?`,
+      title: t('rolesPermissions.roles.deleteTitle'),
+      content: t('rolesPermissions.roles.deleteConfirm', { name: role.name }),
       onOk: async () => {
         await deleteRole.mutateAsync(role.id);
       },
@@ -410,7 +428,7 @@ export default function RolesPermissionsPage() {
           module: moduleNormalized,
           action: action as PermissionAction,
           name: permissionName,
-          description: values.description || `Allows ${action} on ${moduleNormalized}`,
+          description: values.description || t('rolesPermissions.permissions.defaultDescription', { action, module: moduleNormalized }),
         });
       }
     }
@@ -420,8 +438,8 @@ export default function RolesPermissionsPage() {
 
   const handleDeletePermission = (permission: Permission) => {
     showConfirmDialog({
-      title: 'Delete Permission',
-      content: `Are you sure you want to delete the permission "${permission.name}"?`,
+      title: t('rolesPermissions.permissions.deleteTitle'),
+      content: t('rolesPermissions.permissions.deleteConfirm', { name: permission.name }),
       onOk: async () => {
         await deletePermission.mutateAsync(permission.id);
       },
@@ -431,37 +449,37 @@ export default function RolesPermissionsPage() {
 
   // Columns
   const roleColumns: ColumnsType<Role> = [
-    { title: 'Role Name', dataIndex: 'name', key: 'name' },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { title: t('rolesPermissions.roles.colRoleName'), dataIndex: 'name', key: 'name' },
+    { title: t('rolesPermissions.roles.colDescription'), dataIndex: 'description', key: 'description' },
     {
-      title: 'System Role',
+      title: t('rolesPermissions.roles.colSystemRole'),
       dataIndex: 'is_system',
       key: 'is_system',
-      render: (val: boolean) => (val ? <Tag color="blue">System</Tag> : <Tag>Custom</Tag>),
+      render: (val: boolean) => (val ? <Tag color="blue">{t('rolesPermissions.roles.system')}</Tag> : <Tag>{t('rolesPermissions.roles.custom')}</Tag>),
     },
     {
-      title: 'Permissions',
+      title: t('rolesPermissions.roles.colPermissions'),
       key: 'permissions',
       render: (_: unknown, record: Role) => (
         <Space>
           <KeyOutlined />
-          <Text type="secondary">{record.permissions?.length || 0} permissions</Text>
+          <Text type="secondary">{t('rolesPermissions.roles.permissionsCount', { count: record.permissions?.length || 0 })}</Text>
         </Space>
       ),
     },
     {
-      title: 'Created',
+      title: t('rolesPermissions.roles.colCreated'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (val: string) => formatDateTime(val),
     },
     {
-      title: 'Actions',
+      title: t('rolesPermissions.roles.colActions'),
       key: 'actions',
       render: (_: unknown, record: Role) => (
         <Space size="small">
           <PermissionGuard permission="roles:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('rolesPermissions.actions.edit')}>
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -471,7 +489,7 @@ export default function RolesPermissionsPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="roles:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('rolesPermissions.actions.delete')}>
               <Button
                 type="text"
                 danger
@@ -488,28 +506,28 @@ export default function RolesPermissionsPage() {
   ];
 
   const permissionColumns: ColumnsType<Permission> = [
-    { title: 'Module', dataIndex: 'module', key: 'module' },
-    { title: 'Action', dataIndex: 'action', key: 'action' },
+    { title: t('rolesPermissions.permissions.colModule'), dataIndex: 'module', key: 'module' },
+    { title: t('rolesPermissions.permissions.colAction'), dataIndex: 'action', key: 'action' },
     {
-      title: 'Permission Name',
+      title: t('rolesPermissions.permissions.colPermissionName'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <Tag color="green">{name}</Tag>,
     },
-    { title: 'Description', dataIndex: 'description', key: 'description' },
+    { title: t('rolesPermissions.permissions.colDescription'), dataIndex: 'description', key: 'description' },
     {
-      title: 'Created',
+      title: t('rolesPermissions.permissions.colCreated'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (val: string) => formatDateTime(val),
     },
     {
-      title: 'Actions',
+      title: t('rolesPermissions.permissions.colActions'),
       key: 'actions',
       render: (_: unknown, record: Permission) => (
         <Space size="small">
           <PermissionGuard permission="permissions:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('rolesPermissions.actions.edit')}>
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -519,7 +537,7 @@ export default function RolesPermissionsPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="permissions:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('rolesPermissions.actions.delete')}>
               <Button
                 type="text"
                 danger
@@ -538,13 +556,13 @@ export default function RolesPermissionsPage() {
   const items = [
     {
       key: 'roles',
-      label: 'Roles',
+      label: t('rolesPermissions.roles.tabTitle'),
       children: (
         <Card
           extra={
             <PermissionGuard permission="roles:create">
               <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateRole}>
-                Create Role
+                {t('rolesPermissions.roles.createRole')}
               </Button>
             </PermissionGuard>
           }
@@ -559,7 +577,7 @@ export default function RolesPermissionsPage() {
               pageSize: rolesPageSize,
               total: rolesMeta?.itemCount || 0,
               showSizeChanger: true,
-              showTotal: (total) => `Total ${total} roles`,
+              showTotal: (total) => t('rolesPermissions.roles.totalCount', { count: total }),
               onChange: (page, pageSize) => {
                 setRolesPage(page);
                 setRolesPageSize(pageSize);
@@ -571,7 +589,7 @@ export default function RolesPermissionsPage() {
     },
     {
       key: 'permissions',
-      label: 'Permissions',
+      label: t('rolesPermissions.permissions.tabTitle'),
       children: (
         <Card
           extra={
@@ -581,7 +599,7 @@ export default function RolesPermissionsPage() {
                 icon={<PlusOutlined />}
                 onClick={handleCreatePermission}
               >
-                Create Permission
+                {t('rolesPermissions.permissions.createPermission')}
               </Button>
             </PermissionGuard>
           }
@@ -596,7 +614,7 @@ export default function RolesPermissionsPage() {
               pageSize: permissionsPageSize,
               total: permissionsMeta?.itemCount || 0,
               showSizeChanger: true,
-              showTotal: (total) => `Total ${total} permissions`,
+              showTotal: (total) => t('rolesPermissions.permissions.totalCount', { count: total }),
               onChange: (page, pageSize) => {
                 setPermissionsPage(page);
                 setPermissionsPageSize(pageSize);
@@ -612,14 +630,14 @@ export default function RolesPermissionsPage() {
     <div>
       <PageHeader
         title={t('settings.rolesPermissions')}
-        subtitle="Manage roles and their permissions"
+        subtitle={t('rolesPermissions.subtitle')}
       />
 
       <Tabs items={items} defaultActiveKey="roles" />
 
       {/* Role Modal */}
       <Modal
-        title={editingRole ? 'Edit Role' : 'Create Role'}
+        title={editingRole ? t('rolesPermissions.roles.editRole') : t('rolesPermissions.roles.createRole')}
         open={isRoleModalOpen}
         onCancel={() => {
           setIsRoleModalOpen(false);
@@ -632,41 +650,41 @@ export default function RolesPermissionsPage() {
         <Form form={roleForm} layout="vertical" onFinish={handleRoleSubmit}>
           {editingRole?.is_system && (
             <Text type="warning" style={{ display: 'block', marginBottom: 16 }}>
-              This is a system role. You can only modify its permissions.
+              {t('rolesPermissions.roles.systemRoleWarning')}
             </Text>
           )}
           <Form.Item
             name="name"
-            label="Role Name"
-            rules={[{ required: true, message: 'Please enter role name' }]}
+            label={t('rolesPermissions.roles.formRoleName')}
+            rules={[{ required: true, message: t('rolesPermissions.roles.requiredRoleName') }]}
           >
             <Input
-              placeholder="e.g., Admin, Manager, Field Technician"
+              placeholder={t('rolesPermissions.roles.placeholderRoleName')}
               disabled={editingRole?.is_system}
             />
           </Form.Item>
 
           <Form.Item
             name="description"
-            label="Description"
-            rules={[{ required: true, message: 'Please enter description' }]}
+            label={t('rolesPermissions.roles.formDescription')}
+            rules={[{ required: true, message: t('rolesPermissions.roles.requiredDescription') }]}
           >
             <TextArea
               rows={3}
-              placeholder="Describe what this role can do"
+              placeholder={t('rolesPermissions.roles.placeholderDescription')}
               disabled={editingRole?.is_system}
             />
           </Form.Item>
 
-          <Form.Item name="permission_ids" label="Permissions">
-            <PermissionsMatrix allPermissions={allPermissions} moduleOptions={MODULE_OPTIONS} />
+          <Form.Item name="permission_ids" label={t('rolesPermissions.roles.formPermissions')}>
+            <PermissionsMatrix allPermissions={allPermissions} moduleOptions={translatedModuleOptions} />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* Permission Modal */}
       <Modal
-        title={editingPermission ? 'Edit Permission' : 'Create Permission'}
+        title={editingPermission ? t('rolesPermissions.permissions.editPermission') : t('rolesPermissions.permissions.createPermission')}
         open={isPermissionModalOpen}
         onCancel={() => {
           setIsPermissionModalOpen(false);
@@ -678,30 +696,30 @@ export default function RolesPermissionsPage() {
         <Form form={permissionForm} layout="vertical" onFinish={handlePermissionSubmit}>
           <Form.Item
             name="module"
-            label="Module"
-            rules={[{ required: true, message: 'Please select module' }]}
+            label={t('rolesPermissions.permissions.formModule')}
+            rules={[{ required: true, message: t('rolesPermissions.permissions.requiredModule') }]}
           >
             <Select
-              placeholder="Select module"
+              placeholder={t('rolesPermissions.permissions.placeholderModule')}
               showSearch
               optionFilterProp="label"
-              options={MODULE_OPTIONS}
+              options={translatedModuleOptions}
             />
           </Form.Item>
 
           <Form.Item
             name="action"
-            label="Action"
-            rules={[{ required: true, message: 'Please select at least one action' }]}
+            label={t('rolesPermissions.permissions.formAction')}
+            rules={[{ required: true, message: t('rolesPermissions.permissions.requiredAction') }]}
           >
             <Select
               mode={editingPermission ? undefined : 'multiple'}
               placeholder={
                 editingPermission
-                  ? 'Select action'
-                  : 'Select actions (multiple allowed)'
+                  ? t('rolesPermissions.permissions.placeholderActionSingle')
+                  : t('rolesPermissions.permissions.placeholderActionMultiple')
               }
-              options={ACTION_OPTIONS}
+              options={translatedActionOptions}
               maxTagCount="responsive"
             />
           </Form.Item>
@@ -709,26 +727,25 @@ export default function RolesPermissionsPage() {
           {editingPermission && (
             <Form.Item
               name="name"
-              label="Permission Name"
-              rules={[{ required: true, message: 'Please enter permission name' }]}
+              label={t('rolesPermissions.permissions.formPermissionName')}
+              rules={[{ required: true, message: t('rolesPermissions.permissions.requiredPermissionName') }]}
             >
-              <Input placeholder="e.g., users:create, roles:read" />
+              <Input placeholder={t('rolesPermissions.permissions.placeholderPermissionName')} />
             </Form.Item>
           )}
 
           {!editingPermission && (
             <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              Permission names will be auto-generated as: module:action (e.g., users:create,
-              users:read)
+              {t('rolesPermissions.permissions.autoGenerateWarning')}
             </Text>
           )}
 
           <Form.Item
             name="description"
-            label="Description"
-            rules={[{ required: true, message: 'Please enter description' }]}
+            label={t('rolesPermissions.permissions.formDescription')}
+            rules={[{ required: true, message: t('rolesPermissions.permissions.requiredDescription') }]}
           >
-            <TextArea rows={3} placeholder="Describe what this permission allows" />
+            <TextArea rows={3} placeholder={t('rolesPermissions.permissions.placeholderDescription')} />
           </Form.Item>
         </Form>
       </Modal>

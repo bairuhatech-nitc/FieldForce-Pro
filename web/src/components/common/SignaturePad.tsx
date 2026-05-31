@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Button, Card, Space, Typography } from 'antd';
 import { ClearOutlined, CheckOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -11,6 +12,7 @@ interface SignaturePadProps {
 }
 
 export function SignaturePad({ onSave, width = 400, height = 150 }: SignaturePadProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
   const [isEmpty, setIsEmpty] = useState(true);
@@ -107,7 +109,7 @@ export function SignaturePad({ onSave, width = 400, height = 150 }: SignaturePad
   };
 
   return (
-    <Card size="small" title="Customer Signature" style={{ maxWidth: width + 32 }}>
+    <Card size="small" title={t('signaturePad.customerSignature')} style={{ maxWidth: width + 32 }}>
       <canvas
         ref={canvasRef}
         width={width}
@@ -122,11 +124,11 @@ export function SignaturePad({ onSave, width = 400, height = 150 }: SignaturePad
         }}
       />
       <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-        Sign above using mouse or touch
+        {t('signaturePad.signInstruction')}
       </Text>
       <Space style={{ marginTop: 8 }}>
         <Button icon={<ClearOutlined />} onClick={clear} size="small">
-          Clear
+          {t('signaturePad.clear')}
         </Button>
         <Button
           icon={<CheckOutlined />}
@@ -135,7 +137,7 @@ export function SignaturePad({ onSave, width = 400, height = 150 }: SignaturePad
           disabled={isEmpty}
           size="small"
         >
-          Confirm Signature
+          {t('signaturePad.confirmSignature')}
         </Button>
       </Space>
     </Card>

@@ -1,5 +1,6 @@
 import { Card, Typography, Tag, Space, List, Empty } from 'antd';
 import { AudioOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import type { TranscriptionResult } from '../../api/voice.api';
 
 const { Text, Paragraph } = Typography;
@@ -17,10 +18,12 @@ export default function VoiceNotePlayer({
   fileName,
   loading = false,
 }: VoiceNotePlayerProps) {
+  const { t } = useTranslation();
+
   if (!transcription) {
     return (
       <Card loading={loading}>
-        <Empty description="No transcription available" />
+        <Empty description={t('voiceNotePlayer.noTranscriptionAvailable')} />
       </Card>
     );
   }
@@ -31,7 +34,7 @@ export default function VoiceNotePlayer({
       title={
         <Space>
           <AudioOutlined />
-          <span>{fileName || 'Voice Note'}</span>
+          <span>{fileName || t('voiceNotePlayer.voiceNote')}</span>
         </Space>
       }
       extra={
@@ -49,14 +52,14 @@ export default function VoiceNotePlayer({
         </audio>
       )}
 
-      <Card size="small" type="inner" title="Transcription">
+      <Card size="small" type="inner" title={t('voiceNotePlayer.transcription')}>
         <Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-          {transcription.text || 'No text transcribed.'}
+          {transcription.text || t('voiceNotePlayer.noTextTranscribed')}
         </Paragraph>
       </Card>
 
       {transcription.segments.length > 0 && (
-        <Card size="small" type="inner" title="Segments" style={{ marginTop: 12 }}>
+        <Card size="small" type="inner" title={t('voiceNotePlayer.segments')} style={{ marginTop: 12 }}>
           <List
             size="small"
             dataSource={transcription.segments}

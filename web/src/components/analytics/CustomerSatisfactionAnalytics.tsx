@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, Row, Col, Statistic, Progress, Table, Tag, Space, DatePicker, Select, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -12,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { formatDateTime } from '@/utils/format-date';
 import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
 
 const { RangePicker } = DatePicker;
 const { Text, Title } = Typography;
@@ -49,6 +51,7 @@ interface TechnicianRating {
 }
 
 export default function CustomerSatisfactionAnalytics() {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>([
     dayjs().subtract(30, 'days'),
     dayjs(),
@@ -154,47 +157,47 @@ export default function CustomerSatisfactionAnalytics() {
 
   const reviewColumns: ColumnsType<ReviewRecord> = [
     {
-      title: 'Customer',
+      title: t('analytics.customer'),
       dataIndex: 'customer_name',
       key: 'customer_name',
     },
     {
-      title: 'Work Order',
+      title: t('analytics.workOrder'),
       dataIndex: 'work_order_number',
       key: 'work_order_number',
       render: (number: string) => <Tag color="blue">{number}</Tag>,
     },
     {
-      title: 'Rating',
+      title: t('analytics.rating'),
       dataIndex: 'rating',
       key: 'rating',
       render: (rating: number) => renderStars(rating),
       sorter: (a, b) => a.rating - b.rating,
     },
     {
-      title: 'Sentiment',
+      title: t('analytics.sentiment'),
       dataIndex: 'sentiment',
       key: 'sentiment',
       render: (sentiment: string) => (
         <Space>
           {getSentimentIcon(sentiment)}
-          <Text>{sentiment}</Text>
+          <Text>{t(`analytics.${sentiment}`)}</Text>
         </Space>
       ),
     },
     {
-      title: 'Comment',
+      title: t('analytics.comment'),
       dataIndex: 'comment',
       key: 'comment',
       ellipsis: true,
     },
     {
-      title: 'Technician',
+      title: t('analytics.technician'),
       dataIndex: 'technician_name',
       key: 'technician_name',
     },
     {
-      title: 'Date',
+      title: t('analytics.date'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
@@ -203,7 +206,7 @@ export default function CustomerSatisfactionAnalytics() {
 
   const technicianColumns: ColumnsType<TechnicianRating> = [
     {
-      title: 'Rank',
+      title: t('analytics.rank'),
       key: 'rank',
       render: (_, __, index) => (
         <div style={{ fontSize: 18, fontWeight: 600, color: index === 0 ? '#faad14' : '#8c8c8c' }}>
@@ -214,13 +217,13 @@ export default function CustomerSatisfactionAnalytics() {
       width: 80,
     },
     {
-      title: 'Technician',
+      title: t('analytics.technician'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <Text strong>{name}</Text>,
     },
     {
-      title: 'Average Rating',
+      title: t('analytics.averageRating'),
       dataIndex: 'average_rating',
       key: 'average_rating',
       render: (rating: number) => (
@@ -232,13 +235,13 @@ export default function CustomerSatisfactionAnalytics() {
       sorter: (a, b) => a.average_rating - b.average_rating,
     },
     {
-      title: 'Total Reviews',
+      title: t('analytics.totalReviews'),
       dataIndex: 'total_reviews',
       key: 'total_reviews',
       align: 'center',
     },
     {
-      title: '5-Star Rate',
+      title: t('analytics.fiveStarRate'),
       dataIndex: 'five_star_percentage',
       key: 'five_star_percentage',
       render: (percentage: number) => (
@@ -253,33 +256,31 @@ export default function CustomerSatisfactionAnalytics() {
 
   return (
     <div>
-      {/* Filters */}
       <Card style={{ marginBottom: 24 }}>
         <Space wrap>
           <RangePicker
             value={dateRange}
             onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
           />
-          <Select placeholder="Filter by technician" allowClear style={{ width: 200 }}>
+          <Select placeholder={t('analytics.filterTechnician')} allowClear style={{ width: 200 }}>
             <Select.Option value="tech-1">Mike Johnson</Select.Option>
             <Select.Option value="tech-2">Sarah Williams</Select.Option>
           </Select>
-          <Select placeholder="Filter by rating" allowClear style={{ width: 150 }}>
-            <Select.Option value="5">5 Stars</Select.Option>
-            <Select.Option value="4">4 Stars</Select.Option>
-            <Select.Option value="3">3 Stars</Select.Option>
-            <Select.Option value="2">2 Stars</Select.Option>
-            <Select.Option value="1">1 Star</Select.Option>
+          <Select placeholder={t('analytics.filterRating')} allowClear style={{ width: 150 }}>
+            <Select.Option value="5">5 {t('analytics.stars')}</Select.Option>
+            <Select.Option value="4">4 {t('analytics.stars')}</Select.Option>
+            <Select.Option value="3">3 {t('analytics.stars')}</Select.Option>
+            <Select.Option value="2">2 {t('analytics.stars')}</Select.Option>
+            <Select.Option value="1">1 {t('analytics.star')}</Select.Option>
           </Select>
         </Space>
       </Card>
 
-      {/* Key Metrics */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Average Rating"
+              title={t('analytics.averageRating')}
               value={metrics.average_rating}
               precision={1}
               suffix="/ 5"
@@ -291,49 +292,48 @@ export default function CustomerSatisfactionAnalytics() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="NPS Score"
+              title={t('analytics.npsScore')}
               value={metrics.nps_score}
               prefix={metrics.nps_score > 70 ? <RiseOutlined /> : <FallOutlined />}
               valueStyle={{ color: metrics.nps_score > 70 ? '#52c41a' : '#faad14' }}
             />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {metrics.nps_score > 70 ? 'Excellent' : metrics.nps_score > 50 ? 'Good' : 'Needs Improvement'}
+              {metrics.nps_score > 70 ? t('analytics.excellent') : metrics.nps_score > 50 ? t('analytics.good') : t('analytics.needsImprovement')}
             </Text>
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Satisfaction Rate"
+              title={t('analytics.satisfactionRate')}
               value={metrics.satisfaction_rate}
               precision={1}
               suffix="%"
               valueStyle={{ color: '#52c41a' }}
             />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              4+ star ratings
+              {t('analytics.fourPlusStars')}
             </Text>
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Total Reviews"
+              title={t('analytics.totalReviews')}
               value={metrics.total_reviews}
               prefix={<StarFilled />}
               valueStyle={{ color: '#1890ff' }}
             />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {metrics.response_rate.toFixed(1)}% response rate
+              {metrics.response_rate.toFixed(1)}% {t('analytics.responseRate')}
             </Text>
           </Card>
         </Col>
       </Row>
 
-      {/* Rating Distribution */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
-          <Card title="Rating Distribution">
+          <Card title={t('analytics.ratingDistribution')}>
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               {[5, 4, 3, 2, 1].map((stars) => {
                 const count = metrics[`${['one', 'two', 'three', 'four', 'five'][stars - 1]}_star` as keyof SatisfactionMetrics] as number;
@@ -345,7 +345,7 @@ export default function CustomerSatisfactionAnalytics() {
                       <Space>
                         {renderStars(stars)}
                       </Space>
-                      <Text type="secondary">{count} reviews</Text>
+                      <Text type="secondary">{count} {t('analytics.reviews')}</Text>
                     </div>
                     <Progress
                       percent={percentage}
@@ -360,7 +360,7 @@ export default function CustomerSatisfactionAnalytics() {
         </Col>
 
         <Col xs={24} lg={12}>
-          <Card title="Top Rated Technicians">
+          <Card title={t('analytics.topRatedTechnicians')}>
             <Table
               columns={technicianColumns}
               dataSource={topTechnicians}
@@ -372,8 +372,7 @@ export default function CustomerSatisfactionAnalytics() {
         </Col>
       </Row>
 
-      {/* Recent Reviews */}
-      <Card title="Recent Customer Reviews">
+      <Card title={t('analytics.recentCustomerReviews')}>
         <Table
           columns={reviewColumns}
           dataSource={recentReviews}

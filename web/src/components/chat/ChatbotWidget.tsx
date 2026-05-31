@@ -10,10 +10,12 @@ import {
 import { useChat } from '../../hooks/use-chat';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
 export const ChatbotWidget: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -47,7 +49,7 @@ export const ChatbotWidget: React.FC = () => {
       const html = marked.parse(content, { async: false }) as string;
       return { __html: DOMPurify.sanitize(html) };
     } catch (err) {
-      console.error('Markdown render error:', err);
+      console.error(t('chatbot.markdownRenderError'), err);
       return { __html: content }; // Fallback to raw text if parsing fails
     }
   };
@@ -96,7 +98,7 @@ export const ChatbotWidget: React.FC = () => {
               >
                 <RobotOutlined style={{ fontSize: 18 }} />
               </div>
-              <span style={{ fontWeight: 600, fontSize: 16 }}>FieldForce Assistant</span>
+              <span style={{ fontWeight: 600, fontSize: 16 }}>{t('chatbot.title')}</span>
             </div>
           }
           extra={
@@ -148,8 +150,8 @@ export const ChatbotWidget: React.FC = () => {
             {messages.length === 0 && (
               <div style={{ textAlign: 'center', padding: '20px 0', color: '#64748b' }}>
                 <RobotOutlined style={{ fontSize: 48, color: '#94a3b8', marginBottom: 12 }} />
-                <p>Hello! I'm your FieldForce Pro assistant.</p>
-                <p>Ask me anything about our platform's workflows, pricing, features, or how to navigate the software.</p>
+                <p>{t('chatbot.greetingLine1')}</p>
+                <p>{t('chatbot.greetingLine2')}</p>
               </div>
             )}
 
@@ -219,7 +221,7 @@ export const ChatbotWidget: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask me anything..."
+              placeholder={t('chatbot.placeholder')}
               style={{ borderRadius: 20 }}
               suffix={
                 <Button
@@ -233,7 +235,7 @@ export const ChatbotWidget: React.FC = () => {
             />
             <div style={{ textAlign: 'center', marginTop: 8 }}>
               <Text type="secondary" style={{ fontSize: 11 }}>
-                Powered by Google Gemini
+                {t('chatbot.poweredBy')}
               </Text>
             </div>
           </div>

@@ -5,6 +5,7 @@
 
 import { Card, Statistic, Progress, Table, Tag, Empty, Space, Typography, List, Avatar, Badge } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowUpOutlined,
   ArrowDownOutlined,
@@ -68,6 +69,7 @@ export const widgetSizes = {
  * KPI Widget - Display single metric
  */
 export function KPIWidget({ title, value, prefix, suffix, trend, color }: any) {
+  const { t } = useTranslation();
   return (
     <Card>
       <Statistic
@@ -100,6 +102,7 @@ export function KPIWidget({ title, value, prefix, suffix, trend, color }: any) {
  * Progress Widget - Display progress with percentage
  */
 export function ProgressWidget({ title, current, total, status = 'active' }: any) {
+  const { t } = useTranslation();
   const percent = Math.round((current / total) * 100);
 
   return (
@@ -128,6 +131,7 @@ export function ProgressWidget({ title, current, total, status = 'active' }: any
  * Chart Widget - Line Chart
  */
 export function LineChartWidget({ title, data, labels }: any) {
+  const { t } = useTranslation();
   const chartData = {
     labels,
     datasets: [
@@ -169,6 +173,7 @@ export function LineChartWidget({ title, data, labels }: any) {
  * Bar Chart Widget
  */
 export function BarChartWidget({ title, data, labels, color = '#1890ff' }: any) {
+  const { t } = useTranslation();
   const chartData = {
     labels,
     datasets: [
@@ -208,6 +213,7 @@ export function BarChartWidget({ title, data, labels, color = '#1890ff' }: any) 
  * Pie Chart Widget
  */
 export function PieChartWidget({ title, data, labels }: any) {
+  const { t } = useTranslation();
   const chartData = {
     labels,
     datasets: [
@@ -248,6 +254,7 @@ export function PieChartWidget({ title, data, labels }: any) {
  * Doughnut Chart Widget
  */
 export function DoughnutChartWidget({ title, data, labels }: any) {
+  const { t } = useTranslation();
   const chartData = {
     labels,
     datasets: [
@@ -288,6 +295,7 @@ export function DoughnutChartWidget({ title, data, labels }: any) {
  * Table Widget - Display data in table format
  */
 export function TableWidget({ title, dataSource, columns }: any) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
       <Table
@@ -305,6 +313,7 @@ export function TableWidget({ title, dataSource, columns }: any) {
  * List Widget - Display items in list format
  */
 export function ListWidget({ title, items }: any) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
       <List
@@ -329,10 +338,11 @@ export function ListWidget({ title, items }: any) {
  * Activity Feed Widget
  */
 export function ActivityFeedWidget({ title, activities }: any) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
       {activities.length === 0 ? (
-        <Empty description="No recent activity" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description={t('dashboard.noRecentActivity')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <List
           size="small"
@@ -371,6 +381,7 @@ export function ActivityFeedWidget({ title, activities }: any) {
  * Status Overview Widget
  */
 export function StatusOverviewWidget({ title, statuses }: any) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
@@ -398,6 +409,7 @@ export function StatusOverviewWidget({ title, statuses }: any) {
  * Metric Cards Widget - Multiple small KPIs
  */
 export function MetricCardsWidget({ title, metrics }: any) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
       <Space direction="vertical" style={{ width: '100%' }} size="small">
@@ -443,10 +455,11 @@ export function MetricCardsWidget({ title, metrics }: any) {
  * Alerts Widget
  */
 export function AlertsWidget({ title, alerts }: any) {
+  const { t } = useTranslation();
   return (
     <Card title={title}>
       {alerts.length === 0 ? (
-        <Empty description="No alerts" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description={t('dashboard.noAlerts')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <Space direction="vertical" style={{ width: '100%' }} size="small">
           {alerts.map((alert: any, index: number) => (

@@ -59,6 +59,7 @@ import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
 import { EstimateAttachment } from '../ATTACHMENTS/estimate_attachments.entity';
 import { SubscriptionMagicLink } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.entity';
 import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
+import { ServiceRequestTechnician } from '../SERVICE_REQUESTS/service_request_technician.entity';
 import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
 import { SuperAdminApiKey } from '../SUPER_ADMIN/SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
@@ -129,4 +130,5 @@ export const databaseProviders = [
   { provide: REPOSITORY.CUSTOMER_SATISFACTION, useValue: CustomerSatisfaction },
   { provide: REPOSITORY.SUPER_ADMIN_API_KEYS, useValue: SuperAdminApiKey },
   { provide: REPOSITORY.SUPER_ADMIN_AUDIT_LOGS, useValue: SuperAdminAuditLog },
+  { provide: REPOSITORY.SERVICE_REQUEST_TECHNICIANS, useValue: ServiceRequestTechnician },
 ];

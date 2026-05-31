@@ -63,20 +63,20 @@ export default function AuditLogListPage() {
 
   const handleExport = () => {
     // TODO: Implement export functionality
-    console.log('Export audit logs');
+    console.log(t('auditLog.exportLog'));
   };
 
   const columns: ColumnsType<AuditLogRecord> = [
     {
-      title: 'User',
+      title: t('auditLog.columns.user'),
       key: 'user',
       render: (_, record) =>
         record.user
           ? `${record.user.first_name} ${record.user.last_name}`
-          : <span style={{ color: '#999' }}>System</span>,
+          : <span style={{ color: '#999' }}>{t('auditLog.system')}</span>,
     },
     {
-      title: 'Action',
+      title: t('auditLog.columns.action'),
       dataIndex: 'action',
       key: 'action',
       render: (action: string) => (
@@ -86,13 +86,13 @@ export default function AuditLogListPage() {
       ),
     },
     {
-      title: 'Entity Type',
+      title: t('auditLog.columns.entityType'),
       dataIndex: 'entity_type',
       key: 'entity_type',
       render: (type: string) => <Tag>{type}</Tag>,
     },
     {
-      title: 'Entity ID',
+      title: t('auditLog.columns.entityId'),
       dataIndex: 'entity_id',
       key: 'entity_id',
       render: (id: string) => (
@@ -102,27 +102,27 @@ export default function AuditLogListPage() {
       ),
     },
     {
-      title: 'IP Address',
+      title: t('auditLog.columns.ipAddress'),
       dataIndex: 'ip_address',
       key: 'ip_address',
       render: (ip: string) => <code style={{ fontSize: '11px' }}>{ip || '-'}</code>,
     },
     {
-      title: 'Timestamp',
+      title: t('auditLog.columns.timestamp'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('auditLog.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 80,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="audit-logs:read">
-            <Tooltip title="View Details">
+            <Tooltip title={t('auditLog.viewDetails')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/security/audit-logs/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
@@ -134,12 +134,12 @@ export default function AuditLogListPage() {
   return (
     <div>
       <PageHeader
-        title="Audit Logs"
-        subtitle="System activity and security audit trail"
+        title={t('auditLog.title')}
+        subtitle={t('auditLog.subtitle')}
         extra={
           <PermissionGuard permission="audit-logs:export">
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
-              Export
+              {t('auditLog.export')}
             </Button>
           </PermissionGuard>
         }
@@ -147,37 +147,37 @@ export default function AuditLogListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <SearchFilter
-          placeholder="Search audit logs..."
+          placeholder={t('auditLog.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <Select
-          placeholder="Filter by action"
+          placeholder={t('auditLog.filterAction')}
           allowClear
           value={actionFilter}
           onChange={(value) => { setActionFilter(value); setPage(1); }}
           style={{ width: 150 }}
           options={[
-            { value: 'create', label: 'Create' },
-            { value: 'update', label: 'Update' },
-            { value: 'delete', label: 'Delete' },
-            { value: 'read', label: 'Read' },
-            { value: 'login', label: 'Login' },
-            { value: 'logout', label: 'Logout' },
+            { value: 'create', label: t('auditLog.actions.create') },
+            { value: 'update', label: t('auditLog.actions.update') },
+            { value: 'delete', label: t('auditLog.actions.delete') },
+            { value: 'read', label: t('auditLog.actions.read') },
+            { value: 'login', label: t('auditLog.actions.login') },
+            { value: 'logout', label: t('auditLog.actions.logout') },
           ]}
         />
         <Select
-          placeholder="Filter by entity type"
+          placeholder={t('auditLog.filterEntity')}
           allowClear
           value={entityFilter}
           onChange={(value) => { setEntityFilter(value); setPage(1); }}
           style={{ width: 200 }}
           options={[
-            { value: 'work_order', label: 'Work Order' },
-            { value: 'contact', label: 'Contact' },
-            { value: 'user', label: 'User' },
-            { value: 'estimate', label: 'Estimate' },
-            { value: 'invoice', label: 'Invoice' },
+            { value: 'work_order', label: t('auditLog.entities.workOrder') },
+            { value: 'contact', label: t('auditLog.entities.contact') },
+            { value: 'user', label: t('auditLog.entities.user') },
+            { value: 'estimate', label: t('auditLog.entities.estimate') },
+            { value: 'invoice', label: t('auditLog.entities.invoice') },
           ]}
         />
         <RangePicker style={{ width: 300 }} />
@@ -193,7 +193,7 @@ export default function AuditLogListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} audit logs`,
+          showTotal: (total) => t('auditLog.totalLogs', { count: total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

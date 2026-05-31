@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Table, Button, Input, Tag, Space, Card, Tooltip } from 'antd';
 import {
   PlusOutlined,
@@ -35,6 +36,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function WorkflowTemplateListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -61,8 +63,8 @@ export default function WorkflowTemplateListPage() {
 
   const handleDelete = (id: string) => {
     showConfirmDialog({
-      title: 'Delete Workflow Template',
-      content: 'Are you sure you want to delete this workflow template?',
+      title: t('workflowTemplates.deleteTitle'),
+      content: t('workflowTemplates.deleteConfirm'),
       onOk: () => deleteMutation.mutate(id),
     });
   };
@@ -77,7 +79,7 @@ export default function WorkflowTemplateListPage() {
 
   const columns: ColumnsType<WorkflowTemplate> = [
     {
-      title: 'Name',
+      title: t('workflowTemplates.name'),
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record) => (
@@ -85,7 +87,7 @@ export default function WorkflowTemplateListPage() {
       ),
     },
     {
-      title: 'Document Type',
+      title: t('workflowTemplates.documentType'),
       dataIndex: 'document_type',
       key: 'document_type',
       render: (type: string) => (
@@ -93,7 +95,7 @@ export default function WorkflowTemplateListPage() {
       ),
     },
     {
-      title: 'Category',
+      title: t('workflowTemplates.category'),
       dataIndex: 'document_category',
       key: 'document_category',
       render: (cat: string) => (
@@ -101,7 +103,7 @@ export default function WorkflowTemplateListPage() {
       ),
     },
     {
-      title: 'Version',
+      title: t('workflowTemplates.version'),
       dataIndex: 'version',
       key: 'version',
       width: 80,
@@ -109,34 +111,34 @@ export default function WorkflowTemplateListPage() {
       render: (v: number) => `v${v}`,
     },
     {
-      title: 'Approvers',
+      title: t('workflowTemplates.approvers'),
       key: 'approvers',
       width: 100,
       align: 'center',
       render: (_: unknown, record) => record.approvers?.length || 0,
     },
     {
-      title: 'Status',
+      title: t('workflowTemplates.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       width: 100,
       render: (active: boolean) => (
-        <Tag color={active ? 'green' : 'default'}>{active ? 'Active' : 'Inactive'}</Tag>
+        <Tag color={active ? 'green' : 'default'}>{active ? t('workflowTemplates.active') : t('workflowTemplates.inactive')}</Tag>
       ),
     },
     {
-      title: 'Created',
+      title: t('workflowTemplates.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Actions',
+      title: t('workflowTemplates.actions'),
       key: 'actions',
       width: 180,
       render: (_: unknown, record) => (
         <Space>
-          <Tooltip title="View">
+          <Tooltip title={t('workflowTemplates.view')}>
             <Button
               type="text"
               size="small"
@@ -145,7 +147,7 @@ export default function WorkflowTemplateListPage() {
             />
           </Tooltip>
           <PermissionGuard permission="workflow_templates:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('workflowTemplates.edit')}>
               <Button
                 type="text"
                 size="small"
@@ -153,7 +155,7 @@ export default function WorkflowTemplateListPage() {
                 onClick={() => navigate(`/workflow/templates/${record.id}/edit`)}
               />
             </Tooltip>
-            <Tooltip title={record.is_active ? 'Deactivate' : 'Activate'}>
+            <Tooltip title={record.is_active ? t('workflowTemplates.deactivate') : t('workflowTemplates.activate')}>
               <Button
                 type="text"
                 size="small"
@@ -163,7 +165,7 @@ export default function WorkflowTemplateListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="workflow_templates:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('workflowTemplates.delete')}>
               <Button
                 type="text"
                 size="small"
@@ -181,14 +183,14 @@ export default function WorkflowTemplateListPage() {
   return (
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>Workflow Templates</h2>
+        <h2 style={{ margin: 0 }}>{t('workflowTemplates.title')}</h2>
         <PermissionGuard permission="workflow_templates:create">
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/workflow/templates/new')}
           >
-            New Template
+            {t('workflowTemplates.newTemplate')}
           </Button>
         </PermissionGuard>
       </div>
@@ -196,7 +198,7 @@ export default function WorkflowTemplateListPage() {
       <Card>
         <div style={{ marginBottom: 16 }}>
           <Input
-            placeholder="Search templates..."
+            placeholder={t('workflowTemplates.searchPlaceholder')}
             prefix={<SearchOutlined />}
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
@@ -215,7 +217,7 @@ export default function WorkflowTemplateListPage() {
             pageSize,
             total: data?.meta?.itemCount || 0,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} templates`,
+            showTotal: (total) => t('workflowTemplates.totalTemplates', { total }),
             onChange: (p, ps) => {
               setPage(p);
               setPageSize(ps);

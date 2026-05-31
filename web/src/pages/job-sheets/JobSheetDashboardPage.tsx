@@ -9,6 +9,7 @@ import {
   TrophyOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 import { formatDateTime } from '@/utils/format-date';
 import dayjs from 'dayjs';
@@ -38,6 +39,7 @@ interface JobSheetRecord {
 }
 
 export default function JobSheetDashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
@@ -113,7 +115,7 @@ export default function JobSheetDashboardPage() {
 
   const columns: ColumnsType<JobSheetRecord> = [
     {
-      title: 'Work Order',
+      title: t('jobSheet.columns.workOrder'),
       dataIndex: 'work_order_number',
       key: 'work_order_number',
       render: (number: string) => (
@@ -123,33 +125,33 @@ export default function JobSheetDashboardPage() {
       ),
     },
     {
-      title: 'Template',
+      title: t('jobSheet.columns.template'),
       dataIndex: 'template_name',
       key: 'template_name',
     },
     {
-      title: 'Technician',
+      title: t('jobSheet.columns.technician'),
       dataIndex: 'technician_name',
       key: 'technician_name',
     },
     {
-      title: 'Status',
+      title: t('jobSheet.columns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
         <Tag color={getStatusColor(status)} icon={getStatusIcon(status)}>
-          {status.replace('_', ' ').toUpperCase()}
+          {t(`jobSheet.status.${status}`)}
         </Tag>
       ),
       filters: [
-        { text: 'Completed', value: 'completed' },
-        { text: 'In Progress', value: 'in_progress' },
-        { text: 'Pending', value: 'pending' },
+        { text: t('jobSheet.status.completed'), value: 'completed' },
+        { text: t('jobSheet.status.in_progress'), value: 'in_progress' },
+        { text: t('jobSheet.status.pending'), value: 'pending' },
       ],
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: 'Completion',
+      title: t('jobSheet.columns.completion'),
       key: 'completion',
       render: (_, record) => (
         <Space direction="vertical" size={4} style={{ width: '100%' }}>
@@ -165,21 +167,21 @@ export default function JobSheetDashboardPage() {
             }
           />
           <Text type="secondary" style={{ fontSize: 11 }}>
-            {record.items_completed} / {record.items_total} items
+            {record.items_completed} / {record.items_total} {t('jobSheet.common.items')}
           </Text>
         </Space>
       ),
       width: 180,
     },
     {
-      title: 'Started At',
+      title: t('jobSheet.columns.startedAt'),
       dataIndex: 'started_at',
       key: 'started_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime(),
     },
     {
-      title: 'Completed At',
+      title: t('jobSheet.columns.completedAt'),
       dataIndex: 'completed_at',
       key: 'completed_at',
       render: (date?: string) =>
@@ -190,8 +192,8 @@ export default function JobSheetDashboardPage() {
   return (
     <div>
       <PageHeader
-        title="Job Sheet Dashboard"
-        subtitle="Monitor job sheet completion and performance"
+        title={t('jobSheet.header.title')}
+        subtitle={t('jobSheet.header.subtitle')}
       />
 
       {/* Filters */}
@@ -203,16 +205,16 @@ export default function JobSheetDashboardPage() {
             style={{ width: 300 }}
           />
           <Select
-            placeholder="Filter by status"
+            placeholder={t('jobSheet.filters.placeholder')}
             allowClear
             value={statusFilter}
             onChange={setStatusFilter}
             style={{ width: 180 }}
             options={[
-              { label: 'All Status', value: undefined },
-              { label: 'Completed', value: 'completed' },
-              { label: 'In Progress', value: 'in_progress' },
-              { label: 'Pending', value: 'pending' },
+              { label: t('jobSheet.status.all'), value: undefined },
+              { label: t('jobSheet.status.completed'), value: 'completed' },
+              { label: t('jobSheet.status.in_progress'), value: 'in_progress' },
+              { label: t('jobSheet.status.pending'), value: 'pending' },
             ]}
           />
         </Space>
@@ -223,7 +225,7 @@ export default function JobSheetDashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Total Job Sheets"
+              title={t('jobSheet.stats.total')}
               value={stats.total}
               prefix={<FileTextOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -233,7 +235,7 @@ export default function JobSheetDashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Completed"
+              title={t('jobSheet.status.completed')}
               value={stats.completed}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -243,7 +245,7 @@ export default function JobSheetDashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="In Progress"
+              title={t('jobSheet.status.in_progress')}
               value={stats.in_progress}
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: '#faad14' }}
@@ -253,7 +255,7 @@ export default function JobSheetDashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Completion Rate"
+              title={t('jobSheet.stats.completionRate')}
               value={stats.completion_rate}
               precision={1}
               suffix="%"
@@ -267,10 +269,10 @@ export default function JobSheetDashboardPage() {
       {/* Completion Overview */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
-          <Card title="Completion Progress">
+          <Card title={t('jobSheet.cards.completionProgress')}>
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               <div>
-                <Text type="secondary">Overall Completion</Text>
+                <Text type="secondary">{t('jobSheet.common.overallCompletion')}</Text>
                 <Progress
                   percent={stats.completion_rate}
                   strokeColor={{
@@ -281,7 +283,7 @@ export default function JobSheetDashboardPage() {
                 />
               </div>
               <div>
-                <Text type="secondary">Completed vs Total</Text>
+                <Text type="secondary">{t('jobSheet.common.completedVsTotal')}</Text>
                 <div style={{ marginTop: 8 }}>
                   <Progress
                     percent={(stats.completed / stats.total) * 100}
@@ -295,26 +297,26 @@ export default function JobSheetDashboardPage() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Status Distribution">
+          <Card title={t('jobSheet.cards.statusDistribution')}>
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 18 }} />
-                  <span>Completed</span>
+                  <span>{t('jobSheet.status.completed')}</span>
                 </Space>
                 <Tag color="success">{stats.completed}</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <ClockCircleOutlined style={{ color: '#faad14', fontSize: 18 }} />
-                  <span>In Progress</span>
+                  <span>{t('jobSheet.status.in_progress')}</span>
                 </Space>
                 <Tag color="processing">{stats.in_progress}</Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <FileTextOutlined style={{ color: '#8c8c8c', fontSize: 18 }} />
-                  <span>Pending</span>
+                  <span>{t('jobSheet.status.pending')}</span>
                 </Space>
                 <Tag color="default">{stats.pending}</Tag>
               </div>
@@ -324,7 +326,7 @@ export default function JobSheetDashboardPage() {
       </Row>
 
       {/* Job Sheets Table */}
-      <Card title="Recent Job Sheets">
+      <Card title={t('jobSheet.cards.recentJobSheets')}>
         <Table
           columns={columns}
           dataSource={jobSheets}
@@ -332,7 +334,7 @@ export default function JobSheetDashboardPage() {
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} job sheets`,
+            showTotal: (total) => t('jobSheet.pagination.total', { total }),
           }}
         />
       </Card>

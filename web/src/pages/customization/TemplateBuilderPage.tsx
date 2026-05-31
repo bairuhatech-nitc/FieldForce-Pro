@@ -29,6 +29,7 @@ import {
   OrderedListOutlined,
   LinkOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next'; // Rule 1: Import useTranslation
 import { useTemplate, useCreateTemplate, useUpdateTemplate } from '@/hooks/use-templates';
 import PageHeader from '@/components/common/PageHeader';
 
@@ -36,72 +37,73 @@ const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
-const TEMPLATE_TYPES = [
-  { value: 'invoice', label: 'Invoice' },
-  { value: 'estimate', label: 'Estimate' },
-  { value: 'email', label: 'Email' },
-  { value: 'report', label: 'Report' },
-  { value: 'job_sheet', label: 'Job Sheet' },
-  { value: 'work_order', label: 'Work Order' },
-  { value: 'contract', label: 'Contract' },
+// These are base values for template types, labels will be translated dynamically
+const TEMPLATE_TYPES_BASE = [
+  { value: 'invoice', labelKey: 'templateBuilder.templateTypes.invoice' },
+  { value: 'estimate', labelKey: 'templateBuilder.templateTypes.estimate' },
+  { value: 'email', labelKey: 'templateBuilder.templateTypes.email' },
+  { value: 'report', labelKey: 'templateBuilder.templateTypes.report' },
+  { value: 'job_sheet', labelKey: 'templateBuilder.templateTypes.jobSheet' },
+  { value: 'work_order', labelKey: 'templateBuilder.templateTypes.workOrder' },
+  { value: 'contract', labelKey: 'templateBuilder.templateTypes.contract' },
 ];
 
-// Template variables organized by category
+// Template variables organized by category (category keys are used internally, descriptions are translated)
 const TEMPLATE_VARIABLES = {
   'Work Order': [
-    { key: '{{work_order.wo_number}}', description: 'Work order number' },
-    { key: '{{work_order.summary}}', description: 'Work order summary' },
-    { key: '{{work_order.description}}', description: 'Work order description' },
-    { key: '{{work_order.status}}', description: 'Current status' },
-    { key: '{{work_order.priority}}', description: 'Priority level' },
-    { key: '{{work_order.scheduled_start}}', description: 'Scheduled date' },
+    { key: '{{work_order.wo_number}}', descriptionKey: 'templateBuilder.variableDescriptions.workOrderNumber' },
+    { key: '{{work_order.summary}}', descriptionKey: 'templateBuilder.variableDescriptions.workOrderSummary' },
+    { key: '{{work_order.description}}', descriptionKey: 'templateBuilder.variableDescriptions.workOrderDescription' },
+    { key: '{{work_order.status}}', descriptionKey: 'templateBuilder.variableDescriptions.currentStatus' },
+    { key: '{{work_order.priority}}', descriptionKey: 'templateBuilder.variableDescriptions.priorityLevel' },
+    { key: '{{work_order.scheduled_start}}', descriptionKey: 'templateBuilder.variableDescriptions.scheduledDate' },
   ],
   'Customer': [
-    { key: '{{contact.name}}', description: 'Customer full name' },
-    { key: '{{contact.email}}', description: 'Customer email' },
-    { key: '{{contact.phone}}', description: 'Customer phone' },
-    { key: '{{company.name}}', description: 'Company name' },
-    { key: '{{company.email}}', description: 'Company email' },
-    { key: '{{company.phone}}', description: 'Company phone' },
+    { key: '{{contact.name}}', descriptionKey: 'templateBuilder.variableDescriptions.customerFullName' },
+    { key: '{{contact.email}}', descriptionKey: 'templateBuilder.variableDescriptions.customerEmail' },
+    { key: '{{contact.phone}}', descriptionKey: 'templateBuilder.variableDescriptions.customerPhone' },
+    { key: '{{company.name}}', descriptionKey: 'templateBuilder.variableDescriptions.companyName' },
+    { key: '{{company.email}}', descriptionKey: 'templateBuilder.variableDescriptions.companyEmail' },
+    { key: '{{company.phone}}', descriptionKey: 'templateBuilder.variableDescriptions.companyPhone' },
   ],
   'Service Location': [
-    { key: '{{location.address}}', description: 'Service address' },
-    { key: '{{location.city}}', description: 'City' },
-    { key: '{{location.state}}', description: 'State' },
-    { key: '{{location.zip}}', description: 'ZIP code' },
-    { key: '{{location.country}}', description: 'Country' },
+    { key: '{{location.address}}', descriptionKey: 'templateBuilder.variableDescriptions.serviceAddress' },
+    { key: '{{location.city}}', descriptionKey: 'templateBuilder.variableDescriptions.city' },
+    { key: '{{location.state}}', descriptionKey: 'templateBuilder.variableDescriptions.state' },
+    { key: '{{location.zip}}', descriptionKey: 'templateBuilder.variableDescriptions.zipCode' },
+    { key: '{{location.country}}', descriptionKey: 'templateBuilder.variableDescriptions.country' },
   ],
   'Agent/Technician': [
-    { key: '{{agent.name}}', description: 'Assigned technician name' },
-    { key: '{{agent.email}}', description: 'Technician email' },
-    { key: '{{agent.phone}}', description: 'Technician phone' },
+    { key: '{{agent.name}}', descriptionKey: 'templateBuilder.variableDescriptions.assignedTechnicianName' },
+    { key: '{{agent.email}}', descriptionKey: 'templateBuilder.variableDescriptions.technicianEmail' },
+    { key: '{{agent.phone}}', descriptionKey: 'templateBuilder.variableDescriptions.technicianPhone' },
   ],
   'Invoice/Estimate': [
-    { key: '{{invoice.number}}', description: 'Invoice number' },
-    { key: '{{invoice.date}}', description: 'Invoice date' },
-    { key: '{{invoice.due_date}}', description: 'Due date' },
-    { key: '{{invoice.subtotal}}', description: 'Subtotal amount' },
-    { key: '{{invoice.tax}}', description: 'Tax amount' },
-    { key: '{{invoice.total}}', description: 'Total amount' },
-    { key: '{{estimate.number}}', description: 'Estimate number' },
-    { key: '{{estimate.date}}', description: 'Estimate date' },
-    { key: '{{estimate.total}}', description: 'Estimate total' },
+    { key: '{{invoice.number}}', descriptionKey: 'templateBuilder.variableDescriptions.invoiceNumber' },
+    { key: '{{invoice.date}}', descriptionKey: 'templateBuilder.variableDescriptions.invoiceDate' },
+    { key: '{{invoice.due_date}}', descriptionKey: 'templateBuilder.variableDescriptions.dueDate' },
+    { key: '{{invoice.subtotal}}', descriptionKey: 'templateBuilder.variableDescriptions.subtotalAmount' },
+    { key: '{{invoice.tax}}', descriptionKey: 'templateBuilder.variableDescriptions.taxAmount' },
+    { key: '{{invoice.total}}', descriptionKey: 'templateBuilder.variableDescriptions.totalAmount' },
+    { key: '{{estimate.number}}', descriptionKey: 'templateBuilder.variableDescriptions.estimateNumber' },
+    { key: '{{estimate.date}}', descriptionKey: 'templateBuilder.variableDescriptions.estimateDate' },
+    { key: '{{estimate.total}}', descriptionKey: 'templateBuilder.variableDescriptions.estimateTotal' },
   ],
   'Company/Settings': [
-    { key: '{{company_settings.name}}', description: 'Your company name' },
-    { key: '{{company_settings.email}}', description: 'Your company email' },
-    { key: '{{company_settings.phone}}', description: 'Your company phone' },
-    { key: '{{company_settings.address}}', description: 'Your company address' },
-    { key: '{{company_settings.logo_url}}', description: 'Company logo URL' },
+    { key: '{{company_settings.name}}', descriptionKey: 'templateBuilder.variableDescriptions.yourCompanyName' },
+    { key: '{{company_settings.email}}', descriptionKey: 'templateBuilder.variableDescriptions.yourCompanyEmail' },
+    { key: '{{company_settings.phone}}', descriptionKey: 'templateBuilder.variableDescriptions.yourCompanyPhone' },
+    { key: '{{company_settings.address}}', descriptionKey: 'templateBuilder.variableDescriptions.yourCompanyAddress' },
+    { key: '{{company_settings.logo_url}}', descriptionKey: 'templateBuilder.variableDescriptions.companyLogoUrl' },
   ],
   'Date/Time': [
-    { key: '{{today}}', description: 'Today\'s date' },
-    { key: '{{current_time}}', description: 'Current time' },
-    { key: '{{current_year}}', description: 'Current year' },
+    { key: '{{today}}', descriptionKey: 'templateBuilder.variableDescriptions.todaysDate' },
+    { key: '{{current_time}}', descriptionKey: 'templateBuilder.variableDescriptions.currentTime' },
+    { key: '{{current_year}}', descriptionKey: 'templateBuilder.variableDescriptions.currentYear' },
   ],
 };
 
-// Sample data for preview
+// Sample data for preview (Rule 6: Do NOT touch internal identifiers or variables)
 const PREVIEW_DATA: Record<string, string> = {
   '{{work_order.wo_number}}': 'WO-001234',
   '{{work_order.summary}}': 'HVAC System Maintenance',
@@ -147,6 +149,8 @@ export default function TemplateBuilderPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const isEdit = !!id;
+
+  const { t } = useTranslation(); // Rule 2: Declare t
 
   const [content, setContent] = useState('');
   const [previewContent, setPreviewContent] = useState('');
@@ -236,23 +240,47 @@ export default function TemplateBuilderPage() {
 
   const copyVariable = (variable: string) => {
     navigator.clipboard.writeText(variable);
-    message.success('Variable copied to clipboard!');
+    // Rule 5: JS/TS strings
+    message.success(t('templateBuilder.variableCopiedSuccess'));
   };
 
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        {/* Rule 4: Attribute title */}
+        <PageHeader title={t('templateBuilder.loadingPageHeader')} />
         <Card><Skeleton active /></Card>
       </div>
     );
   }
 
+  // Translate TEMPLATE_TYPES_BASE labels for Ant Design Select options
+  const translatedTemplateTypes = TEMPLATE_TYPES_BASE.map(type => ({
+    ...type,
+    label: t(type.labelKey),
+  }));
+
+  // Helper to map category strings to translation keys for Collapse header
+  const getCategoryTranslationKey = (category: string) => {
+    switch (category) {
+      case 'Work Order': return 'templateBuilder.variableCategories.workOrder';
+      case 'Customer': return 'templateBuilder.variableCategories.customer';
+      case 'Service Location': return 'templateBuilder.variableCategories.serviceLocation';
+      case 'Agent/Technician': return 'templateBuilder.variableCategories.agentTechnician';
+      case 'Invoice/Estimate': return 'templateBuilder.variableCategories.invoiceEstimate';
+      case 'Company/Settings': return 'templateBuilder.variableCategories.companySettings';
+      case 'Date/Time': return 'templateBuilder.variableCategories.dateTime';
+      default: return ''; // Fallback, should not happen if keys are well-defined
+    }
+  };
+
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Template' : 'Create Template'}
-        subtitle="Build templates with dynamic variables and formatting"
+        // Rule 4: Attribute title
+        title={isEdit ? t('templateBuilder.editTemplateTitle') : t('templateBuilder.createTemplateTitle')}
+        // Rule 4: Attribute subtitle
+        subtitle={t('templateBuilder.pageSubtitle')}
         onBack={() => navigate('/customization/templates')}
       />
 
@@ -270,32 +298,47 @@ export default function TemplateBuilderPage() {
               <Space size="large" style={{ display: 'flex', marginBottom: 16 }}>
                 <Form.Item
                   name="type"
-                  label="Template Type"
+                  // Rule 4: Attribute label
+                  label={t('templateBuilder.form.templateTypeLabel')}
                   style={{ flex: 1, marginBottom: 0 }}
-                  rules={[{ required: true, message: 'Please select a type' }]}
+                  // Rule 5: JS/TS string in rules message
+                  rules={[{ required: true, message: t('templateBuilder.form.selectTypeRequired') }]}
                 >
-                  <Select placeholder="Select type" options={TEMPLATE_TYPES} />
+                  {/* Rule 4: Attribute placeholder */}
+                  <Select placeholder={t('templateBuilder.form.selectTypePlaceholder')} options={translatedTemplateTypes} />
                 </Form.Item>
                 <Form.Item
                   name="name"
-                  label="Template Name"
+                  // Rule 4: Attribute label
+                  label={t('templateBuilder.form.templateNameLabel')}
                   style={{ flex: 1, marginBottom: 0 }}
-                  rules={[{ required: true, message: 'Please enter a name' }]}
+                  // Rule 5: JS/TS string in rules message
+                  rules={[{ required: true, message: t('templateBuilder.form.enterNameRequired') }]}
                 >
-                  <Input placeholder="e.g. Standard Invoice Template" />
+                  {/* Rule 4: Attribute placeholder */}
+                  <Input placeholder={t('templateBuilder.form.templateNamePlaceholder')} />
                 </Form.Item>
               </Space>
 
               <Form.Item
                 name="subject"
-                label="Subject (for emails)"
+                // Rule 4: Attribute label
+                label={t('templateBuilder.form.subjectLabel')}
                 style={{ marginBottom: 16 }}
               >
-                <Input placeholder="e.g. Work Order {{work_order.wo_number}} - Status Update" />
+                {/* Rule 4: Attribute placeholder */}
+                <Input placeholder={t('templateBuilder.form.subjectPlaceholder')} />
               </Form.Item>
 
-              <Form.Item name="is_default" label="Set as Default Template" valuePropName="checked">
-                <Switch checkedChildren="Default" unCheckedChildren="Not Default" />
+              <Form.Item name="is_default"
+                // Rule 4: Attribute label
+                label={t('templateBuilder.form.setDefaultTemplateLabel')}
+                valuePropName="checked">
+                {/* Rule 4: Attributes checkedChildren and unCheckedChildren */}
+                <Switch
+                  checkedChildren={t('templateBuilder.form.defaultSwitchChecked')}
+                  unCheckedChildren={t('templateBuilder.form.defaultSwitchUnchecked')}
+                />
               </Form.Item>
             </Card>
 
@@ -306,23 +349,26 @@ export default function TemplateBuilderPage() {
                 items={[
                   {
                     key: 'editor',
+                    // Rule 3: JSX Children
                     label: (
                       <span>
-                        <CodeOutlined /> Editor
+                        <CodeOutlined /> {t('templateBuilder.tabs.editor')}
                       </span>
                     ),
                     children: (
                       <div>
                         {/* Formatting Toolbar */}
                         <div style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <Tooltip title="Bold">
+                          {/* Rule 4: Attribute title */}
+                          <Tooltip title={t('templateBuilder.toolbar.bold')}>
                             <Button
                               size="small"
                               icon={<BoldOutlined />}
                               onClick={() => insertFormatting('**', '**')}
                             />
                           </Tooltip>
-                          <Tooltip title="Italic">
+                          {/* Rule 4: Attribute title */}
+                          <Tooltip title={t('templateBuilder.toolbar.italic')}>
                             <Button
                               size="small"
                               icon={<ItalicOutlined />}
@@ -330,7 +376,8 @@ export default function TemplateBuilderPage() {
                             />
                           </Tooltip>
                           <Divider type="vertical" />
-                          <Tooltip title="Heading">
+                          {/* Rule 4: Attribute title */}
+                          <Tooltip title={t('templateBuilder.toolbar.heading')}>
                             <Button
                               size="small"
                               onClick={() => insertFormatting('## ', '')}
@@ -339,14 +386,16 @@ export default function TemplateBuilderPage() {
                             </Button>
                           </Tooltip>
                           <Divider type="vertical" />
-                          <Tooltip title="Unordered List">
+                          {/* Rule 4: Attribute title */}
+                          <Tooltip title={t('templateBuilder.toolbar.unorderedList')}>
                             <Button
                               size="small"
                               icon={<UnorderedListOutlined />}
                               onClick={() => insertFormatting('- ', '')}
                             />
                           </Tooltip>
-                          <Tooltip title="Ordered List">
+                          {/* Rule 4: Attribute title */}
+                          <Tooltip title={t('templateBuilder.toolbar.orderedList')}>
                             <Button
                               size="small"
                               icon={<OrderedListOutlined />}
@@ -354,7 +403,8 @@ export default function TemplateBuilderPage() {
                             />
                           </Tooltip>
                           <Divider type="vertical" />
-                          <Tooltip title="Link">
+                          {/* Rule 4: Attribute title */}
+                          <Tooltip title={t('templateBuilder.toolbar.link')}>
                             <Button
                               size="small"
                               icon={<LinkOutlined />}
@@ -365,29 +415,33 @@ export default function TemplateBuilderPage() {
 
                         <Form.Item
                           name="content"
-                          rules={[{ required: true, message: 'Please enter template content' }]}
+                          // Rule 5: JS/TS string in rules message
+                          rules={[{ required: true, message: t('templateBuilder.form.contentRequired') }]}
                         >
                           <TextArea
                             id="template-content"
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             rows={20}
-                            placeholder="Enter your template content here...&#10;&#10;Use the variable panel on the right to insert dynamic content.&#10;&#10;Example:&#10;Dear {{contact.name}},&#10;&#10;Your work order {{work_order.wo_number}} has been scheduled for {{work_order.scheduled_start}}.&#10;&#10;Best regards,&#10;{{company_settings.name}}"
+                            // Rule 4: Attribute placeholder (multi-line)
+                            placeholder={t('templateBuilder.form.contentPlaceholder')}
                             style={{ fontFamily: 'monospace', fontSize: 14 }}
                           />
                         </Form.Item>
 
+                        {/* Rule 3: JSX Children */}
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Tip: Use Markdown syntax for formatting. ** for bold, _ for italic, ## for headings.
+                          {t('templateBuilder.markdownTips')}
                         </Text>
                       </div>
                     ),
                   },
                   {
                     key: 'preview',
+                    // Rule 3: JSX Children
                     label: (
                       <span>
-                        <EyeOutlined /> Preview
+                        <EyeOutlined /> {t('templateBuilder.tabs.preview')}
                       </span>
                     ),
                     children: (
@@ -414,8 +468,9 @@ export default function TemplateBuilderPage() {
                           }}
                         />
                         <Divider />
+                        {/* Rule 3: JSX Children */}
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Preview uses sample data. Actual output will use real data from your system.
+                          {t('templateBuilder.previewDisclaimer')}
                         </Text>
                       </div>
                     ),
@@ -433,10 +488,12 @@ export default function TemplateBuilderPage() {
                     loading={createTemplate.isPending || updateTemplate.isPending}
                     size="large"
                   >
-                    {isEdit ? 'Update Template' : 'Create Template'}
+                    {/* Rule 3: JSX Children */}
+                    {isEdit ? t('templateBuilder.updateButton') : t('templateBuilder.createButton')}
                   </Button>
+                  {/* Rule 3: JSX Children */}
                   <Button onClick={() => navigate('/customization/templates')} size="large">
-                    Cancel
+                    {t('templateBuilder.cancelButton')}
                   </Button>
                 </Space>
               </Form.Item>
@@ -446,21 +503,27 @@ export default function TemplateBuilderPage() {
           {/* Variables Sidebar */}
           <Col xs={24} lg={8}>
             <Card
-              title="Template Variables"
+              // Rule 4: Attribute title
+              title={t('templateBuilder.sidebar.templateVariablesTitle')}
               size="small"
               style={{ position: 'sticky', top: 16 }}
             >
+              {/* Rule 3: JSX Children */}
               <Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 16 }}>
-                Click any variable to insert it at your cursor position, or click the copy icon.
+                {t('templateBuilder.sidebar.variableInstructions')}
               </Paragraph>
 
               <Collapse
-                defaultActiveKey={['Work Order', 'Customer']}
+                defaultActiveKey={['Work Order', 'Customer']} // Rule 6: Do NOT touch internal identifiers
                 ghost
                 size="small"
               >
                 {Object.entries(TEMPLATE_VARIABLES).map(([category, variables]) => (
-                  <Panel header={<Text strong>{category}</Text>} key={category}>
+                  <Panel
+                    // Rule 3: JSX Children (inside header prop)
+                    header={<Text strong>{t(getCategoryTranslationKey(category))}</Text>}
+                    key={category} // Rule 6: Do NOT touch internal identifiers
+                  >
                     <Space direction="vertical" size="small" style={{ width: '100%' }}>
                       {variables.map((variable) => (
                         <div
@@ -488,9 +551,11 @@ export default function TemplateBuilderPage() {
                               <Tag color="blue" style={{ fontSize: 11, fontFamily: 'monospace', marginBottom: 4 }}>
                                 {variable.key}
                               </Tag>
-                              <div style={{ fontSize: 11, color: '#666' }}>{variable.description}</div>
+                              {/* Rule 3: JSX Children */}
+                              <div style={{ fontSize: 11, color: '#666' }}>{t(variable.descriptionKey)}</div>
                             </div>
-                            <Tooltip title="Copy to clipboard">
+                            {/* Rule 4: Attribute title */}
+                            <Tooltip title={t('templateBuilder.sidebar.copyToClipboardTooltip')}>
                               <Button
                                 type="text"
                                 size="small"
@@ -512,15 +577,21 @@ export default function TemplateBuilderPage() {
               <Divider />
 
               <div style={{ padding: '12px', backgroundColor: '#fff7e6', borderRadius: 6, border: '1px solid #ffd591' }}>
+                {/* Rule 3: JSX Children */}
                 <Title level={5} style={{ marginTop: 0, fontSize: 13 }}>
-                  💡 Template Tips
+                  💡 {t('templateBuilder.sidebar.tipsTitle')}
                 </Title>
                 <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12 }}>
-                  <li>Use <code>**text**</code> for bold</li>
-                  <li>Use <code>_text_</code> for italic</li>
-                  <li>Use <code>## Text</code> for headings</li>
-                  <li>Variables are case-sensitive</li>
-                  <li>Preview shows sample data</li>
+                  {/* Rule 3: JSX Children */}
+                  <li>{t('templateBuilder.sidebar.tipBold')}</li>
+                  {/* Rule 3: JSX Children */}
+                  <li>{t('templateBuilder.sidebar.tipItalic')}</li>
+                  {/* Rule 3: JSX Children */}
+                  <li>{t('templateBuilder.sidebar.tipHeadings')}</li>
+                  {/* Rule 3: JSX Children */}
+                  <li>{t('templateBuilder.sidebar.tipCaseSensitive')}</li>
+                  {/* Rule 3: JSX Children */}
+                  <li>{t('templateBuilder.sidebar.tipSampleData')}</li>
                 </ul>
               </div>
             </Card>

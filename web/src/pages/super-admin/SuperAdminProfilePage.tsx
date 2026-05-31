@@ -9,6 +9,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 import { useAuthStore } from '@/store/auth.store';
 import { useChangePassword } from '@/hooks/use-auth';
@@ -52,6 +53,7 @@ type PasswordForm = z.infer<typeof passwordSchema>;
 // ── Profile Details Section ───────────────────────────────────────────────────
 
 function ProfileDetailsCard() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const updateProfile = useUpdateSuperAdminProfile();
@@ -75,7 +77,7 @@ function ProfileDetailsCard() {
 
   return (
     <Card
-      title={<Space><UserOutlined /><span>Profile Details</span></Space>}
+      title={<Space><UserOutlined /><span>{t('profile.details')}</span></Space>}
       style={{ marginBottom: 24 }}
     >
       <div style={{ maxWidth: 480 }}>
@@ -83,7 +85,7 @@ function ProfileDetailsCard() {
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item
-                label="First Name"
+                label={t('profile.firstName')}
                 validateStatus={errors.first_name ? 'error' : ''}
                 help={errors.first_name?.message}
               >
@@ -91,14 +93,14 @@ function ProfileDetailsCard() {
                   name="first_name"
                   control={control}
                   render={({ field }) => (
-                    <Input {...field} prefix={<UserOutlined />} placeholder="First name" size="large" />
+                    <Input {...field} prefix={<UserOutlined />} placeholder={t('profile.firstNamePlaceholder')} size="large" />
                   )}
                 />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
-                label="Last Name"
+                label={t('profile.lastName')}
                 validateStatus={errors.last_name ? 'error' : ''}
                 help={errors.last_name?.message}
               >
@@ -106,7 +108,7 @@ function ProfileDetailsCard() {
                   name="last_name"
                   control={control}
                   render={({ field }) => (
-                    <Input {...field} prefix={<UserOutlined />} placeholder="Last name" size="large" />
+                    <Input {...field} prefix={<UserOutlined />} placeholder={t('profile.lastNamePlaceholder')} size="large" />
                   )}
                 />
               </Form.Item>
@@ -120,7 +122,7 @@ function ProfileDetailsCard() {
               size="large"
               icon={<SaveOutlined />}
             >
-              Save Changes
+              {t('common.saveChanges')}
             </Button>
           </Form.Item>
         </Form>
@@ -132,6 +134,7 @@ function ProfileDetailsCard() {
 // ── Change Email Section ──────────────────────────────────────────────────────
 
 function ChangeEmailCard() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const changeEmail = useChangeSuperAdminEmail();
@@ -153,11 +156,11 @@ function ChangeEmailCard() {
 
   return (
     <Card
-      title={<Space><MailOutlined /><span>Change Email</span></Space>}
+      title={<Space><MailOutlined /><span>{t('email.change')}</span></Space>}
       style={{ marginBottom: 24 }}
     >
       <div style={{ maxWidth: 480 }}>
-        <Form.Item label="Current Email">
+        <Form.Item label={t('email.current')}>
           <Input
             value={user?.email ?? ''}
             disabled
@@ -168,7 +171,7 @@ function ChangeEmailCard() {
 
         <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
           <Form.Item
-            label="New Email Address"
+            label={t('email.newAddress')}
             validateStatus={errors.new_email ? 'error' : ''}
             help={errors.new_email?.message}
           >
@@ -179,7 +182,7 @@ function ChangeEmailCard() {
                 <Input
                   {...field}
                   prefix={<MailOutlined />}
-                  placeholder="new@example.com"
+                  placeholder={t('email.newAddressPlaceholder')}
                   size="large"
                   autoComplete="off"
                 />
@@ -188,7 +191,7 @@ function ChangeEmailCard() {
           </Form.Item>
 
           <Form.Item
-            label="Confirm with Current Password"
+            label={t('email.confirmWithPassword')}
             validateStatus={errors.current_password ? 'error' : ''}
             help={errors.current_password?.message}
           >
@@ -199,7 +202,7 @@ function ChangeEmailCard() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Enter your current password"
+                  placeholder={t('email.passwordPlaceholder')}
                   size="large"
                 />
               )}
@@ -214,7 +217,7 @@ function ChangeEmailCard() {
               size="large"
               icon={<MailOutlined />}
             >
-              Update Email
+              {t('email.update')}
             </Button>
           </Form.Item>
         </Form>
@@ -226,6 +229,7 @@ function ChangeEmailCard() {
 // ── Change Password Section ───────────────────────────────────────────────────
 
 function ChangePasswordCard() {
+  const { t } = useTranslation();
   const changePasswordMutation = useChangePassword();
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<PasswordForm>({
@@ -241,9 +245,9 @@ function ChangePasswordCard() {
   };
 
   return (
-    <Card title={<Space><KeyOutlined /><span>Change Password</span></Space>}>
+    <Card title={<Space><KeyOutlined /><span>{t('password.change')}</span></Space>}>
       <Alert
-        message="Changing your password will terminate all active sessions. You will need to log in again."
+        message={t('password.warning')}
         type="warning"
         showIcon
         style={{ marginBottom: 24 }}
@@ -251,7 +255,7 @@ function ChangePasswordCard() {
       <div style={{ maxWidth: 480 }}>
         <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
           <Form.Item
-            label="Current Password"
+            label={t('password.current')}
             validateStatus={errors.old_password ? 'error' : ''}
             help={errors.old_password?.message}
           >
@@ -262,7 +266,7 @@ function ChangePasswordCard() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Enter current password"
+                  placeholder={t('password.currentPlaceholder')}
                   size="large"
                 />
               )}
@@ -270,7 +274,7 @@ function ChangePasswordCard() {
           </Form.Item>
 
           <Form.Item
-            label="New Password"
+            label={t('password.new')}
             validateStatus={errors.new_password ? 'error' : ''}
             help={errors.new_password?.message}
           >
@@ -281,7 +285,7 @@ function ChangePasswordCard() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Enter new password"
+                  placeholder={t('password.newPlaceholder')}
                   size="large"
                 />
               )}
@@ -289,7 +293,7 @@ function ChangePasswordCard() {
           </Form.Item>
 
           <Form.Item
-            label="Confirm New Password"
+            label={t('password.confirm')}
             validateStatus={errors.confirm_password ? 'error' : ''}
             help={errors.confirm_password?.message}
           >
@@ -300,7 +304,7 @@ function ChangePasswordCard() {
                 <Input.Password
                   {...field}
                   prefix={<LockOutlined />}
-                  placeholder="Confirm new password"
+                  placeholder={t('password.confirmPlaceholder')}
                   size="large"
                 />
               )}
@@ -315,7 +319,7 @@ function ChangePasswordCard() {
               size="large"
               icon={<KeyOutlined />}
             >
-              Change Password
+              {t('password.change')}
             </Button>
           </Form.Item>
         </Form>
@@ -327,6 +331,7 @@ function ChangePasswordCard() {
 // ── Super Admin Magic Link Section ───────────────────────────────────────────
 
 function SuperAdminMagicLinkCard() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const generateLink = useGenerateMagicLink();
   const [modalData, setModalData] = useState<{ link: string; expiresAt: string; purpose: string } | null>(null);
@@ -347,11 +352,11 @@ function SuperAdminMagicLinkCard() {
   return (
     <>
       <Card
-        title={<Space><LinkOutlined /><span>Super Admin Access Link</span></Space>}
+        title={<Space><LinkOutlined /><span>{t('magicLink.title')}</span></Space>}
         style={{ marginBottom: 24 }}
       >
         <Alert
-          message="Generates a one-time magic link valid for 15 minutes that logs in directly as your super admin account."
+          message={t('magicLink.description')}
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
@@ -363,7 +368,7 @@ function SuperAdminMagicLinkCard() {
           onClick={handleGenerate}
           size="large"
         >
-          Generate Super Admin Access Link
+          {t('magicLink.generate')}
         </Button>
       </Card>
 
@@ -383,6 +388,7 @@ function SuperAdminMagicLinkCard() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function SuperAdminProfilePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
 
@@ -395,13 +401,13 @@ export default function SuperAdminProfilePage() {
           onClick={() => navigate('/admin/tenants')}
           style={{ paddingLeft: 0 }}
         >
-          Back to Dashboard
+          {t('common.backToDashboard')}
         </Button>
       </div>
 
       <PageHeader
-        title="My Profile"
-        subtitle={`Signed in as ${user?.email ?? ''}`}
+        title={t('profile.myProfile')}
+        subtitle={t('profile.signedInAs', { email: user?.email ?? '' })}
       />
 
       <ProfileDetailsCard />

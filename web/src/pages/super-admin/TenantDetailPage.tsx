@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { DatePicker } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   useTenantOverview, useSuspendTenant, useActivateTenant,
   useTenantUsage, useSubscriptionPlans, useUpdateTenantSubscription,
@@ -44,6 +45,7 @@ export default function TenantDetailPage() {
   const navigate = useNavigate();
   const [subModalOpen, setSubModalOpen] = useState(false);
   const [subForm] = Form.useForm();
+  const { t } = useTranslation();
 
   const { data: tenant, isLoading } = useTenantOverview(id!);
   const { data: usage } = useTenantUsage(id!);
@@ -93,8 +95,8 @@ export default function TenantDetailPage() {
     return (
       <Alert
         type="error"
-        message="Tenant not found"
-        action={<Button onClick={() => navigate('/admin/tenants')}>Back to Tenants</Button>}
+        message={t('tenantDetail.tenantNotFound')}
+        action={<Button onClick={() => navigate('/admin/tenants')}>{t('tenantDetail.backToTenants')}</Button>}
       />
     );
   }
@@ -112,8 +114,8 @@ export default function TenantDetailPage() {
         icon={<ClusterOutlined />}
         message={
           <Space>
-            <Text strong>Super Admin — Viewing Tenant: {tenant.name}</Text>
-            <Text type="secondary">(Read-Only View)</Text>
+            <Text strong>{t('tenantDetail.superAdminViewingTenant', { tenantName: tenant.name })}</Text>
+            <Text type="secondary">{t('tenantDetail.readOnlyView')}</Text>
           </Space>
         }
         action={
@@ -122,7 +124,7 @@ export default function TenantDetailPage() {
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate('/admin/tenants')}
           >
-            Exit Tenant View
+            {t('tenantDetail.exitTenantView')}
           </Button>
         }
         style={{ marginBottom: 24 }}
@@ -136,28 +138,28 @@ export default function TenantDetailPage() {
         </div>
         <Space>
           {tenant.is_active ? (
-            <Tag icon={<CheckCircleOutlined />} color="success" style={{ fontSize: 14, padding: '4px 12px' }}>Active</Tag>
+            <Tag icon={<CheckCircleOutlined />} color="success" style={{ fontSize: 14, padding: '4px 12px' }}>{t('tenantDetail.active')}</Tag>
           ) : (
-            <Tag icon={<StopOutlined />} color="error" style={{ fontSize: 14, padding: '4px 12px' }}>Suspended</Tag>
+            <Tag icon={<StopOutlined />} color="error" style={{ fontSize: 14, padding: '4px 12px' }}>{t('tenantDetail.suspended')}</Tag>
           )}
           {tenant.is_active ? (
             <Popconfirm
-              title={`Suspend ${tenant.name}?`}
-              description="Their users will be unable to log in."
+              title={t('tenantDetail.suspendTenantTitle', { tenantName: tenant.name })}
+              description={t('tenantDetail.suspendTenantDescription')}
               onConfirm={() => suspendTenant.mutate(tenant.id)}
-              okText="Suspend"
+              okText={t('tenantDetail.suspend')}
               okButtonProps={{ danger: true }}
             >
-              <Button danger icon={<StopOutlined />}>Suspend Tenant</Button>
+              <Button danger icon={<StopOutlined />}>{t('tenantDetail.suspendTenant')}</Button>
             </Popconfirm>
           ) : (
             <Popconfirm
-              title={`Reactivate ${tenant.name}?`}
+              title={t('tenantDetail.reactivateTenantTitle', { tenantName: tenant.name })}
               onConfirm={() => activateTenant.mutate(tenant.id)}
-              okText="Reactivate"
+              okText={t('tenantDetail.reactivate')}
             >
               <Button icon={<PlayCircleOutlined />} style={{ color: '#52c41a', borderColor: '#52c41a' }}>
-                Reactivate Tenant
+                {t('tenantDetail.reactivateTenant')}
               </Button>
             </Popconfirm>
           )}
@@ -169,7 +171,7 @@ export default function TenantDetailPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Users"
+              title={t('tenantDetail.users')}
               value={tenant.user_count}
               prefix={<TeamOutlined style={{ color: '#1677ff' }} />}
             />
@@ -178,7 +180,7 @@ export default function TenantDetailPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Service Requests"
+              title={t('tenantDetail.serviceRequests')}
               value={tenant.service_request_count}
               prefix={<FileTextOutlined style={{ color: '#722ed1' }} />}
             />
@@ -187,7 +189,7 @@ export default function TenantDetailPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Work Orders"
+              title={t('tenantDetail.workOrders')}
               value={tenant.work_order_count}
               prefix={<ToolOutlined style={{ color: '#13c2c2' }} />}
             />
@@ -196,7 +198,7 @@ export default function TenantDetailPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Invoices"
+              title={t('tenantDetail.invoices')}
               value={tenant.invoice_count}
               prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
             />
@@ -206,39 +208,38 @@ export default function TenantDetailPage() {
 
       {/* Subscription Section */}
       <Card
-        title="Subscription"
+        title={t('tenantDetail.subscription')}
         style={{ marginBottom: 24 }}
         extra={
           <Button icon={<EditOutlined />} onClick={handleOpenSubModal}>
-            Update Subscription
+            {t('tenantDetail.updateSubscription')}
           </Button>
         }
       >
         <Row gutter={[24, 16]}>
           <Col xs={24} sm={8}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Plan</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>{t('tenantDetail.plan')}</Text>
             <div style={{ marginTop: 4 }}>
               <Text strong>{usage?.plan_name ?? tenant.subscription_plan}</Text>
             </div>
           </Col>
           <Col xs={24} sm={8}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Status</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>{t('tenantDetail.status')}</Text>
             <div style={{ marginTop: 4 }}>
               <Tag color={STATUS_COLORS[tenant.subscription_status ?? 'trial'] ?? 'default'}>
-                {(tenant.subscription_status ?? 'trial').charAt(0).toUpperCase() +
-                  (tenant.subscription_status ?? 'trial').slice(1)}
+                {t(`tenantDetail.status.${tenant.subscription_status ?? 'trial'}`)}
               </Tag>
             </div>
           </Col>
           <Col xs={24} sm={8}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Subscription End</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>{t('tenantDetail.subscriptionEnd')}</Text>
             <div style={{ marginTop: 4 }}>
               <Text>{tenant.subscription_end ? formatDateTime(tenant.subscription_end) : '—'}</Text>
             </div>
           </Col>
           <Col xs={24}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Users: {usageCurrent} / {usageLimit ?? '∞'}
+              {t('tenantDetail.usersUsage', { current: usageCurrent, limit: usageLimit ?? '∞' })}
             </Text>
             {usageLimit ? (
               <Progress
@@ -249,7 +250,7 @@ export default function TenantDetailPage() {
               />
             ) : (
               <div style={{ marginTop: 4 }}>
-                <Text type="secondary">Unlimited users on this plan</Text>
+                <Text type="secondary">{t('tenantDetail.unlimitedUsers')}</Text>
               </div>
             )}
           </Col>
@@ -257,28 +258,28 @@ export default function TenantDetailPage() {
       </Card>
 
       {/* Tenant Details */}
-      <Card title="Tenant Information" style={{ marginBottom: 24 }}>
+      <Card title={t('tenantDetail.tenantInformation')} style={{ marginBottom: 24 }}>
         <Descriptions bordered column={{ xs: 1, sm: 2 }} size="small">
-          <Descriptions.Item label="Company Name">{tenant.name}</Descriptions.Item>
-          <Descriptions.Item label="Slug">{tenant.slug}</Descriptions.Item>
-          <Descriptions.Item label="Admin Email">
+          <Descriptions.Item label={t('tenantDetail.companyName')}>{tenant.name}</Descriptions.Item>
+          <Descriptions.Item label={t('tenantDetail.slug')}>{tenant.slug}</Descriptions.Item>
+          <Descriptions.Item label={t('tenantDetail.adminEmail')}>
             {tenant.admin_email ? <Text copyable>{tenant.admin_email}</Text> : '—'}
           </Descriptions.Item>
-          <Descriptions.Item label="Admin Name">{tenant.admin_name ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Subscription Plan">
+          <Descriptions.Item label={t('tenantDetail.adminName')}>{tenant.admin_name ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('tenantDetail.subscriptionPlan')}>
             <Tag color={tenant.subscription_plan === 'enterprise' ? 'gold' : tenant.subscription_plan === 'professional' ? 'blue' : 'default'}>
-              {tenant.subscription_plan.charAt(0).toUpperCase() + tenant.subscription_plan.slice(1)}
+              {t(`tenantDetail.plan.${tenant.subscription_plan}`)}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Max Users">{tenant.max_users}</Descriptions.Item>
-          <Descriptions.Item label="Domain">{tenant.domain ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label={t('tenantDetail.maxUsers')}>{tenant.max_users}</Descriptions.Item>
+          <Descriptions.Item label={t('tenantDetail.domain')}>{tenant.domain ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('tenantDetail.status')}>
             {tenant.is_active
-              ? <Tag color="success">Active</Tag>
-              : <Tag color="error">Suspended</Tag>}
+              ? <Tag color="success">{t('tenantDetail.active')}</Tag>
+              : <Tag color="error">{t('tenantDetail.suspended')}</Tag>}
           </Descriptions.Item>
-          <Descriptions.Item label="Registered">{formatDateTime(tenant.created_at)}</Descriptions.Item>
-          <Descriptions.Item label="Last Updated">{formatDateTime(tenant.updated_at)}</Descriptions.Item>
+          <Descriptions.Item label={t('tenantDetail.registered')}>{formatDateTime(tenant.created_at)}</Descriptions.Item>
+          <Descriptions.Item label={t('tenantDetail.lastUpdated')}>{formatDateTime(tenant.updated_at)}</Descriptions.Item>
         </Descriptions>
       </Card>
 
@@ -289,25 +290,25 @@ export default function TenantDetailPage() {
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate('/admin/tenants')}
         >
-          Exit Tenant View — Return to Super Admin Dashboard
+          {t('tenantDetail.exitTenantViewAndReturn')}
         </Button>
       </div>
 
       {/* Update Subscription Modal */}
       <Modal
         open={subModalOpen}
-        title="Update Subscription"
-        okText="Save Changes"
-        cancelText="Cancel"
+        title={t('tenantDetail.updateSubscriptionModalTitle')}
+        okText={t('common.saveChanges')}
+        cancelText={t('common.cancel')}
         confirmLoading={updateSubscription.isPending}
         onOk={handleSubModalOk}
         onCancel={() => setSubModalOpen(false)}
         width={480}
       >
         <Form form={subForm} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="plan_id" label="Subscription Plan">
+          <Form.Item name="plan_id" label={t('tenantDetail.subscriptionPlanLabel')}>
             <Select
-              placeholder="Select a plan"
+              placeholder={t('tenantDetail.selectAPlan')}
               allowClear
               options={plans?.map((p) => ({
                 label: `${p.name} ($${p.price_monthly}/mo)`,
@@ -316,31 +317,31 @@ export default function TenantDetailPage() {
             />
           </Form.Item>
 
-          <Form.Item name="subscription_status" label="Status">
+          <Form.Item name="subscription_status" label={t('tenantDetail.statusLabel')}>
             <Select
-              placeholder="Select status"
+              placeholder={t('tenantDetail.selectStatus')}
               options={[
-                { label: 'Trial', value: 'trial' },
-                { label: 'Active', value: 'active' },
-                { label: 'Suspended', value: 'suspended' },
-                { label: 'Cancelled', value: 'cancelled' },
-                { label: 'Expired', value: 'expired' },
+                { label: t('tenantDetail.status.trial'), value: 'trial' },
+                { label: t('tenantDetail.status.active'), value: 'active' },
+                { label: t('tenantDetail.status.suspended'), value: 'suspended' },
+                { label: t('tenantDetail.status.cancelled'), value: 'cancelled' },
+                { label: t('tenantDetail.status.expired'), value: 'expired' },
               ]}
             />
           </Form.Item>
 
-          <Form.Item name="subscription_end" label="Subscription End Date">
+          <Form.Item name="subscription_end" label={t('tenantDetail.subscriptionEndDate')}>
             <DatePicker style={{ width: '100%' }} allowClear />
           </Form.Item>
 
           <Form.Item
             name="max_users_override"
-            label="Max Users Override"
-            extra="Leave empty to use the plan's default limit"
+            label={t('tenantDetail.maxUsersOverride')}
+            extra={t('tenantDetail.maxUsersOverrideHint')}
           >
             <InputNumber
               min={1}
-              placeholder="e.g. 50"
+              placeholder={t('tenantDetail.exampleUsersPlaceholder')}
               style={{ width: '100%' }}
             />
           </Form.Item>

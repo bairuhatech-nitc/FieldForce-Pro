@@ -68,14 +68,14 @@ interface MenuSection {
 
 const menuSections: MenuSection[] = [
   {
-    section: 'Main Navigation',
+    section: 'sidebar.mainNavigation',
     items: [
       { key: '/dashboard', icon: <DashboardOutlined />, labelKey: 'nav.dashboard' },
       // { key: '/dashboard/live-map', icon: <EnvironmentOutlined />, labelKey: 'Live Map' },
     ],
   },
   {
-    section: 'Customer Management',
+    section: 'sidebar.customerManagement',
     items: [
       { key: '/contacts', icon: <ContactsOutlined />, labelKey: 'nav.contacts', permission: 'contacts:read' },
       { key: '/companies', icon: <BankOutlined />, labelKey: 'nav.companies', permission: 'companies:read' },
@@ -83,7 +83,7 @@ const menuSections: MenuSection[] = [
     ],
   },
   {
-    section: 'Operations',
+    section: 'sidebar.operations',
     items: [
       { key: '/service-requests', icon: <FileTextOutlined />, labelKey: 'nav.serviceRequests', permission: 'service_requests:read' },
       { key: '/estimates', icon: <CalculatorOutlined />, labelKey: 'nav.estimates', permission: 'estimates:read' },
@@ -93,7 +93,7 @@ const menuSections: MenuSection[] = [
     ],
   },
   {
-    section: 'Scheduling & Workforce',
+    section: 'sidebar.schedulingWorkforce',
     items: [
       {
         key: 'scheduling-submenu',
@@ -101,19 +101,19 @@ const menuSections: MenuSection[] = [
         labelKey: 'nav.scheduling',
         permission: 'scheduling:read',
         children: [
-          { key: '/scheduling', labelKey: 'Dispatch Board' },
-          { key: '/scheduling/calendar', labelKey: 'Calendar View' },
-          { key: '/scheduling/map', labelKey: 'Map View' },
+          { key: '/scheduling', labelKey: 'sidebar.dispatchBoard' },
+          { key: '/scheduling/calendar', labelKey: 'sidebar.calendarView' },
+          { key: '/scheduling/map', labelKey: 'sidebar.mapView' },
         ],
       },
       { key: '/job-sheets', icon: <FormOutlined />, labelKey: 'nav.jobSheets', permission: 'job_sheets:read' },
       // { key: '/timesheets', icon: <ClockCircleOutlined />, labelKey: 'nav.timesheets', permission: 'timesheets:read' },
       // { key: '/workforce', icon: <TeamOutlined />, labelKey: 'nav.workforce', permission: 'workforce:read' },
-      { key: '/trips/history', icon: <CompassOutlined />, labelKey: 'Trip History', permission: 'trips:read' },
+      { key: '/trips/history', icon: <CompassOutlined />, labelKey: 'sidebar.tripHistory', permission: 'trips:read' },
     ],
   },
   {
-    section: 'Financial',
+    section: 'sidebar.financial',
     items: [
       { key: '/invoices', icon: <DollarOutlined />, labelKey: 'nav.invoices', permission: 'invoices:read' },
       { key: '/payments', icon: <CreditCardOutlined />, labelKey: 'nav.payments', permission: 'payments:read' },
@@ -130,7 +130,7 @@ const menuSections: MenuSection[] = [
     ],
   },
   {
-    section: 'Catalog & Pricing',
+    section: 'sidebar.catalogPricing',
     items: [
       {
         key: 'catalog-submenu',
@@ -146,7 +146,7 @@ const menuSections: MenuSection[] = [
     ],
   },
   {
-    section: 'Customer Engagement',
+    section: 'sidebar.customerEngagement',
     items: [
       { key: '/reviews', icon: <StarOutlined />, labelKey: 'nav.reviews', permission: 'reviews:read' },
       // { key: '/communications', icon: <MessageOutlined />, labelKey: 'nav.communications', permission: 'communications:read' },
@@ -155,17 +155,17 @@ const menuSections: MenuSection[] = [
     ],
   },
   {
-    section: 'Approval Workflow',
+    section: 'sidebar.approvalWorkflow',
     items: [
       {
         key: 'workflow-submenu',
         icon: <AuditOutlined />,
-        labelKey: 'Approval Workflow',
+        labelKey: 'sidebar.approvalWorkflow',
         permission: 'workflow_templates:read',
         children: [
           // { key: '/workflow/dashboard', labelKey: 'Dashboard' },
-          { key: '/workflow/templates', labelKey: 'Workflow Templates' },
-          { key: '/workflow/document-approvals', labelKey: 'Document Approvals' },
+          { key: '/workflow/templates', labelKey: 'sidebar.workflowTemplates' },
+          { key: '/workflow/document-approvals', labelKey: 'sidebar.documentApprovals' },
         ],
       },
     ],
@@ -200,11 +200,11 @@ const menuSections: MenuSection[] = [
   //   ],
   // },
   {
-    section: 'System & Analytics',
+    section: 'sidebar.systemAnalytics',
     items: [
       { key: '/users', icon: <UserOutlined />, labelKey: 'nav.users', permission: 'users:read' },
       { key: '/reports', icon: <BarChartOutlined />, labelKey: 'nav.reports', permission: 'reports:read' },
-      { key: '/integrations/api-keys', icon: <KeyOutlined />, labelKey: 'API Keys', permission: 'settings:read' },
+      { key: '/integrations/api-keys', icon: <KeyOutlined />, labelKey: 'sidebar.apiKeys', permission: 'settings:read' },
       {
         key: 'settings-submenu',
         icon: <SettingOutlined />,
@@ -225,7 +225,7 @@ const menuSections: MenuSection[] = [
         permission: 'audit_logs:read',
         children: [
           // { key: '/security/audit-logs', labelKey: 'nav.auditLogs', permission: 'audit_logs:read' },
-          { key: '/security/settings', labelKey: 'Security Settings', permission: 'settings:read' },
+          { key: '/security/settings', labelKey: 'sidebar.securitySettings', permission: 'settings:read' },
         ],
       },
     ],
@@ -236,10 +236,10 @@ const technicianSections: MenuSection[] = [
   {
     items: [
       { key: '/dashboard', icon: <DashboardOutlined />, labelKey: 'nav.dashboard' },
-      { key: '/work-orders/my-jobs', icon: <ScheduleOutlined />, labelKey: 'My Jobs' },
-      { key: '/scheduling/calendar', icon: <CalendarOutlined />, labelKey: 'My Schedule' },
+      { key: '/work-orders/my-jobs', icon: <ScheduleOutlined />, labelKey: 'sidebar.myJobs' },
+      { key: '/scheduling/calendar', icon: <CalendarOutlined />, labelKey: 'sidebar.mySchedule' },
       { key: '/timesheets', icon: <ClockCircleOutlined />, labelKey: 'nav.timesheets' },
-      { key: '/notifications', icon: <BellOutlined />, labelKey: 'Notifications' },
+      { key: '/notifications', icon: <BellOutlined />, labelKey: 'sidebar.notifications' },
     ],
   },
 ];
@@ -264,14 +264,14 @@ export default function Sidebar() {
   
   if (isSuperAdmin) {
     baseSections.push({
-      section: 'Super Admin',
+      section: 'sidebar.superAdmin',
       items: [
-        { key: '/admin/tenants', icon: <CrownOutlined />, labelKey: 'Tenants' },
+        { key: '/admin/tenants', icon: <CrownOutlined />, labelKey: 'sidebar.tenants' },
         { key: '/admin/magic-links', icon: <LinkOutlined />, labelKey: 'Magic Links' },
-        { key: '/admin/analytics', icon: <LineChartOutlined />, labelKey: 'Analytics' },
-        { key: '/admin/platform-health', icon: <DesktopOutlined />, labelKey: 'System Health' },
-        { key: '/admin/api-keys', icon: <KeyOutlined />, labelKey: 'API Keys' },
-        { key: '/admin/audit-logs', icon: <AuditOutlined />, labelKey: 'Audit Logs' },
+        { key: '/admin/analytics', icon: <LineChartOutlined />, labelKey: 'sidebar.analytics' },
+        { key: '/admin/platform-health', icon: <DesktopOutlined />, labelKey: 'sidebar.systemHealth' },
+        { key: '/admin/api-keys', icon: <KeyOutlined />, labelKey: 'sidebar.apiKeys' },
+        { key: '/admin/audit-logs', icon: <AuditOutlined />, labelKey: 'sidebar.auditLogs' },
       ]
     });
   }
@@ -378,7 +378,7 @@ export default function Sidebar() {
         {activeSections.map((section, index) => (
           <div key={index} style={{ marginBottom: 12 }}>
             {!collapsed && section.section && (
-              <div className="sidebar-section-title">{section.section}</div>
+              <div className="sidebar-section-title">{t(section.section)}</div>
             )}
             <Menu
               mode="inline"
@@ -396,7 +396,7 @@ export default function Sidebar() {
                 icon: item.icon,
                 label: (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <span>{item.labelKey.startsWith('nav.') ? t(item.labelKey) : item.labelKey}</span>
+                    <span>{t(item.labelKey)}</span>
                     {item.key === '/dashboard/live-map' && !collapsed && (
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb' }} />
                     )}

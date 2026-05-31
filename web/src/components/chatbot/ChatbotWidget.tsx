@@ -9,6 +9,7 @@ import {
   DeleteOutlined,
   HistoryOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useSendMessage, useChatSessions } from '../../hooks/use-chatbot';
 
 const { Text, Paragraph } = Typography;
@@ -22,6 +23,7 @@ interface ChatMessage {
 }
 
 export default function ChatbotWidget({ sessionType = 'internal' }: { sessionType?: string }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -71,7 +73,7 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
+        { role: 'assistant', content: t('chatbot.errorOccurred') },
       ]);
     }
   };
@@ -127,12 +129,12 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
           title={
             <Space>
               <RobotOutlined />
-              <span>FieldForce Assistant</span>
+              <span>{t('chatbot.title')}</span>
             </Space>
           }
           extra={
             <Space>
-              <Tooltip title="Chat History">
+              <Tooltip title={t('chatbot.chatHistory')}>
                 <Button
                   type="text"
                   size="small"
@@ -140,7 +142,7 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
                   onClick={() => setShowHistory(true)}
                 />
               </Tooltip>
-              <Tooltip title="New Chat">
+              <Tooltip title={t('chatbot.newChat')}>
                 <Button
                   type="text"
                   size="small"
@@ -159,7 +161,6 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
           styles={{ body: { padding: 0, flex: 1, display: 'flex', flexDirection: 'column', height: '100%' } }}
           style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
-          {/* Messages */}
           <div
             style={{
               flex: 1,
@@ -172,7 +173,7 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
               <div style={{ textAlign: 'center', paddingTop: 40 }}>
                 <RobotOutlined style={{ fontSize: 40, color: '#bfbfbf' }} />
                 <Paragraph type="secondary" style={{ marginTop: 12 }}>
-                  Hi! I can help with work orders, scheduling, invoicing, and more.
+                  {t('chatbot.welcomeMessage')}
                 </Paragraph>
               </div>
             )}
@@ -216,21 +217,20 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
             {sendMessage.isPending && (
               <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
                 <div style={{ padding: '8px 12px', borderRadius: 12, backgroundColor: '#f5f5f5' }}>
-                  <Text type="secondary">Thinking...</Text>
+                  <Text type="secondary">{t('chatbot.thinking')}</Text>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div style={{ padding: '8px 12px', borderTop: '1px solid #f0f0f0' }}>
             <Space.Compact style={{ width: '100%' }}>
               <TextArea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Ask me anything..."
+                placeholder={t('chatbot.placeholder')}
                 autoSize={{ minRows: 1, maxRows: 3 }}
                 style={{ resize: 'none' }}
               />
@@ -246,9 +246,8 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
         </Card>
       </div>
 
-      {/* History Drawer */}
       <Drawer
-        title="Chat History"
+        title={t('chatbot.chatHistory')}
         open={showHistory}
         onClose={() => setShowHistory(false)}
         placement="right"
@@ -259,10 +258,10 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
           renderItem={(session: any) => (
             <List.Item>
               <List.Item.Meta
-                title={session.title || 'Untitled'}
+                title={session.title || t('chatbot.untitled')}
                 description={
                   <Space direction="vertical" size={0}>
-                    <Text type="secondary">{session.message_count} messages</Text>
+                    <Text type="secondary">{t('chatbot.messageCount', { count: session.message_count })}</Text>
                     <Tag color={session.status === 'active' ? 'green' : 'default'}>
                       {session.status}
                     </Tag>
@@ -271,7 +270,7 @@ export default function ChatbotWidget({ sessionType = 'internal' }: { sessionTyp
               />
             </List.Item>
           )}
-          locale={{ emptyText: 'No chat history' }}
+          locale={{ emptyText: t('chatbot.noHistory') }}
         />
       </Drawer>
     </>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Table, Tag, Tabs, Tooltip, Space, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, PlusOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useJobSheetInstances, useMyJobSheetDrafts, useMyJobSheetApprovals } from '@/hooks/use-job-sheets';
 import { useDocumentApprovals, useProcessApproval } from '@/hooks/use-workflow';
 import type { JobSheetInstance } from '@/types/models.types';
@@ -23,6 +24,7 @@ function formatStatus(status: string): string {
 }
 
 export default function JobSheetListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('all');
@@ -104,7 +106,7 @@ export default function JobSheetListPage() {
 
   const columns: ColumnsType<JobSheetInstance> = [
     {
-      title: 'Work Order',
+      title: t('jobSheetList.workOrder'),
       key: 'work_order',
       render: (_, record) =>
         record.work_order?.wo_number
@@ -112,7 +114,7 @@ export default function JobSheetListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Status',
+      title: t('jobSheetList.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -122,26 +124,26 @@ export default function JobSheetListPage() {
       ),
     },
     {
-      title: 'Created',
+      title: t('jobSheetList.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Updated',
+      title: t('jobSheetList.updated'),
       dataIndex: 'updated_at',
       key: 'updated_at',
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Actions',
+      title: t('jobSheetList.actions'),
       key: 'actions',
       fixed: 'right',
       width: activeTab === 'approvals' ? 200 : 120,
       render: (_, record) => (
         <Space>
-          <Tooltip title="View">
+          <Tooltip title={t('jobSheetList.view')}>
             <Button
               type="text"
               icon={<EyeOutlined />}
@@ -150,7 +152,7 @@ export default function JobSheetListPage() {
             />
           </Tooltip>
           {record.status === 'draft' && (
-            <Tooltip title="Complete Draft">
+            <Tooltip title={t('jobSheetList.completeDraft')}>
               <Button
                 type="text"
                 icon={<PlusOutlined />}
@@ -163,17 +165,17 @@ export default function JobSheetListPage() {
           {activeTab === 'approvals' && approvalMap[record.id] && (
             <>
               <Popconfirm
-                title="Approve this job sheet?"
+                title={t('jobSheetList.approveConfirm')}
                 onConfirm={() =>
                   processApproval.mutateAsync({
                     id: approvalMap[record.id],
                     action: 'APPROVE',
                   })
                 }
-                okText="Approve"
-                cancelText="Cancel"
+                okText={t('jobSheetList.approve')}
+                cancelText={t('jobSheetList.cancel')}
               >
-                <Tooltip title="Approve">
+                <Tooltip title={t('jobSheetList.approve')}>
                   <Button
                     type="text"
                     icon={<CheckOutlined />}
@@ -184,18 +186,18 @@ export default function JobSheetListPage() {
                 </Tooltip>
               </Popconfirm>
               <Popconfirm
-                title="Reject this job sheet?"
+                title={t('jobSheetList.rejectConfirm')}
                 onConfirm={() =>
                   processApproval.mutateAsync({
                     id: approvalMap[record.id],
                     action: 'REJECT',
                   })
                 }
-                okText="Reject"
+                okText={t('jobSheetList.reject')}
                 okButtonProps={{ danger: true }}
-                cancelText="Cancel"
+                cancelText={t('jobSheetList.cancel')}
               >
-                <Tooltip title="Reject">
+                <Tooltip title={t('jobSheetList.reject')}>
                   <Button
                     type="text"
                     icon={<CloseOutlined />}
@@ -213,16 +215,16 @@ export default function JobSheetListPage() {
   ];
 
   const tabItems = [
-    { key: 'all', label: 'All Job Sheets' },
-    { key: 'drafts', label: 'Drafts' },
-    { key: 'approvals', label: 'Approvals' },
+    { key: 'all', label: t('jobSheetList.allJobSheets') },
+    { key: 'drafts', label: t('jobSheetList.drafts') },
+    { key: 'approvals', label: t('jobSheetList.approvals') },
   ];
 
   return (
     <div>
       <PageHeader
-        title="Job Sheets"
-        subtitle="Manage job sheet instances"
+        title={t('jobSheetList.title')}
+        subtitle={t('jobSheetList.subtitle')}
       />
 
       <Tabs
@@ -234,7 +236,7 @@ export default function JobSheetListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search job sheets..."
+          placeholder={t('jobSheetList.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -252,7 +254,7 @@ export default function JobSheetListPage() {
           pageSize: currentPageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} job sheets`,
+          showTotal: (total) => t('jobSheetList.totalItems', { total }),
           onChange: (newPage, newPageSize) => {
             setCurrentPage(newPage);
             setCurrentPageSize(newPageSize);

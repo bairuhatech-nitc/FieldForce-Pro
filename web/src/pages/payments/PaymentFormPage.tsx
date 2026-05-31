@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, DatePicker, InputNumber } from 'antd';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { usePayment, useCreatePayment, useUpdatePayment } from '@/hooks/use-payments';
 import { useAllInvoices } from '@/hooks/use-invoices';
@@ -9,6 +10,7 @@ import PageHeader from '@/components/common/PageHeader';
 const { TextArea } = Input;
 
 export default function PaymentFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -55,7 +57,7 @@ export default function PaymentFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('paymentForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -64,7 +66,7 @@ export default function PaymentFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Payment' : 'Record Payment'}
+        title={isEdit ? t('paymentForm.editPayment') : t('paymentForm.recordPayment')}
         onBack={() => navigate('/payments')}
       />
 
@@ -79,17 +81,17 @@ export default function PaymentFormPage() {
         >
           <Form.Item
             name="invoice_id"
-            label="Invoice"
-            rules={[{ required: true, message: 'Please select an invoice' }]}
+            label={t('paymentForm.invoice')}
+            rules={[{ required: true, message: t('paymentForm.selectInvoiceRequired') }]}
           >
             <Select
-              placeholder="Select invoice"
+              placeholder={t('paymentForm.selectInvoice')}
               allowClear
               showSearch
               optionFilterProp="label"
               options={invoices?.map((inv) => ({
                 value: inv.id,
-                label: `${inv.invoice_number || 'INV'} - ${inv.contact ? `${inv.contact.first_name} ${inv.contact.last_name}` : 'No customer'} (Total: ${inv.total || 0})`,
+                label: `${inv.invoice_number || 'INV'} - ${inv.contact ? `${inv.contact.first_name} ${inv.contact.last_name}` : t('paymentForm.noCustomer')} (${t('paymentForm.total')}: ${inv.total || 0})`,
               })) || []}
             />
           </Form.Item>
@@ -97,9 +99,9 @@ export default function PaymentFormPage() {
           <Space size="large" style={{ display: 'flex' }}>
             <Form.Item
               name="amount"
-              label="Amount"
+              label={t('paymentForm.amount')}
               style={{ flex: 1 }}
-              rules={[{ required: true, message: 'Please enter the payment amount' }]}
+              rules={[{ required: true, message: t('paymentForm.enterAmountRequired') }]}
             >
               <InputNumber
                 placeholder="0.00"
@@ -109,29 +111,29 @@ export default function PaymentFormPage() {
                 style={{ width: '100%' }}
               />
             </Form.Item>
-            <Form.Item name="method" label="Payment Method" style={{ flex: 1 }}>
-              <Select placeholder="Select method">
-                <Select.Option value="card">Card</Select.Option>
-                <Select.Option value="cash">Cash</Select.Option>
-                <Select.Option value="bank_transfer">Bank Transfer</Select.Option>
-                <Select.Option value="online">Online</Select.Option>
-                <Select.Option value="check">Check</Select.Option>
-                <Select.Option value="other">Other</Select.Option>
+            <Form.Item name="method" label={t('paymentForm.paymentMethod')} style={{ flex: 1 }}>
+              <Select placeholder={t('paymentForm.selectMethod')}>
+                <Select.Option value="card">{t('paymentForm.methods.card')}</Select.Option>
+                <Select.Option value="cash">{t('paymentForm.methods.cash')}</Select.Option>
+                <Select.Option value="bank_transfer">{t('paymentForm.methods.bankTransfer')}</Select.Option>
+                <Select.Option value="online">{t('paymentForm.methods.online')}</Select.Option>
+                <Select.Option value="check">{t('paymentForm.methods.check')}</Select.Option>
+                <Select.Option value="other">{t('paymentForm.methods.other')}</Select.Option>
               </Select>
             </Form.Item>
           </Space>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="gateway_transaction_id" label="Transaction ID" style={{ flex: 1 }}>
-              <Input placeholder="e.g. txn_1234567890" />
+            <Form.Item name="gateway_transaction_id" label={t('paymentForm.transactionId')} style={{ flex: 1 }}>
+              <Input placeholder={t('paymentForm.transactionIdPlaceholder')} />
             </Form.Item>
-            <Form.Item name="paid_at" label="Paid At" style={{ flex: 1 }}>
+            <Form.Item name="paid_at" label={t('paymentForm.paidAt')} style={{ flex: 1 }}>
               <DatePicker showTime style={{ width: '100%' }} />
             </Form.Item>
           </Space>
 
-          <Form.Item name="notes" label="Notes">
-            <TextArea rows={4} placeholder="Additional notes for this payment" />
+          <Form.Item name="notes" label={t('paymentForm.notes')}>
+            <TextArea rows={4} placeholder={t('paymentForm.notesPlaceholder')} />
           </Form.Item>
 
           <Form.Item>
@@ -141,9 +143,9 @@ export default function PaymentFormPage() {
                 htmlType="submit"
                 loading={createPayment.isPending || updatePayment.isPending}
               >
-                {isEdit ? 'Update' : 'Record Payment'}
+                {isEdit ? t('paymentForm.update') : t('paymentForm.recordPayment')}
               </Button>
-              <Button onClick={() => navigate('/payments')}>Cancel</Button>
+              <Button onClick={() => navigate('/payments')}>{t('paymentForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

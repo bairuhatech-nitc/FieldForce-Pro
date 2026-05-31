@@ -38,8 +38,8 @@ export default function CompanyListPage() {
 
   const handleDelete = (company: Company) => {
     showConfirmDialog({
-      title: 'Delete Company',
-      content: `Are you sure you want to delete ${company.name}?`,
+      title: t('companies.deleteCompany'),
+      content: t('companies.confirmDelete', { name: company.name }),
       onOk: async () => {
         await deleteCompany.mutateAsync(company.id);
       },
@@ -49,26 +49,26 @@ export default function CompanyListPage() {
 
   const columns: ColumnsType<Company> = [
     {
-      title: 'Company Name',
+      title: t('companies.columns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Industry',
+      title: t('companies.columns.industry'),
       dataIndex: 'industry',
       key: 'industry',
       render: (industry: string) => industry || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Tax ID',
+      title: t('companies.columns.taxId'),
       dataIndex: 'tax_id',
       key: 'tax_id',
       render: (tax_id: string) => tax_id || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Website',
+      title: t('companies.columns.website'),
       dataIndex: 'website',
       key: 'website',
       render: (website: string) =>
@@ -84,21 +84,21 @@ export default function CompanyListPage() {
         ),
     },
     {
-      title: 'Created',
+      title: t('companies.columns.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('companies.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="companies:read">
-            <Tooltip title="View">
+            <Tooltip title={t('common.view')}>
               <Button
                 type="text"
                 icon={<EyeOutlined />}
@@ -108,7 +108,7 @@ export default function CompanyListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="companies:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('common.edit')}>
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -118,7 +118,7 @@ export default function CompanyListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="companies:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button
                 type="text"
                 danger
@@ -137,7 +137,7 @@ export default function CompanyListPage() {
     <div>
       <PageHeader
         title={t('nav.companies')}
-        subtitle="Manage your companies"
+        subtitle={t('companies.manageCompanies')}
         extra={
           <PermissionGuard permission="companies:create">
             <Button
@@ -145,7 +145,7 @@ export default function CompanyListPage() {
               icon={<PlusOutlined />}
               onClick={() => navigate('/companies/new')}
             >
-              Add Company
+              {t('companies.addCompany')}
             </Button>
           </PermissionGuard>
         }
@@ -153,7 +153,7 @@ export default function CompanyListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search companies by name, industry, or tax ID"
+          placeholder={t('companies.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -171,7 +171,7 @@ export default function CompanyListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} companies`,
+          showTotal: (total) => t('companies.totalCompanies', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

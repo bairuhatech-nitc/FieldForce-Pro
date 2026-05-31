@@ -20,6 +20,7 @@ import {
   EyeOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useDocuments, useUploadDocument, useDeleteDocument } from '../../hooks/use-documents';
 import type { ParsedDocument } from '../../api/documents.api';
 
@@ -33,19 +34,20 @@ const STATUS_COLORS: Record<string, string> = {
   reviewed: 'blue',
 };
 
-const DOC_TYPE_OPTIONS = [
-  { value: 'invoice', label: 'Invoice' },
-  { value: 'receipt', label: 'Receipt' },
-  { value: 'contract', label: 'Contract' },
-  { value: 'report', label: 'Report' },
-  { value: 'general', label: 'General' },
-];
-
 export default function DocumentUploadPage() {
+  const { t } = useTranslation();
   const [docType, setDocType] = useState('general');
   const [filterType, setFilterType] = useState<string | undefined>();
   const [filterStatus, setFilterStatus] = useState<string | undefined>();
   const [previewDoc, setPreviewDoc] = useState<ParsedDocument | null>(null);
+
+  const DOC_TYPE_OPTIONS = [
+    { value: 'invoice', label: t('documentUpload.invoice') },
+    { value: 'receipt', label: t('documentUpload.receipt') },
+    { value: 'contract', label: t('documentUpload.contract') },
+    { value: 'report', label: t('documentUpload.report') },
+    { value: 'general', label: t('documentUpload.general') },
+  ];
 
   const { data: documentsData, isLoading } = useDocuments({
     document_type: filterType,
@@ -60,7 +62,7 @@ export default function DocumentUploadPage() {
 
   const columns = [
     {
-      title: 'File Name',
+      title: t('documentUpload.fileName'),
       dataIndex: 'file_name',
       key: 'file_name',
       render: (text: string) => (
@@ -71,13 +73,13 @@ export default function DocumentUploadPage() {
       ),
     },
     {
-      title: 'Type',
+      title: t('documentUpload.type'),
       dataIndex: 'document_type',
       key: 'document_type',
       render: (type: string) => <Tag>{type}</Tag>,
     },
     {
-      title: 'Status',
+      title: t('documentUpload.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -85,19 +87,19 @@ export default function DocumentUploadPage() {
       ),
     },
     {
-      title: 'Confidence',
+      title: t('documentUpload.confidence'),
       dataIndex: 'confidence',
       key: 'confidence',
       render: (val: number) =>
         val ? <Text>{(val * 100).toFixed(1)}%</Text> : <Text type="secondary">-</Text>,
     },
     {
-      title: 'Pages',
+      title: t('documentUpload.pages'),
       dataIndex: 'pages',
       key: 'pages',
     },
     {
-      title: 'Actions',
+      title: t('documentUpload.actions'),
       key: 'actions',
       render: (_: any, record: ParsedDocument) => (
         <Space>
@@ -106,7 +108,7 @@ export default function DocumentUploadPage() {
             icon={<EyeOutlined />}
             onClick={() => setPreviewDoc(record)}
           >
-            Preview
+            {t('documentUpload.preview')}
           </Button>
           <Button
             size="small"
@@ -114,7 +116,7 @@ export default function DocumentUploadPage() {
             icon={<DeleteOutlined />}
             onClick={() => deleteDoc.mutate(record.id)}
           >
-            Delete
+            {t('documentUpload.delete')}
           </Button>
         </Space>
       ),
@@ -123,11 +125,11 @@ export default function DocumentUploadPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>Document AI</Title>
+      <Title level={3}>{t('documentUpload.title')}</Title>
 
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Card title="Upload Document">
+          <Card title={t('documentUpload.uploadDocument')}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Space>
                 <Select
@@ -149,7 +151,7 @@ export default function DocumentUploadPage() {
                     type="primary"
                     loading={uploadDoc.isPending}
                   >
-                    Upload & Parse
+                    {t('documentUpload.uploadAndParse')}
                   </Button>
                 </Upload>
               </Space>
@@ -159,11 +161,11 @@ export default function DocumentUploadPage() {
 
         <Col span={24}>
           <Card
-            title="Parsed Documents"
+            title={t('documentUpload.parsedDocuments')}
             extra={
               <Space>
                 <Select
-                  placeholder="Filter type"
+                  placeholder={t('documentUpload.filterType')}
                   allowClear
                   value={filterType}
                   onChange={setFilterType}
@@ -171,16 +173,16 @@ export default function DocumentUploadPage() {
                   style={{ width: 130 }}
                 />
                 <Select
-                  placeholder="Filter status"
+                  placeholder={t('documentUpload.filterStatus')}
                   allowClear
                   value={filterStatus}
                   onChange={setFilterStatus}
                   options={[
-                    { value: 'pending', label: 'Pending' },
-                    { value: 'processing', label: 'Processing' },
-                    { value: 'completed', label: 'Completed' },
-                    { value: 'failed', label: 'Failed' },
-                    { value: 'reviewed', label: 'Reviewed' },
+                    { value: 'pending', label: t('documentUpload.statusOptions.pending') },
+                    { value: 'processing', label: t('documentUpload.statusOptions.processing') },
+                    { value: 'completed', label: t('documentUpload.statusOptions.completed') },
+                    { value: 'failed', label: t('documentUpload.statusOptions.failed') },
+                    { value: 'reviewed', label: t('documentUpload.statusOptions.reviewed') },
                   ]}
                   style={{ width: 130 }}
                 />
@@ -192,15 +194,14 @@ export default function DocumentUploadPage() {
               columns={columns}
               rowKey="id"
               loading={isLoading}
-              locale={{ emptyText: <Empty description="No documents uploaded yet" /> }}
+              locale={{ emptyText: <Empty description={t('documentUpload.noDocuments')} /> }}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* Preview Modal */}
       <Modal
-        title={previewDoc?.file_name || 'Document Preview'}
+        title={previewDoc?.file_name || t('documentUpload.documentPreview')}
         open={!!previewDoc}
         onCancel={() => setPreviewDoc(null)}
         width={700}
@@ -209,18 +210,18 @@ export default function DocumentUploadPage() {
         {previewDoc && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <Descriptions bordered size="small" column={2}>
-              <Descriptions.Item label="Type">{previewDoc.document_type}</Descriptions.Item>
-              <Descriptions.Item label="Status">
+              <Descriptions.Item label={t('documentUpload.type')}>{previewDoc.document_type}</Descriptions.Item>
+              <Descriptions.Item label={t('documentUpload.status')}>
                 <Tag color={STATUS_COLORS[previewDoc.status]}>{previewDoc.status}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Confidence">
+              <Descriptions.Item label={t('documentUpload.confidence')}>
                 {previewDoc.confidence ? `${(previewDoc.confidence * 100).toFixed(1)}%` : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Pages">{previewDoc.pages || '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('documentUpload.pages')}>{previewDoc.pages || '-'}</Descriptions.Item>
             </Descriptions>
 
             {previewDoc.extracted_fields && Object.keys(previewDoc.extracted_fields).length > 0 && (
-              <Card title="Extracted Fields" size="small">
+              <Card title={t('documentUpload.extractedFields')} size="small">
                 <Descriptions bordered size="small" column={1}>
                   {Object.entries(previewDoc.extracted_fields).map(([key, value]) => (
                     <Descriptions.Item key={key} label={key}>
@@ -232,7 +233,7 @@ export default function DocumentUploadPage() {
             )}
 
             {previewDoc.extracted_text && (
-              <Card title="Extracted Text" size="small">
+              <Card title={t('documentUpload.extractedText')} size="small">
                 <Paragraph
                   style={{ maxHeight: 200, overflow: 'auto', whiteSpace: 'pre-wrap' }}
                 >

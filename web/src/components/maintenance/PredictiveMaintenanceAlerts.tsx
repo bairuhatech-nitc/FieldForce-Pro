@@ -5,6 +5,7 @@ import {
   ToolOutlined,
   CalendarOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -71,10 +72,12 @@ export default function PredictiveMaintenanceAlerts({
   onCreateWorkOrder,
   onViewDetails,
 }: PredictiveMaintenanceAlertsProps) {
+  const { t } = useTranslation();
+
   if (!alerts.length && !loading) {
     return (
-      <Card title={<><AlertOutlined /> Predictive Maintenance Alerts</>}>
-        <Empty description="No active alerts. All equipment within normal parameters." />
+      <Card title={<><AlertOutlined /> {t('predictiveMaintenance.title')}</>}>
+        <Empty description={t('predictiveMaintenance.noActiveAlerts')} />
       </Card>
     );
   }
@@ -84,7 +87,7 @@ export default function PredictiveMaintenanceAlerts({
       title={
         <Space>
           <AlertOutlined />
-          <span>Predictive Maintenance Alerts</span>
+          <span>{t('predictiveMaintenance.title')}</span>
           <Tag color="red">{alerts.length}</Tag>
         </Space>
       }
@@ -104,29 +107,29 @@ export default function PredictiveMaintenanceAlerts({
                   icon={<ToolOutlined />}
                   onClick={() => onCreateWorkOrder?.(alert)}
                 >
-                  Create WO
+                  {t('predictiveMaintenance.createWo')}
                 </Button>,
                 <Button
                   key="view"
                   size="small"
                   onClick={() => onViewDetails?.(alert)}
                 >
-                  Details
+                  {t('predictiveMaintenance.details')}
                 </Button>,
               ]}
             >
               <List.Item.Meta
                 avatar={
                   <Tag color={config.color} style={{ marginTop: 4 }}>
-                    <WarningOutlined /> {config.label}
+                    <WarningOutlined /> {t(`predictiveMaintenance.severity.${alert.risk_level}`)}
                   </Tag>
                 }
                 title={
                   <Space>
                     <Text strong>{alert.equipment_name}</Text>
-                    <Text type="secondary">Health: {alert.health_score}%</Text>
+                    <Text type="secondary">{t('predictiveMaintenance.health', { score: alert.health_score })}</Text>
                     <Text type="danger">
-                      Failure Risk: {(alert.failure_probability * 100).toFixed(0)}%
+                      {t('predictiveMaintenance.failureRisk', { probability: (alert.failure_probability * 100).toFixed(0) })}
                     </Text>
                   </Space>
                 }
@@ -135,7 +138,7 @@ export default function PredictiveMaintenanceAlerts({
                     <Text>{alert.recommended_action}</Text>
                     {alert.predicted_failure_date && (
                       <Text type="danger">
-                        <CalendarOutlined /> Predicted failure: {alert.predicted_failure_date}
+                        <CalendarOutlined /> {t('predictiveMaintenance.predictedFailure', { date: alert.predicted_failure_date })}
                       </Text>
                     )}
                   </Space>

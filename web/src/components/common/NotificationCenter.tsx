@@ -7,6 +7,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useUnreadNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead, useDeleteNotification } from '@/hooks/use-notifications';
 import { formatRelative } from '@/utils/format-date';
 import type { Notification } from '@/types/models.types';
@@ -31,6 +32,7 @@ const notificationTypeIcons: Record<string, string> = {
 };
 
 export default function NotificationCenter() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [drawerVisible, setDrawerVisible] = useState(false);
 
@@ -42,12 +44,10 @@ export default function NotificationCenter() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const handleNotificationClick = (notification: Notification) => {
-    // Mark as read
     if (!notification.is_read) {
       markAsRead.mutate(notification.id);
     }
 
-    // Parse data — it may arrive as a string in some environments
     let data: Record<string, unknown> = {};
     if (notification.data) {
       if (typeof notification.data === 'string') {
@@ -57,16 +57,6 @@ export default function NotificationCenter() {
       }
     }
 
-    // Debug log — remove after confirming navigation works
-    console.log('[NotificationCenter] clicked:', {
-      id: notification.id,
-      type: notification.type,
-      rawData: notification.data,
-      parsedData: data,
-    });
-
-    // Resolve entity_type and entity_id (new format)
-    // Fall back to document_type → entity_type mapping (legacy format)
     const docTypeToEntityType: Record<string, string> = {
       WORK_ORDER: 'work_order',
       SERVICE_REQUEST: 'service_request',
@@ -88,9 +78,6 @@ export default function NotificationCenter() {
       (data.document_id as string) ||
       null;
 
-    console.log('[NotificationCenter] resolved:', { entityType, entityId });
-
-    // Handle custom navigate_to actions before falling through to routeMap
     if (data.navigate_to === 'view_appointment' && data.appointment_id) {
       setDrawerVisible(false);
       navigate(`/scheduling?appointment_id=${data.appointment_id as string}`);
@@ -106,13 +93,11 @@ export default function NotificationCenter() {
       navigate('/scheduling?tab=new');
       return;
     }
-    // Approval notifications for SCHEDULE → Document Approvals page (technician accepts/rejects there)
     if (notification.type === 'approval_required' && data.document_type === 'SCHEDULE') {
       setDrawerVisible(false);
       navigate('/workflow/document-approvals');
       return;
     }
-    // Estimate internal approval notifications → Estimates list Approve / Reject tab
     if (notification.type === 'approval_required' && data.document_type === 'ESTIMATE_APPROVAL') {
       setDrawerVisible(false);
       navigate('/estimates?tab=review');
@@ -142,13 +127,10 @@ export default function NotificationCenter() {
       };
 
       const route = routeMap[entityType];
-      console.log('[NotificationCenter] navigating to:', route);
       if (route) {
         setDrawerVisible(false);
         navigate(route);
       }
-    } else {
-      console.warn('[NotificationCenter] no entity_type or entity_id found — cannot navigate');
     }
   };
 
@@ -173,7 +155,7 @@ export default function NotificationCenter() {
       <Drawer
         title={
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Notifications</span>
+            <span>{t('notificationCenter.notifications')}</span>
             {unreadCount > 0 && (
               <Button
                 type="link"
@@ -182,7 +164,7 @@ export default function NotificationCenter() {
                 onClick={handleMarkAllAsRead}
                 loading={markAllAsRead.isPending}
               >
-                Mark all as read
+                {t('notificationCenter.markAllAsRead')}
               </Button>
             )}
           </div>
@@ -195,7 +177,7 @@ export default function NotificationCenter() {
       >
         {notifications.length === 0 ? (
           <Empty
-            description="No notifications"
+            description={t('notificationCenter.noNotifications')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             style={{ marginTop: 50 }}
           />
@@ -216,7 +198,7 @@ export default function NotificationCenter() {
                 }}
                 onClick={() => handleNotificationClick(notification)}
                 actions={[
-                  <Tooltip title="Delete">
+                  <Tooltip title={t('notificationCenter.delete')}>
                     <Button
                       type="text"
                       size="small"
@@ -239,7 +221,7 @@ export default function NotificationCenter() {
                       <span style={{ fontWeight: notification.is_read ? 400 : 600 }}>
                         {notification.title}
                       </span>
-                      {!notification.is_read && <Tag color="blue">New</Tag>}
+                      {!notification.is_read && <Tag color="blue">{t('notificationCenter.new')}</Tag>}
                     </Space>
                   }
                   description={

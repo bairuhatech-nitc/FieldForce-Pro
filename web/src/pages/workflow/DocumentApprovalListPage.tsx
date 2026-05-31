@@ -14,6 +14,7 @@ import {
 import type { DocumentApproval } from '@/types/workflow.types';
 import ApprovalDetailsModal from './components/ApprovalDetailsModal';
 import DocumentTimeline from './components/DocumentTimeline';
+import { useTranslation } from 'react-i18next'; // Rule 1
 
 const statusColors: Record<string, string> = {
   PENDING: 'orange',
@@ -60,6 +61,7 @@ const documentRoutes: Record<string, (docId: string) => string> = {
 
 export default function DocumentApprovalListPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation(); // Rule 2
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -94,21 +96,62 @@ export default function DocumentApprovalListPage() {
     setDetailsModalOpen(true);
   };
 
+  // Helper for translating status display in tags
+  const getTranslatedStatusLabel = (status: string) => {
+    switch (status) {
+      case 'PENDING': return t('documentApprovals.statusOptions.pending');
+      case 'APPROVED': return t('documentApprovals.statusOptions.approved');
+      case 'REJECTED': return t('documentApprovals.statusOptions.rejected');
+      case 'SKIPPED': return t('documentApprovals.statusOptions.skipped');
+      case 'CORRECTION_REQUIRED': return t('documentApprovals.statusOptions.correctionRequired');
+      default: return status.replace(/_/g, ' '); // Fallback for unknown statuses
+    }
+  };
+
+  // Helper for translating document type display in tags
+  const getTranslatedDocumentTypeLabel = (type: string) => {
+    switch (type) {
+      case 'INVOICE': return t('documentApprovals.documentTypeOptions.invoice');
+      case 'QUOTATION': return t('documentApprovals.documentTypeOptions.quotation');
+      case 'VENDOR': return t('documentApprovals.documentTypeOptions.vendor');
+      case 'CONTRACT': return t('documentApprovals.documentTypeOptions.contract');
+      case 'DRAFT_INVOICE': return t('documentApprovals.documentTypeOptions.draftInvoice');
+      case 'PRQ': return t('documentApprovals.documentTypeOptions.prq');
+      case 'PO': return t('documentApprovals.documentTypeOptions.po');
+      case 'PROFORMA': return t('documentApprovals.documentTypeOptions.proforma');
+      case 'PAYMENT_REQUEST': return t('documentApprovals.documentTypeOptions.paymentRequest');
+      case 'SERVICE_CONTRACT': return t('documentApprovals.documentTypeOptions.serviceContract');
+      case 'PETTY_CASH': return t('documentApprovals.documentTypeOptions.pettyCash');
+      case 'PURCHASE_REQUEST': return t('documentApprovals.documentTypeOptions.purchaseRequest');
+      case 'SERVICE_REQUEST': return t('documentApprovals.documentTypeOptions.serviceRequest');
+      case 'PETTY_CASH_REPORT': return t('documentApprovals.documentTypeOptions.pettyCashReport');
+      case 'RESOURCE_BOOKING': return t('documentApprovals.documentTypeOptions.resourceBooking');
+      case 'PURCHASE_ORDER': return t('documentApprovals.documentTypeOptions.purchaseOrder');
+      case 'WORK_ORDER': return t('documentApprovals.documentTypeOptions.workOrder');
+      case 'ESTIMATE': return t('documentApprovals.documentTypeOptions.estimate');
+      case 'ESTIMATE_APPROVAL': return t('documentApprovals.documentTypeOptions.estimateApproval');
+      case 'EXPENSE': return t('documentApprovals.documentTypeOptions.expense');
+      case 'SCHEDULE': return t('documentApprovals.documentTypeOptions.schedule');
+      case 'FIELD_WORKFLOW': return t('documentApprovals.documentTypeOptions.fieldWorkflow');
+      default: return type.replace(/_/g, ' '); // Fallback for unknown document types
+    }
+  };
+
   const columns: ColumnsType<DocumentApproval> = [
     {
-      title: 'Document',
+      title: t('documentApprovals.columns.document'),
       key: 'document',
       render: (_: unknown, record) => {
         const route = documentRoutes[record.document_type];
         return (
           <div>
             <Tag color={documentTypeColors[record.document_type] || 'default'}>
-              {record.document_type.replace(/_/g, ' ')}
+              {getTranslatedDocumentTypeLabel(record.document_type)}
             </Tag>
             <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
               {record.document_id.slice(0, 8)}...
               {route && (
-                <Tooltip title="Go to document">
+                <Tooltip title={t('documentApprovals.goToDocumentTooltip')}>
                   <Button
                     type="link"
                     size="small"
@@ -124,12 +167,12 @@ export default function DocumentApprovalListPage() {
       },
     },
     {
-      title: 'Workflow',
+      title: t('documentApprovals.columns.workflow'),
       key: 'workflow',
       render: (_: unknown, record) => record.workflow_template?.name || '-',
     },
     {
-      title: 'Step',
+      title: t('documentApprovals.columns.step'),
       dataIndex: 'order_no',
       key: 'order_no',
       width: 70,
@@ -137,7 +180,7 @@ export default function DocumentApprovalListPage() {
       render: (v: number) => `#${v}`,
     },
     {
-      title: 'Approver',
+      title: t('documentApprovals.columns.approver'),
       key: 'approver',
       render: (_: unknown, record) =>
         record.approver
@@ -145,32 +188,32 @@ export default function DocumentApprovalListPage() {
           : record.approver_id.slice(0, 8),
     },
     {
-      title: 'Status',
+      title: t('documentApprovals.columns.status'),
       dataIndex: 'status',
       key: 'status',
       width: 140,
       render: (status: string) => (
-        <Tag color={statusColors[status] || 'default'}>{status.replace(/_/g, ' ')}</Tag>
+        <Tag color={statusColors[status] || 'default'}>{getTranslatedStatusLabel(status)}</Tag>
       ),
     },
     {
-      title: 'Due Date',
+      title: t('documentApprovals.columns.dueDate'),
       dataIndex: 'due_date',
       key: 'due_date',
       render: (date: string) => (date ? formatDateTime(date) : '-'),
     },
     {
-      title: 'Action Date',
+      title: t('documentApprovals.columns.actionDate'),
       dataIndex: 'action_date',
       key: 'action_date',
       render: (date: string) => (date ? formatDateTime(date) : '-'),
     },
     {
-      title: 'Actions',
+      title: t('documentApprovals.columns.actions'),
       key: 'actions',
       width: 80,
       render: (_: unknown, record) => (
-        <Tooltip title="View Details">
+        <Tooltip title={t('documentApprovals.viewDetailsTooltip')}>
           <Button
             type="text"
             size="small"
@@ -184,14 +227,14 @@ export default function DocumentApprovalListPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2 style={{ marginBottom: 16 }}>Document Approvals</h2>
+      <h2 style={{ marginBottom: 16 }}>{t('documentApprovals.pageTitle')}</h2>
 
       <Tabs
         activeKey={activeTab}
         onChange={handleTabChange}
         items={[
-          { key: 'all', label: 'All Approvals' },
-          { key: 'sent-to-me', label: 'Sent to Me' },
+          { key: 'all', label: t('documentApprovals.allApprovalsTab') },
+          { key: 'sent-to-me', label: t('documentApprovals.sentToMeTab') },
         ]}
         style={{ marginBottom: 16 }}
       />
@@ -202,48 +245,48 @@ export default function DocumentApprovalListPage() {
             {activeTab === 'all' && (
               <>
                 <Select
-                  placeholder="Filter by status"
+                  placeholder={t('documentApprovals.filterByStatusPlaceholder')}
                   allowClear
                   style={{ width: 180 }}
                   value={statusFilter}
                   onChange={(v) => { setStatusFilter(v); setPage(1); }}
                   options={[
-                    { value: 'PENDING', label: 'Pending' },
-                    { value: 'APPROVED', label: 'Approved' },
-                    { value: 'REJECTED', label: 'Rejected' },
-                    { value: 'SKIPPED', label: 'Skipped' },
-                    { value: 'CORRECTION_REQUIRED', label: 'Correction Required' },
+                    { value: 'PENDING', label: t('documentApprovals.statusOptions.pending') },
+                    { value: 'APPROVED', label: t('documentApprovals.statusOptions.approved') },
+                    { value: 'REJECTED', label: t('documentApprovals.statusOptions.rejected') },
+                    { value: 'SKIPPED', label: t('documentApprovals.statusOptions.skipped') },
+                    { value: 'CORRECTION_REQUIRED', label: t('documentApprovals.statusOptions.correctionRequired') },
                   ]}
                 />
                 <Select
-                  placeholder="Filter by document type"
+                  placeholder={t('documentApprovals.filterByDocumentTypePlaceholder')}
                   allowClear
                   style={{ width: 200 }}
                   value={docTypeFilter}
                   onChange={(v) => { setDocTypeFilter(v); setPage(1); }}
                   options={[
-                    { value: 'INVOICE', label: 'Invoice' },
-                    { value: 'QUOTATION', label: 'Quotation' },
-                    { value: 'VENDOR', label: 'Vendor' },
-                    { value: 'CONTRACT', label: 'Contract' },
-                    { value: 'DRAFT_INVOICE', label: 'Draft Invoice' },
-                    { value: 'PRQ', label: 'PRQ' },
-                    { value: 'PO', label: 'PO' },
-                    { value: 'PROFORMA', label: 'Proforma' },
-                    { value: 'PAYMENT_REQUEST', label: 'Payment Request' },
-                    { value: 'SERVICE_CONTRACT', label: 'Service Contract' },
-                    { value: 'PETTY_CASH', label: 'Petty Cash' },
-                    { value: 'PURCHASE_REQUEST', label: 'Purchase Request' },
-                    { value: 'SERVICE_REQUEST', label: 'Service Request' },
-                    { value: 'PETTY_CASH_REPORT', label: 'Petty Cash Report' },
-                    { value: 'RESOURCE_BOOKING', label: 'Resource Booking' },
-                    { value: 'PURCHASE_ORDER', label: 'Purchase Order' },
-                    { value: 'WORK_ORDER', label: 'Work Order' },
-                    { value: 'ESTIMATE', label: 'Estimate' },
-                    { value: 'ESTIMATE_APPROVAL', label: 'Estimate Approval' },
-                    { value: 'EXPENSE', label: 'Expense' },
-                    { value: 'SCHEDULE', label: 'Schedule' },
-                    { value: 'FIELD_WORKFLOW', label: 'Field Workflow' },
+                    { value: 'INVOICE', label: t('documentApprovals.documentTypeOptions.invoice') },
+                    { value: 'QUOTATION', label: t('documentApprovals.documentTypeOptions.quotation') },
+                    { value: 'VENDOR', label: t('documentApprovals.documentTypeOptions.vendor') },
+                    { value: 'CONTRACT', label: t('documentApprovals.documentTypeOptions.contract') },
+                    { value: 'DRAFT_INVOICE', label: t('documentApprovals.documentTypeOptions.draftInvoice') },
+                    { value: 'PRQ', label: t('documentApprovals.documentTypeOptions.prq') },
+                    { value: 'PO', label: t('documentApprovals.documentTypeOptions.po') },
+                    { value: 'PROFORMA', label: t('documentApprovals.documentTypeOptions.proforma') },
+                    { value: 'PAYMENT_REQUEST', label: t('documentApprovals.documentTypeOptions.paymentRequest') },
+                    { value: 'SERVICE_CONTRACT', label: t('documentApprovals.documentTypeOptions.serviceContract') },
+                    { value: 'PETTY_CASH', label: t('documentApprovals.documentTypeOptions.pettyCash') },
+                    { value: 'PURCHASE_REQUEST', label: t('documentApprovals.documentTypeOptions.purchaseRequest') },
+                    { value: 'SERVICE_REQUEST', label: t('documentApprovals.documentTypeOptions.serviceRequest') },
+                    { value: 'PETTY_CASH_REPORT', label: t('documentApprovals.documentTypeOptions.pettyCashReport') },
+                    { value: 'RESOURCE_BOOKING', label: t('documentApprovals.documentTypeOptions.resourceBooking') },
+                    { value: 'PURCHASE_ORDER', label: t('documentApprovals.documentTypeOptions.purchaseOrder') },
+                    { value: 'WORK_ORDER', label: t('documentApprovals.documentTypeOptions.workOrder') },
+                    { value: 'ESTIMATE', label: t('documentApprovals.documentTypeOptions.estimate') },
+                    { value: 'ESTIMATE_APPROVAL', label: t('documentApprovals.documentTypeOptions.estimateApproval') },
+                    { value: 'EXPENSE', label: t('documentApprovals.documentTypeOptions.expense') },
+                    { value: 'SCHEDULE', label: t('documentApprovals.documentTypeOptions.schedule') },
+                    { value: 'FIELD_WORKFLOW', label: t('documentApprovals.documentTypeOptions.fieldWorkflow') },
                   ]}
                 />
               </>
@@ -267,7 +310,7 @@ export default function DocumentApprovalListPage() {
             pageSize,
             total: currentQuery.data?.meta?.itemCount || 0,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} approvals`,
+            showTotal: (total) => t('documentApprovals.paginationTotal', { total }),
             onChange: (p, ps) => {
               setPage(p);
               setPageSize(ps);

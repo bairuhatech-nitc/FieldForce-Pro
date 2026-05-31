@@ -10,6 +10,7 @@ import {
   CheckCircleOutlined, StopOutlined, PlayCircleOutlined,
   EyeOutlined, SearchOutlined, ClusterOutlined, LinkOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 import { usePlatformHealth, useAllTenants, useSuspendTenant, useActivateTenant } from '@/hooks/use-super-admin';
 import type { TenantSummary } from '@/api/super-admin.api';
@@ -20,6 +21,7 @@ import MagicLinkModal from '@/components/magic-links/MagicLinkModal';
 const { Text } = Typography;
 
 export default function SuperAdminDashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [magicLinkModal, setMagicLinkModal] = useState<{ link: string; expiresAt: string; purpose: string } | null>(null);
@@ -54,7 +56,7 @@ export default function SuperAdminDashboardPage() {
 
   const columns: ColumnsType<TenantSummary> = [
     {
-      title: 'Company',
+      title: t('superAdminDashboard.company'),
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
@@ -66,21 +68,21 @@ export default function SuperAdminDashboardPage() {
       ),
     },
     {
-      title: 'Admin Email',
+      title: t('superAdminDashboard.adminEmail'),
       dataIndex: 'admin_email',
       key: 'admin_email',
       render: (email: string | null) =>
         email ? <Text copyable>{email}</Text> : <Text type="secondary">—</Text>,
     },
     {
-      title: 'Registered',
+      title: t('superAdminDashboard.registered'),
       dataIndex: 'created_at',
       key: 'created_at',
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       render: (date: string) => formatDateTime(date),
     },
     {
-      title: 'Users',
+      title: t('superAdminDashboard.users'),
       dataIndex: 'user_count',
       key: 'user_count',
       sorter: (a, b) => a.user_count - b.user_count,
@@ -92,7 +94,7 @@ export default function SuperAdminDashboardPage() {
       ),
     },
     {
-      title: 'Service Requests',
+      title: t('superAdminDashboard.serviceRequests'),
       dataIndex: 'service_request_count',
       key: 'service_request_count',
       sorter: (a, b) => a.service_request_count - b.service_request_count,
@@ -104,7 +106,7 @@ export default function SuperAdminDashboardPage() {
       ),
     },
     {
-      title: 'Plan',
+      title: t('superAdminDashboard.plan'),
       dataIndex: 'subscription_plan',
       key: 'subscription_plan',
       render: (plan: string) => (
@@ -114,40 +116,40 @@ export default function SuperAdminDashboardPage() {
       ),
     },
     {
-      title: 'Status',
+      title: t('superAdminDashboard.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       filters: [
-        { text: 'Active', value: true },
-        { text: 'Suspended', value: false },
+        { text: t('superAdminDashboard.active'), value: true },
+        { text: t('superAdminDashboard.suspended'), value: false },
       ],
       onFilter: (value, record) => record.is_active === value,
       render: (isActive: boolean) =>
         isActive ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">Active</Tag>
+          <Tag icon={<CheckCircleOutlined />} color="success">{t('superAdminDashboard.active')}</Tag>
         ) : (
-          <Tag icon={<StopOutlined />} color="error">Suspended</Tag>
+          <Tag icon={<StopOutlined />} color="error">{t('superAdminDashboard.suspended')}</Tag>
         ),
     },
     {
-      title: 'Actions',
+      title: t('superAdminDashboard.actions'),
       key: 'actions',
       fixed: 'right',
       width: 260,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View Tenant Dashboard">
+          <Tooltip title={t('superAdminDashboard.viewTenantDashboard')}>
             <Button
               type="primary"
               size="small"
               icon={<EyeOutlined />}
               onClick={() => navigate(`/admin/tenants/${record.id}`)}
             >
-              Access Dashboard
+              {t('superAdminDashboard.accessDashboard')}
             </Button>
           </Tooltip>
           {record.admin_user_id && (
-            <Tooltip title="Send Onboarding Link to Company Admin">
+            <Tooltip title={t('superAdminDashboard.sendOnboardingLink')}>
               <Button
                 type="default"
                 size="small"
@@ -155,30 +157,30 @@ export default function SuperAdminDashboardPage() {
                 loading={generateLink.isPending}
                 onClick={() => handleSendOnboardingLink(record.admin_user_id!)}
               >
-                Onboarding Link
+                {t('superAdminDashboard.onboardingLink')}
               </Button>
             </Tooltip>
           )}
           {record.is_active ? (
             <Popconfirm
-              title="Suspend Tenant"
-              description={`Suspend ${record.name}? Their users will be unable to log in.`}
+              title={t('superAdminDashboard.suspendTenant')}
+              description={t('superAdminDashboard.confirmSuspend', { name: record.name })}
               onConfirm={() => suspendTenant.mutate(record.id)}
-              okText="Suspend"
+              okText={t('superAdminDashboard.suspend')}
               okButtonProps={{ danger: true }}
             >
-              <Tooltip title="Suspend">
+              <Tooltip title={t('superAdminDashboard.suspend')}>
                 <Button type="text" danger size="small" icon={<StopOutlined />} />
               </Tooltip>
             </Popconfirm>
           ) : (
             <Popconfirm
-              title="Reactivate Tenant"
-              description={`Reactivate ${record.name}?`}
+              title={t('superAdminDashboard.reactivateTenant')}
+              description={t('superAdminDashboard.confirmReactivate', { name: record.name })}
               onConfirm={() => activateTenant.mutate(record.id)}
-              okText="Reactivate"
+              okText={t('superAdminDashboard.reactivate')}
             >
-              <Tooltip title="Reactivate">
+              <Tooltip title={t('superAdminDashboard.reactivate')}>
                 <Button type="text" size="small" icon={<PlayCircleOutlined />} style={{ color: '#52c41a' }} />
               </Tooltip>
             </Popconfirm>
@@ -191,16 +193,15 @@ export default function SuperAdminDashboardPage() {
   return (
     <div>
       <PageHeader
-        title="Super Admin Dashboard"
-        subtitle="Platform-wide management — all tenants and global statistics"
+        title={t('superAdminDashboard.title')}
+        subtitle={t('superAdminDashboard.subtitle')}
       />
 
-      {/* Platform Stats */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={6}>
           <Card loading={healthLoading}>
             <Statistic
-              title="Total Tenants"
+              title={t('superAdminDashboard.totalTenants')}
               value={health?.tenants.total ?? 0}
               prefix={<ClusterOutlined style={{ color: '#1677ff' }} />}
             />
@@ -209,7 +210,7 @@ export default function SuperAdminDashboardPage() {
         <Col xs={12} sm={6}>
           <Card loading={healthLoading}>
             <Statistic
-              title="Active Tenants"
+              title={t('superAdminDashboard.activeTenants')}
               value={health?.tenants.active ?? 0}
               prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
               valueStyle={{ color: '#52c41a' }}
@@ -219,7 +220,7 @@ export default function SuperAdminDashboardPage() {
         <Col xs={12} sm={6}>
           <Card loading={healthLoading}>
             <Statistic
-              title="Total Users"
+              title={t('superAdminDashboard.totalUsers')}
               value={health?.users.total ?? 0}
               prefix={<TeamOutlined style={{ color: '#722ed1' }} />}
             />
@@ -228,7 +229,7 @@ export default function SuperAdminDashboardPage() {
         <Col xs={12} sm={6}>
           <Card loading={healthLoading}>
             <Statistic
-              title="Service Requests"
+              title={t('superAdminDashboard.serviceRequests')}
               value={health?.service_requests.total ?? 0}
               prefix={<FileTextOutlined style={{ color: '#fa8c16' }} />}
             />
@@ -236,10 +237,9 @@ export default function SuperAdminDashboardPage() {
         </Col>
       </Row>
 
-      {/* Search */}
       <div style={{ marginBottom: 16 }}>
         <Input
-          placeholder="Search by company name, admin email, or slug…"
+          placeholder={t('superAdminDashboard.searchPlaceholder')}
           prefix={<SearchOutlined />}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -248,7 +248,6 @@ export default function SuperAdminDashboardPage() {
         />
       </div>
 
-      {/* Tenant Table */}
       <Table
         columns={columns}
         dataSource={filtered}
@@ -257,7 +256,7 @@ export default function SuperAdminDashboardPage() {
         pagination={{
           pageSize: 20,
           showSizeChanger: true,
-          showTotal: (total) => `${total} tenant${total !== 1 ? 's' : ''}`,
+          showTotal: (total) => t('superAdminDashboard.tableTotal', { total }),
         }}
         scroll={{ x: 1200 }}
       />

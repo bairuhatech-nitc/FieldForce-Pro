@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, Descriptions, Button, Space, Skeleton, Tag } from 'antd';
 import { DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTimesheet, useDeleteTimesheet, useApproveTimesheet, useRejectTimesheet } from '@/hooks/use-timesheets';
@@ -18,6 +19,7 @@ function formatStatus(status: string): string {
 }
 
 export default function TimesheetDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: timesheet, isLoading } = useTimesheet(id!);
@@ -28,8 +30,8 @@ export default function TimesheetDetailPage() {
   const handleDelete = () => {
     if (!timesheet) return;
     showConfirmDialog({
-      title: 'Delete Timesheet',
-      content: 'Are you sure you want to delete this timesheet entry?',
+      title: t('timesheetDetail.deleteTitle'),
+      content: t('timesheetDetail.deleteConfirm'),
       onOk: async () => {
         await deleteTimesheet.mutateAsync(timesheet.id);
         navigate('/timesheets');
@@ -41,8 +43,8 @@ export default function TimesheetDetailPage() {
   const handleApprove = () => {
     if (!timesheet) return;
     showConfirmDialog({
-      title: 'Approve Timesheet',
-      content: 'Are you sure you want to approve this timesheet?',
+      title: t('timesheetDetail.approveTitle'),
+      content: t('timesheetDetail.approveConfirm'),
       onOk: async () => {
         await approveTimesheet.mutateAsync(timesheet.id);
       },
@@ -52,8 +54,8 @@ export default function TimesheetDetailPage() {
   const handleReject = () => {
     if (!timesheet) return;
     showConfirmDialog({
-      title: 'Reject Timesheet',
-      content: 'Are you sure you want to reject this timesheet?',
+      title: t('timesheetDetail.rejectTitle'),
+      content: t('timesheetDetail.rejectConfirm'),
       onOk: async () => {
         await rejectTimesheet.mutateAsync(timesheet.id);
       },
@@ -64,7 +66,7 @@ export default function TimesheetDetailPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Timesheet Details" />
+        <PageHeader title={t('timesheetDetail.title')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -73,8 +75,8 @@ export default function TimesheetDetailPage() {
   if (!timesheet) {
     return (
       <div>
-        <PageHeader title="Timesheet Not Found" />
-        <Card>Timesheet not found</Card>
+        <PageHeader title={t('timesheetDetail.notFoundTitle')} />
+        <Card>{t('timesheetDetail.notFound')}</Card>
       </div>
     );
   }
@@ -82,7 +84,7 @@ export default function TimesheetDetailPage() {
   return (
     <div>
       <PageHeader
-        title="Timesheet Details"
+        title={t('timesheetDetail.title')}
         onBack={() => navigate('/timesheets')}
         extra={
           <Space>
@@ -95,7 +97,7 @@ export default function TimesheetDetailPage() {
                     loading={approveTimesheet.isPending}
                     onClick={handleApprove}
                   >
-                    Approve
+                    {t('timesheetDetail.approve')}
                   </Button>
                 </PermissionGuard>
                 <PermissionGuard permission="timesheets:update">
@@ -105,78 +107,78 @@ export default function TimesheetDetailPage() {
                     loading={rejectTimesheet.isPending}
                     onClick={handleReject}
                   >
-                    Reject
+                    {t('timesheetDetail.reject')}
                   </Button>
                 </PermissionGuard>
               </>
             )}
             <PermissionGuard permission="timesheets:delete">
               <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-                Delete
+                {t('timesheetDetail.delete')}
               </Button>
             </PermissionGuard>
           </Space>
         }
       />
 
-      <Card title="Timesheet Information">
+      <Card title={t('timesheetDetail.infoTitle')}>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="User">
+          <Descriptions.Item label={t('timesheetDetail.user')}>
             {timesheet.user
               ? `${timesheet.user.first_name} ${timesheet.user.last_name}`
               : timesheet.user_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label={t('timesheetDetail.status')}>
             <Tag color={statusColors[timesheet.status] || 'default'}>
               {formatStatus(timesheet.status)}
             </Tag>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Clock In">
+          <Descriptions.Item label={t('timesheetDetail.clockIn')}>
             {timesheet.clock_in ? formatDateTime(timesheet.clock_in) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Clock Out">
+          <Descriptions.Item label={t('timesheetDetail.clockOut')}>
             {timesheet.clock_out ? formatDateTime(timesheet.clock_out) : <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Travel Time">
-            {timesheet.travel_time_minutes || 0} minutes
+          <Descriptions.Item label={t('timesheetDetail.travelTime')}>
+            {t('timesheetDetail.minutes', { count: timesheet.travel_time_minutes || 0 })}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Work Time">
-            {timesheet.work_time_minutes || 0} minutes
+          <Descriptions.Item label={t('timesheetDetail.workTime')}>
+            {t('timesheetDetail.minutes', { count: timesheet.work_time_minutes || 0 })}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Break Time">
-            {timesheet.break_time_minutes || 0} minutes
+          <Descriptions.Item label={t('timesheetDetail.breakTime')}>
+            {t('timesheetDetail.minutes', { count: timesheet.break_time_minutes || 0 })}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Billable">
-            {timesheet.is_billable ? <Tag color="green">Yes</Tag> : <Tag color="default">No</Tag>}
+          <Descriptions.Item label={t('timesheetDetail.billable')}>
+            {timesheet.is_billable ? <Tag color="green">{t('timesheetDetail.yes')}</Tag> : <Tag color="default">{t('timesheetDetail.no')}</Tag>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Appointment ID">
+          <Descriptions.Item label={t('timesheetDetail.appointmentId')}>
             {timesheet.appointment_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Work Order ID">
+          <Descriptions.Item label={t('timesheetDetail.workOrderId')}>
             {timesheet.work_order_id || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Approved By">
+          <Descriptions.Item label={t('timesheetDetail.approvedBy')}>
             {timesheet.approved_by || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Notes" span={2}>
+          <Descriptions.Item label={t('timesheetDetail.notes')} span={2}>
             {timesheet.notes || <span style={{ opacity: 0.5 }}>-</span>}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Created At">
+          <Descriptions.Item label={t('timesheetDetail.createdAt')}>
             {formatDateTime(timesheet.created_at)}
           </Descriptions.Item>
-          <Descriptions.Item label="Updated At">
+          <Descriptions.Item label={t('timesheetDetail.updatedAt')}>
             {formatDateTime(timesheet.updated_at)}
           </Descriptions.Item>
         </Descriptions>

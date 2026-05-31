@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, Upload, List, Button, Space, Tag, Empty, Image, Typography, Progress, Modal } from 'antd';
 import type { UploadFile, UploadProps } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   PaperClipOutlined,
   UploadOutlined,
@@ -45,6 +46,7 @@ export default function WorkOrderAttachmentsComponent({
   onDelete,
   onDownload,
 }: WorkOrderAttachmentsComponentProps) {
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
@@ -61,9 +63,9 @@ export default function WorkOrderAttachmentsComponent({
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return t('workOrderAttachments.zeroBytes');
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = [t('workOrderAttachments.bytes'), t('workOrderAttachments.kb'), t('workOrderAttachments.mb'), t('workOrderAttachments.gb')];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
@@ -80,9 +82,9 @@ export default function WorkOrderAttachmentsComponent({
 
   const handleDelete = (attachmentId: string, fileName: string) => {
     Modal.confirm({
-      title: 'Delete Attachment',
-      content: `Are you sure you want to delete "${fileName}"?`,
-      okText: 'Delete',
+      title: t('workOrderAttachments.deleteAttachment'),
+      content: t('workOrderAttachments.confirmDelete', { fileName }),
+      okText: t('workOrderAttachments.delete'),
       okType: 'danger',
       onOk: async () => {
         if (onDelete) {
@@ -115,7 +117,7 @@ export default function WorkOrderAttachmentsComponent({
       title={
         <Space>
           <PaperClipOutlined />
-          <span>Attachments</span>
+          <span>{t('workOrderAttachments.attachments')}</span>
           <Tag color="blue">{attachments.length}</Tag>
           {totalSize > 0 && (
             <Text type="secondary" style={{ fontSize: 12 }}>
@@ -127,7 +129,7 @@ export default function WorkOrderAttachmentsComponent({
       extra={
         <Upload {...uploadProps}>
           <Button type="primary" icon={<UploadOutlined />} loading={uploading}>
-            Upload
+            {t('workOrderAttachments.upload')}
           </Button>
         </Upload>
       }
@@ -139,12 +141,12 @@ export default function WorkOrderAttachmentsComponent({
       ) : attachments.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No attachments"
+          description={t('workOrderAttachments.noAttachments')}
           style={{ padding: '40px 0' }}
         >
           <Upload {...uploadProps}>
             <Button type="primary" icon={<UploadOutlined />}>
-              Upload First File
+              {t('workOrderAttachments.uploadFirstFile')}
             </Button>
           </Upload>
         </Empty>
@@ -163,7 +165,7 @@ export default function WorkOrderAttachmentsComponent({
                     icon={<EyeOutlined />}
                     onClick={() => handlePreview(attachment)}
                   >
-                    Preview
+                    {t('workOrderAttachments.preview')}
                   </Button>
                 ),
                 <Button
@@ -173,7 +175,7 @@ export default function WorkOrderAttachmentsComponent({
                   icon={<DownloadOutlined />}
                   onClick={() => onDownload && onDownload(attachment)}
                 >
-                  Download
+                  {t('workOrderAttachments.download')}
                 </Button>,
                 <Button
                   key="delete"
@@ -201,11 +203,11 @@ export default function WorkOrderAttachmentsComponent({
                       {attachment.file_type}
                     </Text>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      Uploaded {formatDateTime(attachment.created_at)}
+                      {t('workOrderAttachments.uploaded', { date: formatDateTime(attachment.created_at) })}
                     </Text>
                     {attachment.uploaded_by && (
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        by {attachment.uploaded_by}
+                        {t('workOrderAttachments.by', { user: attachment.uploaded_by })}
                       </Text>
                     )}
                   </Space>

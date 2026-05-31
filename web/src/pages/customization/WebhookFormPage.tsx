@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Switch } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useWebhook, useCreateWebhook, useUpdateWebhook } from '@/hooks/use-webhooks';
 import PageHeader from '@/components/common/PageHeader';
 
 const { TextArea } = Input;
 
 export default function WebhookFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -49,7 +51,7 @@ export default function WebhookFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('webhooks.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -58,7 +60,7 @@ export default function WebhookFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Webhook' : 'Create Webhook'}
+        title={isEdit ? t('webhooks.editWebhook') : t('webhooks.createWebhook')}
         onBack={() => navigate('/customization/webhooks')}
       />
 
@@ -73,63 +75,63 @@ export default function WebhookFormPage() {
         >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a name' }]}
+            label={t('webhooks.name')}
+            rules={[{ required: true, message: t('webhooks.pleaseEnterName') }]}
           >
-            <Input placeholder="e.g. Zapier Integration" />
+            <Input placeholder={t('webhooks.namePlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="url"
-            label="Webhook URL"
+            label={t('webhooks.webhookUrl')}
             rules={[
-              { required: true, message: 'Please enter webhook URL' },
-              { type: 'url', message: 'Please enter a valid URL' },
+              { required: true, message: t('webhooks.pleaseEnterWebhookUrl') },
+              { type: 'url', message: t('webhooks.pleaseEnterValidUrl') },
             ]}
           >
-            <Input placeholder="https://hooks.zapier.com/hooks/catch/..." />
+            <Input placeholder={t('webhooks.urlPlaceholder')} />
           </Form.Item>
 
           <Form.Item
             name="events"
-            label="Events (JSON Array)"
+            label={t('webhooks.eventsJson')}
             rules={[
-              { required: true, message: 'Please enter events to subscribe to' },
+              { required: true, message: t('webhooks.pleaseEnterEvents') },
               {
                 validator: (_, value) => {
                   try {
                     if (value) {
                       const parsed = JSON.parse(value);
                       if (!Array.isArray(parsed)) {
-                        return Promise.reject(new Error('Events must be an array'));
+                        return Promise.reject(new Error(t('webhooks.eventsMustBeArray')));
                       }
                     }
                     return Promise.resolve();
                   } catch {
-                    return Promise.reject(new Error('Invalid JSON format'));
+                    return Promise.reject(new Error(t('webhooks.invalidJsonFormat')));
                   }
                 },
               },
             ]}
-            extra="List of events to trigger this webhook"
+            extra={t('webhooks.eventsHelp')}
           >
             <TextArea
               rows={6}
-              placeholder='["work_order.created", "work_order.updated", "invoice.paid"]'
+              placeholder={t('webhooks.eventsPlaceholder')}
               style={{ fontFamily: 'monospace' }}
             />
           </Form.Item>
 
           <Form.Item
             name="secret"
-            label="Secret Key"
-            extra="Used to sign webhook payloads for verification"
+            label={t('webhooks.secretKey')}
+            extra={t('webhooks.secretHelp')}
           >
-            <Input.Password placeholder="Enter secret key (optional)" />
+            <Input.Password placeholder={t('webhooks.secretPlaceholder')} />
           </Form.Item>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked">
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+          <Form.Item name="is_active" label={t('webhooks.active')} valuePropName="checked">
+            <Switch checkedChildren={t('webhooks.active')} unCheckedChildren={t('webhooks.inactive')} />
           </Form.Item>
 
           <Form.Item>
@@ -139,9 +141,9 @@ export default function WebhookFormPage() {
                 htmlType="submit"
                 loading={createWebhook.isPending || updateWebhook.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('webhooks.update') : t('webhooks.create')}
               </Button>
-              <Button onClick={() => navigate('/customization/webhooks')}>Cancel</Button>
+              <Button onClick={() => navigate('/customization/webhooks')}>{t('webhooks.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

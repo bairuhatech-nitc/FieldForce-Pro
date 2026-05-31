@@ -11,6 +11,7 @@ import {
   ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, FileTextOutlined,
   SendOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { downloadEstimatePdf } from '@/utils/estimate-pdf';
 import {
   useEstimate, useDeleteEstimate, useUpdateEstimateStatus,
@@ -55,6 +56,7 @@ function formatStatus(status: string): string {
 }
 
 export default function EstimateDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -75,8 +77,8 @@ export default function EstimateDetailPage() {
   const handleDelete = () => {
     if (!estimate) return;
     showConfirmDialog({
-      title: 'Delete Estimate',
-      content: `Are you sure you want to delete estimate ${estimate.estimate_number || estimate.id}?`,
+      title: t('estimateDetail.deleteConfirmTitle'),
+      content: t('estimateDetail.deleteConfirmContent', { identifier: estimate.estimate_number || estimate.id }),
       onOk: async () => {
         await deleteEstimate.mutateAsync(estimate.id);
         navigate('/estimates');
@@ -93,7 +95,7 @@ export default function EstimateDetailPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Estimate Details" />
+        <PageHeader title={t('estimateDetail.detailsTitle')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -102,8 +104,8 @@ export default function EstimateDetailPage() {
   if (!estimate) {
     return (
       <div>
-        <PageHeader title="Estimate Not Found" />
-        <Card>Estimate not found</Card>
+        <PageHeader title={t('estimateDetail.notFoundTitle')} />
+        <Card>{t('estimateDetail.notFoundMessage')}</Card>
       </div>
     );
   }
@@ -127,64 +129,64 @@ export default function EstimateDetailPage() {
   const isCustomerSigned = !!(cf?.signed_at);
   const signedAt = cf?.signed_at as string | undefined;
   const getTimelineEvents = () => {
-    const events = [{ label: 'Created', time: estimate.created_at, color: 'gray' }];
+    const events = [{ label: t('estimateDetail.timeline.created'), time: estimate.created_at, color: 'gray' }];
     if (['sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'].includes(estimate.status))
-      events.push({ label: 'Sent to Customer', time: estimate.updated_at, color: 'blue' });
+      events.push({ label: t('estimateDetail.timeline.sentToCustomer'), time: estimate.updated_at, color: 'blue' });
     if (['viewed', 'approved', 'rejected'].includes(estimate.status))
-      events.push({ label: 'Viewed by Customer', time: estimate.updated_at, color: 'cyan' });
+      events.push({ label: t('estimateDetail.timeline.viewedByCustomer'), time: estimate.updated_at, color: 'cyan' });
     if (['approved', 'converted_to_wo'].includes(estimate.status))
-      events.push({ label: isCustomerSigned ? 'Digitally Signed & Approved' : 'Approved by Customer', time: isCustomerSigned && signedAt ? signedAt : estimate.updated_at, color: 'green' });
+      events.push({ label: isCustomerSigned ? t('estimateDetail.timeline.signedAndApproved') : t('estimateDetail.timeline.approvedByCustomer'), time: isCustomerSigned && signedAt ? signedAt : estimate.updated_at, color: 'green' });
     if (estimate.status === 'rejected')
-      events.push({ label: 'Rejected by Customer', time: estimate.updated_at, color: 'red' });
+      events.push({ label: t('estimateDetail.timeline.rejectedByCustomer'), time: estimate.updated_at, color: 'red' });
     if (estimate.status === 'converted_to_wo')
-      events.push({ label: 'Converted to Work Order', time: estimate.updated_at, color: 'purple' });
+      events.push({ label: t('estimateDetail.timeline.convertedToWorkOrder'), time: estimate.updated_at, color: 'purple' });
     return events;
   };
 
   const lineItemColumns: ColumnsType<EstimateLineItem> = [
     {
-      title: 'Type',
+      title: t('estimateDetail.columns.type'),
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => <Tag>{type.charAt(0).toUpperCase() + type.slice(1)}</Tag>,
+      render: (type: string) => <Tag>{t(`estimateDetail.lineItemTypes.${type}`, { defaultValue: type.charAt(0).toUpperCase() + type.slice(1) })}</Tag>,
     },
     {
-      title: 'Name',
+      title: t('estimateDetail.columns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
     },
     {
-      title: 'Description',
+      title: t('estimateDetail.columns.description'),
       dataIndex: 'description',
       key: 'description',
       render: (desc: string) => desc || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Quantity',
+      title: t('estimateDetail.columns.quantity'),
       dataIndex: 'quantity',
       key: 'quantity',
     },
     {
-      title: 'Unit Price',
+      title: t('estimateDetail.columns.unitPrice'),
       dataIndex: 'unit_price',
       key: 'unit_price',
       render: (price: number) => formatCurrency(price),
     },
     {
-      title: 'Tax Rate',
+      title: t('estimateDetail.columns.taxRate'),
       dataIndex: 'tax_rate',
       key: 'tax_rate',
       render: (rate: number) => `${rate || 0}%`,
     },
     {
-      title: 'Discount',
+      title: t('estimateDetail.columns.discount'),
       dataIndex: 'discount',
       key: 'discount',
       render: (discount: number) => formatCurrency(discount || 0),
     },
     {
-      title: 'Total',
+      title: t('estimateDetail.columns.total'),
       dataIndex: 'total',
       key: 'total',
       render: (total: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(total)}</span>,
@@ -194,7 +196,7 @@ export default function EstimateDetailPage() {
   return (
     <div>
       <PageHeader
-        title={`Estimate ${estimate.estimate_number || ''}`}
+        title={t('estimateDetail.title', { number: estimate.estimate_number || '' })}
         onBack={() => navigate('/estimates')}
         extra={
           <Space>
@@ -204,7 +206,7 @@ export default function EstimateDetailPage() {
                 <Tooltip
                   title={
                     !canDownload
-                      ? 'PDF is available only after the customer has approved and signed the estimate'
+                      ? t('estimateDetail.pdfUnavailableTooltip')
                       : ''
                   }
                 >
@@ -213,19 +215,19 @@ export default function EstimateDetailPage() {
                     disabled={!canDownload}
                     onClick={() => downloadEstimatePdf(estimate, lineItems || [])}
                   >
-                    Download PDF
+                    {t('estimateDetail.actions.downloadPdf')}
                   </Button>
                 </Tooltip>
               );
             })()}
             <PermissionGuard permission="estimates:update">
               <Button icon={<EditOutlined />} onClick={() => navigate(`/estimates/${estimate.id}/edit`)}>
-                Edit
+                {t('estimateDetail.actions.edit')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="estimates:delete">
               <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-                Delete
+                {t('estimateDetail.actions.delete')}
               </Button>
             </PermissionGuard>
           </Space>
@@ -322,11 +324,11 @@ export default function EstimateDetailPage() {
           size="small"
           labelPlacement="vertical"
           items={[
-            { title: 'Draft' },
-            { title: 'Sent' },
-            { title: 'Viewed' },
-            { title: 'Approved' },
-            { title: 'Work Order' },
+            { title: t('estimateDetail.steps.draft') },
+            { title: t('estimateDetail.steps.sent') },
+            { title: t('estimateDetail.steps.viewed') },
+            { title: t('estimateDetail.steps.approved') },
+            { title: t('estimateDetail.steps.workOrder') },
           ]}
         />
       </Card>
@@ -362,10 +364,10 @@ export default function EstimateDetailPage() {
             {availableTransitions.length > 0 && (
               <div style={{ padding: '10px 16px', borderBottom: '1px solid #f0f0f0', background: '#fafafa' }}>
                 <Space wrap>
-                  <span style={{ fontWeight: 500, color: '#666', fontSize: 13 }}>Transition to:</span>
+                  <span style={{ fontWeight: 500, color: '#666', fontSize: 13 }}>{t('estimateDetail.transitionTo')}</span>
                   {availableTransitions.map((status) => (
                     <Button key={status} type="primary" size="small" loading={updateStatus.isPending} onClick={() => handleStatusChange(status)}>
-                      {formatStatus(status)}
+                      {t(`estimateDetail.statuses.${status}`, { defaultValue: formatStatus(status) })}
                     </Button>
                   ))}
                 </Space>
@@ -379,7 +381,7 @@ export default function EstimateDetailPage() {
               items={[
                 {
                   key: 'overview',
-                  label: 'Overview',
+                  label: t('estimateDetail.tabs.overview'),
                   children: (
                     <div style={{ paddingBottom: 24 }}>
                       <Descriptions
@@ -388,41 +390,41 @@ export default function EstimateDetailPage() {
                         contentStyle={{ fontWeight: 500, paddingBottom: 16 }}
                         style={{ marginBottom: 8 }}
                       >
-                        <Descriptions.Item label="Customer">
+                        <Descriptions.Item label={t('estimateDetail.fields.customer')}>
                           {estimate.contact
                             ? `${estimate.contact.first_name} ${estimate.contact.last_name}`
                             : <span style={{ color: '#bbb' }}>—</span>}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Status">
+                        <Descriptions.Item label={t('estimateDetail.fields.status')}>
                           <Tag color={statusColors[estimate.status] || 'default'}>
-                            {formatStatus(estimate.status)}
+                            {t(`estimateDetail.statuses.${estimate.status}`, { defaultValue: formatStatus(estimate.status) })}
                           </Tag>
                         </Descriptions.Item>
-                        <Descriptions.Item label="Estimate No.">
+                        <Descriptions.Item label={t('estimateDetail.fields.estimateNo')}>
                           <Space size={4}>
-                            <span>{estimate.estimate_number || '—'}</span>
+                            <span>{estimate.estimate_number || '���'}</span>
                             {estimate.estimate_number && (
                               <CopyOutlined
                                 style={{ fontSize: 11, color: '#bbb', cursor: 'pointer' }}
-                                onClick={() => { void navigator.clipboard.writeText(estimate.estimate_number!); void message.success('Copied!'); }}
+                                onClick={() => { void navigator.clipboard.writeText(estimate.estimate_number!); void message.success(t('estimateDetail.messages.copied')); }}
                               />
                             )}
                           </Space>
                         </Descriptions.Item>
-                        <Descriptions.Item label="Expiry Date">
+                        <Descriptions.Item label={t('estimateDetail.fields.expiryDate')}>
                           {estimate.expiry_date
                             ? <span style={{ color: daysUntilExpiry !== null && daysUntilExpiry <= 0 ? '#ff4d4f' : daysUntilExpiry !== null && daysUntilExpiry <= 3 ? '#fa8c16' : undefined }}>
                                 {formatDateTime(estimate.expiry_date)}
                               </span>
                             : <span style={{ color: '#bbb' }}>—</span>}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Scheduled Date">
+                        <Descriptions.Item label={t('estimateDetail.fields.scheduledDate')}>
                           {estimate.scheduled_start ? formatDateTime(estimate.scheduled_start) : <span style={{ color: '#bbb' }}>—</span>}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Created">
+                        <Descriptions.Item label={t('estimateDetail.fields.created')}>
                           {formatDateTime(estimate.created_at)}
                         </Descriptions.Item>
-                        <Descriptions.Item label="Last Updated">
+                        <Descriptions.Item label={t('estimateDetail.fields.lastUpdated')}>
                           {formatDateTime(estimate.updated_at)}
                         </Descriptions.Item>
                       </Descriptions>
@@ -434,17 +436,17 @@ export default function EstimateDetailPage() {
                         contentStyle={{ textAlign: 'center', fontWeight: 500, padding: '12px 8px' }}
                         style={{ marginBottom: estimate.notes ? 24 : 0 }}
                       >
-                        <Descriptions.Item label="Subtotal">{formatCurrency(estimate.subtotal || 0)}</Descriptions.Item>
-                        <Descriptions.Item label="Tax">{formatCurrency(estimate.tax || 0)}</Descriptions.Item>
-                        <Descriptions.Item label="Discount">−{formatCurrency(estimate.discount || 0)}</Descriptions.Item>
-                        <Descriptions.Item label="Total">
+                        <Descriptions.Item label={t('estimateDetail.fields.subtotal')}>{formatCurrency(estimate.subtotal || 0)}</Descriptions.Item>
+                        <Descriptions.Item label={t('estimateDetail.fields.tax')}>{formatCurrency(estimate.tax || 0)}</Descriptions.Item>
+                        <Descriptions.Item label={t('estimateDetail.fields.discount')}>−{formatCurrency(estimate.discount || 0)}</Descriptions.Item>
+                        <Descriptions.Item label={t('estimateDetail.fields.total')}>
                           <span style={{ fontWeight: 700, color: '#1677ff' }}>{formatCurrency(estimate.total || 0)}</span>
                         </Descriptions.Item>
                       </Descriptions>
 
                       {estimate.notes && (
                         <Descriptions column={1} labelStyle={{ color: '#888', paddingBottom: 16 }} contentStyle={{ paddingBottom: 16 }}>
-                          <Descriptions.Item label="Notes">
+                          <Descriptions.Item label={t('estimateDetail.fields.notes')}>
                             <span style={{ color: '#555' }}>{estimate.notes}</span>
                           </Descriptions.Item>
                         </Descriptions>
@@ -456,7 +458,7 @@ export default function EstimateDetailPage() {
                   key: 'line-items',
                   label: (() => {
                     const n = (lineItems || estimate.line_items || []).length;
-                    return n > 0 ? `Line Items (${n})` : 'Line Items';
+                    return n > 0 ? t('estimateDetail.tabs.lineItemsWithCount', { count: n }) : t('estimateDetail.tabs.lineItems');
                   })(),
                   children: (
                     <div style={{ paddingBottom: 16 }}>
@@ -466,7 +468,7 @@ export default function EstimateDetailPage() {
                         rowKey="id"
                         loading={lineItemsLoading}
                         pagination={false}
-                        locale={{ emptyText: 'No line items added' }}
+                        locale={{ emptyText: t('estimateDetail.lineItemsEmpty') }}
                       />
                       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
                         <Descriptions
@@ -477,10 +479,10 @@ export default function EstimateDetailPage() {
                           labelStyle={{ color: '#888' }}
                           contentStyle={{ fontWeight: 500, textAlign: 'right' }}
                         >
-                          <Descriptions.Item label="Subtotal">{formatCurrency(estimate.subtotal || 0)}</Descriptions.Item>
-                          <Descriptions.Item label="Tax">{formatCurrency(estimate.tax || 0)}</Descriptions.Item>
-                          <Descriptions.Item label="Discount">−{formatCurrency(estimate.discount || 0)}</Descriptions.Item>
-                          <Descriptions.Item label={<span style={{ fontWeight: 600 }}>Total</span>}>
+                          <Descriptions.Item label={t('estimateDetail.fields.subtotal')}>{formatCurrency(estimate.subtotal || 0)}</Descriptions.Item>
+                          <Descriptions.Item label={t('estimateDetail.fields.tax')}>{formatCurrency(estimate.tax || 0)}</Descriptions.Item>
+                          <Descriptions.Item label={t('estimateDetail.fields.discount')}>−{formatCurrency(estimate.discount || 0)}</Descriptions.Item>
+                          <Descriptions.Item label={<span style={{ fontWeight: 600 }}>{t('estimateDetail.fields.total')}</span>}>
                             <span style={{ fontWeight: 700, color: '#1677ff', fontSize: 15 }}>{formatCurrency(estimate.total || 0)}</span>
                           </Descriptions.Item>
                         </Descriptions>
@@ -501,7 +503,7 @@ export default function EstimateDetailPage() {
                 label: (
                   <Space size={8}>
                     <ClockCircleOutlined />
-                    <span style={{ fontWeight: 500 }}>Activity</span>
+                    <span style={{ fontWeight: 500 }}>{t('estimateDetail.activity.title')}</span>
                   </Space>
                 ),
                 children: (
@@ -536,13 +538,13 @@ export default function EstimateDetailPage() {
                   loading={submitForApproval.isPending}
                   onClick={() => {
                     showConfirmDialog({
-                      title: 'Submit for Approval',
-                      content: 'Submit this estimate for admin/dispatcher approval?',
+                      title: t('estimateDetail.submitConfirmTitle'),
+                      content: t('estimateDetail.submitConfirmContent'),
                       onOk: async () => { await submitForApproval.mutateAsync(estimate.id); },
                     });
                   }}
                 >
-                  Submit for Approval
+                  {t('estimateDetail.actions.submitForApproval')}
                 </Button>
               </PermissionGuard>
             </Card>
@@ -550,7 +552,7 @@ export default function EstimateDetailPage() {
 
           {/* ── Admin/Dispatcher: Approve or Reject ── */}
           {estimate.status === 'pending_approval' && (
-            <Card title="Pending Approval" style={{ marginBottom: 16 }}>
+            <Card title={t('estimateDetail.pendingApprovalTitle')} style={{ marginBottom: 16 }}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <PermissionGuard permission="estimates:update">
                   <Button
@@ -560,13 +562,13 @@ export default function EstimateDetailPage() {
                     loading={adminApprove.isPending}
                     onClick={() => {
                       showConfirmDialog({
-                        title: 'Approve Estimate',
-                        content: 'Approve this estimate?',
+                        title: t('estimateDetail.approveConfirmTitle'),
+                        content: t('estimateDetail.approveConfirmContent'),
                         onOk: async () => { await adminApprove.mutateAsync(estimate.id); },
                       });
                     }}
                   >
-                    Approve
+                    {t('estimateDetail.actions.approve')}
                   </Button>
                   <Button
                     block
@@ -575,14 +577,14 @@ export default function EstimateDetailPage() {
                     loading={adminReject.isPending}
                     onClick={() => {
                       showConfirmDialog({
-                        title: 'Reject Estimate',
-                        content: 'Reject this estimate?',
+                        title: t('estimateDetail.rejectConfirmTitle'),
+                        content: t('estimateDetail.rejectConfirmContent'),
                         onOk: async () => { await adminReject.mutateAsync({ id: estimate.id }); },
                         danger: true,
                       });
                     }}
                   >
-                    Reject
+                    {t('estimateDetail.actions.reject')}
                   </Button>
                 </PermissionGuard>
               </Space>
@@ -604,7 +606,7 @@ export default function EstimateDetailPage() {
                     if (inv?.id) navigate(`/invoices/${inv.id}`);
                   }}
                 >
-                  Generate Invoice
+                  {t('estimateDetail.actions.generateInvoice')}
                 </Button>
               </PermissionGuard>
             </Card>

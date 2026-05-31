@@ -12,6 +12,7 @@ export interface CreateServiceRequestPayload {
   category?: string;
   channel?: string;
   assigned_to?: string;
+  technician_ids?: string[];
   lat?: number;
   lng?: number;
 }
@@ -26,6 +27,7 @@ export interface UpdateServiceRequestPayload {
   category?: string;
   channel?: string;
   assigned_to?: string;
+  technician_ids?: string[];
   lat?: number;
   lng?: number;
 }

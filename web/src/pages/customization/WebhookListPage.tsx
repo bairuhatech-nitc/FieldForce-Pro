@@ -47,8 +47,8 @@ export default function WebhookListPage() {
 
   const handleDelete = (record: WebhookRecord) => {
     showConfirmDialog({
-      title: 'Delete Webhook',
-      content: `Are you sure you want to delete "${record.name}"?`,
+      title: t('webhooks.deleteWebhook'),
+      content: t('webhooks.deleteConfirm', { name: record.name }),
       onOk: async () => {
         await deleteWebhook.mutateAsync(record.id);
       },
@@ -62,14 +62,14 @@ export default function WebhookListPage() {
 
   const columns: ColumnsType<WebhookRecord> = [
     {
-      title: 'Name',
+      title: t('webhooks.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'URL',
+      title: t('webhooks.url'),
       dataIndex: 'url',
       key: 'url',
       render: (url: string) => (
@@ -79,7 +79,7 @@ export default function WebhookListPage() {
       ),
     },
     {
-      title: 'Events',
+      title: t('webhooks.events'),
       dataIndex: 'events',
       key: 'events',
       render: (events: string[]) => (
@@ -92,23 +92,23 @@ export default function WebhookListPage() {
       ),
     },
     {
-      title: 'Status',
+      title: t('webhooks.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean, record) => (
         <Switch
           checked={isActive}
           onChange={(checked) => handleToggleActive(record, checked)}
-          checkedChildren="Active"
-          unCheckedChildren="Inactive"
+          checkedChildren={t('webhooks.active')}
+          unCheckedChildren={t('webhooks.inactive')}
         />
       ),
     },
     {
-      title: 'Last Triggered',
+      title: t('webhooks.lastTriggered'),
       dataIndex: 'last_triggered_at',
       key: 'last_triggered_at',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>Never</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>{t('webhooks.never')}</span>,
       sorter: (a, b) => {
         if (!a.last_triggered_at) return -1;
         if (!b.last_triggered_at) return 1;
@@ -116,24 +116,24 @@ export default function WebhookListPage() {
       },
     },
     {
-      title: 'Actions',
+      title: t('webhooks.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="webhooks:read">
-            <Tooltip title="View">
+            <Tooltip title={t('webhooks.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/customization/webhooks/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="webhooks:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('webhooks.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/customization/webhooks/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="webhooks:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('webhooks.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -145,12 +145,12 @@ export default function WebhookListPage() {
   return (
     <div>
       <PageHeader
-        title="Webhooks"
-        subtitle="Outbound webhook subscriptions for event notifications"
+        title={t('webhooks.title')}
+        subtitle={t('webhooks.subtitle')}
         extra={
           <PermissionGuard permission="webhooks:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/customization/webhooks/new')}>
-              Create Webhook
+              {t('webhooks.createButton')}
             </Button>
           </PermissionGuard>
         }
@@ -158,7 +158,7 @@ export default function WebhookListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search webhooks..."
+          placeholder={t('webhooks.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -174,7 +174,7 @@ export default function WebhookListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} webhooks`,
+          showTotal: (total) => t('webhooks.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

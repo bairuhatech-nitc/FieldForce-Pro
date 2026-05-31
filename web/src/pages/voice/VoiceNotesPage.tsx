@@ -18,6 +18,7 @@ import {
   PlayCircleOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useTranscribe } from '../../hooks/use-voice';
 import type { TranscriptionResult } from '../../api/voice.api';
 
@@ -42,6 +43,7 @@ const LANGUAGES = [
 ];
 
 export default function VoiceNotesPage() {
+  const { t } = useTranslation();
   const [language, setLanguage] = useState('en');
   const [notes, setNotes] = useState<VoiceNote[]>([]);
   const [activeNote, setActiveNote] = useState<VoiceNote | null>(null);
@@ -70,11 +72,11 @@ export default function VoiceNotesPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>Voice Notes & Transcription</Title>
+      <Title level={3}>{t('voiceNotes.title')}</Title>
 
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Card title="Upload Voice Note">
+          <Card title={t('voiceNotes.uploadTitle')}>
             <Space>
               <Select
                 value={language}
@@ -96,7 +98,7 @@ export default function VoiceNotesPage() {
                   size="large"
                   loading={transcribe.isPending}
                 >
-                  Upload & Transcribe
+                  {t('voiceNotes.uploadAndTranscribe')}
                 </Button>
               </Upload>
             </Space>
@@ -104,9 +106,9 @@ export default function VoiceNotesPage() {
         </Col>
 
         <Col span={10}>
-          <Card title="Voice Notes" styles={{ body: { padding: notes.length ? 0 : undefined } }}>
+          <Card title={t('voiceNotes.voiceNotes')} styles={{ body: { padding: notes.length ? 0 : undefined } }}>
             {notes.length === 0 ? (
-              <Empty description="No voice notes yet. Upload an audio file to get started." />
+              <Empty description={t('voiceNotes.noNotesYet')} />
             ) : (
               <List
                 dataSource={notes}
@@ -126,10 +128,10 @@ export default function VoiceNotesPage() {
                         <Space>
                           <Tag>{note.transcription.language || language}</Tag>
                           <Text type="secondary">
-                            {note.transcription.duration_seconds.toFixed(1)}s
+                            {t('voiceNotes.durationSeconds', { val: note.transcription.duration_seconds.toFixed(1) })}
                           </Text>
                           <Text type="secondary">
-                            {note.transcription.segments.length} segments
+                            {t('voiceNotes.segmentsCount', { count: note.transcription.segments.length })}
                           </Text>
                         </Space>
                       }
@@ -147,19 +149,19 @@ export default function VoiceNotesPage() {
               title={
                 <Space>
                   <FileTextOutlined />
-                  <span>Transcription: {activeNote.fileName}</span>
+                  <span>{t('voiceNotes.transcriptionLabel', { fileName: activeNote.fileName })}</span>
                 </Space>
               }
             >
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                <Card size="small" type="inner" title="Full Text">
+                <Card size="small" type="inner" title={t('voiceNotes.fullText')}>
                   <Paragraph style={{ whiteSpace: 'pre-wrap', fontSize: 15 }}>
-                    {activeNote.transcription.text || 'No transcription available.'}
+                    {activeNote.transcription.text || t('voiceNotes.noTranscriptionAvailable')}
                   </Paragraph>
                 </Card>
 
                 {activeNote.transcription.segments.length > 0 && (
-                  <Card size="small" type="inner" title="Segments">
+                  <Card size="small" type="inner" title={t('voiceNotes.segments')}>
                     <List
                       size="small"
                       dataSource={activeNote.transcription.segments}
@@ -172,7 +174,7 @@ export default function VoiceNotesPage() {
                               </Tag>
                               {seg.confidence !== undefined && (
                                 <Text type="secondary">
-                                  Confidence: {(Math.abs(seg.confidence) * 100).toFixed(0)}%
+                                  {t('voiceNotes.confidence', { val: (Math.abs(seg.confidence) * 100).toFixed(0) })}
                                 </Text>
                               )}
                             </Space>
@@ -187,7 +189,7 @@ export default function VoiceNotesPage() {
             </Card>
           ) : (
             <Card>
-              <Empty description="Select a voice note to view its transcription" />
+              <Empty description={t('voiceNotes.selectNoteToView')} />
             </Card>
           )}
         </Col>

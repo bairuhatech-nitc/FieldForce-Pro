@@ -25,12 +25,14 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/api/auth.api';
+import { useTranslation } from 'react-i18next'; // Rule 1
 
 const { Title, Text, Paragraph } = Typography;
 
 type MFAMethod = 'email' | 'totp';
 
 export default function MFASetupWizard() {
+  const { t } = useTranslation(); // Rule 2
   const queryClient = useQueryClient();
   const [selectedMethod, setSelectedMethod] = useState<MFAMethod>('email');
   const [currentStep, setCurrentStep] = useState(0);
@@ -142,11 +144,11 @@ export default function MFASetupWizard() {
   const handleCopyRecoveryCodes = () => {
     const text = recoveryCodes.join('\n');
     navigator.clipboard.writeText(text);
-    message.success('Recovery codes copied to clipboard');
+    message.success(t('mfaSetupWizard.recoveryCodesCopiedMessage'));
   };
 
   const handleDownloadRecoveryCodes = () => {
-    const text = `FieldForce Pro Recovery Codes\n${'='.repeat(30)}\n\nSave these codes in a safe place.\nEach code can only be used once.\n\n${recoveryCodes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n`;
+    const text = `${t('mfaSetupWizard.downloadFileHeader')}\n${'='.repeat(30)}\n\n${t('mfaSetupWizard.downloadFileInstructions')}\n\n${recoveryCodes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n`;
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -158,16 +160,16 @@ export default function MFASetupWizard() {
 
   const handleRegenerateRecoveryCodes = () => {
     Modal.confirm({
-      title: 'Regenerate Recovery Codes',
-      content: 'This will invalidate all existing recovery codes and generate new ones. Are you sure?',
+      title: t('mfaSetupWizard.regenerateModal.title'),
+      content: t('mfaSetupWizard.regenerateModal.content'),
       onOk: () => regenerateMutation.mutate(),
     });
   };
 
   const handleDisable = () => {
     Modal.confirm({
-      title: 'Disable MFA',
-      content: 'Are you sure you want to disable multi-factor authentication? This will make your account less secure.',
+      title: t('mfaSetupWizard.disableModal.title'),
+      content: t('mfaSetupWizard.disableModal.content'),
       okButtonProps: { danger: true },
       onOk: () => disableMutation.mutate(),
     });
@@ -189,14 +191,16 @@ export default function MFASetupWizard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <Title level={5} style={{ margin: 0 }}>
-                Multi-Factor Authentication Status
+                {t('mfaSetupWizard.statusCard.title')}
               </Title>
               <Text type="secondary">
-                {mfaEnabled ? 'MFA is currently enabled' : 'MFA is currently disabled'}
+                {mfaEnabled
+                  ? t('mfaSetupWizard.statusCard.mfaEnabledText')
+                  : t('mfaSetupWizard.statusCard.mfaDisabledText')}
               </Text>
             </div>
             <Tag color={mfaEnabled ? 'success' : 'default'} icon={<SafetyOutlined />}>
-              {mfaEnabled ? 'ENABLED' : 'DISABLED'}
+              {mfaEnabled ? t('mfaSetupWizard.statusCard.tagEnabled') : t('mfaSetupWizard.statusCard.tagDisabled')}
             </Tag>
           </div>
 
@@ -205,21 +209,21 @@ export default function MFASetupWizard() {
               <Alert
                 message={
                   activeMethod === 'totp'
-                    ? 'Your account is protected with authenticator app (TOTP) multi-factor authentication'
-                    : 'Your account is protected with email-based multi-factor authentication'
+                    ? t('mfaSetupWizard.statusCard.totpProtectedMessage')
+                    : t('mfaSetupWizard.statusCard.emailProtectedMessage')
                 }
                 type="success"
                 showIcon
                 icon={activeMethod === 'totp' ? <MobileOutlined /> : <MailOutlined />}
               />
               <div style={{ marginTop: 12 }}>
-                <Text type="secondary">Active method: </Text>
+                <Text type="secondary">{t('mfaSetupWizard.statusCard.activeMethodLabel')}</Text>
                 <Tag color="blue">
-                  {activeMethod === 'totp' ? 'Authenticator App' : 'Email OTP'}
+                  {activeMethod === 'totp' ? t('mfaSetupWizard.statusCard.totpMethod') : t('mfaSetupWizard.statusCard.emailMethod')}
                 </Tag>
               </div>
               <div style={{ marginTop: 12 }}>
-                <Text type="secondary">Recovery codes remaining: </Text>
+                <Text type="secondary">{t('mfaSetupWizard.statusCard.recoveryCodesRemainingLabel')}</Text>
                 <Tag color={
                   (mfaStatus?.recovery_codes_remaining ?? 0) <= 2 ? 'error' :
                     (mfaStatus?.recovery_codes_remaining ?? 0) <= 4 ? 'warning' : 'success'
@@ -233,21 +237,21 @@ export default function MFASetupWizard() {
                   loading={regenerateMutation.isPending}
                   onClick={handleRegenerateRecoveryCodes}
                 >
-                  Regenerate Recovery Codes
+                  {t('mfaSetupWizard.statusCard.regenerateCodesButton')}
                 </Button>
                 <Button
                   danger
                   loading={disableMutation.isPending}
                   onClick={handleDisable}
                 >
-                  Disable MFA
+                  {t('mfaSetupWizard.statusCard.disableMfaButton')}
                 </Button>
               </Space>
               {recoveryCodes.length > 0 && (
                 <Card size="small" style={{ marginTop: 16, background: 'rgba(250, 173, 20, 0.1)', borderColor: 'rgba(250, 173, 20, 0.25)' }}>
                   <Alert
-                    message="Save your recovery codes"
-                    description="These codes can be used to access your account if you lose your MFA device. Each code can only be used once. You won't see these again."
+                    message={t('mfaSetupWizard.statusCard.saveRecoveryCodesMessage')}
+                    description={t('mfaSetupWizard.statusCard.saveRecoveryCodesDescription')}
                     type="warning"
                     showIcon
                     style={{ marginBottom: 16 }}
@@ -271,10 +275,10 @@ export default function MFASetupWizard() {
                   </div>
                   <Space>
                     <Button icon={<CopyOutlined />} onClick={handleCopyRecoveryCodes}>
-                      Copy All
+                      {t('mfaSetupWizard.statusCard.copyAllButton')}
                     </Button>
                     <Button icon={<DownloadOutlined />} onClick={handleDownloadRecoveryCodes}>
-                      Download .txt
+                      {t('mfaSetupWizard.statusCard.downloadTxtButton')}
                     </Button>
                   </Space>
                 </Card>
@@ -285,24 +289,24 @@ export default function MFASetupWizard() {
       </Card>
 
       {!mfaEnabled && (
-        <Card title="Setup Multi-Factor Authentication">
+        <Card title={t('mfaSetupWizard.setupCard.title')}>
           <Steps
             current={currentStep}
             style={{ marginBottom: 32 }}
             items={[
-              { title: 'Choose Method' },
-              { title: 'Setup' },
-              { title: 'Verify' },
-              { title: 'Done' },
+              { title: t('mfaSetupWizard.steps.chooseMethod') },
+              { title: t('mfaSetupWizard.steps.setup') },
+              { title: t('mfaSetupWizard.steps.verify') },
+              { title: t('mfaSetupWizard.steps.done') },
             ]}
           />
 
           {/* Step 0: Choose Method */}
           {currentStep === 0 && (
             <div>
-              <Title level={5}>Choose Your MFA Method</Title>
+              <Title level={5}>{t('mfaSetupWizard.chooseMethod.title')}</Title>
               <Paragraph>
-                Select how you want to receive verification codes when you sign in.
+                {t('mfaSetupWizard.chooseMethod.description')}
               </Paragraph>
 
               <Radio.Group
@@ -324,10 +328,10 @@ export default function MFASetupWizard() {
                       <Space>
                         <MailOutlined style={{ fontSize: 20, color: '#1890ff' }} />
                         <div>
-                          <Text strong>Email OTP</Text>
+                          <Text strong>{t('mfaSetupWizard.chooseMethod.emailOtpTitle')}</Text>
                           <br />
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            Receive a 6-digit code via email each time you log in
+                            {t('mfaSetupWizard.chooseMethod.emailOtpDescription')}
                           </Text>
                         </div>
                       </Space>
@@ -347,10 +351,10 @@ export default function MFASetupWizard() {
                       <Space>
                         <MobileOutlined style={{ fontSize: 20, color: '#52c41a' }} />
                         <div>
-                          <Text strong>Authenticator App</Text>
+                          <Text strong>{t('mfaSetupWizard.chooseMethod.authenticatorAppTitle')}</Text>
                           <br />
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            Use Google Authenticator, Authy, or similar app for codes
+                            {t('mfaSetupWizard.chooseMethod.authenticatorAppDescription')}
                           </Text>
                         </div>
                       </Space>
@@ -364,7 +368,7 @@ export default function MFASetupWizard() {
                 loading={isSetupLoading}
                 onClick={handleChooseMethod}
               >
-                Continue
+                {t('mfaSetupWizard.chooseMethod.continueButton')}
               </Button>
             </div>
           )}
@@ -374,7 +378,7 @@ export default function MFASetupWizard() {
             <div style={{ textAlign: 'center', padding: 40 }}>
               <Spin size="large" />
               <Paragraph style={{ marginTop: 16 }}>
-                Setting up {selectedMethod === 'totp' ? 'authenticator app' : 'email'} MFA...
+                {t(selectedMethod === 'totp' ? 'mfaSetupWizard.setupLoading.totpText' : 'mfaSetupWizard.setupLoading.emailText')}
               </Paragraph>
             </div>
           )}
@@ -382,14 +386,14 @@ export default function MFASetupWizard() {
           {/* Step 2: Verify */}
           {currentStep === 2 && selectedMethod === 'email' && (
             <div>
-              <Title level={5}>Enter Verification Code</Title>
+              <Title level={5}>{t('mfaSetupWizard.verifyEmail.title')}</Title>
               <Paragraph>
-                A 6-digit verification code has been sent to your email. Enter it below to enable MFA.
+                {t('mfaSetupWizard.verifyEmail.description')}
               </Paragraph>
 
               <Input
                 size="large"
-                placeholder="000000"
+                placeholder={t('mfaSetupWizard.verifyEmail.inputPlaceholder')}
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6}
@@ -401,8 +405,8 @@ export default function MFASetupWizard() {
                   message={
                     (enableError.error as { response?: { data?: { message?: string } } })
                       ?.response?.data?.message?.includes('expired')
-                      ? 'Code expired. A new code has been sent to your email. Please enter the new code.'
-                      : 'Invalid code. Please check and try again.'
+                      ? t('mfaSetupWizard.verifyEmail.expiredCodeMessage')
+                      : t('mfaSetupWizard.verifyEmail.invalidCodeMessage')
                   }
                   type={
                     (enableError.error as { response?: { data?: { message?: string } } })
@@ -418,7 +422,7 @@ export default function MFASetupWizard() {
               <div>
                 <Space>
                   <Button onClick={() => { setCurrentStep(0); setVerificationCode(''); setEmailSetupToken(''); }}>
-                    Back
+                    {t('mfaSetupWizard.verifyEmail.backButton')}
                   </Button>
                   <Button
                     type="primary"
@@ -426,14 +430,14 @@ export default function MFASetupWizard() {
                     disabled={verificationCode.length !== 6}
                     onClick={handleVerifyAndEnable}
                   >
-                    Verify & Enable MFA
+                    {t('mfaSetupWizard.verifyEmail.verifyEnableButton')}
                   </Button>
                   <Button
                     type="link"
                     loading={setupEmailMutation.isPending}
                     onClick={() => setupEmailMutation.mutate()}
                   >
-                    Resend Code
+                    {t('mfaSetupWizard.verifyEmail.resendCodeButton')}
                   </Button>
                 </Space>
               </div>
@@ -442,10 +446,9 @@ export default function MFASetupWizard() {
 
           {currentStep === 2 && selectedMethod === 'totp' && (
             <div>
-              <Title level={5}>Scan QR Code</Title>
+              <Title level={5}>{t('mfaSetupWizard.verifyTotp.scanQrTitle')}</Title>
               <Paragraph>
-                Open your authenticator app (Google Authenticator, Authy, etc.) and scan the QR code below.
-                Then enter the 6-digit code shown in the app.
+                {t('mfaSetupWizard.verifyTotp.scanQrDescription')}
               </Paragraph>
 
               <div style={{ display: 'flex', gap: 32, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -454,10 +457,10 @@ export default function MFASetupWizard() {
                 </div>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <Alert
-                    message="Can't scan the QR code?"
+                    message={t('mfaSetupWizard.verifyTotp.cantScanQrMessage')}
                     description={
                       <div>
-                        <Text type="secondary">Manually enter this key in your app:</Text>
+                        <Text type="secondary">{t('mfaSetupWizard.verifyTotp.manualKeyLabel')}</Text>
                         <div
                           style={{
                             marginTop: 8,
@@ -480,14 +483,14 @@ export default function MFASetupWizard() {
                 </div>
               </div>
 
-              <Title level={5}>Enter Verification Code</Title>
+              <Title level={5}>{t('mfaSetupWizard.verifyTotp.enterCodeTitle')}</Title>
               <Paragraph>
-                Enter the 6-digit code from your authenticator app to confirm setup.
+                {t('mfaSetupWizard.verifyTotp.enterCodeDescription')}
               </Paragraph>
 
               <Input
                 size="large"
-                placeholder="000000"
+                placeholder={t('mfaSetupWizard.verifyTotp.inputPlaceholder')}
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6}
@@ -496,7 +499,7 @@ export default function MFASetupWizard() {
 
               {enableError.isError && (
                 <Alert
-                  message="Invalid code. Please check your authenticator app and try again."
+                  message={t('mfaSetupWizard.verifyTotp.invalidCodeMessage')}
                   type="error"
                   showIcon
                   style={{ marginBottom: 16 }}
@@ -506,7 +509,7 @@ export default function MFASetupWizard() {
               <div>
                 <Space>
                   <Button onClick={() => { setCurrentStep(0); setVerificationCode(''); setTotpSecret(''); setTotpUrl(''); }}>
-                    Back
+                    {t('mfaSetupWizard.verifyTotp.backButton')}
                   </Button>
                   <Button
                     type="primary"
@@ -514,7 +517,7 @@ export default function MFASetupWizard() {
                     disabled={verificationCode.length !== 6}
                     onClick={handleVerifyAndEnable}
                   >
-                    Verify & Enable MFA
+                    {t('mfaSetupWizard.verifyTotp.verifyEnableButton')}
                   </Button>
                 </Space>
               </div>
@@ -526,19 +529,19 @@ export default function MFASetupWizard() {
             <div>
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <CheckCircleOutlined style={{ fontSize: 64, color: '#52c41a', marginBottom: 16 }} />
-                <Title level={4}>MFA Enabled</Title>
+                <Title level={4}>{t('mfaSetupWizard.done.title')}</Title>
                 <Paragraph>
-                  {selectedMethod === 'totp'
-                    ? 'Authenticator app MFA has been enabled.'
-                    : 'Email-based MFA has been enabled.'}
+                  {t(selectedMethod === 'totp'
+                    ? 'mfaSetupWizard.done.totpEnabledMessage'
+                    : 'mfaSetupWizard.done.emailEnabledMessage')}
                 </Paragraph>
               </div>
 
               {recoveryCodes.length > 0 && (
                 <Card size="small" style={{ marginBottom: 24, background: 'rgba(250, 173, 20, 0.1)', borderColor: 'rgba(250, 173, 20, 0.25)' }}>
                   <Alert
-                    message="Save your recovery codes"
-                    description="These codes can be used to access your account if you lose your MFA device. Each code can only be used once. You won't see these again."
+                    message={t('mfaSetupWizard.statusCard.saveRecoveryCodesMessage')}
+                    description={t('mfaSetupWizard.statusCard.saveRecoveryCodesDescription')}
                     type="warning"
                     showIcon
                     style={{ marginBottom: 16 }}
@@ -562,10 +565,10 @@ export default function MFASetupWizard() {
                   </div>
                   <Space>
                     <Button icon={<CopyOutlined />} onClick={handleCopyRecoveryCodes}>
-                      Copy All
+                      {t('mfaSetupWizard.statusCard.copyAllButton')}
                     </Button>
                     <Button icon={<DownloadOutlined />} onClick={handleDownloadRecoveryCodes}>
-                      Download .txt
+                      {t('mfaSetupWizard.statusCard.downloadTxtButton')}
                     </Button>
                   </Space>
                 </Card>
@@ -573,7 +576,7 @@ export default function MFASetupWizard() {
 
               <div style={{ textAlign: 'center' }}>
                 <Button type="primary" size="large" onClick={handleFinish}>
-                  I've saved my codes — Done
+                  {t('mfaSetupWizard.done.finishButton')}
                 </Button>
               </div>
             </div>

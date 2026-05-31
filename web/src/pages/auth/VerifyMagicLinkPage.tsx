@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Typography, Spin, Result, Button } from 'antd';
 import { useVerifyMagicLink } from '@/hooks/use-auth';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
 export default function VerifyMagicLinkPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
@@ -49,27 +51,27 @@ export default function VerifyMagicLinkPage() {
         {status === 'verifying' && (
           <>
             <Spin size="large" />
-            <Title level={3} style={{ marginTop: 24 }}>Verifying Magic Link</Title>
-            <Text type="secondary">Please wait while we log you in...</Text>
+            <Title level={3} style={{ marginTop: 24 }}>{t('verifyMagicLink.verifyingMagicLink')}</Title>
+            <Text type="secondary">{t('verifyMagicLink.pleaseWait')}</Text>
           </>
         )}
 
         {status === 'success' && (
           <Result
             status="success"
-            title="Successfully logged in!"
-            subTitle="Redirecting you to the dashboard..."
+            title={t('verifyMagicLink.successfullyLoggedIn')}
+            subTitle={t('verifyMagicLink.redirectingToDashboard')}
           />
         )}
 
         {status === 'error' && (
           <Result
             status="error"
-            title="Verification Failed"
-            subTitle="The magic link is invalid or has expired."
+            title={t('verifyMagicLink.verificationFailed')}
+            subTitle={t('verifyMagicLink.linkInvalidOrExpired')}
             extra={[
               <Button type="primary" key="login" onClick={() => navigate('/login')}>
-                Back to Login
+                {t('verifyMagicLink.backToLogin')}
               </Button>
             ]}
           />

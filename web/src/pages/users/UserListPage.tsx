@@ -125,9 +125,9 @@ export default function UserListPage() {
       key: 'status',
       render: (_, record) =>
         record.is_active ? (
-          <Tag color="success">Active</Tag>
+          <Tag color="success">{t('users.active')}</Tag>
         ) : (
-          <Tag color="warning">Pending</Tag>
+          <Tag color="warning">{t('users.pending')}</Tag>
         ),
     },
     {
@@ -141,7 +141,7 @@ export default function UserListPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Tooltip title="View Details">
+          <Tooltip title={t('users.viewDetails')}>
             <Button
               type="link"
               icon={<EyeOutlined />}
@@ -149,7 +149,7 @@ export default function UserListPage() {
             />
           </Tooltip>
           <PermissionGuard permission="users:update">
-            <Tooltip title="Assign Roles">
+            <Tooltip title={t('users.assignRoles')}>
               <Button
                 type="link"
                 icon={<TeamOutlined />}
@@ -158,7 +158,7 @@ export default function UserListPage() {
             </Tooltip>
           </PermissionGuard>
           {isCompanyAdmin && !record.is_active && (
-            <Tooltip title="Resend Invite">
+            <Tooltip title={t('users.resendInvite')}>
               <Button
                 type="link"
                 icon={<ReloadOutlined />}
@@ -168,7 +168,7 @@ export default function UserListPage() {
             </Tooltip>
           )}
           {isCompanyAdmin && record.is_active && !isTargetAdmin(record) && (
-            <Tooltip title="Send Magic Link">
+            <Tooltip title={t('users.sendMagicLink')}>
               <Button
                 type="link"
                 icon={<LinkOutlined />}
@@ -193,7 +193,7 @@ export default function UserListPage() {
                 icon={<UserAddOutlined />}
                 onClick={() => setInviteModalOpen(true)}
               >
-                Invite User
+                {t('users.inviteUser')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="users:create">
@@ -213,11 +213,11 @@ export default function UserListPage() {
         <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid #f0f0f0' }}>
           <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 6 }}>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              Plan: <strong>{usage.plan_name}</strong>
+              {t('users.plan')}: <strong>{usage.plan_name}</strong>
             </Text>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              Users: <strong>{usageCurrent ?? 0}</strong>
-              {usageLimit ? ` / ${usageLimit}` : ' (unlimited)'}
+              {t('users.users')}: <strong>{usageCurrent ?? 0}</strong>
+              {usageLimit ? ` / ${usageLimit}` : t('users.unlimited')}
             </Text>
           </Space>
           {usageLimit ? (

@@ -18,12 +18,6 @@ const statusColors: Record<string, string> = {
   rejected: 'red',
 };
 
-const statusOptions = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-];
-
 function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }
@@ -36,6 +30,12 @@ export default function TimesheetListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+
+  const statusOptions = [
+    { value: 'pending', label: t('timesheets.statusOptions.pending') },
+    { value: 'approved', label: t('timesheets.statusOptions.approved') },
+    { value: 'rejected', label: t('timesheets.statusOptions.rejected') },
+  ];
 
   const { data, isLoading } = useTimesheets({ page, take: pageSize, search });
   const deleteTimesheet = useDeleteTimesheet();
@@ -61,8 +61,8 @@ export default function TimesheetListPage() {
 
   const handleDelete = (timesheet: Timesheet) => {
     showConfirmDialog({
-      title: 'Delete Timesheet',
-      content: 'Are you sure you want to delete this timesheet entry?',
+      title: t('timesheets.deleteTitle'),
+      content: t('timesheets.deleteConfirm'),
       onOk: async () => {
         await deleteTimesheet.mutateAsync(timesheet.id);
       },
@@ -72,8 +72,8 @@ export default function TimesheetListPage() {
 
   const handleApprove = (timesheet: Timesheet) => {
     showConfirmDialog({
-      title: 'Approve Timesheet',
-      content: 'Are you sure you want to approve this timesheet?',
+      title: t('timesheets.approveTitle'),
+      content: t('timesheets.approveConfirm'),
       onOk: async () => {
         await approveTimesheet.mutateAsync(timesheet.id);
       },
@@ -82,8 +82,8 @@ export default function TimesheetListPage() {
 
   const handleReject = (timesheet: Timesheet) => {
     showConfirmDialog({
-      title: 'Reject Timesheet',
-      content: 'Are you sure you want to reject this timesheet?',
+      title: t('timesheets.rejectTitle'),
+      content: t('timesheets.rejectConfirm'),
       onOk: async () => {
         await rejectTimesheet.mutateAsync(timesheet.id);
       },
@@ -93,7 +93,7 @@ export default function TimesheetListPage() {
 
   const columns: ColumnsType<Timesheet> = [
     {
-      title: 'User',
+      title: t('timesheets.columns.user'),
       key: 'user',
       render: (_, record) =>
         record.user
@@ -101,45 +101,45 @@ export default function TimesheetListPage() {
           : <span style={{ color: '#999' }}>{record.user_id || '-'}</span>,
     },
     {
-      title: 'Clock In',
+      title: t('timesheets.columns.clockIn'),
       dataIndex: 'clock_in',
       key: 'clock_in',
       render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.clock_in).getTime() - new Date(b.clock_in).getTime(),
     },
     {
-      title: 'Clock Out',
+      title: t('timesheets.columns.clockOut'),
       dataIndex: 'clock_out',
       key: 'clock_out',
       render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Travel (min)',
+      title: t('timesheets.columns.travel'),
       dataIndex: 'travel_time_minutes',
       key: 'travel_time_minutes',
       render: (minutes: number) => minutes || 0,
     },
     {
-      title: 'Work (min)',
+      title: t('timesheets.columns.work'),
       dataIndex: 'work_time_minutes',
       key: 'work_time_minutes',
       render: (minutes: number) => minutes || 0,
     },
     {
-      title: 'Break (min)',
+      title: t('timesheets.columns.break'),
       dataIndex: 'break_time_minutes',
       key: 'break_time_minutes',
       render: (minutes: number) => minutes || 0,
     },
     {
-      title: 'Billable',
+      title: t('timesheets.columns.billable'),
       dataIndex: 'is_billable',
       key: 'is_billable',
       render: (billable: boolean) =>
-        billable ? <Tag color="green">Yes</Tag> : <Tag color="default">No</Tag>,
+        billable ? <Tag color="green">{t('timesheets.yes')}</Tag> : <Tag color="default">{t('timesheets.no')}</Tag>,
     },
     {
-      title: 'Status',
+      title: t('timesheets.columns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -149,21 +149,21 @@ export default function TimesheetListPage() {
       ),
     },
     {
-      title: 'Actions',
+      title: t('timesheets.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 200,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="timesheets:read">
-            <Tooltip title="View">
+            <Tooltip title={t('timesheets.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/timesheets/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           {record.status === 'pending' && (
             <>
               <PermissionGuard permission="timesheets:update">
-                <Tooltip title="Approve">
+                <Tooltip title={t('timesheets.approve')}>
                   <Button
                     type="text"
                     icon={<CheckOutlined />}
@@ -175,7 +175,7 @@ export default function TimesheetListPage() {
                 </Tooltip>
               </PermissionGuard>
               <PermissionGuard permission="timesheets:update">
-                <Tooltip title="Reject">
+                <Tooltip title={t('timesheets.reject')}>
                   <Button
                     type="text"
                     danger
@@ -189,7 +189,7 @@ export default function TimesheetListPage() {
             </>
           )}
           <PermissionGuard permission="timesheets:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('timesheets.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -201,20 +201,20 @@ export default function TimesheetListPage() {
   return (
     <div>
       <PageHeader
-        title="Timesheets"
-        subtitle="Manage timesheet entries"
+        title={t('timesheets.title')}
+        subtitle={t('timesheets.subtitle')}
       />
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <SearchFilter
-          placeholder="Search timesheets..."
+          placeholder={t('timesheets.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           style={{ width: 400 }}
         />
         <Select
-          placeholder="Filter by status"
+          placeholder={t('timesheets.filterPlaceholder')}
           allowClear
           value={statusFilter}
           onChange={(value) => setStatusFilter(value)}
@@ -234,7 +234,7 @@ export default function TimesheetListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} timesheets`,
+          showTotal: (total) => t('timesheets.totalCount', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

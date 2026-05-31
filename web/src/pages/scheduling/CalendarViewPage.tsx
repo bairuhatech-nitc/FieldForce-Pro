@@ -8,6 +8,7 @@ import {
   CheckCircleOutlined, CalendarOutlined, CloseOutlined,
   FileTextOutlined, EyeOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useAllAppointments } from '@/hooks/use-appointments';
 import { useAgents } from '@/hooks/use-users';
 import type { ServiceAppointment } from '@/types/models.types';
@@ -35,8 +36,9 @@ function AppointmentChip({
   appointment: ServiceAppointment;
   onClick: (e: React.MouseEvent) => void;
 }) {
+  const { t } = useTranslation();
   const cfg    = STATUS_CONFIG[appointment.status] ?? { color: '#9ca3af', tagColor: 'default', label: '' };
-  const woLabel = appointment.work_order?.wo_number ?? appointment.work_order?.summary ?? 'Appt';
+  const woLabel = appointment.work_order?.wo_number ?? appointment.work_order?.summary ?? t('calendar.appt');
   const timeLabel = appointment.scheduled_start
     ? dayjs(appointment.scheduled_start).format('h:mm A')
     : '';
@@ -61,7 +63,7 @@ function AppointmentChip({
             />
             {cfg.label}
           </div>
-          <div style={{ opacity: 0.7, marginTop: 4 }}>Click to view details</div>
+          <div style={{ opacity: 0.7, marginTop: 4 }}>{t('calendar.clickToView')}</div>
         </div>
       }
     >
@@ -104,6 +106,7 @@ function AppointmentCard({
   onViewAppointment: () => void;
   onViewWorkOrder: () => void;
 }) {
+  const { t } = useTranslation();
   const cfg   = STATUS_CONFIG[appointment.status] ?? { color: '#9ca3af', tagColor: 'default', label: appointment.status };
   const start = appointment.scheduled_start ? dayjs(appointment.scheduled_start) : null;
   const end   = appointment.scheduled_end   ? dayjs(appointment.scheduled_end)   : null;
@@ -135,10 +138,9 @@ function AppointmentCard({
         (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)';
       }}
     >
-      {/* Header: WO number + status tag */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <span style={{ fontWeight: 700, fontSize: 13, color: isDone ? '#9ca3af' : '#111827' }}>
-          {appointment.work_order?.wo_number ?? 'N/A'}
+          {appointment.work_order?.wo_number ?? t('calendar.notApplicable')}
         </span>
         <Tag
           color={cfg.tagColor}
@@ -148,7 +150,6 @@ function AppointmentCard({
         </Tag>
       </div>
 
-      {/* Time range */}
       {start && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <ClockCircleOutlined style={{ fontSize: 11, color: isDone ? '#d1d5db' : cfg.color }} />
@@ -159,7 +160,6 @@ function AppointmentCard({
         </div>
       )}
 
-      {/* Address */}
       {address && (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 4 }}>
           <EnvironmentOutlined style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }} />
@@ -174,7 +174,6 @@ function AppointmentCard({
         </div>
       )}
 
-      {/* Agent name */}
       {agentName && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <Avatar size={16} style={{ background: '#6366f1', fontSize: 9, flexShrink: 0 }}>
@@ -184,7 +183,6 @@ function AppointmentCard({
         </div>
       )}
 
-      {/* Action row */}
       <Divider style={{ margin: '6px 0' }} />
       <div style={{ display: 'flex', gap: 6 }}>
         <Button
@@ -195,10 +193,10 @@ function AppointmentCard({
           style={{ flex: 1, fontSize: 11, height: 26 }}
           ghost={isDone}
         >
-          View Appointment
+          {t('calendar.viewAppointment')}
         </Button>
         {appointment.work_order_id && (
-          <Tooltip title="Open Work Order">
+          <Tooltip title={t('calendar.openWorkOrder')}>
             <Button
               size="small"
               icon={<FileTextOutlined />}
@@ -226,6 +224,7 @@ function AgentBanner({
   currentMonth: Dayjs;
   onClear: () => void;
 }) {
+  const { t } = useTranslation();
   const agent = agents.find((a) => a.id === agentId);
   if (!agent) return null;
 
@@ -268,16 +267,16 @@ function AgentBanner({
         <div style={{ fontSize: 12, color: '#3b82f6', marginTop: 2, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <span>
             <CalendarOutlined style={{ marginRight: 4 }} />
-            {monthAppts.length} jobs in {currentMonth.format('MMMM')}
+            {t('calendar.jobsInMonth', { count: monthAppts.length, month: currentMonth.format('MMMM') })}
           </span>
-          <span style={{ color: '#f59e0b' }}>● {activeCount} active</span>
+          <span style={{ color: '#f59e0b' }}>● {t('calendar.activeCount', { count: activeCount })}</span>
           <span style={{ color: '#16a34a' }}>
             <CheckCircleOutlined style={{ marginRight: 4 }} />
-            {completedCount} completed
+            {t('calendar.completedCount', { count: completedCount })}
           </span>
         </div>
       </div>
-      <Tooltip title="Clear agent filter">
+      <Tooltip title={t('calendar.clearAgentFilter')}>
         <Button
           type="text"
           size="small"
@@ -292,6 +291,7 @@ function AgentBanner({
 
 // ─── Main page ──────────────────────────────────────────────────────────────────
 export default function CalendarViewPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate]   = useState<Dayjs>(dayjs());
   const [viewMode, setViewMode]           = useState<CalendarView>('month');
@@ -301,10 +301,8 @@ export default function CalendarViewPage() {
   const { data: appointments = [], isLoading } = useAllAppointments();
   const { data: agents = [] }                  = useAgents();
 
-  // Agent name lookup (appointment.agent is not populated by server)
   const agentMap = Object.fromEntries(agents.map((a) => [a.id, `${a.first_name} ${a.last_name}`]));
 
-  // Filtered appointments
   const filteredAppointments = appointments.filter((a) => {
     if (selectedAgent && a.agent_id !== selectedAgent) return false;
     if (selectedStatus && a.status !== selectedStatus) return false;
@@ -314,19 +312,16 @@ export default function CalendarViewPage() {
   const getAppointmentsForDate = (date: Dayjs): ServiceAppointment[] =>
     filteredAppointments.filter((a) => dayjs(a.scheduled_start).isSame(date, 'day'));
 
-  // Navigation helpers
   const openAppointment = (appt: ServiceAppointment) =>
     navigate(`/scheduling?appointment_id=${appt.id}`);
 
   const openWorkOrder = (appt: ServiceAppointment) =>
     navigate(`/work-orders/${appt.work_order_id}`);
 
-  // Calendar cell renderer
   const dateCellRender = (value: Dayjs) => {
     const dayAppts = getAppointmentsForDate(value);
     if (dayAppts.length === 0) return null;
 
-    // Sort: active first, done last
     const sorted = [...dayAppts].sort((a, b) => {
       const aD = DONE_STATUSES.includes(a.status) ? 1 : 0;
       const bD = DONE_STATUSES.includes(b.status) ? 1 : 0;
@@ -344,7 +339,7 @@ export default function CalendarViewPage() {
         ))}
         {sorted.length > 3 && (
           <div style={{ fontSize: 10, color: '#6b7280', paddingLeft: 4 }}>
-            +{sorted.length - 3} more
+            +{sorted.length - 3} {t('calendar.more')}
           </div>
         )}
       </div>
@@ -352,20 +347,17 @@ export default function CalendarViewPage() {
   };
 
   const selectedDayAppointments = getAppointmentsForDate(selectedDate);
-
-  // Split day appointments: active first, done after
   const activeDayAppts = selectedDayAppointments.filter((a) => !DONE_STATUSES.includes(a.status));
   const doneDayAppts   = selectedDayAppointments.filter((a) => DONE_STATUSES.includes(a.status));
 
   return (
     <div>
       <PageHeader
-        title="Calendar View"
-        subtitle="Visual calendar for service appointments"
+        title={t('calendar.title')}
+        subtitle={t('calendar.subtitle')}
       />
 
       <Row gutter={16}>
-        {/* ── Calendar ────────────────────────────────────────────────────────── */}
         <Col xs={24} lg={18}>
           {selectedAgent && (
             <AgentBanner
@@ -381,15 +373,15 @@ export default function CalendarViewPage() {
             title={
               <Space>
                 <CalendarOutlined style={{ color: '#2563eb' }} />
-                <span style={{ fontWeight: 600 }}>Service Appointments</span>
+                <span style={{ fontWeight: 600 }}>{t('calendar.serviceAppointments')}</span>
                 <Select
                   value={viewMode}
                   onChange={setViewMode}
                   size="small"
                   style={{ width: 100 }}
                   options={[
-                    { value: 'month', label: 'Month' },
-                    { value: 'year', label: 'Year' },
+                    { value: 'month', label: t('calendar.month') },
+                    { value: 'year', label: t('calendar.year') },
                   ]}
                 />
               </Space>
@@ -397,7 +389,7 @@ export default function CalendarViewPage() {
             extra={
               <Space wrap>
                 <Select
-                  placeholder="All agents"
+                  placeholder={t('calendar.allAgents')}
                   allowClear
                   value={selectedAgent}
                   onChange={setSelectedAgent}
@@ -408,7 +400,7 @@ export default function CalendarViewPage() {
                   }))}
                 />
                 <Select
-                  placeholder="All statuses"
+                  placeholder={t('calendar.allStatuses')}
                   allowClear
                   value={selectedStatus}
                   onChange={setSelectedStatus}
@@ -438,7 +430,6 @@ export default function CalendarViewPage() {
           </Card>
         </Col>
 
-        {/* ── Right panel ─────────────────────────────────────────────────────── */}
         <Col xs={24} lg={6}>
           <Card
             title={
@@ -474,7 +465,7 @@ export default function CalendarViewPage() {
               <Empty
                 description={
                   <span style={{ fontSize: 12, color: '#9ca3af' }}>
-                    No appointments{selectedAgent ? ' for this agent' : ''} on this day
+                    {t('calendar.noAppointments', { context: selectedAgent ? 'agent' : 'all' })}
                   </span>
                 }
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -482,7 +473,6 @@ export default function CalendarViewPage() {
               />
             ) : (
               <>
-                {/* Active appointments */}
                 {activeDayAppts.map((appt) => (
                   <AppointmentCard
                     key={appt.id}
@@ -493,12 +483,11 @@ export default function CalendarViewPage() {
                   />
                 ))}
 
-                {/* Completed / cancelled — shown below with a divider */}
                 {doneDayAppts.length > 0 && (
                   <>
                     {activeDayAppts.length > 0 && (
                       <Divider style={{ margin: '8px 0' }}>
-                        <span style={{ fontSize: 11, color: '#9ca3af' }}>Completed / Cancelled</span>
+                        <span style={{ fontSize: 11, color: '#9ca3af' }}>{t('calendar.completedCancelled')}</span>
                       </Divider>
                     )}
                     {doneDayAppts.map((appt) => (
@@ -516,9 +505,8 @@ export default function CalendarViewPage() {
             )}
           </Card>
 
-          {/* Legend — clickable to toggle status filter */}
           <Card
-            title={<span style={{ fontSize: 13, fontWeight: 600 }}>Status Legend</span>}
+            title={<span style={{ fontSize: 13, fontWeight: 600 }}>{t('calendar.statusLegend')}</span>}
             size="small"
             styles={{ body: { padding: '8px 12px' } }}
           >
@@ -556,7 +544,7 @@ export default function CalendarViewPage() {
                   style={{ fontSize: 11, padding: 0, height: 'auto' }}
                   onClick={() => setSelectedStatus(undefined)}
                 >
-                  Clear status filter
+                  {t('calendar.clearStatusFilter')}
                 </Button>
               </div>
             )}

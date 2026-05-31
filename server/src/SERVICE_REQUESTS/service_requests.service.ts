@@ -21,6 +21,7 @@ import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templa
 import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 import { RequestAuditLog } from './request_audit_log.entity';
+import { User } from '../USERS/users.entity';
 import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
 import { WorkOrder } from '../WORK_ORDERS/work_orders.entity';
 import axios from 'axios';
@@ -88,6 +89,12 @@ export class ServiceRequestsService {
         {
           model: ServiceLocation,
           attributes: ['id', 'address', 'lat', 'lng'],
+        },
+        {
+          model: User,
+          as: 'technicians',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+          through: { attributes: [] },
         },
       ],
       order: [['created_at', pageOptionsDto.order]],
@@ -181,6 +188,12 @@ export class ServiceRequestsService {
           model: ServiceLocation,
           attributes: ['id', 'address', 'lat', 'lng'],
         },
+        {
+          model: User,
+          as: 'technicians',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+          through: { attributes: [] },
+        },
       ],
     });
     if (!serviceRequest) {
@@ -229,6 +242,15 @@ export class ServiceRequestsService {
     const shortTenant = tenantId.split('-')[0].toUpperCase();
     const requestNumber = `SR-${shortTenant}-${dateStr}-${String(todayCount + 1).padStart(3, '0')}`;
 
+    let primaryAssignee = dto.assigned_to;
+    if (dto.technician_ids && dto.technician_ids.length > 0) {
+      primaryAssignee = dto.technician_ids[0];
+    }
+
+    // Destructure technician_ids out so it is NOT passed to Sequelize .create()
+    // (it is not a DB column — it is handled separately via $set below)
+    const { technician_ids: technicianIds, ...createDto } = dto;
+
     let serviceRequest;
     try {
       serviceRequest = await this.serviceRequestRepository.create({
@@ -237,8 +259,13 @@ export class ServiceRequestsService {
         status: finalStatus,
         is_spam_flagged: isSpamFlagged,
         spam_reason: spamReason,
-        ...dto,
+        ...createDto,
+        assigned_to: primaryAssignee,
       });
+
+      if (technicianIds && technicianIds.length > 0) {
+        await serviceRequest.$set('technicians', technicianIds, { through: { tenant_id: tenantId } });
+      }
     } catch (error: any) {
       this.logger.error('Full Error during creation:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       if (error.errors) {
@@ -328,7 +355,23 @@ export class ServiceRequestsService {
     dto: UpdateServiceRequestDto,
   ): Promise<ServiceRequest> {
     const serviceRequest = await this.findById(id, tenantId);
-    await serviceRequest.update(dto);
+    
+    // Destructure technician_ids to prevent Sequelize from trying to write to a non-existent column
+    const { technician_ids: technicianIds, ...updateDto } = dto;
+
+    let primaryAssignee: string | null | undefined = updateDto.assigned_to;
+    if (technicianIds !== undefined) {
+      primaryAssignee = technicianIds.length > 0 ? technicianIds[0] : null;
+    }
+
+    await serviceRequest.update({ ...updateDto, assigned_to: primaryAssignee });
+
+    if (technicianIds !== undefined) {
+      await serviceRequest.$set('technicians', technicianIds, { through: { tenant_id: tenantId } });
+    } else if (updateDto.assigned_to !== undefined) {
+      await serviceRequest.$set('technicians', updateDto.assigned_to ? [updateDto.assigned_to] : [], { through: { tenant_id: tenantId } });
+    }
+
     return serviceRequest;
   }
 
@@ -340,6 +383,8 @@ export class ServiceRequestsService {
   ): Promise<ServiceRequest> {
     const serviceRequest = await this.findById(id, tenantId);
     await serviceRequest.update({ assigned_to: technicianId });
+    // Use $add to append the technician without removing existing ones
+    await serviceRequest.$add('technicians', [technicianId], { through: { tenant_id: tenantId } });
 
     try {
       await this.notificationsService.create(tenantId, {
@@ -380,11 +425,21 @@ export class ServiceRequestsService {
     if (dto.category !== undefined) {
       updateData.category = dto.category;
     }
-    if (dto.assigned_to !== undefined) {
+    
+    if (dto.technician_ids !== undefined) {
+      updateData.assigned_to = dto.technician_ids.length > 0 ? dto.technician_ids[0] : null;
+    } else if (dto.assigned_to !== undefined) {
       updateData.assigned_to = dto.assigned_to;
     }
 
     await serviceRequest.update(updateData);
+
+    if (dto.technician_ids !== undefined) {
+      await serviceRequest.$set('technicians', dto.technician_ids);
+    } else if (dto.assigned_to !== undefined) {
+      await serviceRequest.$set('technicians', dto.assigned_to ? [dto.assigned_to] : []);
+    }
+
     return serviceRequest;
   }
 

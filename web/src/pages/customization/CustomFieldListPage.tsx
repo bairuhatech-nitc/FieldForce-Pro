@@ -52,8 +52,8 @@ export default function CustomFieldListPage() {
 
   const handleDelete = (record: CustomFieldRecord) => {
     showConfirmDialog({
-      title: 'Delete Custom Field',
-      content: `Are you sure you want to delete "${record.label}"?`,
+      title: t('customFields.deleteTitle'),
+      content: t('customFields.deleteContent', { label: record.label }),
       onOk: async () => {
         await deleteCustomField.mutateAsync(record.id);
       },
@@ -67,72 +67,72 @@ export default function CustomFieldListPage() {
 
   const columns: ColumnsType<CustomFieldRecord> = [
     {
-      title: 'Label',
+      title: t('customFields.columns.label'),
       dataIndex: 'label',
       key: 'label',
       render: (label: string) => <span style={{ fontWeight: 500 }}>{label}</span>,
       sorter: (a, b) => a.label.localeCompare(b.label),
     },
     {
-      title: 'Field Name',
+      title: t('customFields.columns.fieldName'),
       dataIndex: 'field_name',
       key: 'field_name',
       render: (name: string) => <code>{name}</code>,
     },
     {
-      title: 'Entity Type',
+      title: t('customFields.columns.entityType'),
       dataIndex: 'entity_type',
       key: 'entity_type',
       render: (type: string) => <Tag>{type}</Tag>,
     },
     {
-      title: 'Field Type',
+      title: t('customFields.columns.fieldType'),
       dataIndex: 'field_type',
       key: 'field_type',
       render: (type: string) => <Tag color="blue">{type}</Tag>,
     },
     {
-      title: 'Required',
+      title: t('customFields.columns.required'),
       dataIndex: 'is_required',
       key: 'is_required',
       render: (required: boolean) => (
         <Tag color={required ? 'red' : 'default'}>
-          {required ? 'Yes' : 'No'}
+          {required ? t('customFields.yes') : t('customFields.no')}
         </Tag>
       ),
     },
     {
-      title: 'Status',
+      title: t('customFields.columns.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean, record) => (
         <Switch
           checked={isActive}
           onChange={(checked) => handleToggleActive(record, checked)}
-          checkedChildren="Active"
-          unCheckedChildren="Inactive"
+          checkedChildren={t('customFields.active')}
+          unCheckedChildren={t('customFields.inactive')}
         />
       ),
     },
     {
-      title: 'Actions',
+      title: t('customFields.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="custom-fields:read">
-            <Tooltip title="View">
+            <Tooltip title={t('common.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/customization/fields/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="custom-fields:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('common.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/customization/fields/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="custom-fields:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -144,12 +144,12 @@ export default function CustomFieldListPage() {
   return (
     <div>
       <PageHeader
-        title="Custom Fields"
-        subtitle="Define custom fields for any module"
+        title={t('customFields.title')}
+        subtitle={t('customFields.subtitle')}
         extra={
           <PermissionGuard permission="custom-fields:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/customization/fields/new')}>
-              Create Custom Field
+              {t('customFields.createButton')}
             </Button>
           </PermissionGuard>
         }
@@ -157,22 +157,22 @@ export default function CustomFieldListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search custom fields..."
+          placeholder={t('customFields.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <Select
-          placeholder="Filter by entity type"
+          placeholder={t('customFields.filterPlaceholder')}
           allowClear
           value={entityFilter}
           onChange={(value) => { setEntityFilter(value); setPage(1); }}
           style={{ width: 200 }}
           options={[
-            { value: 'work_order', label: 'Work Order' },
-            { value: 'contact', label: 'Contact' },
-            { value: 'estimate', label: 'Estimate' },
-            { value: 'invoice', label: 'Invoice' },
-            { value: 'asset', label: 'Asset' },
+            { value: 'work_order', label: t('customFields.entities.workOrder') },
+            { value: 'contact', label: t('customFields.entities.contact') },
+            { value: 'estimate', label: t('customFields.entities.estimate') },
+            { value: 'invoice', label: t('customFields.entities.invoice') },
+            { value: 'asset', label: t('customFields.entities.asset') },
           ]}
         />
       </div>
@@ -187,7 +187,7 @@ export default function CustomFieldListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} custom fields`,
+          showTotal: (total) => t('customFields.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

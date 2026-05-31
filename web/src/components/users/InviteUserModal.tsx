@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Modal, Form, Input, Select, Space, Alert } from 'antd';
 import { MailOutlined, UserOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useAllRoles } from '@/hooks/use-roles';
 import { useInviteUser } from '@/hooks/use-users';
 import type { InviteResult } from '@/api/users.api';
@@ -12,6 +13,7 @@ interface InviteUserModalProps {
 }
 
 export default function InviteUserModal({ open, onClose, onInvited }: InviteUserModalProps) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const { data: roles, isLoading: rolesLoading } = useAllRoles();
   const inviteUser = useInviteUser();
@@ -35,9 +37,9 @@ export default function InviteUserModal({ open, onClose, onInvited }: InviteUser
   return (
     <Modal
       open={open}
-      title="Invite User"
-      okText="Send Invite"
-      cancelText="Cancel"
+      title={t('inviteUser.title')}
+      okText={t('inviteUser.sendInvite')}
+      cancelText={t('inviteUser.cancel')}
       confirmLoading={inviteUser.isPending}
       onOk={handleOk}
       onCancel={onClose}
@@ -46,7 +48,7 @@ export default function InviteUserModal({ open, onClose, onInvited }: InviteUser
     >
       <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size={12}>
         <Alert
-          message="An invitation link will be generated. Share it with the user to complete their account setup."
+          message={t('inviteUser.alertMessage')}
           type="info"
           showIcon
         />
@@ -55,26 +57,26 @@ export default function InviteUserModal({ open, onClose, onInvited }: InviteUser
       <Form form={form} layout="vertical">
         <Form.Item
           name="first_name"
-          label="First Name"
-          rules={[{ required: true, message: 'First name is required' }]}
+          label={t('inviteUser.firstNameLabel')}
+          rules={[{ required: true, message: t('inviteUser.firstNameRequired') }]}
         >
-          <Input prefix={<UserOutlined />} placeholder="First name" />
+          <Input prefix={<UserOutlined />} placeholder={t('inviteUser.firstNamePlaceholder')} />
         </Form.Item>
 
         <Form.Item
           name="last_name"
-          label="Last Name"
-          rules={[{ required: true, message: 'Last name is required' }]}
+          label={t('inviteUser.lastNameLabel')}
+          rules={[{ required: true, message: t('inviteUser.lastNameRequired') }]}
         >
-          <Input prefix={<UserOutlined />} placeholder="Last name" />
+          <Input prefix={<UserOutlined />} placeholder={t('inviteUser.lastNamePlaceholder')} />
         </Form.Item>
 
         <Form.Item
           name="email"
-          label="Email"
+          label={t('inviteUser.emailLabel')}
           rules={[
-            { required: true, message: 'Email is required' },
-            { type: 'email', message: 'Enter a valid email address' },
+            { required: true, message: t('inviteUser.emailRequired') },
+            { type: 'email', message: t('inviteUser.emailInvalid') },
           ]}
         >
           <Input prefix={<MailOutlined />} placeholder="user@example.com" />
@@ -82,11 +84,11 @@ export default function InviteUserModal({ open, onClose, onInvited }: InviteUser
 
         <Form.Item
           name="role_id"
-          label="Role"
-          rules={[{ required: true, message: 'Please select a role' }]}
+          label={t('inviteUser.roleLabel')}
+          rules={[{ required: true, message: t('inviteUser.roleRequired') }]}
         >
           <Select
-            placeholder="Select a role"
+            placeholder={t('inviteUser.rolePlaceholder')}
             loading={rolesLoading}
             options={roles?.map((r) => ({ label: r.name, value: r.id }))}
           />

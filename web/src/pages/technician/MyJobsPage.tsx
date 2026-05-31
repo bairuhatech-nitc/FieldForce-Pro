@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useTranslation } from 'react-i18next';
 import { useMyJobs } from '@/hooks/use-work-orders';
 import PageHeader from '@/components/common/PageHeader';
 import type { WorkOrder } from '@/types/models.types';
@@ -40,15 +41,17 @@ function formatStatus(status: string): string {
   return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
-const STATUS_TABS = [
-  { key: 'all', label: 'All Jobs' },
-  { key: 'new', label: 'New' },
-  { key: 'scheduled', label: 'Scheduled' },
-  { key: 'in_progress', label: 'In Progress' },
-  { key: 'completed', label: 'Completed' },
-];
-
 function JobCard({ job, onView }: { job: WorkOrder; onView: (id: string) => void }) {
+  const { t } = useTranslation();
+  
+  const statusTabs = [
+    { key: 'all', label: t('myJobs.tabs.all') },
+    { key: 'new', label: t('myJobs.tabs.new') },
+    { key: 'scheduled', label: t('myJobs.tabs.scheduled') },
+    { key: 'in_progress', label: t('myJobs.tabs.inProgress') },
+    { key: 'completed', label: t('myJobs.tabs.completed') },
+  ];
+
   return (
     <Card
       style={{ marginBottom: 12 }}
@@ -96,7 +99,7 @@ function JobCard({ job, onView }: { job: WorkOrder; onView: (id: string) => void
           onClick={() => onView(job.id)}
           style={{ flexShrink: 0 }}
         >
-          View Job
+          {t('myJobs.viewJob')}
         </Button>
       </div>
     </Card>
@@ -104,6 +107,7 @@ function JobCard({ job, onView }: { job: WorkOrder; onView: (id: string) => void
 }
 
 export default function MyJobsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
 
@@ -113,17 +117,22 @@ export default function MyJobsPage() {
 
   const jobs = data?.data ?? [];
 
+  const statusTabs = [
+    { key: 'all', label: t('myJobs.tabs.all') },
+    { key: 'new', label: t('myJobs.tabs.new') },
+    { key: 'scheduled', label: t('myJobs.tabs.scheduled') },
+    { key: 'in_progress', label: t('myJobs.tabs.inProgress') },
+    { key: 'completed', label: t('myJobs.tabs.completed') },
+  ];
+
   return (
     <div style={{ padding: '24px' }}>
-      <PageHeader title="My Jobs" subtitle="Work orders assigned to you" />
+      <PageHeader title={t('myJobs.pageTitle')} subtitle={t('myJobs.pageSubtitle')} />
 
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
-        items={STATUS_TABS.map((tab) => ({
-          key: tab.key,
-          label: tab.label,
-        }))}
+        items={statusTabs}
         style={{ marginBottom: 16 }}
       />
 
@@ -133,7 +142,7 @@ export default function MyJobsPage() {
         </div>
       ) : jobs.length === 0 ? (
         <Empty
-          description={activeTab === 'all' ? 'No jobs assigned to you' : `No ${formatStatus(activeTab)} jobs`}
+          description={activeTab === 'all' ? t('myJobs.noJobsAssigned') : t('myJobs.noStatusJobs', { status: formatStatus(activeTab) })}
           style={{ padding: '60px 0' }}
         />
       ) : (

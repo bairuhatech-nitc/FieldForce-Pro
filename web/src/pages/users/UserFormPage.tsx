@@ -9,13 +9,13 @@ import { useUser, useCreateUser, useUpdateUser } from '@/hooks/use-users';
 import PageHeader from '@/components/common/PageHeader';
 
 const createSchema = z.object({
-  first_name: z.string().min(1, 'First name is required').max(100),
-  last_name: z.string().min(1, 'Last name is required').max(100),
-  email: z.string().email('Invalid email'),
+  first_name: z.string().min(1, 'userForm.validation.firstNameRequired').max(100),
+  last_name: z.string().min(1, 'userForm.validation.lastNameRequired').max(100),
+  email: z.string().email('userForm.validation.invalidEmail'),
   password: z
     .string()
-    .min(8, 'Min 8 characters')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, 'Weak password'),
+    .min(8, 'userForm.validation.min8Characters')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, 'userForm.validation.weakPassword'),
   phone: z.string().max(20).optional().or(z.literal('')),
   timezone: z.string().default('UTC'),
   language: z.string().default('en'),
@@ -94,7 +94,7 @@ export default function UserFormPage() {
           <Form.Item
             label={t('auth.firstName')}
             validateStatus={errors.first_name ? 'error' : ''}
-            help={errors.first_name?.message}
+            help={errors.first_name?.message ? t(errors.first_name.message) : undefined}
           >
             <Controller
               name="first_name"
@@ -106,7 +106,7 @@ export default function UserFormPage() {
           <Form.Item
             label={t('auth.lastName')}
             validateStatus={errors.last_name ? 'error' : ''}
-            help={errors.last_name?.message}
+            help={errors.last_name?.message ? t(errors.last_name.message) : undefined}
           >
             <Controller
               name="last_name"
@@ -118,7 +118,7 @@ export default function UserFormPage() {
           <Form.Item
             label={t('auth.email')}
             validateStatus={errors.email ? 'error' : ''}
-            help={errors.email?.message}
+            help={errors.email?.message ? t(errors.email.message) : undefined}
           >
             <Controller
               name="email"
@@ -131,7 +131,7 @@ export default function UserFormPage() {
             <Form.Item
               label={t('auth.password')}
               validateStatus={errors.password ? 'error' : ''}
-              help={errors.password?.message}
+              help={errors.password?.message ? t(errors.password.message) : undefined}
             >
               <Controller
                 name="password"
@@ -151,7 +151,7 @@ export default function UserFormPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Timezone">
+          <Form.Item label={t('userForm.timezone')}>
             <Controller
               name="timezone"
               control={control}
@@ -159,13 +159,13 @@ export default function UserFormPage() {
                 <Select
                   {...field}
                   options={[
-                    { value: 'UTC', label: 'UTC' },
-                    { value: 'America/New_York', label: 'Eastern Time' },
-                    { value: 'America/Chicago', label: 'Central Time' },
-                    { value: 'America/Denver', label: 'Mountain Time' },
-                    { value: 'America/Los_Angeles', label: 'Pacific Time' },
-                    { value: 'Asia/Kolkata', label: 'India Standard Time' },
-                    { value: 'Europe/London', label: 'GMT' },
+                    { value: 'UTC', label: t('userForm.timezones.utc') },
+                    { value: 'America/New_York', label: t('userForm.timezones.easternTime') },
+                    { value: 'America/Chicago', label: t('userForm.timezones.centralTime') },
+                    { value: 'America/Denver', label: t('userForm.timezones.mountainTime') },
+                    { value: 'America/Los_Angeles', label: t('userForm.timezones.pacificTime') },
+                    { value: 'Asia/Kolkata', label: t('userForm.timezones.indiaStandardTime') },
+                    { value: 'Europe/London', label: t('userForm.timezones.gmt') },
                   ]}
                 />
               )}

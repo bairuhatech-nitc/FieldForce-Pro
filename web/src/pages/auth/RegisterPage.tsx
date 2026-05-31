@@ -203,7 +203,7 @@ export default function RegisterPage() {
                 block
                 size="large"
               >
-                Send Magic Link
+                {t('auth.sendMagicLink')}
               </Button>
             </Form.Item>
 

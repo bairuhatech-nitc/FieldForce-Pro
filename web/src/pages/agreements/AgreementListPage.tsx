@@ -58,8 +58,8 @@ export default function AgreementListPage() {
 
   const handleDelete = (record: AgreementRecord) => {
     showConfirmDialog({
-      title: 'Delete Agreement',
-      content: `Are you sure you want to delete "${record.name}"?`,
+      title: t('serviceAgreements.deleteTitle'),
+      content: t('serviceAgreements.deleteContent', { name: record.name }),
       onOk: async () => {
         await deleteAgreement.mutateAsync(record.id);
       },
@@ -69,20 +69,20 @@ export default function AgreementListPage() {
 
   const columns: ColumnsType<AgreementRecord> = [
     {
-      title: 'Name',
+      title: t('serviceAgreements.columns.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Type',
+      title: t('serviceAgreements.columns.type'),
       dataIndex: 'type',
       key: 'type',
       render: (type: string) => <Tag>{type}</Tag>,
     },
     {
-      title: 'Contact',
+      title: t('serviceAgreements.columns.contact'),
       key: 'contact',
       render: (_, record) =>
         record.contact
@@ -90,28 +90,28 @@ export default function AgreementListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Start Date',
+      title: t('serviceAgreements.columns.startDate'),
       dataIndex: 'start_date',
       key: 'start_date',
       render: (date: string) => formatDate(date),
       sorter: (a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
     },
     {
-      title: 'End Date',
+      title: t('serviceAgreements.columns.endDate'),
       dataIndex: 'end_date',
       key: 'end_date',
       render: (date: string) => formatDate(date),
       sorter: (a, b) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime(),
     },
     {
-      title: 'Value',
+      title: t('serviceAgreements.columns.value'),
       dataIndex: 'value',
       key: 'value',
       render: (value: number) => value != null ? `$${value.toLocaleString()}` : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => (a.value || 0) - (b.value || 0),
     },
     {
-      title: 'Status',
+      title: t('serviceAgreements.columns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -121,24 +121,24 @@ export default function AgreementListPage() {
       ),
     },
     {
-      title: 'Actions',
+      title: t('serviceAgreements.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="service-agreements:read">
-            <Tooltip title="View">
+            <Tooltip title={t('serviceAgreements.actions.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/agreements/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="service-agreements:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('serviceAgreements.actions.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/agreements/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="service-agreements:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('serviceAgreements.actions.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -151,11 +151,11 @@ export default function AgreementListPage() {
     <div>
       <PageHeader
         title={t('nav.agreements', 'Service Agreements')}
-        subtitle="Manage service agreements and contracts"
+        subtitle={t('serviceAgreements.subtitle')}
         extra={
           <PermissionGuard permission="service-agreements:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/agreements/new')}>
-              Add Agreement
+              {t('serviceAgreements.addAgreement')}
             </Button>
           </PermissionGuard>
         }
@@ -163,24 +163,24 @@ export default function AgreementListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search agreements by name..."
+          placeholder={t('serviceAgreements.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           style={{ width: 400 }}
         />
         <Select
-          placeholder="Filter by status"
+          placeholder={t('serviceAgreements.filterStatus')}
           allowClear
           value={statusFilter}
           onChange={(value) => { setStatusFilter(value); setPage(1); }}
           style={{ width: 200 }}
           options={[
-            { value: 'draft', label: 'Draft' },
-            { value: 'active', label: 'Active' },
-            { value: 'expired', label: 'Expired' },
-            { value: 'cancelled', label: 'Cancelled' },
-            { value: 'renewed', label: 'Renewed' },
+            { value: 'draft', label: t('serviceAgreements.status.draft') },
+            { value: 'active', label: t('serviceAgreements.status.active') },
+            { value: 'expired', label: t('serviceAgreements.status.expired') },
+            { value: 'cancelled', label: t('serviceAgreements.status.cancelled') },
+            { value: 'renewed', label: t('serviceAgreements.status.renewed') },
           ]}
         />
       </div>
@@ -195,7 +195,7 @@ export default function AgreementListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} agreements`,
+          showTotal: (total) => t('serviceAgreements.total', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

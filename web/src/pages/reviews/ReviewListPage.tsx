@@ -59,7 +59,7 @@ export default function ReviewListPage() {
 
   const columns: ColumnsType<ReviewRecord> = [
     {
-      title: 'Work Order',
+      title: t('reviews.columns.workOrder'),
       key: 'work_order',
       render: (_, record) =>
         record.work_order
@@ -67,7 +67,7 @@ export default function ReviewListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Customer',
+      title: t('reviews.columns.customer'),
       key: 'contact',
       render: (_, record) =>
         record.contact
@@ -75,14 +75,14 @@ export default function ReviewListPage() {
           : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Rating',
+      title: t('reviews.columns.rating'),
       dataIndex: 'rating',
       key: 'rating',
       render: (rating: number) => <Rate disabled value={rating} style={{ fontSize: 16 }} />,
       sorter: (a, b) => a.rating - b.rating,
     },
     {
-      title: 'Comment',
+      title: t('reviews.columns.comment'),
       dataIndex: 'comment',
       key: 'comment',
       render: (comment: string) => (
@@ -92,7 +92,7 @@ export default function ReviewListPage() {
       ),
     },
     {
-      title: 'Source',
+      title: t('reviews.columns.source'),
       dataIndex: 'source',
       key: 'source',
       render: (source: string) => (
@@ -102,31 +102,31 @@ export default function ReviewListPage() {
       ),
     },
     {
-      title: 'Published',
+      title: t('reviews.columns.published'),
       dataIndex: 'is_published',
       key: 'is_published',
       render: (published: boolean) => (
         <Tag color={published ? 'green' : 'default'}>
-          {published ? 'Yes' : 'No'}
+          {published ? t('reviews.common.yes') : t('reviews.common.no')}
         </Tag>
       ),
     },
     {
-      title: 'Date',
+      title: t('reviews.columns.date'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('reviews.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 80,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="reviews:read">
-            <Tooltip title="View">
+            <Tooltip title={t('reviews.actions.view')}>
               <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/reviews/${record.id}`)} />
             </Tooltip>
           </PermissionGuard>
@@ -138,12 +138,12 @@ export default function ReviewListPage() {
   return (
     <div>
       <PageHeader
-        title="Reviews & Feedback"
-        subtitle="Customer reviews and satisfaction ratings"
+        title={t('reviews.pageHeader.title')}
+        subtitle={t('reviews.pageHeader.subtitle')}
         extra={
           <PermissionGuard permission="reviews:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reviews/new')}>
-              Add Review
+              {t('reviews.actions.addReview')}
             </Button>
           </PermissionGuard>
         }
@@ -151,37 +151,37 @@ export default function ReviewListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search reviews..."
+          placeholder={t('reviews.filters.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           style={{ width: 400 }}
         />
         <Select
-          placeholder="Filter by rating"
+          placeholder={t('reviews.filters.ratingPlaceholder')}
           allowClear
           value={ratingFilter}
           onChange={(value) => { setRatingFilter(value); setPage(1); }}
           style={{ width: 150 }}
           options={[
-            { value: 5, label: '5 Stars' },
-            { value: 4, label: '4 Stars' },
-            { value: 3, label: '3 Stars' },
-            { value: 2, label: '2 Stars' },
-            { value: 1, label: '1 Star' },
+            { value: 5, label: t('reviews.stars', { count: 5 }) },
+            { value: 4, label: t('reviews.stars', { count: 4 }) },
+            { value: 3, label: t('reviews.stars', { count: 3 }) },
+            { value: 2, label: t('reviews.stars', { count: 2 }) },
+            { value: 1, label: t('reviews.star', { count: 1 }) },
           ]}
         />
         <Select
-          placeholder="Filter by source"
+          placeholder={t('reviews.filters.sourcePlaceholder')}
           allowClear
           value={sourceFilter}
           onChange={(value) => { setSourceFilter(value); setPage(1); }}
           style={{ width: 150 }}
           options={[
-            { value: 'internal', label: 'Internal' },
-            { value: 'google', label: 'Google' },
-            { value: 'yelp', label: 'Yelp' },
-            { value: 'facebook', label: 'Facebook' },
+            { value: 'internal', label: t('reviews.sources.internal') },
+            { value: 'google', label: t('reviews.sources.google') },
+            { value: 'yelp', label: t('reviews.sources.yelp') },
+            { value: 'facebook', label: t('reviews.sources.facebook') },
           ]}
         />
       </div>
@@ -196,7 +196,7 @@ export default function ReviewListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} reviews`,
+          showTotal: (total) => t('reviews.pagination.total', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

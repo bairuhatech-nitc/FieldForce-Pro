@@ -42,8 +42,8 @@ export default function ContactListPage() {
 
   const handleDelete = (contact: Contact) => {
     showConfirmDialog({
-      title: 'Delete Contact',
-      content: `Are you sure you want to delete ${contact.first_name} ${contact.last_name}?`,
+      title: t('contactList.deleteTitle'),
+      content: t('contactList.deleteConfirm', { firstName: contact.first_name, lastName: contact.last_name }),
       onOk: async () => {
         await deleteContact.mutateAsync(contact.id);
       },
@@ -53,7 +53,7 @@ export default function ContactListPage() {
 
   const columns: ColumnsType<Contact> = [
     {
-      title: 'Name',
+      title: t('contactList.name'),
       key: 'name',
       render: (_, record) => (
         <span style={{ fontWeight: 500 }}>
@@ -63,7 +63,7 @@ export default function ContactListPage() {
       sorter: (a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`),
     },
     {
-      title: 'Email',
+      title: t('contactList.email'),
       dataIndex: 'email',
       key: 'email',
       render: (email: string) =>
@@ -77,7 +77,7 @@ export default function ContactListPage() {
         ),
     },
     {
-      title: 'Phone',
+      title: t('contactList.phone'),
       dataIndex: 'phone',
       key: 'phone',
       render: (phone: string) =>
@@ -91,7 +91,7 @@ export default function ContactListPage() {
         ),
     },
     {
-      title: 'Tags',
+      title: t('contactList.tags'),
       dataIndex: 'tags',
       key: 'tags',
       render: (tags: string[]) =>
@@ -108,21 +108,21 @@ export default function ContactListPage() {
         ),
     },
     {
-      title: 'Created',
+      title: t('contactList.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('contactList.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="contacts:read">
-            <Tooltip title="View">
+            <Tooltip title={t('contactList.view')}>
               <Button
                 type="text"
                 icon={<EyeOutlined />}
@@ -132,7 +132,7 @@ export default function ContactListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="contacts:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('contactList.edit')}>
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -142,7 +142,7 @@ export default function ContactListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="contacts:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('contactList.delete')}>
               <Button
                 type="text"
                 danger
@@ -161,7 +161,7 @@ export default function ContactListPage() {
     <div>
       <PageHeader
         title={t('nav.contacts')}
-        subtitle="Manage your contacts"
+        subtitle={t('contactList.subtitle')}
         extra={
           <PermissionGuard permission="contacts:create">
             <Button
@@ -169,7 +169,7 @@ export default function ContactListPage() {
               icon={<PlusOutlined />}
               onClick={() => navigate('/contacts/new')}
             >
-              Add Contact
+              {t('contactList.addContact')}
             </Button>
           </PermissionGuard>
         }
@@ -177,7 +177,7 @@ export default function ContactListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search contacts by name, email, or phone"
+          placeholder={t('contactList.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -195,7 +195,7 @@ export default function ContactListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} contacts`,
+          showTotal: (total) => t('contactList.totalContacts', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

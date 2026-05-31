@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Form, Input, Button, Card, Space, Row, Col, Spin, Select, AutoComplete, message, Typography } from 'antd';
 import { EnvironmentOutlined, SaveOutlined, CloseOutlined, AimOutlined, LoadingOutlined } from '@ant-design/icons';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents, GeoJSON } from 'react-leaflet';
@@ -82,6 +83,7 @@ interface MapPickerProps {
 }
 
 function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
+  const { t } = useTranslation();
   const [mapAddress, setMapAddress] = useState(address);
   const [coords, setCoords] = useState({ lat: lat || 0, lng: lng || 0 });
   const [suggestions, setSuggestions] = useState<{ value: string; label: string; lat: number; lng: number }[]>([]);
@@ -91,7 +93,6 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const boundaryKeyRef = useRef(0);
 
-  // Fetch boundary + reverse geocode for a point
   const fetchBoundaryForPoint = useCallback(async (pointLat: number, pointLng: number) => {
     try {
       const res = await fetch(
@@ -99,14 +100,12 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
       );
       const data = await res.json();
 
-      // Show territory boundary
       if (data.geojson && (data.geojson.type === 'Polygon' || data.geojson.type === 'MultiPolygon')) {
         setBoundaryData(data.geojson);
         setBoundaryName(data.address?.city || data.address?.town || data.address?.village || data.address?.county || '');
         boundaryKeyRef.current += 1;
       }
 
-      // Update address from reverse geocode
       if (data.display_name) {
         setMapAddress(data.display_name);
         onChange(pointLat, pointLng, data.display_name);
@@ -118,7 +117,6 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
     }
   }, [onChange]);
 
-  // Address search via Nominatim
   const fetchSuggestions = useCallback(async (query: string) => {
     if (query.length < 3) { setSuggestions([]); return; }
     try {
@@ -152,13 +150,12 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
     setCoords({ lat: selectedLat, lng: selectedLng });
     setSuggestions([]);
 
-    // Fetch boundary for selected place
     fetchBoundaryForPoint(selectedLat, selectedLng);
-    message.success(`Location set: ${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`);
+    message.success(t('serviceLocations.locationSet', { lat: selectedLat.toFixed(6), lng: selectedLng.toFixed(6) }));
   };
 
   const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) { message.error('Geolocation not supported'); return; }
+    if (!navigator.geolocation) { message.error(t('serviceLocations.geolocationNotSupported')); return; }
     setFetchingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -167,14 +164,14 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
         setCoords({ lat: newLat, lng: newLng });
         setFetchingLocation(false);
         fetchBoundaryForPoint(newLat, newLng);
-        message.success(`Current location: ${newLat.toFixed(6)}, ${newLng.toFixed(6)}`);
+        message.success(t('serviceLocations.currentLocation', { lat: newLat.toFixed(6), lng: newLng.toFixed(6) }));
       },
       (error) => {
         setFetchingLocation(false);
         if (error.code === error.PERMISSION_DENIED) {
-          message.error('Location permission denied. Please allow location access.');
+          message.error(t('serviceLocations.locationPermissionDenied'));
         } else {
-          message.error('Unable to get your location. Please try again.');
+          message.error(t('serviceLocations.unableToGetLocation'));
         }
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -191,25 +188,23 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
     fetchBoundaryForPoint(newLat, newLng);
   }, [fetchBoundaryForPoint]);
 
-  // Wrap boundary as GeoJSON Feature
   const boundaryFeature = boundaryData
     ? { type: 'Feature' as const, geometry: boundaryData, properties: { name: boundaryName } }
     : null;
 
   return (
     <Card
-      title={<Space><EnvironmentOutlined /> Location on Map <span style={{ color: '#ff4d4f' }}>*</span></Space>}
+      title={<Space><EnvironmentOutlined /> {t('serviceLocations.locationOnMap')} <span style={{ color: '#ff4d4f' }}>*</span></Space>}
       style={{ marginBottom: 24 }}
     >
-      {/* Address search */}
-      <Text strong style={{ display: 'block', marginBottom: 6 }}>Search Address:</Text>
+      <Text strong style={{ display: 'block', marginBottom: 6 }}>{t('serviceLocations.searchAddress')}:</Text>
       <AutoComplete
         value={mapAddress}
         options={suggestions}
         onSearch={handleAddressType}
         onSelect={handleSelectSuggestion}
         filterOption={false}
-        placeholder="Search address (e.g. Kozhikode, Thamarassery)..."
+        placeholder={t('serviceLocations.searchPlaceholder')}
         style={{ width: '100%', marginBottom: 8 }}
         size="large"
       />
@@ -221,10 +216,9 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
         block
         style={{ marginBottom: 8 }}
       >
-        Use My Current Location
+        {t('serviceLocations.useCurrentLocation')}
       </Button>
 
-      {/* Interactive map with boundary */}
       <div style={{ height: 350, borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
         <MapContainer
           center={[coords.lat || 25.276987, coords.lng || 55.296249]}
@@ -238,7 +232,6 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
           <MapUpdater lat={coords.lat} lng={coords.lng} />
           <MapClickHandler onMapClick={handleMapClick} />
 
-          {/* Territory boundary polygon */}
           {boundaryFeature && (
             <GeoJSON
               key={boundaryKeyRef.current}
@@ -247,7 +240,6 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
             />
           )}
 
-          {/* Draggable marker */}
           {coords.lat !== 0 && coords.lng !== 0 && (
             <DraggableMarker lat={coords.lat} lng={coords.lng} onDragEnd={handleMarkerDrag} />
           )}
@@ -255,15 +247,14 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
       </div>
 
       <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 6 }}>
-        Search a place or click on the map to set the location. Drag the marker to adjust. The yellow boundary shows the area territory.
+        {t('serviceLocations.mapInstructions')}
       </Text>
 
-      {/* Coordinate display */}
       {coords.lat !== 0 && coords.lng !== 0 && (
         <div style={{ marginTop: 8, padding: '8px 12px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
           <Text strong style={{ fontSize: 12 }}>
             📍 {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
-            {boundaryName && <Text type="secondary" style={{ marginLeft: 8 }}>(in {boundaryName})</Text>}
+            {boundaryName && <Text type="secondary" style={{ marginLeft: 8 }}>({t('serviceLocations.inTerritory', { name: boundaryName })})</Text>}
           </Text>
         </div>
       )}
@@ -271,9 +262,8 @@ function MapPicker({ lat, lng, address, onChange }: MapPickerProps) {
   );
 }
 
-// --- Main Form ---
-
 export default function ServiceLocationFormPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [form] = Form.useForm();
@@ -304,7 +294,7 @@ export default function ServiceLocationFormPage() {
 
   const handleSubmit = async (values: Record<string, unknown>) => {
     if (!values.lat || !values.lng) {
-      message.warning('Please pick a location on the map. Location coordinates are required.');
+      message.warning(t('serviceLocations.locationRequiredWarning'));
       return;
     }
     try {
@@ -343,8 +333,8 @@ export default function ServiceLocationFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Service Location' : 'Add Service Location'}
-        subtitle={isEdit ? `Editing location at ${location?.address}` : 'Create a new service location'}
+        title={isEdit ? t('serviceLocations.editTitle') : t('serviceLocations.addTitle')}
+        subtitle={isEdit ? t('serviceLocations.editSubtitle', { address: location?.address }) : t('serviceLocations.addSubtitle')}
         onBack={() => navigate('/service-locations')}
       />
 
@@ -356,10 +346,10 @@ export default function ServiceLocationFormPage() {
       >
         <Row gutter={24}>
           <Col xs={24} lg={10}>
-            <Card title="Location Details" style={{ marginBottom: 24 }}>
-              <Form.Item name="contact_id" label="Contact">
+            <Card title={t('serviceLocations.locationDetails')} style={{ marginBottom: 24 }}>
+              <Form.Item name="contact_id" label={t('serviceLocations.contact')}>
                 <Select
-                  placeholder="Select a contact (optional)"
+                  placeholder={t('serviceLocations.selectContact')}
                   allowClear
                   showSearch
                   optionFilterProp="children"
@@ -372,9 +362,9 @@ export default function ServiceLocationFormPage() {
                 </Select>
               </Form.Item>
 
-              <Form.Item name="company_id" label="Company">
+              <Form.Item name="company_id" label={t('serviceLocations.company')}>
                 <Select
-                  placeholder="Select a company (optional)"
+                  placeholder={t('serviceLocations.selectCompany')}
                   allowClear
                   showSearch
                   optionFilterProp="children"
@@ -389,21 +379,21 @@ export default function ServiceLocationFormPage() {
 
               <Form.Item
                 name="address"
-                label="Address"
-                rules={[{ required: true, message: 'Address is required' }]}
+                label={t('serviceLocations.address')}
+                rules={[{ required: true, message: t('serviceLocations.addressRequired') }]}
               >
-                <TextArea rows={2} placeholder="123 Main St, City, State 12345" />
+                <TextArea rows={2} placeholder={t('serviceLocations.addressPlaceholder')} />
               </Form.Item>
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="gate_code" label="Gate Code">
-                    <Input placeholder="e.g., #1234" />
+                  <Form.Item name="gate_code" label={t('serviceLocations.gateCode')}>
+                    <Input placeholder={t('serviceLocations.gateCodePlaceholder')} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="access_notes" label="Access Notes">
-                    <TextArea rows={1} placeholder="Enter through side gate" />
+                  <Form.Item name="access_notes" label={t('serviceLocations.accessNotes')}>
+                    <TextArea rows={1} placeholder={t('serviceLocations.accessNotesPlaceholder')} />
                   </Form.Item>
                 </Col>
               </Row>
@@ -411,14 +401,14 @@ export default function ServiceLocationFormPage() {
               <Form.Item
                 name="lat"
                 hidden
-                rules={[{ required: true, message: 'Please pick a location on the map' }]}
+                rules={[{ required: true, message: t('serviceLocations.locationRequired') }]}
               >
                 <Input />
               </Form.Item>
               <Form.Item
                 name="lng"
                 hidden
-                rules={[{ required: true, message: 'Please pick a location on the map' }]}
+                rules={[{ required: true, message: t('serviceLocations.locationRequired') }]}
               >
                 <Input />
               </Form.Item>
@@ -443,13 +433,13 @@ export default function ServiceLocationFormPage() {
               icon={<SaveOutlined />}
               loading={createServiceLocation.isPending || updateServiceLocation.isPending}
             >
-              {isEdit ? 'Update Location' : 'Create Location'}
+              {isEdit ? t('common.update') : t('common.create')}
             </Button>
             <Button
               onClick={() => navigate('/service-locations')}
               icon={<CloseOutlined />}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
           </Space>
         </Card>
