@@ -62,6 +62,8 @@ import { IPWhitelist } from '../IP_WHITELIST/ip-whitelist.entity';
 import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.entity';
 import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
 import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import { EstimateAttachment } from '../ATTACHMENTS/estimate_attachments.entity';
+import { SubscriptionMagicLink } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.entity';
 import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
 import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
@@ -103,7 +105,8 @@ import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_
           IPWhitelist,
           WorkOrderTechnicianSession,
           SlaTimer,
-          RequestAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
+          RequestAttachment, EstimateAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
+          SubscriptionMagicLink,
           ApiKey, MagicLink, SuperAdminApiKey, SuperAdminAuditLog
         ],
         autoLoadModels: true,

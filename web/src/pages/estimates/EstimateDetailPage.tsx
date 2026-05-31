@@ -1,8 +1,9 @@
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Descriptions, Button, Space, Skeleton, Tag, Table, Row, Col,
   Tooltip, Steps, message, Tabs,
-  Timeline, Collapse,
+  Timeline, Collapse, Modal, Input, Alert,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -14,6 +15,7 @@ import { downloadEstimatePdf } from '@/utils/estimate-pdf';
 import {
   useEstimate, useDeleteEstimate, useUpdateEstimateStatus,
   useSubmitEstimateForApproval, useAdminApproveEstimate, useAdminRejectEstimate, useGenerateInvoiceFromEstimate,
+  useInternalApproveEstimate, useInternalRejectEstimate,
 } from '@/hooks/use-estimates';
 import { useEstimateLineItems } from '@/hooks/use-estimate-line-items';
 import type { EstimateLineItem } from '@/types/models.types';
@@ -64,6 +66,11 @@ export default function EstimateDetailPage() {
   const adminApprove = useAdminApproveEstimate();
   const adminReject = useAdminRejectEstimate();
   const generateInvoice = useGenerateInvoiceFromEstimate();
+  const internalApprove = useInternalApproveEstimate();
+  const internalReject = useInternalRejectEstimate();
+
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   const handleDelete = () => {
     if (!estimate) return;
@@ -225,6 +232,84 @@ export default function EstimateDetailPage() {
         }
       />
 
+      {/* ── On-site estimate internal approval actions ── */}
+      {estimate.estimate_type === 'on_site' && estimate.status === 'pending_internal_approval' && (
+        <Card
+          style={{ marginBottom: 16, borderColor: '#faad14' }}
+          title={<span style={{ color: '#d48806' }}>Manager Review Required — On-Site Estimate</span>}
+        >
+          <Alert
+            message={`Technician submitted an on-site estimate of ${formatCurrency(estimate.total || 0)}. Please review the line items and approve or reject.`}
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <Space>
+            <PermissionGuard permission="estimates:update">
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                loading={internalApprove.isPending}
+                onClick={() => showConfirmDialog({
+                  title: 'Approve & Send to Customer',
+                  content: 'This will approve the estimate and send a review link to the customer via email.',
+                  onOk: async () => { await internalApprove.mutateAsync(estimate.id); },
+                })}
+              >
+                Approve &amp; Send to Customer
+              </Button>
+            </PermissionGuard>
+            <PermissionGuard permission="estimates:update">
+              <Button
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => setRejectModalOpen(true)}
+              >
+                Reject &amp; Send Back
+              </Button>
+            </PermissionGuard>
+          </Space>
+        </Card>
+      )}
+
+      {/* ── Status banners for on-site estimates ── */}
+      {estimate.estimate_type === 'on_site' && estimate.status === 'revision_required' && (
+        <Alert
+          message="Revision Required"
+          description={`Manager feedback: ${estimate.internal_rejection_reason || 'Please revise the estimate.'}`}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {estimate.estimate_type === 'on_site' && estimate.status === 'pending_customer_approval' && (
+        <Alert
+          message="Waiting for Customer Approval"
+          description="The estimate has been sent to the customer for review and signature."
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {estimate.estimate_type === 'on_site' && estimate.status === 'customer_approved' && (
+        <Alert
+          message="Customer Approved"
+          description={`Signed by: ${estimate.customer_name_signed || 'Customer'}`}
+          type="success"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {estimate.estimate_type === 'on_site' && estimate.status === 'customer_rejected' && (
+        <Alert
+          message="Customer Declined"
+          description={`Reason: ${estimate.customer_rejection_reason || 'No reason given.'}`}
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
       {/* ── Workflow progress stepper ── */}
       <Card
         size="small"
@@ -245,6 +330,30 @@ export default function EstimateDetailPage() {
           ]}
         />
       </Card>
+
+      {/* ── Internal rejection modal ── */}
+      <Modal
+        title="Reject & Send Back for Revision"
+        open={rejectModalOpen}
+        onCancel={() => { setRejectModalOpen(false); setRejectReason(''); }}
+        onOk={async () => {
+          if (!rejectReason.trim()) { message.error('Please enter a rejection reason'); return; }
+          await internalReject.mutateAsync({ id: estimate.id, reason: rejectReason });
+          setRejectModalOpen(false);
+          setRejectReason('');
+        }}
+        confirmLoading={internalReject.isPending}
+        okText="Reject & Send Back"
+        okButtonProps={{ danger: true }}
+      >
+        <p>The technician will be notified with your feedback and asked to revise the estimate.</p>
+        <Input.TextArea
+          rows={4}
+          placeholder="Enter rejection reason (required)"
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+        />
+      </Modal>
 
       <Row gutter={24}>
         <Col xs={24} lg={16}>

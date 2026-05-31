@@ -171,3 +171,17 @@ export function useDeleteInvoiceLineItem() {
     },
   });
 }
+
+export function useGenerateInvoicePortalLink() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => invoicesApi.generatePortalLink(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      addNotification({ type: 'success', message: 'Customer portal link generated' });
+    },
+    onError: () => addNotification({ type: 'error', message: 'Failed to generate portal link' }),
+  });
+}

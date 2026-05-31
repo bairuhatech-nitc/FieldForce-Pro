@@ -1,4 +1,5 @@
-import { Controller, Get, Patch, Post, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SuperAdminService } from './super_admin.service';
 import { SuperAdminGuard } from '../shared/guards/super-admin.guard';
@@ -8,6 +9,7 @@ import { UpdateSuperAdminProfileDto, ChangeSuperAdminEmailDto } from './dto/supe
 import { UpdateTenantSubscriptionDto } from './dto/update_tenant_subscription.dto';
 
 import { SuperAdminAnalyticsService } from './SUPER_ADMIN_ANALYTICS/super_admin_analytics.service';
+import { SubscriptionMagicLinksService } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.service';
 import { SuperAdminHealthService } from './SUPER_ADMIN_HEALTH/super_admin_health.service';
 import { SuperAdminApiKeysService } from './SUPER_ADMIN_API_KEYS/super_admin_api_keys.service';
 import { SuperAdminAuditLogsService } from './SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.service';
@@ -23,6 +25,7 @@ export class SuperAdminController {
     private readonly healthService: SuperAdminHealthService,
     private readonly apiKeysService: SuperAdminApiKeysService,
     private readonly auditLogsService: SuperAdminAuditLogsService,
+    private readonly subscriptionMagicLinksService: SubscriptionMagicLinksService,
   ) {}
 
   @Get('tenants')
@@ -68,6 +71,43 @@ export class SuperAdminController {
   async getTenantUsage(@Param('id') id: string) {
     const usage = await this.superAdminService.getTenantUsage(id);
     return DataResponseDto.success(usage, 'Tenant usage fetched successfully');
+  }
+
+  // ── Subscription Magic Links ──────────────────────────────────────────────
+
+  @Post('magic-links')
+  @ApiOperation({ summary: 'Generate a subscription onboarding magic link' })
+  async generateMagicLink(
+    @CurrentUser() user: { id: string },
+    @Body() body: { plan_id: string; max_uses?: number; expires_in_days?: number; notes?: string },
+  ) {
+    const { link, token } = await this.subscriptionMagicLinksService.create(user.id, body);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return DataResponseDto.created(
+      { ...link.toJSON(), signup_url: `${frontendUrl}/signup?token=${token}` },
+      'Magic link generated',
+    );
+  }
+
+  @Get('magic-links')
+  @ApiOperation({ summary: 'List all subscription magic links' })
+  async listMagicLinks() {
+    const links = await this.subscriptionMagicLinksService.findAll();
+    return DataResponseDto.success(links);
+  }
+
+  @Patch('magic-links/:id/disable')
+  @ApiOperation({ summary: 'Disable a subscription magic link' })
+  async disableMagicLink(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    const link = await this.subscriptionMagicLinksService.disable(id, user.id);
+    return DataResponseDto.success(link, 'Magic link disabled');
+  }
+
+  @Delete('magic-links/:id')
+  @ApiOperation({ summary: 'Delete an unused subscription magic link' })
+  async deleteMagicLink(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    await this.subscriptionMagicLinksService.remove(id, user.id);
+    return DataResponseDto.success(null, 'Magic link deleted');
   }
 
   @Patch('tenants/:id/suspend')

@@ -9,9 +9,12 @@ import {
   Body,
   Query,
   Res,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Public } from '../shared/decorator/public.decorator';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/invoices_create.dto';
 import { UpdateInvoiceDto } from './dto/invoices_update.dto';
@@ -106,6 +109,29 @@ export class InvoicesController {
   async remove(@Param('id') id: string, @TenantId() tenantId: string) {
     await this.invoicesService.delete(id, tenantId);
     return DataResponseDto.success(null, 'Invoice deleted successfully');
+  }
+
+  // ── Customer portal endpoints ────────────────────────────────────────────
+
+  @Post(':id/generate-portal-link')
+  @Permissions('invoices:update')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate a shareable public link for customer to view invoice' })
+  async generatePortalLink(@Param('id') id: string, @TenantId() tenantId: string) {
+    const invoice = await this.invoicesService.generatePublicToken(id, tenantId);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return DataResponseDto.success(
+      { portal_url: `${frontendUrl}/invoice/view/${invoice.public_token}`, public_token: invoice.public_token },
+      'Portal link generated',
+    );
+  }
+
+  @Public()
+  @Get('public/:token')
+  @ApiOperation({ summary: 'Get invoice details by public token (no auth — customer portal)' })
+  async getByPublicToken(@Param('token') token: string) {
+    const invoice = await this.invoicesService.getByPublicToken(token);
+    return DataResponseDto.success(invoice);
   }
 
   @Get(':id/pdf')

@@ -37,6 +37,7 @@ import {
   DesktopOutlined,
   LineChartOutlined,
   BellOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useUiStore } from '@/store/ui.store';
@@ -266,6 +267,7 @@ export default function Sidebar() {
       section: 'Super Admin',
       items: [
         { key: '/admin/tenants', icon: <CrownOutlined />, labelKey: 'Tenants' },
+        { key: '/admin/magic-links', icon: <LinkOutlined />, labelKey: 'Magic Links' },
         { key: '/admin/analytics', icon: <LineChartOutlined />, labelKey: 'Analytics' },
         { key: '/admin/platform-health', icon: <DesktopOutlined />, labelKey: 'System Health' },
         { key: '/admin/api-keys', icon: <KeyOutlined />, labelKey: 'API Keys' },

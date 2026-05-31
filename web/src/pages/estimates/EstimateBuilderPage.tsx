@@ -65,6 +65,7 @@ import {
   useUpdateEstimate,
   useSendEstimate,
   useEstimateAssignedCreator,
+  useSubmitForInternalApproval,
 } from '@/hooks/use-estimates';
 import { usePermission } from '@/components/permissions/usePermission';
 import { useAuthStore } from '@/store/auth.store';
@@ -201,6 +202,7 @@ export default function EstimateBuilderPage() {
   const { id }           = useParams<{ id: string }>();
   const [searchParams]   = useSearchParams();
   const serviceRequestId = searchParams.get('service_request_id');
+  const estimateTypeParam  = searchParams.get('estimate_type') || 'pre_visit';
   const theme            = useUiStore((s) => s.theme);
   const { isAdmin }      = usePermission();
   const currentUser      = useAuthStore((s) => s.user);
@@ -241,10 +243,12 @@ export default function EstimateBuilderPage() {
     return opts;
   }, [allLocations, linkedSR]);
 
-  const createEstimate = useCreateEstimate();
-  const updateEstimate = useUpdateEstimate();
-  const sendEstimate   = useSendEstimate();
-  const createLineItem = useCreateEstimateLineItem();
+  const createEstimate          = useCreateEstimate();
+  const updateEstimate          = useUpdateEstimate();
+  const sendEstimate            = useSendEstimate();
+  const submitForInternalApproval = useSubmitForInternalApproval();
+  const createLineItem          = useCreateEstimateLineItem();
+  const isOnSite                = estimateTypeParam === 'on_site';
   const { data: contacts } = useAllContacts();
 
   const [lineItems,    setLineItems]    = useState<LineItemFormData[]>([]);
@@ -428,6 +432,8 @@ export default function EstimateBuilderPage() {
         const payload = {
           contact_id:     values.contact_id as string,
           request_id:     (serviceRequestId || estimate?.request_id) ?? undefined,
+          work_order_id:  (searchParams.get('work_order_id') || estimate?.work_order_id) ?? undefined,
+          estimate_type:  isEdit ? undefined : estimateTypeParam,
           expiry_date:    values.expiry_date ? (values.expiry_date as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
           scheduled_start: values.scheduled_start ? (values.scheduled_start as dayjs.Dayjs).toISOString() : undefined,
           notes:          (values.notes as string) || undefined,
@@ -515,9 +521,24 @@ export default function EstimateBuilderPage() {
             <Button icon={<SaveOutlined />} onClick={() => doSave(false)} loading={isSaving}>
               Save Draft
             </Button>
-            <Button type="primary" icon={<SendOutlined />} onClick={() => doSave(true)} loading={isSaving}>
-              Save &amp; Send for Review
-            </Button>
+            {isOnSite ? (
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                loading={isSaving || submitForInternalApproval.isPending}
+                onClick={async () => {
+                  const savedRes = await doSave(false) as unknown as { id?: string } | undefined;
+                  const newId = savedRes?.id || id;
+                  if (newId) submitForInternalApproval.mutate(newId);
+                }}
+              >
+                Submit for Manager Approval
+              </Button>
+            ) : (
+              <Button type="primary" icon={<SendOutlined />} onClick={() => doSave(true)} loading={isSaving}>
+                Save &amp; Send for Review
+              </Button>
+            )}
           </Space>
         }
       />

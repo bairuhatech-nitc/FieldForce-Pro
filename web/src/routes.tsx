@@ -108,6 +108,10 @@ const WorkflowTemplateDetailPage = lazy(() => import('@/pages/workflow/WorkflowT
 const DocumentApprovalListPage = lazy(() => import('@/pages/workflow/DocumentApprovalListPage'));
 const ApprovalDashboardPage = lazy(() => import('@/pages/workflow/ApprovalDashboardPage'));
 const EstimatePublicSignPage = lazy(() => import('@/pages/estimates/EstimatePublicSignPage'));
+const EstimateApprovalPage = lazy(() => import('@/pages/estimates/EstimateApprovalPage'));
+const SignupFromMagicLinkPage = lazy(() => import('@/pages/auth/SignupFromMagicLinkPage'));
+const InvoicePortalPage = lazy(() => import('@/pages/invoices/InvoicePortalPage'));
+const SubscriptionMagicLinksPage = lazy(() => import('@/pages/super-admin/SubscriptionMagicLinksPage'));
 const DashboardRouter = lazy(() => import('@/pages/dashboard/DashboardRouter'));
 const ApiKeysPage = lazy(() => import('@/pages/integrations/ApiKeysPage'));
 const IntegrationGuidePage = lazy(() => import('@/pages/integrations/IntegrationGuidePage'));
@@ -1051,6 +1055,16 @@ export const routes: RouteObject[] = [
           </SuperAdminRoute>
         ),
       },
+      {
+        path: 'admin/magic-links',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SubscriptionMagicLinksPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
       // API Key Management (Company Admin)
       {
         path: 'integrations/api-keys',
@@ -1405,6 +1419,36 @@ export const routes: RouteObject[] = [
       <OpenRoute>
         <SuspenseWrapper>
           <EstimatePublicSignPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/estimate/approve/:token',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <EstimateApprovalPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/invoice/view/:token',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <InvoicePortalPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/signup',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <SignupFromMagicLinkPage />
         </SuspenseWrapper>
       </OpenRoute>
     ),

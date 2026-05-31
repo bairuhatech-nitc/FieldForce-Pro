@@ -3,11 +3,16 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Param,
   Body,
   Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
+import { Public } from '../shared/decorator/public.decorator';
+import { CurrentUser } from '../shared/decorator/current-user.decorator';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/payments_create.dto';
@@ -161,11 +166,73 @@ export class PaymentsController {
     return DataResponseDto.success(payment);
   }
 
+  // ── Pending verification endpoints ───────────────────────────────────────
+
+  @Get('pending-verification')
+  @Permissions('payments:read')
+  @ApiOperation({ summary: 'Get payments pending dispatcher verification' })
+  async getPendingVerification(@TenantId() tenantId: string) {
+    const payments = await this.paymentsService.getPendingVerification(tenantId);
+    return DataResponseDto.success(payments);
+  }
+
+  @Patch(':id/confirm')
+  @Permissions('payments:update')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Dispatcher confirms a portal payment' })
+  async confirmPayment(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+  ) {
+    const payment = await this.paymentsService.confirmPayment(id, tenantId);
+    return DataResponseDto.success(payment, 'Payment confirmed');
+  }
+
+  @Patch(':id/reject')
+  @Permissions('payments:update')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Dispatcher rejects a portal payment' })
+  async rejectPayment(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @Body() body: { reason: string },
+  ) {
+    const payment = await this.paymentsService.rejectPayment(id, tenantId, body.reason || '');
+    return DataResponseDto.success(payment, 'Payment rejected');
+  }
+
+  @Public()
+  @Post('portal')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Customer submits payment notification from portal (no auth)' })
+  async createFromPortal(@Body() body: {
+    invoice_token: string;
+    amount: number;
+    method: string;
+    reference?: string;
+    notes?: string;
+    screenshot_url?: string;
+  }) {
+    const payment = await this.paymentsService.createFromPortal(body.invoice_token, {
+      amount: body.amount,
+      method: body.method,
+      reference: body.reference,
+      notes: body.notes,
+      screenshot_url: body.screenshot_url,
+    });
+    return DataResponseDto.created(payment, 'Payment submitted for verification');
+  }
+
   @Post()
   @Permissions('payments:create', 'scheduling:update')
   @ApiOperation({ summary: 'Create a new payment' })
-  async create(@TenantId() tenantId: string, @Body() dto: CreatePaymentDto) {
-    const payment = await this.paymentsService.create(tenantId, dto);
+  async create(
+    @TenantId() tenantId: string,
+    @Body() dto: CreatePaymentDto,
+    @CurrentUser() user: { id: string; email?: string; primary_role?: string },
+  ) {
+    const receivedBy = user?.email || user?.id || 'Staff';
+    const payment = await this.paymentsService.create(tenantId, { ...dto, received_by: receivedBy });
     return DataResponseDto.created(payment, 'Payment created successfully');
   }
 

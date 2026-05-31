@@ -1,6 +1,10 @@
+import axios from 'axios';
 import api from './axios-instance';
+import { API_URL } from '@/utils/constants';
 import type { ApiResponse, PageOptions } from '@/types/api.types';
 import type { Invoice, InvoiceLineItem } from '@/types/models.types';
+
+const publicAxios = axios.create({ baseURL: API_URL, headers: { 'Content-Type': 'application/json' } });
 
 export interface CreateInvoicePayload {
   work_order_id?: string;
@@ -79,6 +83,14 @@ export const invoicesApi = {
 
   delete(id: string) {
     return api.delete<ApiResponse<null>>(`/invoices/${id}`);
+  },
+
+  generatePortalLink(id: string) {
+    return api.post<ApiResponse<{ portal_url: string; public_token: string }>>(`/invoices/${id}/generate-portal-link`);
+  },
+
+  getByPublicToken(token: string) {
+    return publicAxios.get<ApiResponse<Invoice>>(`${API_URL}/invoices/public/${token}`);
   },
 };
 

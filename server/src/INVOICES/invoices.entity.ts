@@ -146,6 +146,12 @@ export class Invoice extends Model {
   })
   custom_fields: Record<string, unknown>;
 
+  @Column({ type: DataType.UUID, allowNull: true, unique: true })
+  public_token: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  public_token_expires_at: Date;
+
   @Column({
     type: DataType.BOOLEAN,
     defaultValue: false,

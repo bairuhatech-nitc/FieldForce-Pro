@@ -520,6 +520,160 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
         name: 'invoices: add estimate_id column',
         sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS estimate_id UUID;`,
       },
+
+      // ── ON-SITE ESTIMATE APPROVAL FLOW ────────────────────────────────────
+      {
+        name: 'estimates: add estimate_type column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS estimate_type VARCHAR(20) NOT NULL DEFAULT 'pre_visit';`,
+      },
+      {
+        name: 'estimates: add internal_approval_status column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS internal_approval_status VARCHAR(30);`,
+      },
+      {
+        name: 'estimates: add internal_approved_by column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS internal_approved_by UUID;`,
+      },
+      {
+        name: 'estimates: add internal_approved_at column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS internal_approved_at TIMESTAMP;`,
+      },
+      {
+        name: 'estimates: add internal_rejection_reason column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS internal_rejection_reason TEXT;`,
+      },
+      {
+        name: 'estimates: add customer_approval_status column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS customer_approval_status VARCHAR(30);`,
+      },
+      {
+        name: 'estimates: add customer_approved_at column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS customer_approved_at TIMESTAMP;`,
+      },
+      {
+        name: 'estimates: add customer_rejection_reason column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS customer_rejection_reason TEXT;`,
+      },
+      {
+        name: 'estimates: add customer_signature column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS customer_signature TEXT;`,
+      },
+      {
+        name: 'estimates: add customer_name_signed column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS customer_name_signed VARCHAR(200);`,
+      },
+      {
+        name: 'estimates: add awaiting_internal_approval column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS awaiting_internal_approval BOOLEAN NOT NULL DEFAULT FALSE;`,
+      },
+      {
+        name: 'estimates: add awaiting_customer_approval column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS awaiting_customer_approval BOOLEAN NOT NULL DEFAULT FALSE;`,
+      },
+      // ── PAYMENT RECORDING FEATURE ────────────────────────────────────────
+
+      // Convert payments.method ENUM → VARCHAR so we can add 'upi', 'cheque'
+      {
+        name: 'payments: drop ENUM default on method',
+        sql: `ALTER TABLE payments ALTER COLUMN method DROP DEFAULT;`,
+      },
+      {
+        name: 'payments: convert method ENUM to VARCHAR',
+        sql: `DO $$ BEGIN
+                IF EXISTS (
+                  SELECT 1 FROM information_schema.columns
+                  WHERE table_name = 'payments' AND column_name = 'method'
+                  AND data_type = 'USER-DEFINED'
+                ) THEN
+                  ALTER TABLE payments ALTER COLUMN method TYPE VARCHAR(30) USING method::text;
+                END IF;
+              END $$;`,
+      },
+      {
+        name: 'payments: restore default on method',
+        sql: `ALTER TABLE payments ALTER COLUMN method SET DEFAULT 'cash';`,
+      },
+      // Convert payments.status ENUM → VARCHAR so we can add new statuses
+      {
+        name: 'payments: drop ENUM default on status',
+        sql: `ALTER TABLE payments ALTER COLUMN status DROP DEFAULT;`,
+      },
+      {
+        name: 'payments: convert status ENUM to VARCHAR',
+        sql: `DO $$ BEGIN
+                IF EXISTS (
+                  SELECT 1 FROM information_schema.columns
+                  WHERE table_name = 'payments' AND column_name = 'status'
+                  AND data_type = 'USER-DEFINED'
+                ) THEN
+                  ALTER TABLE payments ALTER COLUMN status TYPE VARCHAR(30) USING status::text;
+                END IF;
+              END $$;`,
+      },
+      {
+        name: 'payments: restore default on status',
+        sql: `ALTER TABLE payments ALTER COLUMN status SET DEFAULT 'confirmed';`,
+      },
+      // New payment columns
+      {
+        name: 'payments: add source column',
+        sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS source VARCHAR(20) NOT NULL DEFAULT 'manual';`,
+      },
+      {
+        name: 'payments: add received_by column',
+        sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS received_by VARCHAR(200);`,
+      },
+      {
+        name: 'payments: add rejection_reason column',
+        sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS rejection_reason TEXT;`,
+      },
+      {
+        name: 'payments: add screenshot_url column',
+        sql: `ALTER TABLE payments ADD COLUMN IF NOT EXISTS screenshot_url TEXT;`,
+      },
+      // Invoice public token for customer portal
+      {
+        name: 'invoices: add public_token column',
+        sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS public_token UUID UNIQUE;`,
+      },
+      {
+        name: 'invoices: add public_token_expires_at column',
+        sql: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS public_token_expires_at TIMESTAMP;`,
+      },
+
+      // ── SUBSCRIPTION MAGIC LINKS ─────────────────────────────────────────
+      {
+        name: 'subscription_magic_links: create table',
+        sql: `CREATE TABLE IF NOT EXISTS subscription_magic_links (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            token VARCHAR(255) NOT NULL UNIQUE,
+            token_hash VARCHAR(255) NOT NULL,
+            plan_id UUID NOT NULL REFERENCES subscription_plans(id) ON DELETE RESTRICT,
+            created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+            status VARCHAR(20) NOT NULL DEFAULT 'active',
+            expires_at TIMESTAMP NOT NULL,
+            max_uses INTEGER NOT NULL DEFAULT 1,
+            used_count INTEGER NOT NULL DEFAULT 0,
+            notes TEXT,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );`,
+      },
+
+      {
+        name: 'estimate_attachments: create table',
+        sql: `CREATE TABLE IF NOT EXISTS estimate_attachments (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            estimate_id UUID NOT NULL REFERENCES estimates(id) ON DELETE CASCADE,
+            tenant_id UUID NOT NULL,
+            file_name VARCHAR(255) NOT NULL,
+            file_url TEXT NOT NULL,
+            file_type VARCHAR(50),
+            file_size INTEGER,
+            uploaded_by UUID REFERENCES users(id),
+            created_at TIMESTAMP DEFAULT NOW()
+        );`,
+      },
     ];
 
     for (const migration of migrations) {

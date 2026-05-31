@@ -56,6 +56,8 @@ import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/docume
 import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_history.entity';
 import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
 import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import { EstimateAttachment } from '../ATTACHMENTS/estimate_attachments.entity';
+import { SubscriptionMagicLink } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.entity';
 import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
 import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
@@ -120,6 +122,8 @@ export const databaseProviders = [
   { provide: REPOSITORY.WORKFLOW_APPROVAL_HISTORY, useValue: ApprovalHistory },
   { provide: REPOSITORY.SLA_TIMERS, useValue: SlaTimer },
   { provide: REPOSITORY.REQUEST_ATTACHMENTS, useValue: RequestAttachment },
+  { provide: REPOSITORY.ESTIMATE_ATTACHMENTS, useValue: EstimateAttachment },
+  { provide: REPOSITORY.SUBSCRIPTION_MAGIC_LINKS, useValue: SubscriptionMagicLink },
   { provide: REPOSITORY.REQUEST_AUDIT_LOGS, useValue: RequestAuditLog },
   { provide: REPOSITORY.TECHNICIAN_FEEDBACK, useValue: TechnicianFeedback },
   { provide: REPOSITORY.CUSTOMER_SATISFACTION, useValue: CustomerSatisfaction },

@@ -639,15 +639,27 @@ export default function WorkOrderDetailPage() {
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
           <Card
             extra={
-              <PermissionGuard permission="estimates:create">
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => navigate(`/estimates/new?work_order_id=${workOrder.id}`)}
-                >
-                  Create Estimate
-                </Button>
-              </PermissionGuard>
+              <Space>
+                {['in_progress', 'scheduled'].includes(workOrder.status) && (
+                  <PermissionGuard permission="estimates:create">
+                    <Button
+                      type="primary"
+                      icon={<FileTextOutlined />}
+                      onClick={() => navigate(`/estimates/new?work_order_id=${workOrder.id}&estimate_type=on_site`)}
+                    >
+                      Create On-Site Estimate
+                    </Button>
+                  </PermissionGuard>
+                )}
+                <PermissionGuard permission="estimates:create">
+                  <Button
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate(`/estimates/new?work_order_id=${workOrder.id}`)}
+                  >
+                    Create Estimate
+                  </Button>
+                </PermissionGuard>
+              </Space>
             }
           >
             <Table

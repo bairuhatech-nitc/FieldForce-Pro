@@ -232,7 +232,8 @@ export interface Estimate {
   work_order_id: string | null;
   contact_id: string | null;
   estimate_number: string | null;
-  status: 'draft' | 'pending_approval' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo' | 'converted_to_invoice';
+  status: 'draft' | 'pending_approval' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo' | 'converted_to_invoice' | 'pending_internal_approval' | 'pending_customer_approval' | 'customer_approved' | 'customer_rejected' | 'revision_required';
+  estimate_type?: 'pre_visit' | 'on_site';
   subtotal: number;
   tax: number;
   discount: number;
@@ -243,8 +244,21 @@ export interface Estimate {
   signature_url: string | null;
   public_token?: string | null;
   public_token_expires_at?: string | null;
+  created_by?: string | null;
   notes: string | null;
   custom_fields: Record<string, unknown>;
+  // On-site approval flow fields
+  internal_approval_status?: string | null;
+  internal_approved_by?: string | null;
+  internal_approved_at?: string | null;
+  internal_rejection_reason?: string | null;
+  customer_approval_status?: string | null;
+  customer_approved_at?: string | null;
+  customer_rejection_reason?: string | null;
+  customer_signature?: string | null;
+  customer_name_signed?: string | null;
+  awaiting_internal_approval?: boolean;
+  awaiting_customer_approval?: boolean;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
@@ -528,9 +542,13 @@ export interface Payment {
   tenant_id: string;
   invoice_id: string;
   amount: number;
-  method: 'card' | 'cash' | 'bank_transfer' | 'online' | 'check' | 'other';
+  method: string; // cash | cheque | upi | card | bank_transfer | online | other
   gateway_transaction_id: string | null;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'confirmed' | 'pending_verification' | 'rejected';
+  source: 'manual' | 'portal';
+  received_by: string | null;
+  rejection_reason: string | null;
+  screenshot_url: string | null;
   paid_at: string | null;
   notes: string | null;
   custom_fields: Record<string, unknown>;

@@ -107,6 +107,27 @@ export const estimatesApi = {
     return api.get<ApiResponse<Estimate[]>>(`/estimates/work-order/${workOrderId}`);
   },
 
+  getByServiceRequestId(requestId: string) {
+    return api.get<ApiResponse<Estimate[]>>(`/estimates/service-request/${requestId}`);
+  },
+
+  // ── On-site estimate approval flow ──────────────────────────────────────
+  getPendingInternalApprovals(params?: PageOptions) {
+    return api.get<ApiResponse<Estimate[]>>('/estimates/pending-internal', { params });
+  },
+
+  submitForInternalApproval(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/submit-for-internal-approval`);
+  },
+
+  internalApprove(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/internal-approve`);
+  },
+
+  internalReject(id: string, reason: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/internal-reject`, { reason });
+  },
+
   submitForApproval(id: string) {
     return api.post<ApiResponse<Estimate>>(`/estimates/${id}/submit-for-approval`);
   },
@@ -139,5 +160,12 @@ export const estimatesPublicApi = {
   },
   reject(token: string, reason?: string) {
     return publicAxios.post<ApiResponse<Estimate>>(`/estimates/public/${token}/reject`, { reason });
+  },
+  // On-site estimate customer approval endpoints
+  customerApprove(token: string, customer_name: string, signature: string) {
+    return publicAxios.post<ApiResponse<Estimate>>(`/estimates/public/${token}/approve`, { customer_name, signature });
+  },
+  customerReject(token: string, reason?: string) {
+    return publicAxios.post<ApiResponse<Estimate>>(`/estimates/public/${token}/customer-reject`, { reason });
   },
 };

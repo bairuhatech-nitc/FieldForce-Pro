@@ -13,6 +13,7 @@ export interface CreateEstimateLineItemPayload {
   unit?: string;
   unit_price: number;
   tax_rate?: number;
+  discount_type?: 'fixed' | 'percentage';
   discount?: number;
   total?: number;
   sort_order?: number;

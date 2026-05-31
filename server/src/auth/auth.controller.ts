@@ -15,6 +15,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { SubscriptionMagicLinksService } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.service';
 import {
   RegisterDto,
   LoginDto,
@@ -35,7 +36,10 @@ import { DataResponseDto } from '../shared/dto/data-response.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly subscriptionMagicLinksService: SubscriptionMagicLinksService,
+  ) { }
 
   @Public()
   @Post('register')
@@ -277,6 +281,84 @@ export class AuthController {
         path: '/',
       });
     }
+  }
+
+  // ── Subscription Magic Link signup flow ─────────────────────────────────
+
+  @Public()
+  @Get('signup-magic-link/validate')
+  @ApiOperation({ summary: 'Validate a subscription magic link token (public)' })
+  async validateSignupToken(@Req() req: Request) {
+    const token = (req.query as any).token as string;
+    if (!token) throw new HttpException('token query parameter is required', HttpStatus.BAD_REQUEST);
+    const { plan, link } = await this.subscriptionMagicLinksService.validate(token);
+    // Return only what the signup page needs — no internal details
+    return DataResponseDto.success({
+      valid: true,
+      plan_name: plan.name,
+      price_monthly: plan.price_monthly,
+      price_yearly: plan.price_yearly,
+      max_total_users: plan.max_total_users,
+      features: plan.features,
+      expires_at: link.expires_at,
+      max_uses: link.max_uses,
+      used_count: link.used_count,
+    });
+  }
+
+  @Public()
+  @Post('signup-from-magic-link')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register a new tenant via subscription magic link (public)' })
+  async signupFromMagicLink(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() body: {
+      token: string;
+      email: string;
+      password: string;
+      first_name: string;
+      last_name: string;
+      company_name: string;
+      phone?: string;
+    },
+  ) {
+    const { token, ...registerData } = body;
+
+    // 1. Validate the token (throws if invalid/expired/used)
+    await this.subscriptionMagicLinksService.validate(token);
+
+    // 2. Register tenant + admin user via the standard flow
+    const ip = req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const result = await this.authService.register(
+      {
+        email: registerData.email,
+        password: registerData.password,
+        first_name: registerData.first_name,
+        last_name: registerData.last_name,
+        company_name: registerData.company_name,
+        phone: registerData.phone,
+      } as any,
+      ip,
+      userAgent,
+    );
+
+    // 3. Consume the token (increment use count, assign plan to tenant)
+    const { planId } = await this.subscriptionMagicLinksService.consume(token, 'system', registerData.company_name);
+
+    // 4. Assign the subscription plan to the newly created tenant
+    if (result.tenant?.id && planId) {
+      const { Tenant } = await import('../TENANTS/tenants.entity');
+      await Tenant.update(
+        { subscription_plan_id: planId, subscription_status: 'active' },
+        { where: { id: result.tenant.id } },
+      );
+    }
+
+    this.setAuthCookies(res, result);
+    const body2 = this.stripTokensFromAuthResult(result);
+    return DataResponseDto.created(body2, 'Account created successfully');
   }
 
   private stripTokensFromAuthResult<T extends { access_token?: string; refresh_token?: string }>(

@@ -197,6 +197,67 @@ export class EstimatesController {
     return DataResponseDto.success(estimates, 'Work order estimates fetched successfully');
   }
 
+  @Get('service-request/:requestId')
+  @Permissions('estimates:read')
+  @ApiOperation({ summary: 'Get all estimates for a service request' })
+  async findByServiceRequest(@Param('requestId') requestId: string, @TenantId() tenantId: string) {
+    const estimates = await this.estimatesService.findByServiceRequest(requestId, tenantId);
+    return DataResponseDto.success(estimates, 'Service request estimates fetched successfully');
+  }
+
+  // ── On-site estimate approval flow ────────────────────────────────────────
+
+  @Get('pending-internal')
+  @Permissions('estimates:read')
+  @ApiOperation({ summary: 'Get estimates pending internal (manager) approval' })
+  async getPendingInternalApprovals(@TenantId() tenantId: string, @Query() pageOptionsDto: PageOptionsDto) {
+    const result = await this.estimatesService.getPendingInternalApprovals(tenantId, pageOptionsDto);
+    return DataResponseDto.success(result);
+  }
+
+  @Post(':id/submit-for-internal-approval')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Technician submits on-site estimate for manager review' })
+  async submitForInternalApproval(@Param('id') id: string, @TenantId() tenantId: string, @UserId() userId: string) {
+    const estimate = await this.estimatesService.submitForInternalApproval(id, tenantId, userId);
+    return DataResponseDto.success(estimate, 'Estimate submitted for manager review');
+  }
+
+  @Post(':id/internal-approve')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Manager approves on-site estimate and sends to customer' })
+  async internalApprove(@Param('id') id: string, @TenantId() tenantId: string, @UserId() userId: string) {
+    const estimate = await this.estimatesService.internalApprove(id, tenantId, userId);
+    return DataResponseDto.success(estimate, 'Estimate approved and sent to customer');
+  }
+
+  @Post(':id/internal-reject')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Manager rejects on-site estimate and sends back for revision' })
+  async internalReject(@Param('id') id: string, @TenantId() tenantId: string, @Body() body: { reason: string }) {
+    const estimate = await this.estimatesService.internalReject(id, tenantId, body.reason);
+    return DataResponseDto.success(estimate, 'Estimate rejected and sent back for revision');
+  }
+
+  @Public()
+  @Post('public/:token/approve')
+  @ApiOperation({ summary: 'Customer approves on-site estimate with signature (public, no auth)' })
+  async customerApprove(
+    @Param('token') token: string,
+    @Body() body: { customer_name: string; signature: string },
+  ) {
+    const estimate = await this.estimatesService.customerApproveByToken(token, body.customer_name, body.signature);
+    return DataResponseDto.success(estimate, 'Estimate approved successfully');
+  }
+
+  @Public()
+  @Post('public/:token/customer-reject')
+  @ApiOperation({ summary: 'Customer declines on-site estimate (public, no auth)' })
+  async customerReject(@Param('token') token: string, @Body() body: { reason?: string }) {
+    const estimate = await this.estimatesService.customerRejectByToken(token, body.reason || '');
+    return DataResponseDto.success(estimate, 'Estimate declined');
+  }
+
   @Get(':id')
   @Permissions('estimates:read')
   @ApiOperation({ summary: 'Get estimate by ID' })

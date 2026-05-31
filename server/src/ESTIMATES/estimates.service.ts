@@ -5,6 +5,7 @@ import {
   BadRequestException,
   GoneException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Estimate } from './estimates.entity';
@@ -23,6 +24,9 @@ import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVAL
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 import { WorkOrdersService } from '../WORK_ORDERS/work_orders.service';
 import { WorkOrderLineItemsService } from '../WORK_ORDER_LINE_ITEMS/work_order_line_items.service';
+import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
+import { EmailService } from '../shared/services/email.service';
+import { User } from '../USERS/users.entity';
 import { Invoice } from '../INVOICES/invoices.entity';
 import { InvoiceLineItem } from '../INVOICE_LINE_ITEMS/invoice_line_items.entity';
 
@@ -54,6 +58,9 @@ export class EstimatesService {
     private readonly documentApprovalsService: DocumentApprovalsService,
     private readonly workOrdersService: WorkOrdersService,
     private readonly workOrderLineItemsService: WorkOrderLineItemsService,
+    @Optional() private readonly notificationsService: NotificationsService,
+    @Optional() private readonly emailService: EmailService,
+    @Inject(KEYNAMES.USERS) @Optional() private readonly userRepository: typeof User,
   ) {}
 
   async findAllPaginated(
@@ -718,6 +725,243 @@ export class EstimatesService {
       ],
       order: [['created_at', 'DESC']],
     });
+  }
+
+  async findByServiceRequest(requestId: string, tenantId: string): Promise<Estimate[]> {
+    return this.estimateRepository.findAll({
+      where: { request_id: requestId, tenant_id: tenantId, is_deleted: false },
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+        {
+          model: EstimateLineItem,
+          as: 'line_items',
+          where: { is_deleted: false },
+          required: false,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+  }
+
+  // ── On-site estimate approval flow ──────────────────────────────────────
+
+  async getPendingInternalApprovals(tenantId: string, pageOptionsDto: PageOptionsDto): Promise<PageDto<Estimate>> {
+    return this.findAllPaginated(tenantId, pageOptionsDto, 'pending_internal_approval');
+  }
+
+  async submitForInternalApproval(id: string, tenantId: string, userId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    if (!['draft', 'revision_required'].includes(estimate.status)) {
+      throw new BadRequestException('Only draft or revision_required on-site estimates can be submitted for internal approval');
+    }
+    if (estimate.estimate_type !== 'on_site') {
+      throw new BadRequestException('Only on-site estimates use the internal approval flow');
+    }
+
+    await estimate.update({ status: 'pending_internal_approval', awaiting_internal_approval: true });
+
+    // Notify all admins/managers in the tenant
+    await this.notifyTenantAdmins(tenantId, estimate, userId, 'internal_approval_requested');
+
+    return estimate;
+  }
+
+  async internalApprove(id: string, tenantId: string, approverId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    if (estimate.status !== 'pending_internal_approval') {
+      throw new BadRequestException('Estimate is not pending internal approval');
+    }
+
+    const token = randomUUID();
+    const tokenExpires = new Date();
+    tokenExpires.setDate(tokenExpires.getDate() + 7);
+
+    await estimate.update({
+      status: 'pending_customer_approval',
+      internal_approval_status: 'approved',
+      internal_approved_by: approverId,
+      internal_approved_at: new Date(),
+      awaiting_internal_approval: false,
+      awaiting_customer_approval: true,
+      public_token: token,
+      public_token_expires_at: tokenExpires,
+    });
+
+    // Notify technician (the estimate creator)
+    if (estimate.created_by && this.notificationsService) {
+      await this.notificationsService.create(tenantId, {
+        user_id: estimate.created_by,
+        type: 'estimate_internal_approved',
+        title: 'Estimate Approved by Manager',
+        body: `Your on-site estimate ${estimate.estimate_number} has been approved by the manager and sent to the customer for approval.`,
+        data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id },
+        channel: 'in_app',
+      });
+    }
+
+    // Send email to customer if contact has email
+    const contact = estimate.contact;
+    if (contact?.email && this.emailService) {
+      const approvalUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/estimate/approve/${token}`;
+      await this.emailService.sendEmail(
+        contact.email,
+        `Estimate ${estimate.estimate_number} Ready for Your Approval`,
+        `<p>Dear ${contact.first_name || 'Customer'},</p>
+         <p>A service estimate of <strong>${estimate.total}</strong> has been prepared for your review.</p>
+         <p>Please review and approve the estimate by clicking the link below:</p>
+         <p><a href="${approvalUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Review & Approve Estimate</a></p>
+         <p>This link expires in 7 days.</p>
+         <p>Estimate Number: ${estimate.estimate_number}<br/>Total Amount: ${estimate.total}</p>`,
+      );
+    }
+
+    return estimate;
+  }
+
+  async internalReject(id: string, tenantId: string, reason: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    if (estimate.status !== 'pending_internal_approval') {
+      throw new BadRequestException('Estimate is not pending internal approval');
+    }
+    if (!reason?.trim()) {
+      throw new BadRequestException('Rejection reason is required');
+    }
+
+    await estimate.update({
+      status: 'revision_required',
+      internal_approval_status: 'rejected',
+      internal_rejection_reason: reason,
+      awaiting_internal_approval: false,
+    });
+
+    // Notify the technician with the reason
+    if (estimate.created_by && this.notificationsService) {
+      await this.notificationsService.create(tenantId, {
+        user_id: estimate.created_by,
+        type: 'estimate_revision_required',
+        title: 'Estimate Revision Required',
+        body: `Your on-site estimate ${estimate.estimate_number} requires revision. Reason: ${reason}`,
+        data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id, reason },
+        channel: 'in_app',
+      });
+    }
+
+    return estimate;
+  }
+
+  async customerApproveByToken(token: string, customerName: string, signature: string): Promise<Estimate> {
+    const estimate = await this.getByPublicToken(token);
+    if (estimate.status !== 'pending_customer_approval') {
+      throw new BadRequestException('This estimate is not pending customer approval');
+    }
+    if (!customerName?.trim()) throw new BadRequestException('Customer name is required');
+    if (!signature?.trim()) throw new BadRequestException('Signature is required');
+
+    await estimate.update({
+      status: 'customer_approved',
+      customer_approval_status: 'approved',
+      customer_approved_at: new Date(),
+      customer_name_signed: customerName,
+      customer_signature: signature,
+      awaiting_customer_approval: false,
+    });
+
+    // Auto-update WO to in_progress
+    if (estimate.work_order_id) {
+      try {
+        await this.workOrdersService.updateStatus(estimate.work_order_id, estimate.tenant_id, { status: 'in_progress' });
+      } catch (e) {
+        this.logger.warn(`Could not auto-update WO ${estimate.work_order_id} to in_progress: ${e.message}`);
+      }
+    }
+
+    // Notify technician and manager
+    if (this.notificationsService) {
+      if (estimate.created_by) {
+        await this.notificationsService.create(estimate.tenant_id, {
+          user_id: estimate.created_by,
+          type: 'estimate_customer_approved',
+          title: 'Customer Approved the Estimate',
+          body: `Customer approved estimate ${estimate.estimate_number}. You can now proceed with the work.`,
+          data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id },
+          channel: 'in_app',
+        });
+      }
+      await this.notifyTenantAdmins(estimate.tenant_id, estimate, estimate.created_by, 'customer_approved');
+    }
+
+    return estimate;
+  }
+
+  async customerRejectByToken(token: string, reason: string): Promise<Estimate> {
+    const estimate = await this.getByPublicToken(token);
+    if (estimate.status !== 'pending_customer_approval') {
+      throw new BadRequestException('This estimate is not pending customer approval');
+    }
+
+    await estimate.update({
+      status: 'customer_rejected',
+      customer_approval_status: 'rejected',
+      customer_rejection_reason: reason,
+      awaiting_customer_approval: false,
+    });
+
+    // Notify technician and manager
+    if (this.notificationsService) {
+      if (estimate.created_by) {
+        await this.notificationsService.create(estimate.tenant_id, {
+          user_id: estimate.created_by,
+          type: 'estimate_customer_rejected',
+          title: 'Customer Declined the Estimate',
+          body: `Customer declined estimate ${estimate.estimate_number}. Reason: ${reason || 'No reason given'}`,
+          data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id, reason },
+          channel: 'in_app',
+        });
+      }
+      await this.notifyTenantAdmins(estimate.tenant_id, estimate, estimate.created_by, 'customer_rejected');
+    }
+
+    return estimate;
+  }
+
+  private async notifyTenantAdmins(
+    tenantId: string,
+    estimate: Estimate,
+    excludeUserId: string,
+    eventType: string,
+  ): Promise<void> {
+    if (!this.notificationsService || !this.userRepository) return;
+    try {
+      const admins = await this.userRepository.findAll({
+        where: { tenant_id: tenantId, is_deleted: false, is_active: true },
+        attributes: ['id'],
+      });
+
+      const titles: Record<string, string> = {
+        internal_approval_requested: 'New On-Site Estimate Awaiting Review',
+        customer_approved: 'Customer Approved Estimate',
+        customer_rejected: 'Customer Declined Estimate',
+      };
+      const bodies: Record<string, string> = {
+        internal_approval_requested: `An on-site estimate ${estimate.estimate_number} (Total: ${estimate.total}) is waiting for your review.`,
+        customer_approved: `Customer approved estimate ${estimate.estimate_number}. Work Order can now proceed.`,
+        customer_rejected: `Customer declined estimate ${estimate.estimate_number}. Please follow up.`,
+      };
+
+      for (const admin of admins) {
+        if (admin.id === excludeUserId) continue;
+        await this.notificationsService.create(tenantId, {
+          user_id: admin.id,
+          type: `estimate_${eventType}`,
+          title: titles[eventType] || 'Estimate Update',
+          body: bodies[eventType] || `Estimate ${estimate.estimate_number} updated.`,
+          data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id },
+          channel: 'in_app',
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`notifyTenantAdmins failed: ${e.message}`);
+    }
   }
 
   async submitForApproval(id: string, tenantId: string): Promise<Estimate> {

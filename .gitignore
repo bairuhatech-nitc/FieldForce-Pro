@@ -13,3 +13,7 @@ Thumbs.db
 
 # Node (root-level Playwright)
 node_modules/
+
+# Test screenshots and verification scripts (session artifacts)
+screenshot-*.png
+verify-*.js

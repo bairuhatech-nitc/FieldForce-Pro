@@ -27,7 +27,8 @@ import { useAuthStore } from '@/store/auth.store';
 import { useAllWorkOrders } from '@/hooks/use-work-orders';
 import { useAllInvoices } from '@/hooks/use-invoices';
 import { useAllPayments } from '@/hooks/use-payments';
-import { useAllEstimates } from '@/hooks/use-estimates';
+import { useAllEstimates, usePendingInternalApprovals } from '@/hooks/use-estimates';
+import { usePendingVerificationPayments } from '@/hooks/use-payments';
 import { useDashboardStats, useDashboardActivityFeed, useDashboardPrioritySummary } from '@/hooks/use-dashboards';
 import type { Invoice } from '@/types/models.types';
 import {
@@ -121,6 +122,8 @@ export default function DashboardPage() {
   const { data: invoices = [], isLoading: invLoading } = useAllInvoices();
   const { data: payments = [], isLoading: payLoading } = useAllPayments();
   const { data: estimates = [], isLoading: estLoading } = useAllEstimates();
+  const { data: pendingInternalApprovals } = usePendingInternalApprovals();
+  const { data: pendingPayments = [] } = usePendingVerificationPayments();
 
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
   const { data: activityFeed, isLoading: feedLoading } = useDashboardActivityFeed();
@@ -514,6 +517,82 @@ export default function DashboardPage() {
           </Card>
         </Col>
       </Row>
+
+      {/* ═══════════ PENDING PAYMENT VERIFICATIONS ═══════════ */}
+      {(pendingPayments as any[]).length > 0 && (
+        <Card
+          style={{ marginBottom: 20, borderColor: '#faad14' }}
+          title={
+            <Flex align="center" gap={8}>
+              <AlertOutlined style={{ color: '#d48806' }} />
+              <Text strong style={{ color: '#d48806' }}>
+                {(pendingPayments as any[]).length} Payment{(pendingPayments as any[]).length > 1 ? 's' : ''} Awaiting Verification
+              </Text>
+            </Flex>
+          }
+          extra={<Button size="small" onClick={() => navigate('/payments')}>View All</Button>}
+        >
+          <Row gutter={[12, 12]}>
+            {(pendingPayments as any[]).slice(0, 4).map((p: any) => (
+              <Col xs={24} sm={12} lg={6} key={p.id}>
+                <Card size="small" hoverable onClick={() => navigate(`/invoices/${p.invoice_id}`)}
+                  style={{ borderLeft: '3px solid #faad14', cursor: 'pointer' }}>
+                  <Text strong style={{ display: 'block' }}>
+                    {p.invoice?.invoice_number || 'Invoice'}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {p.invoice?.contact ? `${p.invoice.contact.first_name} ${p.invoice.contact.last_name}` : 'Customer'}
+                  </Text>
+                  <div style={{ marginTop: 6, fontWeight: 700, fontSize: 15 }}>
+                    {formatCurrency(p.amount || 0)}
+                  </div>
+                  <Tag color="orange" style={{ marginTop: 4 }}>{p.method?.toUpperCase()}</Tag>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      )}
+
+      {/* ═══════════ PENDING ON-SITE ESTIMATES (managers only) ═══════════ */}
+      {Array.isArray(pendingInternalApprovals) && (pendingInternalApprovals as any[]).length > 0 && (
+        <Card
+          style={{ marginBottom: 20, borderColor: '#faad14' }}
+          title={
+            <Flex align="center" gap={8}>
+              <ExclamationCircleOutlined style={{ color: '#d48806' }} />
+              <Text strong style={{ color: '#d48806' }}>
+                {(pendingInternalApprovals as any[]).length} On-Site Estimate{(pendingInternalApprovals as any[]).length > 1 ? 's' : ''} Awaiting Your Review
+              </Text>
+            </Flex>
+          }
+          extra={
+            <Button size="small" onClick={() => navigate('/estimates')}>View All</Button>
+          }
+        >
+          <Row gutter={[12, 12]}>
+            {((pendingInternalApprovals as any[]) as any[]).slice(0, 4).map((est: any) => (
+              <Col xs={24} sm={12} lg={6} key={est.id}>
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => navigate(`/estimates/${est.id}`)}
+                  style={{ borderLeft: '3px solid #faad14', cursor: 'pointer' }}
+                >
+                  <Text strong style={{ display: 'block' }}>{est.estimate_number || est.id.slice(0, 8)}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {est.contact ? `${est.contact.first_name} ${est.contact.last_name}` : 'No customer'}
+                  </Text>
+                  <div style={{ marginTop: 6, fontWeight: 700, fontSize: 15 }}>
+                    {formatCurrency(est.total || 0)}
+                  </div>
+                  <Tag color="orange" style={{ marginTop: 4 }}>Pending Review</Tag>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      )}
 
       {/* ═══════════ CHARTS ROW: Revenue + WO Status ═══════════ */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>

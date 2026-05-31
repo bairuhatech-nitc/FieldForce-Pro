@@ -13,6 +13,7 @@ import { Role } from '../ROLES/roles.entity';
 import { Permission } from '../PERMISSIONS/permissions.entity';
 import { RolePermission } from '../ROLE_PERMISSION/role_permission.entity';
 import { MFAModule } from '../MFA/mfa.module';
+import { SuperAdminModule } from '../SUPER_ADMIN/super_admin.module';
 
 const roleProviders = [
   { provide: REPOSITORY.ROLES, useValue: Role },
@@ -28,6 +29,7 @@ const roleProviders = [
     UserRolesModule,
     LoginSessionsModule,
     MFAModule,
+    SuperAdminModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LocalStrategy, ...roleProviders],

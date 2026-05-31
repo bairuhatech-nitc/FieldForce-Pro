@@ -3,7 +3,9 @@ import {
   Inject,
   NotFoundException,
   BadRequestException,
+  GoneException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Invoice } from './invoices.entity';
 import { CreateInvoiceDto } from './dto/invoices_create.dto';
 import { UpdateInvoiceDto } from './dto/invoices_update.dto';
@@ -171,6 +173,42 @@ export class InvoicesService {
   async delete(id: string, tenantId: string): Promise<void> {
     const invoice = await this.findById(id, tenantId);
     await invoice.update({ is_deleted: true });
+  }
+
+  async recalculatePaidAmount(invoiceId: string, tenantId: string): Promise<void> {
+    const invoice = await this.findById(invoiceId, tenantId);
+    // Sum only confirmed payments
+    const { Payment } = await import('../PAYMENTS/payments.entity');
+    const result = await Payment.sum('amount', {
+      where: { invoice_id: invoiceId, tenant_id: tenantId, status: 'confirmed', is_deleted: false },
+    });
+    const paidAmount = Number(result) || 0;
+    let newStatus = invoice.status;
+    if (paidAmount >= Number(invoice.total)) newStatus = 'paid';
+    else if (paidAmount > 0) newStatus = 'partially_paid';
+    else if (['paid', 'partially_paid'].includes(invoice.status)) newStatus = 'sent';
+    await invoice.update({ paid_amount: paidAmount, status: newStatus });
+  }
+
+  async generatePublicToken(id: string, tenantId: string): Promise<Invoice> {
+    const invoice = await this.findById(id, tenantId);
+    const token = randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    await invoice.update({ public_token: token, public_token_expires_at: expiresAt });
+    return invoice;
+  }
+
+  async getByPublicToken(token: string): Promise<Invoice> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { public_token: token, is_deleted: false },
+      include: [{ model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] }],
+    });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (invoice.public_token_expires_at && new Date(invoice.public_token_expires_at) < new Date()) {
+      throw new GoneException('This invoice link has expired');
+    }
+    return invoice;
   }
 
   private async generateInvoiceNumber(tenantId: string): Promise<string> {
