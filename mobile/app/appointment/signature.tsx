@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { appointmentsApi } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { SignaturePad, type SignaturePadHandle } from '@/components/SignaturePad';
 import { goBack } from '@/utils/navigation';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -61,6 +62,12 @@ export default function SignatureScreen() {
 
       await appointmentsApi.uploadSignature(id, formData);
       setIsUploaded(true);
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.APPOINTMENT_SIGNATURE,
+        module: AUDIT_MODULES.APPOINTMENTS,
+        record_id: id,
+        new_values: { appointment_id: id, signature_captured: true },
+      });
     } catch {
       Alert.alert(
         'Upload Failed',

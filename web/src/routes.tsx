@@ -91,6 +91,7 @@ const TemplateBuilderPage = lazy(() => import('@/pages/customization/TemplateBui
 const WorkflowRuleFormPage = lazy(() => import('@/pages/customization/WorkflowRuleFormPage'));
 const WebhookFormPage = lazy(() => import('@/pages/customization/WebhookFormPage'));
 const AuditLogListPage = lazy(() => import('@/pages/security/AuditLogListPage'));
+const MobileUsageLogs = lazy(() => import('@/pages/admin/MobileUsageLogs'));
 const ReportListPage = lazy(() => import('@/pages/reports/ReportListPage'));
 const ReportDetailPage = lazy(() => import('@/pages/reports/ReportDetailPage'));
 const AgentListPage = lazy(() => import('@/pages/workforce/AgentListPage'));
@@ -1246,6 +1247,15 @@ export const routes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <AuditLogListPage />
+          </SuspenseWrapper>
+        ),
+      },
+      // Mobile Usage Logs (admin)
+      {
+        path: 'admin/mobile-logs',
+        element: (
+          <SuspenseWrapper>
+            <MobileUsageLogs />
           </SuspenseWrapper>
         ),
       },

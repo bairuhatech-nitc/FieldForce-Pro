@@ -15,6 +15,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { timesheetApi } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { useAuthStore } from '@/store/auth.store';
 import { startForegroundGPS, stopForegroundGPS } from '@/services/gps-tracking.service';
 import { formatDate, formatTime, formatDuration } from '@/utils/format';
@@ -151,6 +152,12 @@ export default function TimesheetScreen() {
         await AsyncStorage.setItem(ACTIVE_TIMESHEET_KEY, active.id);
         setCurrent(active);
         startTimer(active.clock_in);
+        AuditLogger.log({
+          action: AUDIT_ACTIONS.CLOCK_IN,
+          module: AUDIT_MODULES.TIMESHEETS,
+          record_id: active.id,
+          new_values: { timesheet_id: active.id, clock_in: active.clock_in },
+        });
       }
     } catch (err: any) {
       const msg =
@@ -180,6 +187,12 @@ export default function TimesheetScreen() {
             if (!activeId) throw new Error('No active timesheet found. Try refreshing the page.');
 
             await timesheetApi.clockOut(activeId);
+            AuditLogger.log({
+              action: AUDIT_ACTIONS.CLOCK_OUT,
+              module: AUDIT_MODULES.TIMESHEETS,
+              record_id: activeId,
+              new_values: { timesheet_id: activeId, clock_out: new Date().toISOString() },
+            });
             await AsyncStorage.removeItem(ACTIVE_TIMESHEET_KEY);
             setCurrent(null);
             stopTimer();

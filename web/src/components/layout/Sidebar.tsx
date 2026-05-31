@@ -32,6 +32,7 @@ import {
   SafetyOutlined,
   ClockCircleOutlined,
   AuditOutlined,
+  MobileOutlined,
   CrownOutlined,
   KeyOutlined,
   DesktopOutlined,
@@ -218,6 +219,7 @@ const menuSections: MenuSection[] = [
           // { key: '/settings/notifications', labelKey: 'Notifications', permission: 'notifications:read' },
         ],
       },
+      { key: '/admin/mobile-logs', icon: <MobileOutlined />, labelKey: 'Mobile Usage Logs', permission: 'audit_logs:read' },
       {
         key: 'security-submenu',
         icon: <SafetyOutlined />,

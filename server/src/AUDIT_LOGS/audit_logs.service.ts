@@ -80,10 +80,11 @@ export class AuditLogsService {
     return auditLog;
   }
 
-  async create(tenantId: string, dto: CreateAuditLogDto): Promise<AuditLog> {
-    return this.auditLogRepository.create({
-      tenant_id: tenantId,
-      ...dto,
-    });
+  async create(
+    tenantId: string,
+    dto: Omit<CreateAuditLogDto, 'record_id'> & { record_id?: string | null },
+  ): Promise<AuditLog> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return this.auditLogRepository.create({ tenant_id: tenantId, ...dto } as any);
   }
 }

@@ -76,6 +76,11 @@ export class AuthController {
     }
 
     if ('access_token' in result && result.access_token) {
+      // Mobile clients use bearer-token auth — return tokens in body, skip cookies.
+      // Web/desktop clients use cookie-based auth — set HttpOnly cookies, strip tokens from body.
+      if (loginDto.device_type === 'mobile' || loginDto.device_type === 'tablet') {
+        return DataResponseDto.success(result, 'Login successful');
+      }
       this.setAuthCookies(res, result);
       return DataResponseDto.success(this.stripTokensFromAuthResult(result), 'Login successful');
     }

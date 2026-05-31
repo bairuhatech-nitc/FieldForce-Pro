@@ -795,6 +795,21 @@ export const reportsApi = {
     api.get<ApiResponse<any>>('/reports/performance', { params }),
 };
 
+// ─── Audit Logs API ──────────────────────────────────────────────────────────
+
+export interface MobileAuditLogPayload {
+  action: string;
+  module: string;
+  record_id?: string;
+  old_values?: Record<string, unknown>;
+  new_values?: Record<string, unknown>;
+}
+
+export const auditLogsApi = {
+  create: (payload: MobileAuditLogPayload) =>
+    api.post<ApiResponse<null>>('/audit-logs', payload),
+};
+
 // ─── Reviews API ──────────────────────────────────────────────────────────────
 
 export const reviewsApi = {

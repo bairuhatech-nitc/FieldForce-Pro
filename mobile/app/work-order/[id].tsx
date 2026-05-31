@@ -25,6 +25,7 @@ import {
   workOrderLineItemsApi,
   estimatesApi,
 } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MapNavigation } from '@/components/MapNavigation';
 import { WorkOrderToolsModal } from '@/components/WorkOrderToolsModal';
@@ -188,6 +189,12 @@ export default function WorkOrderDetailScreen() {
       const created = res.data.data;
       if (created) setNotes((prev) => [created, ...prev]);
       setNewNote('');
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_NOTE_ADDED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: id,
+        new_values: { work_order_id: id, note_id: created?.id },
+      });
     } catch {
       Alert.alert('Error', 'Failed to save note. Please try again.');
     } finally {
@@ -245,6 +252,12 @@ export default function WorkOrderDetailScreen() {
       });
       const created = res.data.data;
       if (created) setAttachments((prev) => [created, ...prev]);
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_PHOTO_UPLOADED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: id,
+        new_values: { work_order_id: id, file_name: fileName, file_type: mimeType },
+      });
     } catch {
       Alert.alert('Upload Failed', 'Could not save the attachment. Please try again.');
     } finally {
@@ -326,10 +339,18 @@ export default function WorkOrderDetailScreen() {
     if (!workOrder || updatingStatus) return;
     setShowStatusSheet(false);
     setUpdatingStatus(true);
+    const prevStatus = workOrder.status;
     try {
       await workOrdersApi.updateStatus(workOrder.id, nextStatus);
       // Re-fetch to get the latest server state
       await fetchWorkOrder();
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_STATUS_CHANGED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: workOrder.id,
+        old_values: { status: prevStatus },
+        new_values: { status: nextStatus, wo_number: workOrder.wo_number },
+      });
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? 'Failed to update status. Please try again.';
       Alert.alert('Status Update Failed', msg);

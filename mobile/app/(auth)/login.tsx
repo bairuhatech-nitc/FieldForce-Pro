@@ -20,6 +20,7 @@ import * as Device from 'expo-device';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/auth.store';
 import { authApi } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { useBiometric } from '@/hooks/use-biometric';
 import { colors, spacing, borderRadius } from '@/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -75,6 +76,11 @@ export default function LoginScreen() {
       const meResponse = await authApi.getMe();
       const freshUser = meResponse.data.data!;
       loginWithVerification(freshUser, access_token, newRefreshToken);
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.BIOMETRIC_LOGIN,
+        module: AUDIT_MODULES.AUTH,
+        new_values: { user_id: freshUser.id, email: freshUser.email },
+      });
     } catch {
       Alert.alert('Sign In Failed', 'Could not verify your identity. Please use your password.');
     } finally {
@@ -92,6 +98,11 @@ export default function LoginScreen() {
       });
       const { user, access_token, refresh_token } = response.data.data!;
       loginWithVerification(user, access_token, refresh_token);
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.LOGIN_SUCCESS,
+        module: AUDIT_MODULES.AUTH,
+        new_values: { user_id: user.id, email: user.email },
+      });
     } catch (error: any) {
       let message: string;
       if (!error.response) {
@@ -100,6 +111,11 @@ export default function LoginScreen() {
       } else {
         message = error.response.data?.message ?? 'Login failed. Please try again.';
       }
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.LOGIN_FAILED,
+        module: AUDIT_MODULES.AUTH,
+        new_values: { email: data.email, reason: message },
+      });
       Alert.alert('Login Failed', message);
     } finally {
       setIsLoading(false);

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { serviceRequestsApi } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { formatDate, formatDateTime } from '@/utils/format';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -198,9 +199,21 @@ export default function ServiceRequestDetailScreen() {
           text: 'Confirm',
           onPress: async () => {
             setActionLoading(newStatus);
+            const prevStatus = request.status;
             try {
               const res = await serviceRequestsApi.updateStatus(request.id, newStatus);
               setRequest(res.data.data ?? { ...request, status: newStatus });
+              const action =
+                newStatus === 'approved' ? AUDIT_ACTIONS.SR_ACCEPTED
+                : newStatus === 'spam'   ? AUDIT_ACTIONS.SR_REJECTED
+                : AUDIT_ACTIONS.SR_STATUS_CHANGED;
+              AuditLogger.log({
+                action,
+                module: AUDIT_MODULES.SERVICE_REQUESTS,
+                record_id: request.id,
+                old_values: { status: prevStatus },
+                new_values: { status: newStatus },
+              });
             } catch {
               Alert.alert('Error', 'Could not update status. Please try again.');
             } finally {

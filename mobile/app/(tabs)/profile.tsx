@@ -1,9 +1,10 @@
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/auth.store';
 import { authApi } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 
@@ -24,21 +25,29 @@ export default function ProfileScreen() {
   const biometricEnabled = useAuthStore((s) => s.biometricEnabled);
   const { colors, isDark, cardBg, borderColor } = useAppTheme();
 
+  const doLogout = () => {
+    AuditLogger.log({
+      action: AUDIT_ACTIONS.LOGOUT,
+      module: AUDIT_MODULES.AUTH,
+      new_values: { user_id: user?.id },
+    });
+    logout();
+    if (!biometricEnabled) {
+      authApi.logout().catch(() => {});
+    }
+  };
+
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      // Alert.alert uses window.confirm on web which is unreliable for custom buttons
+      if (window.confirm('Are you sure you want to logout?')) {
+        doLogout();
+      }
+      return;
+    }
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: () => {
-          // Logout locally first for instant UI response
-          logout();
-          // Invalidate server session in background (non-blocking)
-          if (!biometricEnabled) {
-            authApi.logout().catch(() => {});
-          }
-        },
-      },
+      { text: 'Logout', style: 'destructive', onPress: doLogout },
     ]);
   };
 

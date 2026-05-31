@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { estimatesApi, estimateLineItemsApi, contactsApi } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -443,6 +444,12 @@ export default function EstimateDetailScreen() {
       try {
         const res = await estimatesApi.send(id!);
         setEstimate(res.data.data ?? estimate);
+        AuditLogger.log({
+          action: AUDIT_ACTIONS.ESTIMATE_SENT,
+          module: AUDIT_MODULES.ESTIMATES,
+          record_id: id!,
+          new_values: { estimate_id: id, status: 'sent' },
+        });
       } catch {
         Alert.alert('Error', 'Could not send estimate. Please try again.');
       } finally {
@@ -475,6 +482,12 @@ export default function EstimateDetailScreen() {
       const res = await estimatesApi.approve(id!, signature);
       setEstimate(res.data.data ?? estimate);
       setSignatureModalVisible(false);
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.ESTIMATE_SIGNATURE,
+        module: AUDIT_MODULES.ESTIMATES,
+        record_id: id!,
+        new_values: { estimate_id: id, status: 'approved', signature_captured: true },
+      });
     } catch {
       Alert.alert('Error', 'Could not record approval. Please try again.');
     } finally {

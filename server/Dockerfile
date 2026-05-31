@@ -33,6 +33,9 @@ COPY --from=builder /app/package.json ./package.json
 # Copy sequelizerc if it exists
 COPY --from=builder /app/.sequelizerc* ./
 
+# Copy AI knowledge base so AiService can load it at runtime
+COPY --from=builder /app/docs ./docs
+
 # Create uploads directory
 RUN mkdir -p uploads
 
