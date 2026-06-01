@@ -313,9 +313,6 @@ export default function LandingPage() {
                   <button className="lp-btn lp-btn-primary" onClick={() => navigate('/register')}>
                     {t('landing.auth.registerCompany')}
                   </button>
-                  <button className="lp-btn lp-btn-demo" onClick={() => navigate('/register')}>
-                    {t('landing.auth.getDemo')}
-                  </button>
                 </>
               )}
             </div>
