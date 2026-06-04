@@ -214,6 +214,7 @@ const menuSections: MenuSection[] = [
         children: [
           { key: '/settings', labelKey: 'settings.general' },
           { key: '/settings/roles', labelKey: 'settings.rolesPermissions', permission: 'roles:read' },
+          { key: '/settings/channels/whatsapp', labelKey: 'settings.whatsappChannel', permission: 'settings:read' },
           // { key: '/settings/payment-gateways', labelKey: 'Payment Gateways', permission: 'payment_gateways:read' },
           // { key: '/settings/email-sms-templates', labelKey: 'Email/SMS Templates', permission: 'templates:read' },
           // { key: '/settings/notifications', labelKey: 'Notifications', permission: 'notifications:read' },

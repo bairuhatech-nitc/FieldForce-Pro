@@ -80,6 +80,7 @@ import { ApiKeysModule } from './API_KEYS/api_keys.module';
 import { SuperAdminModule } from './SUPER_ADMIN/super_admin.module';
 import { MagicLinksModule } from './MAGIC_LINKS/magic_links.module';
 import { SubscriptionPlansModule } from './SUBSCRIPTION_PLANS/subscription_plans.module';
+import { WhatsAppChannelsModule } from './WHATSAPP_CHANNELS/whatsapp_channels.module';
 
 @Module({
   imports: [
@@ -160,6 +161,7 @@ import { SubscriptionPlansModule } from './SUBSCRIPTION_PLANS/subscription_plans
     SuperAdminModule,
     MagicLinksModule,
     SubscriptionPlansModule,
+    WhatsAppChannelsModule,
   ],
   providers: [
     {

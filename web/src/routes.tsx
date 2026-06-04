@@ -129,6 +129,7 @@ const OnboardingSetupPage = lazy(() => import('@/pages/onboarding/OnboardingSetu
 const UserOnboardingPage = lazy(() => import('@/pages/onboarding/UserOnboardingPage'));
 const MyJobsPage = lazy(() => import('@/pages/technician/MyJobsPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
+const WhatsAppChannelSettingsPage = lazy(() => import('@/pages/settings/WhatsAppChannelSettingsPage'));
 
 function SuspenseWrapper({ children }: { children: ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>;
@@ -1372,6 +1373,15 @@ export const routes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <NotificationPreferencesPage />
+          </SuspenseWrapper>
+        ),
+      },
+      // WhatsApp Channel
+      {
+        path: 'settings/channels/whatsapp',
+        element: (
+          <SuspenseWrapper>
+            <WhatsAppChannelSettingsPage />
           </SuspenseWrapper>
         ),
       },

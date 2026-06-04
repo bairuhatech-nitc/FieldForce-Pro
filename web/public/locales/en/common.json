@@ -293,6 +293,7 @@
     "title": "Settings",
     "general": "General Settings",
     "rolesPermissions": "Roles & Permissions",
+    "whatsappChannel": "WhatsApp Channel",
     "nameRequired": "Name is required",
     "companyName": "Company Name",
     "customDomain": "Custom Domain",
