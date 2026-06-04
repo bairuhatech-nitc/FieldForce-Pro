@@ -8,7 +8,7 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { Client } from 'pg';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
 // Load .env from the server directory
@@ -21,10 +21,10 @@ const BCRYPT_ROUNDS = 12;
 async function run() {
   const client = new Client({
     host: process.env.DB_HOST ?? 'localhost',
-    port: Number(process.env.DB_PORT ?? 5432),
-    user: process.env.DB_USERNAME ?? 'root',
-    password: process.env.DB_PASSWORD ?? 'root',
-    database: process.env.DB_NAME ?? 'fieldforce_pro',
+    port: Number(process.env.DB_PORT ?? 5433),
+    user: process.env.DB_USERNAME ?? 'postgres',
+    password: process.env.DB_PASSWORD ?? 'postgres',
+    database: process.env.DB_NAME ?? 'fieldforce_pro_dev',
   });
 
   await client.connect();
@@ -91,6 +91,6 @@ async function run() {
 }
 
 run().catch((err) => {
-  console.error('Seed failed:', err.message);
+  console.error('Seed failed:', err);
   process.exit(1);
 });
