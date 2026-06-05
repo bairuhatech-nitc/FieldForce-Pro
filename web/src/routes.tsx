@@ -130,6 +130,7 @@ const UserOnboardingPage = lazy(() => import('@/pages/onboarding/UserOnboardingP
 const MyJobsPage = lazy(() => import('@/pages/technician/MyJobsPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
 const WhatsAppChannelSettingsPage = lazy(() => import('@/pages/settings/WhatsAppChannelSettingsPage'));
+const SlaConfigPage = lazy(() => import('@/pages/slas/SlaConfigPage'));
 
 function SuspenseWrapper({ children }: { children: ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>;
@@ -565,6 +566,15 @@ export const routes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <RequestFormPage />
+          </SuspenseWrapper>
+        ),
+      },
+      // SLAs
+      {
+        path: 'slas',
+        element: (
+          <SuspenseWrapper>
+            <SlaConfigPage />
           </SuspenseWrapper>
         ),
       },

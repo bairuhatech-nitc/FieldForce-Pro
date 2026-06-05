@@ -205,8 +205,11 @@ export interface ServiceRequest {
   location_id: string | null;
   subject: string;
   description: string | null;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: string | null;
+  priority_id: string | null;
+  category_id: string | null;
+  sub_category_id: string | null;
+  priority?: string | null; // Keep for legacy
+  category?: string | null; // Keep for legacy
   status: 'new' | 'triaged' | 'estimated' | 'approved' | 'converted_to_wo' | 'closed' | 'spam';
   channel: 'phone' | 'email' | 'portal' | 'webform' | 'api' | 'whatsapp' | 'sms';
   assigned_to: string | null;
@@ -224,6 +227,12 @@ export interface ServiceRequest {
   contact?: Contact;
   location?: ServiceLocation;
   technicians?: User[];
+  sla?: {
+    response_deadline: string | null;
+    response_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+    resolution_deadline: string | null;
+    resolution_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+  };
 }
 
 export interface Estimate {
@@ -315,6 +324,12 @@ export interface WorkOrder {
   contact?: Contact;
   location?: ServiceLocation;
   asset?: Asset;
+  sla?: {
+    response_deadline: string | null;
+    response_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+    resolution_deadline: string | null;
+    resolution_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+  };
 }
 
 export interface WorkOrderLineItem {

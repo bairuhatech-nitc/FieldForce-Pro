@@ -89,6 +89,7 @@ const menuSections: MenuSection[] = [
       { key: '/service-requests', icon: <FileTextOutlined />, labelKey: 'nav.serviceRequests', permission: 'service_requests:read' },
       { key: '/estimates', icon: <CalculatorOutlined />, labelKey: 'nav.estimates', permission: 'estimates:read' },
       { key: '/work-orders', icon: <ScheduleOutlined />, labelKey: 'nav.workOrders', permission: 'work_orders:read' },
+      { key: '/slas', icon: <ClockCircleOutlined />, labelKey: 'SLA Policies', permission: 'settings:read' },
       // { key: '/assets', icon: <ToolOutlined />, labelKey: 'nav.assets', permission: 'assets:read' },
       // { key: '/maintenance-plans', icon: <CalendarOutlined />, labelKey: 'nav.maintenancePlans', permission: 'asset_maintenance_plans:read' },
     ],
@@ -264,7 +265,7 @@ export default function Sidebar() {
 
   // Filter menu sections based on user permissions
   const baseSections = [...menuSections];
-  
+
   if (isSuperAdmin) {
     baseSections.push({
       section: 'sidebar.superAdmin',

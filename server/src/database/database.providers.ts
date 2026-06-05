@@ -64,6 +64,16 @@ import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
 import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
 import { SuperAdminApiKey } from '../SUPER_ADMIN/SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
 import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.entity';
+import { Category } from '../CATEGORIES/categories.entity';
+import { SubCategory } from '../SUB_CATEGORIES/sub_categories.entity';
+import { Priority } from '../PRIORITIES/priorities.entity';
+import { Location } from '../LOCATIONS/locations.entity';
+import { SlaPolicy } from '../SLA_MODULE/sla_policies.entity';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { SlaAuditLog } from '../SLA_MODULE/sla_audit_logs.entity';
+import { WorkingCalendar } from '../SLA_MODULE/working_calendars.entity';
+import { SlaEscalation } from '../SLA_MODULE/sla_escalations.entity';
+import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -131,4 +141,14 @@ export const databaseProviders = [
   { provide: REPOSITORY.SUPER_ADMIN_API_KEYS, useValue: SuperAdminApiKey },
   { provide: REPOSITORY.SUPER_ADMIN_AUDIT_LOGS, useValue: SuperAdminAuditLog },
   { provide: REPOSITORY.SERVICE_REQUEST_TECHNICIANS, useValue: ServiceRequestTechnician },
+  { provide: REPOSITORY.CATEGORIES, useValue: Category },
+  { provide: REPOSITORY.SUB_CATEGORIES, useValue: SubCategory },
+  { provide: REPOSITORY.PRIORITIES, useValue: Priority },
+  { provide: REPOSITORY.LOCATIONS, useValue: Location },
+  { provide: REPOSITORY.SLA_POLICIES, useValue: SlaPolicy },
+  { provide: REPOSITORY.SERVICE_REQUEST_SLAS, useValue: ServiceRequestSla },
+  { provide: REPOSITORY.SLA_AUDIT_LOGS, useValue: SlaAuditLog },
+  { provide: REPOSITORY.WORKING_CALENDARS, useValue: WorkingCalendar },
+  { provide: REPOSITORY.SLA_ESCALATIONS, useValue: SlaEscalation },
+  { provide: REPOSITORY.SLA_PAUSE_TRIGGERS, useValue: SlaPauseTrigger },
 ];

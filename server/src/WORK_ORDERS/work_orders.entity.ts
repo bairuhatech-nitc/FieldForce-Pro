@@ -10,6 +10,8 @@ import {
 import { Tenant } from '../TENANTS/tenants.entity';
 import { Contact } from '../CONTACTS/contacts.entity';
 import { ServiceLocation } from '../SERVICE_LOCATIONS/service_locations.entity';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { HasOne } from 'sequelize-typescript';
 
 @Table({
   tableName: 'work_orders',
@@ -183,6 +185,9 @@ export class WorkOrder extends Model {
     allowNull: true,
   })
   slaBreachAt: Date;
+
+  @HasOne(() => ServiceRequestSla, { sourceKey: 'request_id', foreignKey: 'service_request_id' })
+  sla: ServiceRequestSla;
 
   @Column({
     type: DataType.BOOLEAN,

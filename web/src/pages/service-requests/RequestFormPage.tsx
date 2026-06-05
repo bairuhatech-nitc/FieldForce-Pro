@@ -8,6 +8,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import dayjs from 'dayjs';
 import { useServiceRequest, useCreateServiceRequest, useUpdateServiceRequest } from '@/hooks/use-service-requests';
+import { formatDateTime } from '@/utils/format-date';
+import { useCategories, useSubCategories, usePriorities } from '@/hooks/use-lookups';
 import { useAllContacts } from '@/hooks/use-contacts';
 import { useAllServiceLocations } from '@/hooks/use-service-locations';
 import { useAgents } from '@/hooks/use-users';
@@ -169,6 +171,12 @@ export default function RequestFormPage() {
   const { data: locations } = useAllServiceLocations();
   const { data: agents } = useAgents();
 
+  const { data: categories } = useCategories();
+  const { data: priorities } = usePriorities();
+  
+  const categoryId = Form.useWatch('category_id', form);
+  const { data: subCategories } = useSubCategories(categoryId);
+
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [fileList, setFileList] = useState<any[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
@@ -193,8 +201,9 @@ export default function RequestFormPage() {
         description: request.description,
         contact_id: request.contact_id,
         location_id: request.location_id,
-        priority: request.priority,
-        category: request.category,
+        priority_id: request.priority_id,
+        category_id: request.category_id,
+        sub_category_id: request.sub_category_id,
         channel: request.channel,
         scheduled_start: request.scheduled_start ? dayjs(request.scheduled_start) : null,
         technician_ids: request.technicians?.map((t) => t.id) || [],
@@ -556,25 +565,30 @@ export default function RequestFormPage() {
               <Divider style={{ margin: '16px 0' }} />
 
               <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item name="priority" label={t('serviceRequests.priority')}>
+                <Col span={8}>
+                  <Form.Item name="priority_id" label={t('serviceRequests.priority')}>
                     <Select placeholder={t('serviceRequests.select')}>
-                      <Select.Option value="low">{t('serviceRequests.priorityLow')}</Select.Option>
-                      <Select.Option value="medium">{t('serviceRequests.priorityMedium')}</Select.Option>
-                      <Select.Option value="high">{t('serviceRequests.priorityHigh')}</Select.Option>
-                      <Select.Option value="urgent">{t('serviceRequests.priorityUrgent')}</Select.Option>
+                      {priorities?.map(p => (
+                        <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col span={12}>
-                  <Form.Item name="category" label={t('serviceRequests.category')}>
-                    <Select placeholder={t('serviceRequests.select')} allowClear>
-                      <Select.Option value="HVAC">{t('serviceRequests.categoryHvac')}</Select.Option>
-                      <Select.Option value="Plumbing">{t('serviceRequests.categoryPlumbing')}</Select.Option>
-                      <Select.Option value="Electrical">{t('serviceRequests.categoryElectrical')}</Select.Option>
-                      <Select.Option value="Appliance">{t('serviceRequests.categoryAppliance')}</Select.Option>
-                      <Select.Option value="General">{t('serviceRequests.categoryGeneral')}</Select.Option>
-                      <Select.Option value="Other">{t('serviceRequests.categoryOther')}</Select.Option>
+                <Col span={8}>
+                  <Form.Item name="category_id" label={t('serviceRequests.category')} rules={[{ required: true, message: t('serviceRequests.categoryRequired', 'Please select a category') }]}>
+                    <Select placeholder={t('serviceRequests.select')} allowClear onChange={() => form.setFieldValue('sub_category_id', undefined)}>
+                      {categories?.map(c => (
+                        <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="sub_category_id" label="Sub Category" rules={[{ required: true, message: 'Please select a sub-category' }]}>
+                    <Select placeholder={t('serviceRequests.select')} allowClear disabled={!categoryId}>
+                      {subCategories?.map(sc => (
+                        <Select.Option key={sc.id} value={sc.id}>{sc.name}</Select.Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>

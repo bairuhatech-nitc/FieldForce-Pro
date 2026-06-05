@@ -12,6 +12,11 @@ import { Contact } from '../CONTACTS/contacts.entity';
 import { ServiceLocation } from '../SERVICE_LOCATIONS/service_locations.entity';
 import { User } from '../USERS/users.entity';
 import { ServiceRequestTechnician } from './service_request_technician.entity';
+import { Category } from '../CATEGORIES/categories.entity';
+import { SubCategory } from '../SUB_CATEGORIES/sub_categories.entity';
+import { Priority } from '../PRIORITIES/priorities.entity';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { HasOne } from 'sequelize-typescript';
 
 @Table({
   tableName: 'service_requests',
@@ -97,11 +102,41 @@ export class ServiceRequest extends Model {
   })
   priority: string;
 
+  @ForeignKey(() => Priority)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  priority_id: string;
+
+  @BelongsTo(() => Priority)
+  priority_lookup: Priority;
+
   @Column({
     type: DataType.STRING(100),
     allowNull: true,
   })
   category: string;
+
+  @ForeignKey(() => Category)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  category_id: string;
+
+  @BelongsTo(() => Category)
+  category_lookup: Category;
+
+  @ForeignKey(() => SubCategory)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  sub_category_id: string;
+
+  @BelongsTo(() => SubCategory)
+  sub_category: SubCategory;
 
   @Column({
     type: DataType.ENUM(
@@ -177,6 +212,9 @@ export class ServiceRequest extends Model {
     allowNull: true,
   })
   scheduled_end: Date;
+
+  @HasOne(() => ServiceRequestSla)
+  sla: ServiceRequestSla;
 
   // ── Feature 5: Spam Prevention ──
   @Column({

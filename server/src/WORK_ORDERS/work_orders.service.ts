@@ -13,6 +13,7 @@ import { Op } from 'sequelize';
 import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.service';
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
 
 // Valid status transitions for work orders
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -72,6 +73,10 @@ export class WorkOrdersService {
           as: 'location',
           attributes: ['id', 'address', 'lat', 'lng', 'access_notes', 'gate_code'],
         },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
+        },
       ],
     });
 
@@ -93,6 +98,10 @@ export class WorkOrdersService {
           model: ServiceLocation,
           as: 'location',
           attributes: ['id', 'address', 'lat', 'lng', 'access_notes', 'gate_code'],
+        },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
         },
       ],
     });
@@ -133,6 +142,10 @@ export class WorkOrdersService {
           model: ServiceLocation,
           as: 'location',
           attributes: ['id', 'address', 'lat', 'lng', 'access_notes', 'gate_code'],
+        },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
         },
       ],
     });
@@ -202,6 +215,10 @@ export class WorkOrdersService {
           as: 'location',
           attributes: ['id', 'address', 'lat', 'lng', 'access_notes', 'gate_code'],
         },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
+        },
       ],
       order: [['created_at', pageOptionsDto.order]],
       limit: pageOptionsDto.take,
@@ -225,6 +242,10 @@ export class WorkOrdersService {
           model: ServiceLocation,
           as: 'location',
           attributes: ['id', 'address', 'lat', 'lng', 'access_notes', 'gate_code'],
+        },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
         },
       ],
     });
@@ -322,6 +343,7 @@ export class WorkOrdersService {
       include: [
         { model: Contact, as: 'contact', attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
         { model: ServiceLocation, as: 'location', attributes: ['id', 'address', 'lat', 'lng'] },
+        { model: ServiceRequestSla, as: 'sla' },
       ],
     });
 

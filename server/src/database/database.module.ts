@@ -75,6 +75,16 @@ import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_
 import { ServiceRequestTechnician } from '../SERVICE_REQUESTS/service_request_technician.entity';
 import { WhatsAppChannel } from '../WHATSAPP_CHANNELS/whatsapp_channels.entity';
 import { WhatsAppConversation } from '../WHATSAPP_CHANNELS/whatsapp_conversations.entity';
+import { Category } from '../CATEGORIES/categories.entity';
+import { SubCategory } from '../SUB_CATEGORIES/sub_categories.entity';
+import { Priority } from '../PRIORITIES/priorities.entity';
+import { Location } from '../LOCATIONS/locations.entity';
+import { SlaPolicy } from '../SLA_MODULE/sla_policies.entity';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { SlaAuditLog } from '../SLA_MODULE/sla_audit_logs.entity';
+import { WorkingCalendar } from '../SLA_MODULE/working_calendars.entity';
+import { SlaEscalation } from '../SLA_MODULE/sla_escalations.entity';
+import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
 
 @Module({
   imports: [
@@ -111,7 +121,10 @@ import { WhatsAppConversation } from '../WHATSAPP_CHANNELS/whatsapp_conversation
           RequestAttachment, EstimateAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
           SubscriptionMagicLink,
           ApiKey, MagicLink, SuperAdminApiKey, SuperAdminAuditLog, ServiceRequestTechnician,
-          WhatsAppChannel, WhatsAppConversation
+          WhatsAppChannel, WhatsAppConversation,
+          Category, SubCategory, Priority, Location,
+          SlaPolicy, ServiceRequestSla, SlaAuditLog,
+          WorkingCalendar, SlaEscalation, SlaPauseTrigger,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

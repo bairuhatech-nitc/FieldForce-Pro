@@ -81,6 +81,8 @@ import { SuperAdminModule } from './SUPER_ADMIN/super_admin.module';
 import { MagicLinksModule } from './MAGIC_LINKS/magic_links.module';
 import { SubscriptionPlansModule } from './SUBSCRIPTION_PLANS/subscription_plans.module';
 import { WhatsAppChannelsModule } from './WHATSAPP_CHANNELS/whatsapp_channels.module';
+import { SlaModule } from './SLA_MODULE/sla.module';
+import { LookupsModule } from './LOOKUPS/lookups.module';
 
 @Module({
   imports: [
@@ -162,6 +164,8 @@ import { WhatsAppChannelsModule } from './WHATSAPP_CHANNELS/whatsapp_channels.mo
     MagicLinksModule,
     SubscriptionPlansModule,
     WhatsAppChannelsModule,
+    SlaModule,
+    LookupsModule,
   ],
   providers: [
     {
