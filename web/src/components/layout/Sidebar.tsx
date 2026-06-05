@@ -318,10 +318,12 @@ export default function Sidebar() {
         overflow: 'auto',
         height: '100vh',
         position: 'fixed',
-        left: 0,
+        left: i18n.dir() === 'rtl' ? 'auto' : 0,
+        right: i18n.dir() === 'rtl' ? 0 : 'auto',
         top: 0,
         bottom: 0,
-        borderRight: '1px solid #f0f0f0',
+        borderRight: i18n.dir() === 'rtl' ? 'none' : '1px solid #f0f0f0',
+        borderLeft: i18n.dir() === 'rtl' ? '1px solid #f0f0f0' : 'none',
         zIndex: 100,
       }}
       trigger={null}

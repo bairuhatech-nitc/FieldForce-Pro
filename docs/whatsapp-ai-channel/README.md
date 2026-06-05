@@ -1,4 +1,4 @@
-# WhatsApp AI Channel
+# WhatsApp AI Channel (Hanin)
 
 Users can now create service requests seamlessly by chatting with an AI assistant via WhatsApp. This feature supports both Twilio Sandbox and the official Meta Cloud API.
 

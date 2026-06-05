@@ -5,6 +5,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import Breadcrumb from './Breadcrumb';
 import { useUiStore } from '@/store/ui.store';
+import { useTranslation } from 'react-i18next';
 
 const { Content } = Layout;
 
@@ -60,11 +61,17 @@ import OnboardingWizard from '../onboarding/OnboardingWizard';
 
 export default function AppLayout() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const { i18n } = useTranslation();
+  const isRtl = i18n.dir() === 'rtl';
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', direction: isRtl ? 'rtl' : 'ltr' }}>
       <Sidebar />
-      <Layout style={{ marginLeft: collapsed ? 80 : 260, transition: 'margin-left 0.2s' }}>
+      <Layout style={{ 
+        marginLeft: isRtl ? 0 : (collapsed ? 80 : 260),
+        marginRight: isRtl ? (collapsed ? 80 : 260) : 0,
+        transition: 'margin 0.2s' 
+      }}>
         <Header />
         <Content style={{ margin: 0, transition: 'background-color 0.2s' }}>
           <div style={{ padding: 24 }}>

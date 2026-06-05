@@ -1,4 +1,4 @@
-# Email AI Channel
+# Email AI Channel (Hanin)
 
 Users can now configure an Email AI channel that reads incoming support emails, automatically classifies and extracts structured service request details using Gemini AI, creates Service Requests, and handles automated acknowledgement/clarification replies and conversation threading.
 
