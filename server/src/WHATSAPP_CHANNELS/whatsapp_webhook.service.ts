@@ -322,8 +322,9 @@ export class WhatsAppWebhookService {
     }
 
     try {
-      const twilio = await import('twilio');
-      const client = twilio.default(config.account_sid, config.auth_token);
+      const twilioModule = await import('twilio');
+      const twilioInit = twilioModule.default || twilioModule;
+      const client = (twilioInit as any)(config.account_sid, config.auth_token);
       const fromNumber = config.twilio_number || '+14155238886';
 
       await client.messages.create({

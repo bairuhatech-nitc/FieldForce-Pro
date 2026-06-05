@@ -34,6 +34,7 @@ import { PRIORITY_COLORS, STATUS_TRANSITIONS, STATUS_LABELS, STATUS_COLORS } fro
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { goBack } from '@/utils/navigation';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useAuthStore } from '@/store/auth.store';
 
 const ACCENT = '#4F6BF6';
 import type {
@@ -104,6 +105,11 @@ export default function WorkOrderDetailScreen() {
   // Status update
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<'accept' | 'decline' | null>(null);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+
+  const currentUserId = useAuthStore((s) => s.user?.id);
 
   // Tools Modal
   const [showToolsModal, setShowToolsModal] = useState(false);
@@ -359,7 +365,51 @@ export default function WorkOrderDetailScreen() {
     }
   };
 
+  // ─── Accept / decline an assigned job (Step 3) ───────────────────────────────
+  const handleAccept = async () => {
+    if (!workOrder || acceptDeclineLoading) return;
+    setAcceptDeclineLoading('accept');
+    try {
+      await workOrdersApi.accept(workOrder.id);
+      await fetchWorkOrder();
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_STATUS_CHANGED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: workOrder.id,
+        new_values: { accepted: true, wo_number: workOrder.wo_number },
+      });
+    } catch (err: any) {
+      Alert.alert('Could not accept', err?.response?.data?.message ?? 'Please try again.');
+    } finally {
+      setAcceptDeclineLoading(null);
+    }
+  };
+
+  const submitDecline = async () => {
+    if (!workOrder) return;
+    if (!declineReason.trim()) {
+      Alert.alert('Reason required', 'Please enter a reason to decline this job.');
+      return;
+    }
+    setAcceptDeclineLoading('decline');
+    try {
+      await workOrdersApi.decline(workOrder.id, declineReason.trim());
+      setShowDeclineModal(false);
+      setDeclineReason('');
+      await fetchWorkOrder();
+    } catch (err: any) {
+      Alert.alert('Could not decline', err?.response?.data?.message ?? 'Please try again.');
+    } finally {
+      setAcceptDeclineLoading(null);
+    }
+  };
+
   const nextStatuses = workOrder ? (STATUS_TRANSITIONS[workOrder.status] ?? []) : [];
+  // The technician may accept/decline a job that is assigned to them and not yet started.
+  const canAcceptDecline =
+    !!workOrder &&
+    workOrder.assigned_to === currentUserId &&
+    ['new', 'approved', 'estimated'].includes(workOrder.status);
 
   // ─── Delete work order ───────────────────────────────────────────────────────
   const handleDeleteWorkOrder = () => {
@@ -464,6 +514,29 @@ export default function WorkOrderDetailScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
+        {/* Accept / decline an assigned, not-yet-started job (Step 3) */}
+        {canAcceptDecline && (
+          <>
+            <TouchableOpacity
+              style={[styles.successButton, acceptDeclineLoading === 'accept' && { opacity: 0.6 }]}
+              onPress={handleAccept}
+              disabled={!!acceptDeclineLoading}
+            >
+              {acceptDeclineLoading === 'accept'
+                ? <ActivityIndicator size="small" color={colors.textInverse} />
+                : <Ionicons name="checkmark-circle-outline" size={20} color={colors.textInverse} />}
+              <Text style={styles.primaryButtonText}>Accept Job</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.dangerButton, acceptDeclineLoading === 'decline' && { opacity: 0.6 }]}
+              onPress={() => setShowDeclineModal(true)}
+              disabled={!!acceptDeclineLoading}
+            >
+              <Ionicons name="close-circle-outline" size={20} color={colors.textInverse} />
+              <Text style={styles.primaryButtonText}>Decline Job</Text>
+            </TouchableOpacity>
+          </>
+        )}
         {/* Primary status action shortcuts */}
         {workOrder.status === 'scheduled' && (
           <TouchableOpacity
@@ -1022,6 +1095,45 @@ export default function WorkOrderDetailScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Decline reason modal (Step 3) */}
+      <Modal
+        visible={showDeclineModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDeclineModal(false)}
+      >
+        <Pressable style={styles.sheetOverlay} onPress={() => setShowDeclineModal(false)}>
+          <Pressable style={[styles.sheetContainer, { paddingBottom: insets.bottom + 8, backgroundColor: cardBg }]}>
+            <Text style={[styles.sheetTitle, { color: c.text }]}>Decline Job</Text>
+            <Text style={{ ...typography.bodySmall, color: c.textSecondary, marginBottom: spacing.md }}>
+              Let the dispatcher know why you can't take this job.
+            </Text>
+            <TextInput
+              style={[styles.declineInput, { color: c.text, borderColor, backgroundColor: inputBg }]}
+              value={declineReason}
+              onChangeText={setDeclineReason}
+              placeholder="Reason (e.g. double-booked, out of area)…"
+              placeholderTextColor={c.textLight}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[styles.dangerButton, { marginTop: spacing.md }, acceptDeclineLoading === 'decline' && { opacity: 0.6 }]}
+              onPress={submitDecline}
+              disabled={acceptDeclineLoading === 'decline'}
+            >
+              {acceptDeclineLoading === 'decline'
+                ? <ActivityIndicator size="small" color={colors.textInverse} />
+                : <Text style={styles.primaryButtonText}>Submit Decline</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.sheetCancelBtn} onPress={() => setShowDeclineModal(false)}>
+              <Text style={styles.sheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1213,6 +1325,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    backgroundColor: '#DC3545',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  declineInput: {
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    minHeight: 80,
+    ...typography.body,
   },
   statusSheetButton: {
     flexDirection: 'row',

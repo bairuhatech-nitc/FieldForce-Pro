@@ -48,6 +48,24 @@ export class TenantsService {
     await tenant.update({ is_active: false });
   }
 
+  /** Payment config the technician app shows to the customer (Step 12). */
+  async getPaymentSettings(tenantId: string): Promise<Record<string, unknown>> {
+    const tenant = await this.findById(tenantId);
+    const settings = (tenant.settings as Record<string, unknown>) || {};
+    return (settings.payment_config as Record<string, unknown>) || {};
+  }
+
+  async updatePaymentSettings(
+    tenantId: string,
+    paymentConfig: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const tenant = await this.findById(tenantId);
+    const settings = { ...((tenant.settings as Record<string, unknown>) || {}) };
+    settings.payment_config = { ...((settings.payment_config as Record<string, unknown>) || {}), ...paymentConfig };
+    await tenant.update({ settings });
+    return settings.payment_config as Record<string, unknown>;
+  }
+
   private generateSlug(name: string): string {
     return name
       .toLowerCase()

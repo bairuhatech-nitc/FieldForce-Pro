@@ -294,6 +294,7 @@
     "general": "General Settings",
     "rolesPermissions": "Roles & Permissions",
     "whatsappChannel": "WhatsApp Channel",
+    "emailChannel": "Email Channel",
     "nameRequired": "Name is required",
     "companyName": "Company Name",
     "customDomain": "Custom Domain",

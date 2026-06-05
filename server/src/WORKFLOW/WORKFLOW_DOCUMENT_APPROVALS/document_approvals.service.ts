@@ -28,9 +28,12 @@ import { WorkOrder } from '../../WORK_ORDERS/work_orders.entity';
 import { ServiceAppointment } from '../../SERVICE_APPOINTMENTS/service_appointments.entity';
 import { JobSheetInstance } from '../../JOB_SHEET_INSTANCES/job_sheet_instances.entity';
 import { JobSheetTemplate } from '../../JOB_SHEET_TEMPLATES/job_sheet_templates.entity';
+import { Invoice } from '../../INVOICES/invoices.entity';
 import { NotificationsService } from '../../NOTIFICATIONS/notifications.service';
 import { EmailService } from '../../shared/services/email.service';
 import { UsersService } from '../../USERS/users.service';
+import { Tenant } from '../../TENANTS/tenants.entity';
+import { SubscriptionPlan } from '../../SUBSCRIPTION_PLANS/subscription_plans.entity';
 
 @Injectable()
 export class DocumentApprovalsService {
@@ -57,6 +60,8 @@ export class DocumentApprovalsService {
     private readonly jobSheetInstanceRepository: typeof JobSheetInstance,
     @Inject(KEYNAMES.JOB_SHEET_TEMPLATES)
     private readonly jobSheetTemplateRepository: typeof JobSheetTemplate,
+    @Inject(KEYNAMES.INVOICES)
+    private readonly invoiceRepository: typeof Invoice,
     private readonly notificationsService: NotificationsService,
     private readonly emailService: EmailService,
     private readonly usersService: UsersService,
@@ -717,8 +722,8 @@ export class DocumentApprovalsService {
       });
       if (appointment) {
         if (outcome === 'approved') {
-          await appointment.update({ status: 'in_progress' });
-          this.logger.log(`Service appointment ${documentId} status updated to in_progress after tech approval`);
+          await appointment.update({ status: 'scheduled' });
+          this.logger.log(`Service appointment ${documentId} status updated to scheduled after tech approval`);
 
           if (appointment.agent_id) {
             await this.notifyApproverForDocument(
@@ -726,8 +731,8 @@ export class DocumentApprovalsService {
               appointment.agent_id,
               documentId,
               documentType,
-              'Schedule Approved — In Progress',
-              `Your schedule has been approved. The job is now in progress.`,
+              'Schedule Approved',
+              `Your schedule has been approved. You can now start your trip.`,
             );
           }
         } else {
@@ -876,6 +881,62 @@ export class DocumentApprovalsService {
         }
       }
     }
+
+    // ── Invoice fully approved / rejected (Step 8) ───────────────────────────
+    if (documentType === DocumentTypeEnum.INVOICE) {
+      const invoice = await this.invoiceRepository.findOne({
+        where: { id: documentId, tenant_id: tenantId, is_deleted: false },
+      });
+      if (invoice) {
+        const finalStatus = outcome === 'approved' ? 'approved' : 'rejected';
+        await invoice.update({ status: finalStatus });
+        this.logger.log(`Invoice ${documentId} ${outcome} — status set to '${finalStatus}'`);
+        // Notify whoever submitted/created the invoice of the outcome
+        const submitterId = (invoice.custom_fields as Record<string, unknown>)?.submitted_by as string;
+        if (submitterId) {
+          await this.notifyApproverForDocument(
+            tenantId,
+            submitterId,
+            documentId,
+            documentType,
+            outcome === 'approved' ? 'Invoice Approved' : 'Invoice Rejected',
+            outcome === 'approved'
+              ? `Invoice ${invoice.invoice_number || documentId} has been approved. You can collect payment.`
+              : `Invoice ${invoice.invoice_number || documentId} was rejected. Please review.`,
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Submit a document for approval using the tenant's active workflow template
+   * for that document type (looked up by document_type). Used by the invoice
+   * submit-for-approval flow (Step 8).
+   */
+  async submitByDocumentType(
+    tenantId: string,
+    params: { document_id: string; document_type: DocumentTypeEnum; amount?: number },
+  ): Promise<DocumentApproval[]> {
+    const template = await this.templateRepository.findOne({
+      where: {
+        tenant_id: tenantId,
+        document_type: params.document_type,
+        is_active: true,
+        is_deleted: false,
+      },
+    });
+    if (!template) {
+      throw new BadRequestException(
+        `No active approval workflow is configured for ${params.document_type}. Please create one first.`,
+      );
+    }
+    return this.createDocumentApprovals(tenantId, {
+      document_id: params.document_id,
+      document_type: params.document_type,
+      workflow_id: template.id,
+      amount: params.amount,
+    });
   }
 
   private generateEstimateNumber(): string {
@@ -1097,6 +1158,38 @@ export class DocumentApprovalsService {
       if (existing) {
         this.logger.log(`Appointment already exists for WO ${workOrder.id}, skipping auto-create`);
         return;
+      }
+
+      // Check appointment limit before auto-scheduling
+      const tenant = await Tenant.findByPk(tenantId);
+      if (tenant) {
+        const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_appointments_monthly ?? null;
+        let limit: number | null = customMax;
+
+        if (limit === null && tenant.subscription_plan_id) {
+          const plan = await SubscriptionPlan.findByPk(tenant.subscription_plan_id);
+          limit = plan?.max_appointments_monthly ?? null;
+        }
+
+        if (limit !== null) {
+          const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+          const currentCount = await this.serviceAppointmentRepository.count({
+            where: {
+              tenant_id: tenantId,
+              is_deleted: false,
+              created_at: {
+                [Op.gte]: startOfMonth,
+              },
+            },
+          });
+
+          if (currentCount >= limit) {
+            this.logger.warn(
+              `Tenant ${tenantId} reached monthly appointment limit (${currentCount}/${limit}). Skipping auto-creation.`,
+            );
+            return;
+          }
+        }
       }
 
       // Use WO scheduled dates if available, otherwise default to tomorrow 9am-5pm

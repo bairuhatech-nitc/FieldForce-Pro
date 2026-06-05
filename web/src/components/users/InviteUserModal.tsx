@@ -3,7 +3,7 @@ import { Modal, Form, Input, Select, Space, Alert } from 'antd';
 import { MailOutlined, UserOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAllRoles } from '@/hooks/use-roles';
-import { useInviteUser } from '@/hooks/use-users';
+import { useInviteUser, useCompanyUsage } from '@/hooks/use-users';
 import type { InviteResult } from '@/api/users.api';
 
 interface InviteUserModalProps {
@@ -17,6 +17,11 @@ export default function InviteUserModal({ open, onClose, onInvited }: InviteUser
   const [form] = Form.useForm();
   const { data: roles, isLoading: rolesLoading } = useAllRoles();
   const inviteUser = useInviteUser();
+  const { data: usage } = useCompanyUsage();
+
+  const usageCurrent = usage?.usage?.total_users?.current;
+  const usageLimit = usage?.usage?.total_users?.limit;
+  const isLimitReached = usageLimit != null && usageCurrent != null && usageCurrent >= usageLimit;
 
   useEffect(() => {
     if (!open) form.resetFields();
@@ -45,13 +50,23 @@ export default function InviteUserModal({ open, onClose, onInvited }: InviteUser
       onCancel={onClose}
       destroyOnClose
       width={480}
+      okButtonProps={{ disabled: isLimitReached }}
     >
       <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size={12}>
-        <Alert
-          message={t('inviteUser.alertMessage')}
-          type="info"
-          showIcon
-        />
+        {isLimitReached ? (
+          <Alert
+            message="User Limit Reached"
+            description="Your company has reached the maximum number of users allowed by your subscription plan. Please upgrade your plan to invite more users."
+            type="warning"
+            showIcon
+          />
+        ) : (
+          <Alert
+            message={t('inviteUser.alertMessage')}
+            type="info"
+            showIcon
+          />
+        )}
       </Space>
 
       <Form form={form} layout="vertical">

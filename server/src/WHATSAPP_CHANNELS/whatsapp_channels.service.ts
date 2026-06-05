@@ -209,8 +209,9 @@ export class WhatsAppChannelsService {
 
     try {
       // Lazy-load Twilio SDK
-      const twilio = await import('twilio');
-      const client = twilio.default(config.account_sid, config.auth_token);
+      const twilioModule = await import('twilio');
+      const twilioInit = twilioModule.default || twilioModule;
+      const client = (twilioInit as any)(config.account_sid, config.auth_token);
       // Verify account by fetching account info
       const account = await client.api.accounts(config.account_sid).fetch();
       if (account.status === 'active') {

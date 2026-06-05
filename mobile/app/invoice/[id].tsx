@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   Share,
   StyleSheet,
@@ -12,10 +13,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { invoicesApi, paymentsApi } from '@/api/endpoints';
+import { invoicesApi, paymentsApi, invoiceLineItemsApi } from '@/api/endpoints';
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { SignatureCaptureModal } from '@/components/SignatureCaptureModal';
+import { TenantPaymentDetails } from '@/components/TenantPaymentDetails';
 import type { Invoice, Payment } from '@/types/models';
 
 const ACCENT = '#4F6BF6';
@@ -69,15 +72,23 @@ export default function InvoiceDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [recordingPayment, setRecordingPayment] = useState(false);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [savingSignature, setSavingSignature] = useState(false);
+  const [submittingApproval, setSubmittingApproval] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     try {
-      const [invRes, pmtRes] = await Promise.all([
+      const [invRes, pmtRes, liRes] = await Promise.all([
         invoicesApi.getById(id),
         paymentsApi.getByInvoice(id),
+        invoiceLineItemsApi.getByInvoice(id),
       ]);
-      setInvoice(invRes.data.data ?? null);
+      const inv = invRes.data.data ?? null;
+      // The invoice endpoint doesn't eager-load line items; merge them in from
+      // the dedicated endpoint so the detail view shows the full breakdown.
+      if (inv) inv.line_items = liRes.data.data ?? [];
+      setInvoice(inv);
       setPayments(pmtRes.data.data ?? []);
     } catch {
       // Keep existing state on error
@@ -171,6 +182,36 @@ export default function InvoiceDetailScreen() {
     }
   };
 
+  // ── Customer signature (Step 7) ─────────────────────────────────────────────
+  const handleSaveSignature = async (sig: string) => {
+    if (!invoice) return;
+    setSavingSignature(true);
+    try {
+      await invoicesApi.saveSignature(invoice.id, sig);
+      setShowSignatureModal(false);
+      await fetchData();
+    } catch {
+      Alert.alert('Error', 'Could not save the signature. Please try again.');
+    } finally {
+      setSavingSignature(false);
+    }
+  };
+
+  // ── Submit for approval (Step 8) ────────────────────────────────────────────
+  const handleSubmitForApproval = async () => {
+    if (!invoice) return;
+    setSubmittingApproval(true);
+    try {
+      await invoicesApi.submitForApproval(invoice.id);
+      await fetchData();
+      Alert.alert('Submitted', 'The invoice has been sent for approval.');
+    } catch (err: any) {
+      Alert.alert('Could not submit', err?.response?.data?.message ?? 'Please try again.');
+    } finally {
+      setSubmittingApproval(false);
+    }
+  };
+
   const handleShare = async () => {
     if (!invoice) return;
     const balance = invoice.total - invoice.paid_amount;
@@ -209,8 +250,11 @@ export default function InvoiceDetailScreen() {
 
   const balance = invoice.total - invoice.paid_amount;
   const statusColor = STATUS_COLORS[invoice.status] ?? colors.textSecondary;
-  const canSend = invoice.status === 'draft';
-  const canPay = balance > 0 && invoice.status !== 'void';
+  const canSend = invoice.status === 'approved' || invoice.status === 'draft';
+  const canPay = balance > 0 && ['approved', 'sent', 'viewed', 'partially_paid', 'overdue'].includes(invoice.status);
+  // A draft can have a signature captured, then be submitted into the approval chain.
+  const canSign = invoice.status === 'draft';
+  const canSubmitForApproval = invoice.status === 'draft' && !!invoice.signature_url;
 
   // ── Main render ───────────────────────────────────────────────────────────────
 
@@ -340,8 +384,65 @@ export default function InvoiceDetailScreen() {
           </View>
         )}
 
+        {/* ── Customer signature ── */}
+        {(invoice.signature_url || canSign) && (
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+            <SectionHeader title="CUSTOMER SIGNATURE" color={c.textSecondary} />
+            {invoice.signature_url ? (
+              <View style={{ gap: spacing.sm, paddingTop: spacing.sm }}>
+                <Image
+                  source={{ uri: invoice.signature_url }}
+                  style={styles.signatureImage}
+                  resizeMode="contain"
+                />
+                {invoice.signed_at ? (
+                  <Text style={[styles.signedMeta, { color: c.textSecondary }]}>
+                    Signed {formatDateTime(invoice.signed_at)}
+                    {invoice.signed_by_name ? ` · ${invoice.signed_by_name}` : ''}
+                  </Text>
+                ) : null}
+                {canSign && (
+                  <TouchableOpacity onPress={() => setShowSignatureModal(true)}>
+                    <Text style={styles.secondaryButtonText}>Re-capture signature</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.secondaryButton, { marginTop: spacing.sm }]}
+                onPress={() => setShowSignatureModal(true)}
+              >
+                <Ionicons name="create-outline" size={18} color={ACCENT} />
+                <Text style={styles.secondaryButtonText}>Capture Customer Signature</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* ── Collect payment: show tenant QR / payment details to the customer ── */}
+        {canPay && (
+          <View style={{ marginBottom: spacing.md }}>
+            <TenantPaymentDetails amount={balance} note={invoice.invoice_number} />
+          </View>
+        )}
+
         {/* ── Actions ── */}
         <View style={styles.actionsCard}>
+          {canSubmitForApproval && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.primaryButton]}
+              onPress={handleSubmitForApproval}
+              disabled={submittingApproval}
+            >
+              {submittingApproval ? (
+                <ActivityIndicator size="small" color={c.textInverse} />
+              ) : (
+                <Ionicons name="send-outline" size={18} color={c.textInverse} />
+              )}
+              <Text style={[styles.primaryButtonText, { color: c.textInverse }]}>Submit for Approval</Text>
+            </TouchableOpacity>
+          )}
+
           {canSend && (
             <TouchableOpacity
               style={[styles.actionButton, styles.primaryButton]}
@@ -381,6 +482,16 @@ export default function InvoiceDetailScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <SignatureCaptureModal
+        visible={showSignatureModal}
+        onClose={() => setShowSignatureModal(false)}
+        onConfirm={handleSaveSignature}
+        loading={savingSignature}
+        title="Customer Signature"
+        instructions="Show the invoice to the customer and ask them to sign below."
+        confirmLabel="Save Signature"
+      />
     </View>
   );
 }
@@ -618,6 +729,17 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...typography.button,
     color: ACCENT,
+  },
+  signatureImage: {
+    width: '100%',
+    height: 140,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
+  },
+  signedMeta: {
+    ...typography.caption,
   },
   outlineButton: {
     borderWidth: 1,

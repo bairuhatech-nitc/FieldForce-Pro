@@ -33,22 +33,30 @@ export interface TenantUsageData {
   plan_name: string;
   subscription_status: string;
   subscription_end: string | null;
-  usage: { total_users: { current: number; limit: number | null } };
+  usage: {
+    total_users: { current: number; limit: number | null };
+    appointments: { current: number; limit: number | null };
+  };
 }
 
 export interface SubscriptionPlanSummary {
   id: string;
   name: string;
   max_total_users: number | null;
+  max_appointments_monthly: number | null;
   price_monthly: number;
   price_yearly: number;
+  currency?: string;
+  features?: string[];
 }
+
 
 export interface UpdateSubscriptionPayload {
   plan_id?: string;
   subscription_status?: string;
   subscription_end?: string | null;
   max_users_override?: number | null;
+  max_appointments_override?: number | null;
 }
 
 export interface PlatformHealth {
@@ -102,4 +110,9 @@ export const superAdminApi = {
   updateTenantSubscription(id: string, payload: UpdateSubscriptionPayload) {
     return api.patch<ApiResponse<TenantOverview>>(`/admin/tenants/${id}/subscription`, payload);
   },
+
+  updateSubscriptionPlan(id: string, payload: Partial<SubscriptionPlanSummary>) {
+    return api.patch<ApiResponse<SubscriptionPlanSummary>>(`/admin/subscription-plans/${id}`, payload);
+  },
 };
+

@@ -63,14 +63,17 @@ export default function SubscriptionMagicLinksPage() {
     {
       title: 'Plan',
       key: 'plan',
-      render: (_, r) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{r.plan?.name || r.plan_id}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            ₹{r.plan?.price_monthly?.toLocaleString()}/mo
-          </Text>
-        </Space>
-      ),
+      render: (_, r) => {
+        const symbol = r.plan?.currency === 'INR' ? '₹' : '$';
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{r.plan?.name || r.plan_id}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {symbol}{r.plan?.price_monthly?.toLocaleString()}/mo
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: 'Status',
@@ -217,17 +220,22 @@ export default function SubscriptionMagicLinksPage() {
             rules={[{ required: true, message: 'Please select a plan' }]}
           >
             <Select placeholder="Select plan" size="large">
-              {(plans as any[]).map((p: any) => (
-                <Select.Option key={p.id} value={p.id}>
-                  <Space>
-                    <Text strong>{p.name}</Text>
-                    <Text type="secondary">₹{p.price_monthly?.toLocaleString()}/mo</Text>
-                    {p.max_total_users && (
-                      <Tag color="blue">{p.max_total_users} users</Tag>
-                    )}
-                  </Space>
-                </Select.Option>
-              ))}
+              {(plans as any[]).map((p: any) => {
+                const symbol = p.currency === 'INR' ? '₹' : '$';
+                return (
+                  <Select.Option key={p.id} value={p.id}>
+                    <Space>
+                      <Text strong>{p.name}</Text>
+                      <Text type="secondary">{symbol}{p.price_monthly?.toLocaleString()}/mo</Text>
+                      {p.max_total_users ? (
+                        <Tag color="blue">{p.max_total_users} users</Tag>
+                      ) : (
+                        p.name.toLowerCase() !== 'custom' && <Tag color="gold">Unlimited users</Tag>
+                      )}
+                    </Space>
+                  </Select.Option>
+                );
+              })}
             </Select>
           </Form.Item>
 

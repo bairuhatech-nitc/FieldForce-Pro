@@ -660,7 +660,7 @@ export default function WhatsAppChannelSettingsPage() {
                     <Col xs={24} md={12}>
                       <Form.Item label="Business Display Name">
                         <Input
-                          placeholder="e.g. CoolBreeze HVAC Support"
+                          placeholder="e.g. FieldForce HVAC Support"
                           value={displayName}
                           onChange={(e) => setDisplayName(e.target.value)}
                           prefix={<WhatsAppOutlined style={{ color: '#25D366' }} />}

@@ -279,3 +279,14 @@ export function useChangePassword() {
     },
   });
 }
+
+export function usePublicSubscriptionPlans() {
+  return useQuery({
+    queryKey: ['public-subscription-plans'],
+    queryFn: async () => {
+      const res = await authApi.getSubscriptionPlans();
+      return res.data.data!;
+    },
+  });
+}
+

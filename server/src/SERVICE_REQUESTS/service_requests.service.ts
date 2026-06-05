@@ -87,7 +87,7 @@ export class ServiceRequestsService {
       include: [
         {
           model: Contact,
-          attributes: ['id', 'first_name', 'last_name'],
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone'],
         },
         {
           model: ServiceLocation,
@@ -190,7 +190,7 @@ export class ServiceRequestsService {
       include: [
         {
           model: Contact,
-          attributes: ['id', 'first_name', 'last_name'],
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone'],
         },
         {
           model: ServiceLocation,

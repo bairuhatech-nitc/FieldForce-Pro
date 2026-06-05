@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
+import { useUiStore } from '@/store/ui.store';
+import { getPlanPricing, formatPlanPrice, formatFeatureName, SUPPORTED_CURRENCIES } from '@/utils/pricing';
+import { usePublicSubscriptionPlans } from '@/hooks/use-auth';
+
 import {
   ToolOutlined,
   ScheduleOutlined,
@@ -147,12 +151,43 @@ function useMouseGlow() {
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { data: plans } = usePublicSubscriptionPlans();
+
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const [scrolled, setScrolled] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const currency = useUiStore((s) => s.currency);
+  const setCurrency = useUiStore((s) => s.setCurrency);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('ui-storage');
+    let hasCurrency = false;
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.state && parsed.state.currency) {
+          hasCurrency = true;
+        }
+      } catch (e) {}
+    }
+    
+    if (!hasCurrency) {
+      fetch('https://ipapi.co/json/')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.country_code === 'IN') {
+            setCurrency('INR');
+          } else {
+            setCurrency('USD');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [setCurrency]);
   const [isDark, setIsDark] = useState(() => {
     // If user has explicitly chosen a theme, respect it
     const saved = localStorage.getItem('lp-theme');
@@ -282,6 +317,32 @@ export default function LandingPage() {
                 )}
               </div>
 
+              {/* Currency Switcher */}
+              <div className="lp-lang-switcher" style={{ marginLeft: 8 }}>
+                <button
+                  className="lp-lang-btn"
+                  onClick={() => setCurrencyOpen(!currencyOpen)}
+                >
+                  💵 {currency}
+                </button>
+                {currencyOpen && (
+                  <div className="lp-lang-dropdown">
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <button
+                        key={c.key}
+                        className={currency === c.key ? 'active' : ''}
+                        onClick={() => {
+                          setCurrency(c.key);
+                          setCurrencyOpen(false);
+                        }}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Dark mode toggle */}
               <button
                 id="lp-theme-toggle"
@@ -311,7 +372,7 @@ export default function LandingPage() {
                 <>
                   <button className="lp-btn lp-btn-ghost" onClick={() => navigate('/login')}>{t('auth.login')}</button>
                   <button className="lp-btn lp-btn-primary" onClick={() => navigate('/register')}>
-                    {t('landing.auth.registerCompany')}
+                    Get Started
                   </button>
                 </>
               )}
@@ -352,7 +413,7 @@ export default function LandingPage() {
               <>
                 <button className="lp-btn lp-btn-outline" onClick={() => navigate('/login')} style={{ width: '100%' }}>{t('auth.login')}</button>
                 <button className="lp-btn lp-btn-primary" onClick={() => navigate('/register')} style={{ width: '100%' }}>
-                  {t('landing.auth.registerCompany')}
+                  Get Started
                 </button>
               </>
             )}
@@ -403,7 +464,7 @@ export default function LandingPage() {
               </p>
               <div className="lp-hero-actions">
                 <button className="lp-btn lp-btn-primary lp-btn-lg" onClick={() => navigate('/register')}>
-                  {t('landing.auth.registerCompany')} <RightOutlined />
+                  Get Started Free <RightOutlined />
                 </button>
                 <button className="lp-btn lp-btn-outline lp-btn-lg" onClick={() => scrollToSection('how-it-works')}>
                   <PlayCircleOutlined /> {t('landing.hero.learnMore')}
@@ -1064,67 +1125,108 @@ export default function LandingPage() {
 
         {/* ========== Pricing CTA ========== */}
         <section id="pricing" className="lp-pricing-section">
-          <div className="lp-container">
-            <div className="lp-pricing-content lp-reveal lp-reveal-up">
-              <h2>{t('landing.pricing.title')}</h2>
-              <p>
-                {t('landing.pricing.subtitle')}
-              </p>
-            </div>
+          {(() => {
+            const basicPlan = plans?.find((p) => p.name.toLowerCase() === 'basic');
+            const professionalPlan = plans?.find((p) => p.name.toLowerCase().includes('professional') || p.name.toLowerCase() === 'pro');
+            const enterprisePlan = plans?.find((p) => p.name.toLowerCase() === 'enterprise');
 
-            <div className="lp-pricing-cards">
-              <div className="lp-price-card lp-reveal lp-reveal-up lp-stagger-1">
-                <h3>{t('landing.pricing.p1.title')}</h3>
-                <div className="lp-price">$29<span>/{t('landing.pricing.userMo')}</span></div>
-                <p className="lp-price-desc">{t('landing.pricing.p1.desc')}</p>
-                <ul className="lp-price-features">
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p1.f1')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('nav.workOrders')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p1.f3')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p1.f4')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p1.f5')}</li>
-                </ul>
-                <button className="lp-btn lp-btn-outline" style={{ width: '100%', borderColor: 'rgba(255,255,255,0.3)', color: 'white' }} onClick={() => navigate('/register')}>
-                  {t('landing.pricing.getStarted')}
-                </button>
-              </div>
+            const basicPrice = basicPlan ? formatPlanPrice(basicPlan.price_monthly, basicPlan.currency || 'USD', currency) : getPlanPricing('basic', currency).formatted;
+            const professionalPrice = professionalPlan ? formatPlanPrice(professionalPlan.price_monthly, professionalPlan.currency || 'USD', currency) : getPlanPricing('professional', currency).formatted;
+            const enterprisePrice = enterprisePlan ? formatPlanPrice(enterprisePlan.price_monthly, enterprisePlan.currency || 'USD', currency) : getPlanPricing('enterprise', currency).formatted;
 
-              <div className="lp-price-card featured lp-reveal lp-reveal-up lp-stagger-2">
-                <h3>{t('landing.pricing.p2.title')}</h3>
-                <div className="lp-price">$59<span>/{t('landing.pricing.userMo')}</span></div>
-                <p className="lp-price-desc">{t('landing.pricing.p2.desc')}</p>
-                <ul className="lp-price-features">
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p2.f1')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p2.f2')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('nav.invoices')} & {t('nav.payments')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p2.f4')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p2.f5')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p2.f6')}</li>
-                </ul>
-                <button className="lp-btn lp-btn-primary" style={{ width: '100%' }} onClick={() => navigate('/register')}>
-                  {t('landing.pricing.getStarted')}
-                </button>
-              </div>
+            const basicLimit = basicPlan?.max_appointments_monthly !== undefined ? (basicPlan.max_appointments_monthly ? `${basicPlan.max_appointments_monthly} appointments/mo` : 'Unlimited appointments') : '100 appointments/mo';
+            const professionalLimit = professionalPlan?.max_appointments_monthly !== undefined ? (professionalPlan.max_appointments_monthly ? `${professionalPlan.max_appointments_monthly} appointments/mo` : 'Unlimited appointments') : '500 appointments/mo';
+            const enterpriseLimit = enterprisePlan?.max_appointments_monthly !== undefined ? (enterprisePlan.max_appointments_monthly ? `${enterprisePlan.max_appointments_monthly} appointments/mo` : 'Unlimited appointments') : '2000 appointments/mo';
 
-              <div className="lp-price-card lp-reveal lp-reveal-up lp-stagger-3">
-                <h3>{t('landing.pricing.p3.title')}</h3>
-                <div className="lp-price">{t('landing.pricing.p3.price')}</div>
-                <p className="lp-price-desc">{t('landing.pricing.p3.desc')}</p>
+            const basicFeatures = basicPlan?.features || ['Up to 100 appointments/mo', 'Up to 200 users', 'Work Orders & Scheduling', 'Service Requests', 'Customer Portal', 'Basic Reports'];
+            const professionalFeatures = professionalPlan?.features || ['Up to 500 appointments/mo', 'Up to 200 users', 'Everything in Basic', 'AI Scheduling & Dispatch', 'Invoices & Payments', 'Advanced Analytics', 'API Access'];
+            const enterpriseFeatures = enterprisePlan?.features || ['Up to 2000 appointments/mo', 'Up to 200 users', 'Everything in Professional', 'Predictive Maintenance (IoT)', 'Computer Vision QA', 'Custom Integrations', 'Dedicated Support'];
+
+            return (
+              <div className="lp-container">
+                <div className="lp-pricing-content lp-reveal lp-reveal-up">
+                  <h2>Simple, Transparent Pricing</h2>
+                  <p>Start with a <strong>15-day free trial</strong> on any plan. No credit card required.</p>
+                </div>
+
+                <div className="lp-pricing-cards" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                  {/* Basic */}
+                  <div className="lp-price-card lp-reveal lp-reveal-up lp-stagger-1">
+                    <div className="lp-pricing-users-tag">{basicLimit}</div>
+                    <h3>Basic</h3>
+                    <div className="lp-price">{basicPrice}<span>/mo</span></div>
+                    <p className="lp-price-desc">Perfect for small service teams getting started.</p>
+                    <ul className="lp-price-features">
+                      {basicFeatures.map((f: string) => (
+                        <li key={f}><CheckCircleFilled className="lp-check" /> {formatFeatureName(f)}</li>
+                      ))}
+                    </ul>
+                    <div className="lp-trial-badge">15-day free trial</div>
+                    <button className="lp-btn lp-btn-outline" style={{ width: '100%', borderColor: 'rgba(255,255,255,0.3)', color: 'white' }} onClick={() => navigate('/register?plan=basic')}>
+                      Get Started
+                    </button>
+                  </div>
+
+                  {/* Professional */}
+                  <div className="lp-price-card featured lp-reveal lp-reveal-up lp-stagger-2">
+                    <div className="lp-pricing-users-tag" style={{ background: 'rgba(139,92,246,0.3)', color: '#c4b5fd' }}>{professionalLimit}</div>
+                    <h3>Professional</h3>
+                    <div className="lp-price">{professionalPrice}<span>/mo</span></div>
+                    <p className="lp-price-desc">For growing teams that need AI-powered automation.</p>
+                    <ul className="lp-price-features">
+                      {professionalFeatures.map((f: string) => (
+                        <li key={f}><CheckCircleFilled className="lp-check" /> {formatFeatureName(f)}</li>
+                      ))}
+                    </ul>
+                    <div className="lp-trial-badge">15-day free trial</div>
+                    <button className="lp-btn lp-btn-primary" style={{ width: '100%' }} onClick={() => navigate('/register?plan=professional')}>
+                      Get Started
+                    </button>
+                  </div>
+
+                  {/* Enterprise */}
+                  <div className="lp-price-card lp-reveal lp-reveal-up lp-stagger-3">
+                    <div className="lp-pricing-users-tag">{enterpriseLimit}</div>
+                    <h3>Enterprise</h3>
+                    <div className="lp-price">{enterprisePrice}<span>/mo</span></div>
+                    <p className="lp-price-desc">Full-featured platform for large field service operations.</p>
+                    <ul className="lp-price-features">
+                      {enterpriseFeatures.map((f: string) => (
+                        <li key={f}><CheckCircleFilled className="lp-check" /> {formatFeatureName(f)}</li>
+                      ))}
+                    </ul>
+                    <div className="lp-trial-badge">15-day free trial</div>
+                    <button className="lp-btn lp-btn-outline" style={{ width: '100%', borderColor: 'rgba(255,255,255,0.3)', color: 'white' }} onClick={() => navigate('/register?plan=enterprise')}>
+                      Get Started
+                    </button>
+                  </div>
+
+                  {/* Custom */}
+                  <div className="lp-price-card lp-price-card-custom lp-reveal lp-reveal-up lp-stagger-4">
+                    <div className="lp-pricing-users-tag" style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}>Custom limits</div>
+                    <h3>Custom</h3>
+                    <div className="lp-price" style={{ fontSize: 28 }}>Tailored</div>
+
+                <p className="lp-price-desc">Enterprise-scale plans designed around your exact needs.</p>
                 <ul className="lp-price-features">
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p3.f1')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p3.f2')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p3.f3')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p3.f4')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p3.f5')}</li>
-                  <li><CheckCircleFilled className="lp-check" /> {t('landing.pricing.p3.f6')}</li>
+                  <li><CheckCircleFilled className="lp-check" /> 200+ users available</li>
+                  <li><CheckCircleFilled className="lp-check" /> Custom appointments limit</li>
+                  <li><CheckCircleFilled className="lp-check" /> Custom SLA & contracts</li>
+                  <li><CheckCircleFilled className="lp-check" /> On-premise options</li>
+                  <li><CheckCircleFilled className="lp-check" /> White-label available</li>
+                  <li><CheckCircleFilled className="lp-check" /> Priority onboarding</li>
                 </ul>
-                <button className="lp-btn lp-btn-outline" style={{ width: '100%', borderColor: 'rgba(255,255,255,0.3)', color: 'white' }} onClick={() => navigate('/register')}>
-                  {t('landing.pricing.contactSales')}
+                <div style={{ flex: 1 }} />
+                <button className="lp-btn lp-btn-outline" style={{ width: '100%', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', marginTop: 8 }} onClick={() => window.location.href = 'mailto:sales@fieldforce.com'}>
+                  Contact Sales →
                 </button>
               </div>
             </div>
           </div>
+            );
+          })()}
         </section>
+
 
         {/* ========== Footer ========== */}
         <footer className="lp-footer">

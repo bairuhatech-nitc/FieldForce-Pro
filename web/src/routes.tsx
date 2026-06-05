@@ -66,6 +66,7 @@ const PaymentListPage = lazy(() => import('@/pages/payments/PaymentListPage'));
 const PaymentDetailPage = lazy(() => import('@/pages/payments/PaymentDetailPage'));
 const PaymentFormPage = lazy(() => import('@/pages/payments/PaymentFormPage'));
 const PaymentGatewaySettingsPage = lazy(() => import('@/pages/settings/PaymentGatewaySettingsPage'));
+const CustomerPaymentSettingsPage = lazy(() => import('@/pages/settings/CustomerPaymentSettingsPage'));
 const EmailSmsTemplateManagementPage = lazy(() => import('@/pages/settings/EmailSmsTemplateManagementPage'));
 const NotificationPreferencesPage = lazy(() => import('@/pages/settings/NotificationPreferencesPage'));
 const SecuritySettingsPage = lazy(() => import('@/pages/security/SecuritySettingsPage'));
@@ -119,6 +120,8 @@ const IntegrationGuidePage = lazy(() => import('@/pages/integrations/Integration
 const LandingPage = lazy(() => import('@/pages/landing/LandingPage'));
 const SuperAdminDashboardPage = lazy(() => import('@/pages/super-admin/SuperAdminDashboardPage'));
 const TenantDetailPage = lazy(() => import('@/pages/super-admin/TenantDetailPage'));
+const PricingPlansPage = lazy(() => import('@/pages/super-admin/PricingPlansPage'));
+
 const SuperAdminProfilePage = lazy(() => import('@/pages/super-admin/SuperAdminProfilePage'));
 const AuditLogsPage = lazy(() => import('@/pages/super-admin/AuditLogsPage'));
 const SuperAdminApiKeysPage = lazy(() => import('@/pages/super-admin/ApiKeysPage'));
@@ -131,6 +134,7 @@ const MyJobsPage = lazy(() => import('@/pages/technician/MyJobsPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
 const WhatsAppChannelSettingsPage = lazy(() => import('@/pages/settings/WhatsAppChannelSettingsPage'));
 const SlaConfigPage = lazy(() => import('@/pages/slas/SlaConfigPage'));
+const EmailChannelSettingsPage = lazy(() => import('@/pages/settings/EmailChannelSettingsPage'));
 
 function SuspenseWrapper({ children }: { children: ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>;
@@ -1018,6 +1022,17 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'admin/pricing',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <PricingPlansPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+
+      {
         path: 'admin/platform-health',
         element: (
           <SuperAdminRoute>
@@ -1371,6 +1386,14 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'settings/customer-payment',
+        element: (
+          <SuspenseWrapper>
+            <CustomerPaymentSettingsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'settings/email-sms-templates',
         element: (
           <SuspenseWrapper>
@@ -1392,6 +1415,15 @@ export const routes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <WhatsAppChannelSettingsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      // Email Channel
+      {
+        path: 'settings/channels/email',
+        element: (
+          <SuspenseWrapper>
+            <EmailChannelSettingsPage />
           </SuspenseWrapper>
         ),
       },

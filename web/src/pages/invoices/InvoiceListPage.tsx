@@ -15,6 +15,9 @@ import { formatCurrency } from '@/utils/format-currency';
 
 const statusColors: Record<string, string> = {
   draft: 'default',
+  pending_approval: 'gold',
+  approved: 'green',
+  rejected: 'red',
   sent: 'blue',
   viewed: 'cyan',
   partially_paid: 'gold',

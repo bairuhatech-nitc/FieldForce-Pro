@@ -153,7 +153,27 @@ export class ServiceRequestsController {
       id,
       tenantId,
     );
-    return DataResponseDto.success(serviceRequest);
+
+    // Normalize customer contact details so the technician sees the same data
+    // regardless of how the request was created. Admin-created requests carry a
+    // linked Contact row; website/inbound requests (channel: 'api') have no
+    // contact_id and instead store the customer info inside custom_fields.
+    const sr: any = serviceRequest.toJSON();
+    const cf = sr.custom_fields || {};
+    const contact = sr.contact;
+    const contactName = contact
+      ? `${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim()
+      : '';
+
+    sr.customer = {
+      name: contactName || cf.customer_name || null,
+      email: contact?.email || cf.customer_email || null,
+      phone: contact?.phone || cf.customer_phone || null,
+      address: sr.location?.address || cf.service_address || null,
+      source: contact ? 'contact' : 'website',
+    };
+
+    return DataResponseDto.success(sr);
   }
 
   @Post()

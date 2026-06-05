@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
@@ -827,6 +827,13 @@ export default function NewInvoiceScreen() {
   const router = useRouter();
   const { colors: c, isDark, cardBg, headerBg, inputBg, borderColor } = useAppTheme();
 
+  // Optional context passed in when launched from a service request (or work order).
+  const { serviceRequestId, contactId, workOrderId } = useLocalSearchParams<{
+    serviceRequestId?: string;
+    contactId?: string;
+    workOrderId?: string;
+  }>();
+
   // ── Line items state ────────────────────────────────────────────────────────
   const [items, setItems] = useState<DraftItem[]>([]);
   const [editingDraft, setEditingDraft] = useState<DraftItem | null>(null);
@@ -863,6 +870,20 @@ export default function NewInvoiceScreen() {
 
   // ── Submit state ────────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
+
+  // ── Prefill from launch context (service request / work order) ───────────────
+  useEffect(() => {
+    if (contactId) {
+      contactsApi.getById(contactId)
+        .then((res) => { if (res.data.data) setSelectedContact(res.data.data); })
+        .catch(() => { });
+    }
+    if (workOrderId) {
+      workOrdersApi.getById(workOrderId)
+        .then((res) => { if (res.data.data) setSelectedWO(res.data.data); })
+        .catch(() => { });
+    }
+  }, [contactId, workOrderId]);
 
   // ── Computed totals ─────────────────────────────────────────────────────────
   const subtotal = items.reduce((s, i) => s + lineSubtotal(i) - lineDiscount(i), 0);
@@ -952,6 +973,7 @@ export default function NewInvoiceScreen() {
       const res = await invoicesApi.create({
         ...(selectedContact && { contact_id: selectedContact.id }),
         ...(selectedWO && { work_order_id: selectedWO.id }),
+        ...(serviceRequestId && { service_request_id: serviceRequestId }),
         ...(notes.trim() && { notes: notes.trim() }),
         ...(dueDate && { due_date: dueDate }),
         currency,
@@ -965,7 +987,7 @@ export default function NewInvoiceScreen() {
       if (!invoiceId) throw new Error('No invoice ID returned');
 
       await Promise.allSettled(
-        items.map((item, idx) =>
+        items.map((item) =>
           invoiceLineItemsApi.create({
             invoice_id: invoiceId,
             type: item.type,
@@ -976,7 +998,6 @@ export default function NewInvoiceScreen() {
             tax_rate: item.tax_rate,
             discount: item.discount,
             total: parseFloat(lineTotal(item).toFixed(2)),
-            sort_order: idx + 1,
           }),
         ),
       );

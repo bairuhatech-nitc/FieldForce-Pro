@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tenantsApi } from '@/api/tenants.api';
 import type { Tenant } from '@/types/models.types';
 import { useNotificationStore } from '@/store/notification.store';
+import { useAuthStore } from '@/store/auth.store';
 
 export function useTenants() {
   return useQuery({
@@ -21,6 +22,24 @@ export function useTenant(id: string) {
       return response.data.data!;
     },
     enabled: !!id,
+  });
+}
+
+export function useMyTenantStatus() {
+  const user = useAuthStore((s) => s.user);
+  const tenantId = user?.tenant_id;
+
+  return useQuery({
+    queryKey: ['tenant', tenantId, 'status'],
+    queryFn: async () => {
+      if (!tenantId) return null;
+      const res = await tenantsApi.getById(tenantId);
+      return res.data.data ?? null;
+    },
+    enabled: !!tenantId && !user?.is_super_admin,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10 * 60 * 1000, // Re-check every 10 minutes
   });
 }
 

@@ -85,6 +85,8 @@ import { SlaAuditLog } from '../SLA_MODULE/sla_audit_logs.entity';
 import { WorkingCalendar } from '../SLA_MODULE/working_calendars.entity';
 import { SlaEscalation } from '../SLA_MODULE/sla_escalations.entity';
 import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
+import { EmailChannel } from '../EMAIL_CHANNELS/email_channels.entity';
+import { EmailThread } from '../EMAIL_CHANNELS/email_threads.entity';
 
 @Module({
   imports: [
@@ -125,6 +127,7 @@ import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
           Category, SubCategory, Priority, Location,
           SlaPolicy, ServiceRequestSla, SlaAuditLog,
           WorkingCalendar, SlaEscalation, SlaPauseTrigger,
+          EmailChannel, EmailThread
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

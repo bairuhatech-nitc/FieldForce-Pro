@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SharedModule } from './shared/shared.module';
 import { EmailModule } from './shared/email.module';
@@ -83,6 +84,7 @@ import { SubscriptionPlansModule } from './SUBSCRIPTION_PLANS/subscription_plans
 import { WhatsAppChannelsModule } from './WHATSAPP_CHANNELS/whatsapp_channels.module';
 import { SlaModule } from './SLA_MODULE/sla.module';
 import { LookupsModule } from './LOOKUPS/lookups.module';
+import { EmailChannelsModule } from './EMAIL_CHANNELS/email_channels.module';
 
 @Module({
   imports: [
@@ -90,6 +92,7 @@ import { LookupsModule } from './LOOKUPS/lookups.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     SharedModule,
     EmailModule,
     DatabaseModule,
@@ -166,6 +169,7 @@ import { LookupsModule } from './LOOKUPS/lookups.module';
     WhatsAppChannelsModule,
     SlaModule,
     LookupsModule,
+    EmailChannelsModule,
   ],
   providers: [
     {

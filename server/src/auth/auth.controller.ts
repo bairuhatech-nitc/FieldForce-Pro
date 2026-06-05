@@ -291,6 +291,14 @@ export class AuthController {
   // ── Subscription Magic Link signup flow ─────────────────────────────────
 
   @Public()
+  @Get('subscription-plans')
+  @ApiOperation({ summary: 'Get active subscription plans (public)' })
+  async getSubscriptionPlans() {
+    const plans = await this.authService.listSubscriptionPlans();
+    return DataResponseDto.success(plans, 'Subscription plans fetched successfully');
+  }
+
+  @Public()
   @Get('signup-magic-link/validate')
   @ApiOperation({ summary: 'Validate a subscription magic link token (public)' })
   async validateSignupToken(@Req() req: Request) {
@@ -304,12 +312,15 @@ export class AuthController {
       price_monthly: plan.price_monthly,
       price_yearly: plan.price_yearly,
       max_total_users: plan.max_total_users,
+      max_appointments_monthly: plan.max_appointments_monthly,
       features: plan.features,
+      currency: plan.currency || 'USD',
       expires_at: link.expires_at,
       max_uses: link.max_uses,
       used_count: link.used_count,
     });
   }
+
 
   @Public()
   @Post('signup-from-magic-link')

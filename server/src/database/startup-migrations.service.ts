@@ -381,6 +381,7 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
                 max_managers INTEGER,
                 max_admins INTEGER,
                 max_total_users INTEGER,
+                max_appointments_monthly INTEGER,
                 price_monthly DECIMAL(10,2) NOT NULL DEFAULT 0,
                 price_yearly DECIMAL(10,2) NOT NULL DEFAULT 0,
                 features JSONB NOT NULL DEFAULT '[]',
@@ -391,20 +392,20 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
       },
       {
         name: 'subscription_plans: seed Basic plan',
-        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
-              VALUES (gen_random_uuid(), 'Basic', 5, 2, 1, 1, 10, 49.00, 490.00, '["service_requests","work_orders","invoices","basic_reports"]', NOW(), NOW())
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Basic', 5, 2, 1, 1, 200, 100, 49.00, 490.00, '["service_requests","work_orders","invoices","basic_reports"]', NOW(), NOW())
               ON CONFLICT (name) DO NOTHING;`,
       },
       {
         name: 'subscription_plans: seed Professional plan',
-        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
-              VALUES (gen_random_uuid(), 'Professional', 20, 5, 3, 2, 30, 149.00, 1490.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access"]', NOW(), NOW())
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Professional', 20, 5, 3, 2, 200, 500, 149.00, 1490.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access"]', NOW(), NOW())
               ON CONFLICT (name) DO NOTHING;`,
       },
       {
         name: 'subscription_plans: seed Enterprise plan',
-        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
-              VALUES (gen_random_uuid(), 'Enterprise', NULL, NULL, NULL, NULL, NULL, 399.00, 3990.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access","custom_fields","webhooks","ai_features"]', NOW(), NOW())
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Enterprise', NULL, NULL, NULL, NULL, 200, 2000, 399.00, 3990.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access","custom_fields","webhooks","ai_features"]', NOW(), NOW())
               ON CONFLICT (name) DO NOTHING;`,
       },
 
@@ -691,13 +692,35 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
       },
       {
         name: 'service_request_technicians: backfill existing assignments',
-        sql: `INSERT INTO service_request_technicians (tenant_id, service_request_id, technician_id)
-              SELECT tenant_id, id, assigned_to
+        sql: `INSERT INTO service_request_technicians (id, tenant_id, service_request_id, technician_id, created_at, updated_at)
+              SELECT gen_random_uuid(), tenant_id, id, assigned_to, NOW(), NOW()
               FROM service_requests
               WHERE assigned_to IS NOT NULL
               ON CONFLICT (service_request_id, technician_id) DO NOTHING;`,
       },
+      {
+        name: 'subscription_plans: add currency column',
+        sql: `ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS currency VARCHAR(10) NOT NULL DEFAULT 'USD';`,
+      },
+      {
+        name: 'subscription_plans: seed Custom plan',
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, currency, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Custom', NULL, NULL, NULL, NULL, 200, NULL, 0.00, 0.00, '[]', 'USD', NOW(), NOW())
+              ON CONFLICT (name) DO NOTHING;`,
+      },
+      {
+        name: 'subscription_plans: add max_appointments_monthly column',
+        sql: `ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS max_appointments_monthly INTEGER;`,
+      },
+      {
+        name: 'subscription_plans: update plans default limits (user cap 200 and appointments cap)',
+        sql: `UPDATE subscription_plans SET max_appointments_monthly = 100, max_total_users = 200 WHERE name = 'Basic';
+              UPDATE subscription_plans SET max_appointments_monthly = 500, max_total_users = 200 WHERE name = 'Professional';
+              UPDATE subscription_plans SET max_appointments_monthly = 2000, max_total_users = 200 WHERE name = 'Enterprise';
+              UPDATE subscription_plans SET max_total_users = 200 WHERE name = 'Custom';`,
+      },
     ];
+
 
     for (const migration of migrations) {
       try {
@@ -709,6 +732,9 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
 
     // ── Seed: auto-create SCHEDULE workflow template per tenant ────────────
     await this.seedScheduleWorkflow();
+
+    // ── Seed: auto-create INVOICE workflow template per tenant ────────────
+    await this.seedInvoiceWorkflow();
 
     // ── Seed: create Dispatcher role for tenants that don't have one yet ──
     await this.seedDispatcherRole();
@@ -724,7 +750,7 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
       const tenantsWithout = (await this.sequelize.query(
         `SELECT t.id
          FROM tenants t
-         WHERE t.is_deleted = false
+         WHERE t.is_active = true
            AND NOT EXISTS (
              SELECT 1 FROM workflow_templates wt
              WHERE wt.tenant_id = t.id
@@ -744,8 +770,8 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
         const adminResults = (await this.sequelize.query(
           `SELECT u.id
            FROM users u
-           JOIN user_roles ur ON ur.user_id = u.id AND ur.is_deleted = false
-           JOIN roles r ON r.id = ur.role_id AND r.is_deleted = false
+           JOIN user_roles ur ON ur.user_id = u.id
+           JOIN roles r ON r.id = ur.role_id
            WHERE u.tenant_id = :tenantId
              AND u.is_deleted = false
              AND u.is_active = true
@@ -868,6 +894,81 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
       }
     } catch (err) {
       this.logger.warn(`Dispatcher role seed failed: ${err.message}`);
+    }
+  }
+
+  /**
+   * For every tenant that does NOT yet have an active INVOICE workflow template,
+   * create one and assign the first Admin user as the default invoice approver.
+   */
+  private async seedInvoiceWorkflow(): Promise<void> {
+    try {
+      // Find tenants missing an active INVOICE workflow
+      const tenantsWithout = (await this.sequelize.query(
+        `SELECT t.id
+         FROM tenants t
+         WHERE t.is_active = true
+           AND NOT EXISTS (
+             SELECT 1 FROM workflow_templates wt
+             WHERE wt.tenant_id = t.id
+               AND wt.document_type = 'INVOICE'
+               AND wt.is_active = true
+               AND wt.is_deleted = false
+           )`,
+        { type: (this.sequelize as any).constructor.QueryTypes.SELECT },
+      ) as unknown) as Array<{ id: string }>;
+
+      if (!tenantsWithout || tenantsWithout.length === 0) {
+        return; // All tenants already have an INVOICE workflow
+      }
+
+      for (const tenant of tenantsWithout) {
+        // Find the first active Admin user for this tenant to be the default approver
+        const adminResults = (await this.sequelize.query(
+          `SELECT u.id
+           FROM users u
+           JOIN user_roles ur ON ur.user_id = u.id
+           JOIN roles r ON r.id = ur.role_id
+           WHERE u.tenant_id = :tenantId
+             AND u.is_deleted = false
+             AND u.is_active = true
+             AND LOWER(r.name) = 'admin'
+           ORDER BY u.created_at ASC
+           LIMIT 1`,
+          { replacements: { tenantId: tenant.id }, type: (this.sequelize as any).constructor.QueryTypes.SELECT },
+        ) as unknown) as Array<{ id: string }>;
+        const adminUser = adminResults[0];
+
+        if (!adminUser) {
+          this.logger.warn(`Tenant ${tenant.id}: no active Admin user found — skipping INVOICE workflow seed`);
+          continue;
+        }
+
+        // Create the workflow template
+        const templateResults = (await this.sequelize.query(
+          `INSERT INTO workflow_templates (id, tenant_id, name, description, document_type, document_category, version, is_active, is_deleted, created_at, updated_at)
+           VALUES (gen_random_uuid(), :tenantId, 'Invoice Approval Workflow', 'Auto-created workflow for reviewing and approving customer invoices', 'INVOICE', 'FINANCE', 1, true, false, NOW(), NOW())
+           RETURNING id`,
+          { replacements: { tenantId: tenant.id }, type: (this.sequelize as any).constructor.QueryTypes.SELECT },
+        ) as unknown) as Array<{ id: string }>;
+        const templateRow = templateResults[0];
+
+        if (!templateRow) {
+          this.logger.warn(`Tenant ${tenant.id}: failed to create INVOICE workflow template`);
+          continue;
+        }
+
+        // Add the admin as the first (and only) approver
+        await this.sequelize.query(
+          `INSERT INTO workflow_approvers (id, tenant_id, workflow_template_id, approver_id, order_no, is_required, is_active, is_deleted, created_at, updated_at)
+           VALUES (gen_random_uuid(), :tenantId, :templateId, :approverId, 1, true, true, false, NOW(), NOW())`,
+          { replacements: { tenantId: tenant.id, templateId: templateRow.id, approverId: adminUser.id } },
+        );
+
+        this.logger.log(`Tenant ${tenant.id}: seeded INVOICE workflow (template=${templateRow.id}, approver=${adminUser.id})`);
+      }
+    } catch (err) {
+      this.logger.warn(`INVOICE workflow seed failed: ${err.message}`);
     }
   }
 }

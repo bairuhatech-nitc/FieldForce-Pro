@@ -7,6 +7,8 @@ import { DataResponseDto } from '../shared/dto/data-response.dto';
 import { CurrentUser } from '../shared/decorator/current-user.decorator';
 import { UpdateSuperAdminProfileDto, ChangeSuperAdminEmailDto } from './dto/super-admin-profile.dto';
 import { UpdateTenantSubscriptionDto } from './dto/update_tenant_subscription.dto';
+import { UpdateSubscriptionPlanDto } from './dto/update_subscription_plan.dto';
+
 
 import { SuperAdminAnalyticsService } from './SUPER_ADMIN_ANALYTICS/super_admin_analytics.service';
 import { SubscriptionMagicLinksService } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.service';
@@ -55,6 +57,17 @@ export class SuperAdminController {
     const plans = await this.superAdminService.listSubscriptionPlans();
     return DataResponseDto.success(plans, 'Subscription plans fetched');
   }
+
+  @Patch('subscription-plans/:id')
+  @ApiOperation({ summary: 'Update a subscription plan' })
+  async updateSubscriptionPlan(
+    @Param('id') id: string,
+    @Body() dto: UpdateSubscriptionPlanDto,
+  ) {
+    const plan = await this.superAdminService.updateSubscriptionPlan(id, dto);
+    return DataResponseDto.success(plan, 'Subscription plan updated successfully');
+  }
+
 
   @Patch('tenants/:id/subscription')
   @ApiOperation({ summary: 'Update a tenant subscription plan, status, and limits' })

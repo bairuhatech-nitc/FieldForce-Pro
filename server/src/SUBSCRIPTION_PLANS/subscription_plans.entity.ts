@@ -34,6 +34,9 @@ export class SubscriptionPlan extends Model {
   @Column({ type: DataType.INTEGER, allowNull: true })
   max_total_users: number | null;
 
+  @Column({ type: DataType.INTEGER, allowNull: true })
+  max_appointments_monthly: number | null;
+
   @Default(0)
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   price_monthly: number;
@@ -41,6 +44,11 @@ export class SubscriptionPlan extends Model {
   @Default(0)
   @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
   price_yearly: number;
+
+  @Default('USD')
+  @Column({ type: DataType.STRING(10), allowNull: false })
+  currency: string;
+
 
   @Default([])
   @Column({ type: DataType.JSONB, allowNull: false })

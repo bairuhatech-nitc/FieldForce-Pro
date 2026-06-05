@@ -7,6 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Op } from 'sequelize';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { REPOSITORY } from '../shared/constants/keynames';
@@ -19,6 +21,7 @@ import { Permission } from '../PERMISSIONS/permissions.entity';
 import { RolePermission } from '../ROLE_PERMISSION/role_permission.entity';
 import { UserRole } from '../USER_ROLES/user_roles.entity';
 import { LoginSession } from '../LOGIN_SESSIONS/login_sessions.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 import { UsersService } from '../USERS/users.service';
 import { TenantsService } from '../TENANTS/tenants.service';
 import { UserRolesService } from '../USER_ROLES/user_roles.service';
@@ -57,6 +60,8 @@ export class AuthService {
     private readonly permissionRepository: typeof Permission,
     @Inject(REPOSITORY.ROLE_PERMISSION)
     private readonly rolePermissionRepository: typeof RolePermission,
+    @Inject(REPOSITORY.SUBSCRIPTION_PLANS)
+    private readonly subscriptionPlanRepository: typeof SubscriptionPlan,
   ) { }
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -111,8 +116,32 @@ export class AuthService {
       throw new ConflictException('User with this email already exists');
     }
 
+    // Resolve subscription plan (default: Basic)
+    const planSlug = dto.plan_slug ?? 'basic';
+    const planNameMap: Record<string, string> = {
+      basic: 'Basic',
+      professional: 'Professional',
+      enterprise: 'Enterprise',
+    };
+    const planName = planNameMap[planSlug] ?? 'Basic';
+    const plan = await this.subscriptionPlanRepository.findOne({ where: { name: planName } });
+
     // Create tenant
     const tenant = await this.tenantsService.create({ name: dto.company_name });
+
+    // Wire up subscription: 15-day free trial
+    const now = new Date();
+    const trialEnd = new Date(now);
+    trialEnd.setDate(trialEnd.getDate() + 15);
+
+    await tenant.update({
+      subscription_plan: planName,
+      subscription_plan_id: plan?.id ?? null,
+      subscription_status: 'trial',
+      subscription_start: now,
+      subscription_end: trialEnd,
+      max_users: plan?.max_total_users ?? 10,
+    });
 
     // Create user
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -812,5 +841,41 @@ export class AuthService {
     else if (userAgent.includes('Opera') || userAgent.includes('OPR')) browser = 'Opera';
 
     return { os, browser };
+  }
+
+  /**
+   * Runs every night at midnight.
+   * Suspends any tenant whose trial period has ended
+   * (subscription_status = 'trial' AND subscription_end < NOW()).
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async suspendExpiredTrials() {
+    this.logger.log('[Cron] Checking for expired trial tenants...');
+    try {
+      const [affected] = await Tenant.update(
+        { subscription_status: 'expired', is_active: false },
+        {
+          where: {
+            subscription_status: 'trial',
+            subscription_end: { [Op.lt]: new Date() },
+          },
+        },
+      );
+      if (affected > 0) {
+        this.logger.log(`[Cron] Suspended ${affected} expired trial tenant(s).`);
+      } else {
+        this.logger.debug('[Cron] No expired trials found.');
+      }
+    } catch (err) {
+      this.logger.error('[Cron] Failed to suspend expired trials', err);
+    }
+  }
+
+  async listSubscriptionPlans() {
+    return this.subscriptionPlanRepository.findAll({
+      where: { is_active: true },
+      order: [['price_monthly', 'ASC']],
+      attributes: ['id', 'name', 'max_total_users', 'max_appointments_monthly', 'price_monthly', 'price_yearly', 'currency', 'features'],
+    });
   }
 }

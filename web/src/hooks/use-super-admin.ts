@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { superAdminApi, type UpdateSubscriptionPayload } from '@/api/super-admin.api';
+import { superAdminApi, type UpdateSubscriptionPayload, type SubscriptionPlanSummary } from '@/api/super-admin.api';
+
 import { useNotificationStore } from '@/store/notification.store';
 
 export function usePlatformHealth() {
@@ -91,6 +92,24 @@ export function useSubscriptionPlans() {
     },
   });
 }
+
+export function useUpdateSubscriptionPlan() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ id, ...payload }: Partial<SubscriptionPlanSummary> & { id: string }) =>
+      superAdminApi.updateSubscriptionPlan(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+      addNotification({ type: 'success', message: 'Subscription plan updated successfully' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to update subscription plan' });
+    },
+  });
+}
+
 
 export function useTenantUsage(id: string) {
   return useQuery({

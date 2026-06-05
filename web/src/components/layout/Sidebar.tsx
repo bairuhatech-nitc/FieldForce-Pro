@@ -216,6 +216,7 @@ const menuSections: MenuSection[] = [
           { key: '/settings', labelKey: 'settings.general' },
           { key: '/settings/roles', labelKey: 'settings.rolesPermissions', permission: 'roles:read' },
           { key: '/settings/channels/whatsapp', labelKey: 'settings.whatsappChannel', permission: 'settings:read' },
+          { key: '/settings/channels/email', labelKey: 'settings.emailChannel', permission: 'settings:read' },
           // { key: '/settings/payment-gateways', labelKey: 'Payment Gateways', permission: 'payment_gateways:read' },
           // { key: '/settings/email-sms-templates', labelKey: 'Email/SMS Templates', permission: 'templates:read' },
           // { key: '/settings/notifications', labelKey: 'Notifications', permission: 'notifications:read' },
@@ -271,8 +272,10 @@ export default function Sidebar() {
       section: 'sidebar.superAdmin',
       items: [
         { key: '/admin/tenants', icon: <CrownOutlined />, labelKey: 'sidebar.tenants' },
+        { key: '/admin/pricing', icon: <DollarOutlined />, labelKey: 'Pricing Plans' },
         { key: '/admin/magic-links', icon: <LinkOutlined />, labelKey: 'Magic Links' },
         { key: '/admin/analytics', icon: <LineChartOutlined />, labelKey: 'sidebar.analytics' },
+
         { key: '/admin/platform-health', icon: <DesktopOutlined />, labelKey: 'sidebar.systemHealth' },
         { key: '/admin/api-keys', icon: <KeyOutlined />, labelKey: 'sidebar.apiKeys' },
         { key: '/admin/audit-logs', icon: <AuditOutlined />, labelKey: 'sidebar.auditLogs' },
@@ -318,10 +321,12 @@ export default function Sidebar() {
         overflow: 'auto',
         height: '100vh',
         position: 'fixed',
-        left: 0,
+        left: i18n.dir() === 'rtl' ? 'auto' : 0,
+        right: i18n.dir() === 'rtl' ? 0 : 'auto',
         top: 0,
         bottom: 0,
-        borderRight: '1px solid #f0f0f0',
+        borderRight: i18n.dir() === 'rtl' ? 'none' : '1px solid #f0f0f0',
+        borderLeft: i18n.dir() === 'rtl' ? '1px solid #f0f0f0' : 'none',
         zIndex: 100,
       }}
       trigger={null}
