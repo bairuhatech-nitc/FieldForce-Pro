@@ -15,11 +15,16 @@ import { PageMetaDto } from '../shared/dto/page-meta.dto';
 import { KEYNAMES } from '../shared/constants/keynames';
 import { Op } from 'sequelize';
 import { Contact } from '../CONTACTS/contacts.entity';
+import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.service';
+import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
-  draft: ['sent', 'void'],
-  sent: ['viewed', 'overdue', 'void'],
-  viewed: ['partially_paid', 'overdue', 'void'],
+  draft: ['pending_approval', 'sent', 'void'],
+  pending_approval: ['approved', 'rejected', 'draft'],
+  approved: ['sent', 'partially_paid', 'paid', 'void'],
+  rejected: ['draft', 'void'],
+  sent: ['viewed', 'partially_paid', 'paid', 'overdue', 'void'],
+  viewed: ['partially_paid', 'paid', 'overdue', 'void'],
   partially_paid: ['paid'],
   paid: [],
   overdue: ['partially_paid', 'paid'],
@@ -31,6 +36,7 @@ export class InvoicesService {
   constructor(
     @Inject(KEYNAMES.INVOICES)
     private readonly invoiceRepository: typeof Invoice,
+    private readonly documentApprovalsService: DocumentApprovalsService,
   ) { }
 
   async findAllPaginated(
@@ -118,6 +124,51 @@ export class InvoicesService {
   ): Promise<Invoice> {
     const invoice = await this.findById(id, tenantId);
     await invoice.update(dto);
+    return invoice;
+  }
+
+  /** Persist a customer's digital signature captured on the technician's device. */
+  async recordSignature(
+    id: string,
+    tenantId: string,
+    signatureUrl: string,
+    signedByName?: string,
+  ): Promise<Invoice> {
+    const invoice = await this.findById(id, tenantId);
+    await invoice.update({
+      signature_url: signatureUrl,
+      signed_by_name: signedByName || null,
+      signed_at: new Date(),
+    });
+    return invoice;
+  }
+
+  /**
+   * Submit a draft invoice into the tenant's multi-step approval chain (Step 8).
+   * Creates DocumentApproval steps from the active INVOICE workflow template and
+   * marks the invoice pending_approval. The chain advances via the workflow
+   * engine, which flips the invoice to approved/rejected on completion.
+   */
+  async submitForApproval(
+    id: string,
+    tenantId: string,
+    submittedBy?: string,
+  ): Promise<Invoice> {
+    const invoice = await this.findById(id, tenantId);
+    if (invoice.status !== 'draft') {
+      throw new BadRequestException('Only draft invoices can be submitted for approval');
+    }
+
+    await this.documentApprovalsService.submitByDocumentType(tenantId, {
+      document_id: invoice.id,
+      document_type: DocumentTypeEnum.INVOICE,
+      amount: Number(invoice.total) || 0,
+    });
+
+    await invoice.update({
+      status: 'pending_approval',
+      custom_fields: { ...(invoice.custom_fields || {}), submitted_by: submittedBy || null },
+    });
     return invoice;
   }
 

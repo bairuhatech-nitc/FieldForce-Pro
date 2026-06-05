@@ -18,7 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import dayjs from 'dayjs';
 import { Ionicons } from '@expo/vector-icons';
-import { appointmentsApi } from '@/api/endpoints';
+import { appointmentsApi, documentApprovalsApi } from '@/api/endpoints';
+import { useAuthStore } from '@/store/auth.store';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatTime } from '@/utils/format';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -202,7 +203,23 @@ export default function ScheduleScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await appointmentsApi.updateStatus(item.id, AppointmentStatus.CANCELLED);
+              const approvalsRes = await documentApprovalsApi.getByDocument(item.id);
+              const pendingApproval = approvalsRes.data.data?.find(
+                (app: any) =>
+                  app.document_type === 'SCHEDULE' &&
+                  app.status === 'PENDING' &&
+                  app.approver_id === useAuthStore.getState().user?.id
+              );
+
+              if (pendingApproval) {
+                await documentApprovalsApi.process(pendingApproval.id, {
+                  action: 'REJECT',
+                  comments: 'Rejected from schedule list',
+                });
+              } else {
+                await appointmentsApi.updateStatus(item.id, AppointmentStatus.CANCELLED);
+              }
+
               setAppointments((prev) =>
                 prev.map((a) =>
                   a.id === item.id ? { ...a, status: AppointmentStatus.CANCELLED } : a,
@@ -215,6 +232,29 @@ export default function ScheduleScreen() {
         },
       ],
     );
+  };
+
+  const handleAccept = async (item: Appointment) => {
+    try {
+      const approvalsRes = await documentApprovalsApi.getByDocument(item.id);
+      const pendingApproval = approvalsRes.data.data?.find(
+        (app: any) =>
+          app.document_type === 'SCHEDULE' &&
+          app.status === 'PENDING' &&
+          app.approver_id === useAuthStore.getState().user?.id
+      );
+
+      if (pendingApproval) {
+        await documentApprovalsApi.process(pendingApproval.id, {
+          action: 'APPROVE',
+          comments: 'Accepted from schedule list',
+        });
+      }
+    } catch (err) {
+      // Ignore error and navigate to detail anyway
+    } finally {
+      router.push(`/appointment/${item.id}`);
+    }
   };
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -398,7 +438,7 @@ export default function ScheduleScreen() {
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.acceptBtn}
-                        onPress={() => router.push(`/appointment/${item.id}`)}
+                        onPress={() => handleAccept(item)}
                       >
                         <Ionicons name="checkmark" size={13} color="#fff" />
                         <Text style={styles.acceptBtnText}>Accept</Text>

@@ -66,6 +66,7 @@ const PaymentListPage = lazy(() => import('@/pages/payments/PaymentListPage'));
 const PaymentDetailPage = lazy(() => import('@/pages/payments/PaymentDetailPage'));
 const PaymentFormPage = lazy(() => import('@/pages/payments/PaymentFormPage'));
 const PaymentGatewaySettingsPage = lazy(() => import('@/pages/settings/PaymentGatewaySettingsPage'));
+const CustomerPaymentSettingsPage = lazy(() => import('@/pages/settings/CustomerPaymentSettingsPage'));
 const EmailSmsTemplateManagementPage = lazy(() => import('@/pages/settings/EmailSmsTemplateManagementPage'));
 const NotificationPreferencesPage = lazy(() => import('@/pages/settings/NotificationPreferencesPage'));
 const SecuritySettingsPage = lazy(() => import('@/pages/security/SecuritySettingsPage'));
@@ -1358,6 +1359,14 @@ export const routes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <PaymentGatewaySettingsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'settings/customer-payment',
+        element: (
+          <SuspenseWrapper>
+            <CustomerPaymentSettingsPage />
           </SuspenseWrapper>
         ),
       },

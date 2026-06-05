@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,7 +20,9 @@ import {
   jobSheetInstancesApi,
   workOrderLineItemsApi,
   reviewsApi,
+  documentApprovalsApi,
 } from '@/api/endpoints';
+import { useAuthStore } from '@/store/auth.store';
 import { StatusBadge } from '@/components/StatusBadge';
 import { PhotoCapture } from '@/components/PhotoCapture';
 import { ChecklistItem } from '@/components/ChecklistItem';
@@ -119,6 +121,7 @@ export default function AppointmentDetailScreen() {
   const [jobSheets, setJobSheets] = useState<any[]>([]);
   const [parts, setParts] = useState<any[]>([]);
   const [existingReview, setExistingReview] = useState<any>(null);
+  const [approvals, setApprovals] = useState<any[]>([]);
 
   // Local wizard tracking for sub-steps within on_site / in_progress.
   // Persisted to AsyncStorage so it survives screen unmount/remount (Slot-based routing).
@@ -178,11 +181,12 @@ export default function AppointmentDetailScreen() {
       setAppointment(appt);
 
       if (appt?.work_order_id) {
-        const [lineItemsRes, jobSheetRes, invoiceRes, reviewRes] = await Promise.all([
+        const [lineItemsRes, jobSheetRes, invoiceRes, reviewRes, approvalsRes] = await Promise.all([
           workOrderLineItemsApi.getByWorkOrder(appt.work_order_id).catch(() => null),
           jobSheetInstancesApi.getByWorkOrder(appt.work_order_id).catch(() => null),
           invoicesApi.getByWorkOrder(appt.work_order_id).catch(() => null),
           reviewsApi.getByWorkOrder(appt.work_order_id).catch(() => null),
+          documentApprovalsApi.getByDocument(appt.id).catch(() => null),
         ]);
 
         if (lineItemsRes?.data?.data) {
@@ -194,6 +198,7 @@ export default function AppointmentDetailScreen() {
         if (jobSheetRes?.data?.data) setJobSheets(jobSheetRes.data.data);
         if (invoiceRes?.data?.data?.length) setInvoice(invoiceRes.data.data[0]);
         if (reviewRes?.data?.data?.length) setExistingReview(reviewRes.data.data[0]);
+        if (approvalsRes?.data?.data) setApprovals(approvalsRes.data.data);
       }
     } catch {
       // handled by null appointment state
@@ -857,6 +862,18 @@ export default function AppointmentDetailScreen() {
     }
   };
 
+  // ── Selector for pending job assignment acceptance
+  const { user } = useAuthStore();
+  const pendingScheduleApproval = useMemo(() => {
+    if (!appointment || appointment.status !== AppointmentStatus.SCHEDULED) return null;
+    return approvals.find(
+      (app) =>
+        app.document_type === 'SCHEDULE' &&
+        app.status === 'PENDING' &&
+        app.approver_id === user?.id
+    );
+  }, [approvals, appointment, user]);
+
   // ── Unified active step calculation ─────────────────────────────────────
   // Merges server status with local sub-step tracking into a single step index.
   // on_site localStep: 0=call, 1=checklist, 2=parts, 3=before photos, 4=start work
@@ -953,8 +970,87 @@ export default function AppointmentDetailScreen() {
         </View>
       )}
 
-      {/* Step cards — hide when fully done (completed + paid) */}
-      {!isCancelled && !isFullyDone &&
+      {/* Pending assignment acceptance banner */}
+      {pendingScheduleApproval && (
+        <View style={[styles.stepCard, { backgroundColor: cardBg, borderColor, borderLeftWidth: 4, borderLeftColor: ACCENT }]}>
+          <Text style={[styles.stepTitle, { color: themeColors.text, fontWeight: '700', fontSize: 16, marginBottom: 8 }]}>
+            New Job Assignment
+          </Text>
+          <Text style={[styles.stepDescription, { color: themeColors.textSecondary, marginBottom: 16 }]}>
+            You have been assigned to this job. Please accept or decline the assignment below.
+          </Text>
+          <View style={styles.stepActions}>
+            <TouchableOpacity
+              style={[styles.rejectBtn, { flex: 1 }]}
+              onPress={async () => {
+                Alert.alert('Decline Assignment', 'Are you sure you want to decline this assignment?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Decline',
+                    style: 'destructive',
+                    onPress: async () => {
+                      setUpdatingStatus(true);
+                      try {
+                        await documentApprovalsApi.process(pendingScheduleApproval.id, {
+                          action: 'REJECT',
+                          comments: 'Declined by technician via app',
+                        });
+                        Alert.alert('Declined', 'Assignment declined.', [
+                          { text: 'OK', onPress: () => goBack() }
+                        ]);
+                      } catch (err: any) {
+                        const msg = err?.response?.data?.message ?? 'Failed to decline assignment.';
+                        Alert.alert('Error', msg);
+                      } finally {
+                        setUpdatingStatus(false);
+                        fetchData();
+                      }
+                    }
+                  }
+                ]);
+              }}
+              disabled={updatingStatus}
+            >
+              <Ionicons name="close-circle-outline" size={18} color={colors.error} />
+              <Text style={styles.rejectBtnText}>Decline</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.primaryBtn, { flex: 1 }]}
+              onPress={async () => {
+                setUpdatingStatus(true);
+                try {
+                  await documentApprovalsApi.process(pendingScheduleApproval.id, {
+                    action: 'APPROVE',
+                    comments: 'Accepted by technician via app',
+                  });
+                  Alert.alert('Accepted', 'Assignment accepted successfully.', [
+                    { text: 'OK', onPress: () => fetchData() }
+                  ]);
+                } catch (err: any) {
+                  const msg = err?.response?.data?.message ?? 'Failed to accept assignment.';
+                  Alert.alert('Error', msg);
+                } finally {
+                  setUpdatingStatus(false);
+                }
+              }}
+              disabled={updatingStatus}
+            >
+              {updatingStatus ? (
+                <ActivityIndicator size="small" color={themeColors.textInverse} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={18} color={themeColors.textInverse} />
+                  <Text style={styles.primaryBtnText}>Accept Job</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Step cards — hide when fully done (completed + paid) or when acceptance is pending */}
+      {!isCancelled && !isFullyDone && !pendingScheduleApproval &&
         STEPS.map((step, index) => {
           if (!shouldShowStep(step)) return null;
           const state = getEffectiveStepState(index);

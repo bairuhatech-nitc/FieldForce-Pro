@@ -25,6 +25,7 @@ import { Permissions } from '../shared/decorator/permission.decorator';
 import { StripeService } from '../shared/services/stripe.service';
 import { RazorpayService } from '../shared/services/razorpay.service';
 import { AppConfigService } from '../shared/config/config.service';
+import { TenantsService } from '../TENANTS/tenants.service';
 
 @ApiTags('Payments')
 @ApiBearerAuth()
@@ -35,6 +36,7 @@ export class PaymentsController {
     private readonly stripeService: StripeService,
     private readonly razorpayService: RazorpayService,
     private readonly configService: AppConfigService,
+    private readonly tenantsService: TenantsService,
   ) { }
 
   @Post('stripe/connection-token')
@@ -62,9 +64,20 @@ export class PaymentsController {
   @Get('upi/config')
   @Permissions('payments:create', 'scheduling:update')
   @ApiOperation({ summary: 'Get UPI merchant config for QR code payment' })
-  async getUpiConfig() {
-    const vpa = this.configService.upiMerchantVpa;
-    const name = this.configService.upiMerchantName;
+  async getUpiConfig(@TenantId() tenantId: string) {
+    let vpa = this.configService.upiMerchantVpa;
+    let name = this.configService.upiMerchantName;
+
+    try {
+      const settings = await this.tenantsService.getPaymentSettings(tenantId);
+      if (settings && settings.upi_vpa) {
+        vpa = settings.upi_vpa as string;
+        name = (settings.upi_name as string) || name;
+      }
+    } catch (err) {
+      // Ignore and fallback to config values
+    }
+
     if (!vpa) {
       return DataResponseDto.success({ configured: false });
     }

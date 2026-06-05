@@ -55,6 +55,8 @@ const documentRoutes: Record<string, (docId: string) => string> = {
   WORK_ORDER: (id) => `/work-orders/${id}`,
   ESTIMATE: (id) => `/estimates/${id}`,
   ESTIMATE_APPROVAL: (id) => `/estimates/${id}`,
+  INVOICE: (id) => `/invoices/${id}`,
+  DRAFT_INVOICE: (id) => `/invoices/${id}`,
   SCHEDULE: (id) => `/scheduling?tab=review&appointment_id=${id}`,
   FIELD_WORKFLOW: (id) => `/work-orders?wo_id=${id}#field-workflow`,
 };
@@ -70,11 +72,13 @@ export default function DocumentApprovalListPage() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedApprovalId, setSelectedApprovalId] = useState('');
 
-  // All approvals query
+  // All approvals query (the "Invoice Approvals" tab forces document_type=INVOICE)
   const allApprovalsQuery = useDocumentApprovals(
     activeTab === 'all'
       ? { page, take: pageSize, status: statusFilter, document_type: docTypeFilter }
-      : undefined,
+      : activeTab === 'invoices'
+        ? { page, take: pageSize, status: statusFilter, document_type: 'INVOICE' }
+        : undefined,
   );
 
   // Sent to me (all statuses) query
@@ -82,7 +86,7 @@ export default function DocumentApprovalListPage() {
     activeTab === 'sent-to-me' ? { page, take: pageSize } : undefined,
   );
 
-  const currentQuery = activeTab === 'all' ? allApprovalsQuery : sentToMeQuery;
+  const currentQuery = activeTab === 'sent-to-me' ? sentToMeQuery : allApprovalsQuery;
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -234,6 +238,7 @@ export default function DocumentApprovalListPage() {
         onChange={handleTabChange}
         items={[
           { key: 'all', label: t('documentApprovals.allApprovalsTab') },
+          { key: 'invoices', label: 'Invoice Approvals' },
           { key: 'sent-to-me', label: t('documentApprovals.sentToMeTab') },
         ]}
         style={{ marginBottom: 16 }}
@@ -242,22 +247,24 @@ export default function DocumentApprovalListPage() {
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <Space wrap>
+            {(activeTab === 'all' || activeTab === 'invoices') && (
+              <Select
+                placeholder={t('documentApprovals.filterByStatusPlaceholder')}
+                allowClear
+                style={{ width: 180 }}
+                value={statusFilter}
+                onChange={(v) => { setStatusFilter(v); setPage(1); }}
+                options={[
+                  { value: 'PENDING', label: t('documentApprovals.statusOptions.pending') },
+                  { value: 'APPROVED', label: t('documentApprovals.statusOptions.approved') },
+                  { value: 'REJECTED', label: t('documentApprovals.statusOptions.rejected') },
+                  { value: 'SKIPPED', label: t('documentApprovals.statusOptions.skipped') },
+                  { value: 'CORRECTION_REQUIRED', label: t('documentApprovals.statusOptions.correctionRequired') },
+                ]}
+              />
+            )}
             {activeTab === 'all' && (
               <>
-                <Select
-                  placeholder={t('documentApprovals.filterByStatusPlaceholder')}
-                  allowClear
-                  style={{ width: 180 }}
-                  value={statusFilter}
-                  onChange={(v) => { setStatusFilter(v); setPage(1); }}
-                  options={[
-                    { value: 'PENDING', label: t('documentApprovals.statusOptions.pending') },
-                    { value: 'APPROVED', label: t('documentApprovals.statusOptions.approved') },
-                    { value: 'REJECTED', label: t('documentApprovals.statusOptions.rejected') },
-                    { value: 'SKIPPED', label: t('documentApprovals.statusOptions.skipped') },
-                    { value: 'CORRECTION_REQUIRED', label: t('documentApprovals.statusOptions.correctionRequired') },
-                  ]}
-                />
                 <Select
                   placeholder={t('documentApprovals.filterByDocumentTypePlaceholder')}
                   allowClear

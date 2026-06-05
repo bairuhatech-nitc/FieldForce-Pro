@@ -11,6 +11,7 @@ import {
   Res,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -22,6 +23,7 @@ import { UpdateInvoiceStatusDto } from './dto/invoices_update_status.dto';
 import { PageOptionsDto } from '../shared/dto/page-options.dto';
 import { DataResponseDto } from '../shared/dto/data-response.dto';
 import { TenantId } from '../shared/decorator/tenant.decorator';
+import { UserId } from '../shared/decorator/user.decorator';
 import { Permissions } from '../shared/decorator/permission.decorator';
 import { PdfService } from '../shared/services/pdf.service';
 
@@ -101,6 +103,34 @@ export class InvoicesController {
   ) {
     const invoice = await this.invoicesService.updateStatus(id, tenantId, dto.status);
     return DataResponseDto.success(invoice, 'Invoice status updated successfully');
+  }
+
+  @Post(':id/signature')
+  @Permissions('invoices:update', 'scheduling:update')
+  @ApiOperation({ summary: 'Record the customer digital signature on an invoice' })
+  async recordSignature(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @Body('signature_url') signatureUrl: string,
+    @Body('signed_by_name') signedByName?: string,
+  ) {
+    if (!signatureUrl?.trim()) {
+      throw new BadRequestException('signature_url is required');
+    }
+    const invoice = await this.invoicesService.recordSignature(id, tenantId, signatureUrl, signedByName);
+    return DataResponseDto.success(invoice, 'Signature recorded successfully');
+  }
+
+  @Post(':id/submit-for-approval')
+  @Permissions('invoices:update', 'scheduling:update')
+  @ApiOperation({ summary: 'Submit a draft invoice into the multi-step approval chain' })
+  async submitForApproval(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+  ) {
+    const invoice = await this.invoicesService.submitForApproval(id, tenantId, userId);
+    return DataResponseDto.success(invoice, 'Invoice submitted for approval');
   }
 
   @Delete(':id')

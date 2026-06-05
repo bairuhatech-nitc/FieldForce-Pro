@@ -475,9 +475,36 @@ export interface AssetMaintenancePlan {
   updated_at: string;
 }
 
+/** Normalized customer contact details returned by GET /service-requests/:id.
+ *  Populated from the linked Contact (admin-created) OR custom_fields
+ *  (website/inbound) so the technician always sees the same shape. */
+export interface CustomerInfo {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  source: 'contact' | 'website';
+}
+
+export interface RequestContact {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+export interface RequestLocation {
+  id: string;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
 export interface ServiceRequest {
   id: string;
   tenant_id: string;
+  request_number: string | null;
   contact_id: string | null;
   location_id: string | null;
   subject: string;
@@ -487,8 +514,29 @@ export interface ServiceRequest {
   status: string;
   channel: string;
   assigned_to: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
+  lat: number | null;
+  lng: number | null;
+  custom_fields: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+  // Relations / computed (present on the detail endpoint)
+  contact?: RequestContact | null;
+  location?: RequestLocation | null;
+  technicians?: Array<{ id: string; first_name: string | null; last_name: string | null; email: string | null }>;
+  customer?: CustomerInfo;
+}
+
+/** A file attached to a service request (request_attachments table). */
+export interface RequestAttachment {
+  id: string;
+  request_id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string | null;
+  file_size: number | null;
+  created_at: string;
 }
 
 export interface ServiceAgreement {
@@ -640,6 +688,7 @@ export interface Invoice {
   id: string;
   tenant_id: string;
   work_order_id: string | null;
+  service_request_id: string | null;
   contact_id: string | null;
   invoice_number: string;
   status: 'draft' | 'sent' | 'viewed' | 'partially_paid' | 'paid' | 'overdue' | 'void';
@@ -652,6 +701,9 @@ export interface Invoice {
   currency: string;
   notes: string | null;
   pdf_url: string | null;
+  signature_url: string | null;
+  signed_by_name: string | null;
+  signed_at: string | null;
   created_at: string;
   updated_at: string;
   line_items?: InvoiceLineItem[];

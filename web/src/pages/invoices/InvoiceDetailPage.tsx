@@ -29,7 +29,8 @@ import { formatCurrency } from '@/utils/format-currency';
 const { Text } = Typography;
 
 const statusColors: Record<string, string> = {
-  draft: 'default', sent: 'blue', viewed: 'cyan',
+  draft: 'default', pending_approval: 'gold', approved: 'green', rejected: 'red',
+  sent: 'blue', viewed: 'cyan',
   partially_paid: 'gold', paid: 'green', overdue: 'red', void: 'default',
 };
 const paymentStatusColors: Record<string, string> = {
@@ -38,7 +39,8 @@ const paymentStatusColors: Record<string, string> = {
   pending_verification: 'orange', rejected: 'red',
 };
 const statusTransitions: Record<string, string[]> = {
-  draft: ['sent', 'void'], sent: ['viewed', 'void'], viewed: ['partially_paid', 'paid', 'overdue', 'void'],
+  draft: ['sent', 'void'], pending_approval: ['void'], approved: ['sent', 'void'], rejected: ['draft', 'void'],
+  sent: ['viewed', 'void'], viewed: ['partially_paid', 'paid', 'overdue', 'void'],
   partially_paid: ['paid', 'overdue', 'void'], paid: [], overdue: ['partially_paid', 'paid', 'void'], void: [],
 };
 const PAYMENT_METHODS = [

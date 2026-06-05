@@ -27,6 +27,14 @@ export class CreateInvoiceDto {
   contact_id?: string;
 
   @ApiPropertyOptional({
+    description: 'Service request ID this invoice is raised against',
+    example: '550e8400-e29b-41d4-a716-446655440002',
+  })
+  @IsUUID()
+  @IsOptional()
+  service_request_id?: string;
+
+  @ApiPropertyOptional({
     description: 'Invoice number (auto-generated if not provided)',
     example: 'INV-000001',
   })

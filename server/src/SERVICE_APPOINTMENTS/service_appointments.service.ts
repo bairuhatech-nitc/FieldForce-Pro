@@ -490,7 +490,7 @@ export class ServiceAppointmentsService implements OnModuleInit {
     if (pendingApprovals.length === 0) return;
 
     // Determine approval outcome based on the new appointment status
-    const isAccepted = ['in_progress', 'completed'].includes(newStatus);
+    const isAccepted = ['en_route', 'on_site', 'in_progress', 'completed'].includes(newStatus);
     const resolvedStatus = isAccepted ? ApprovalStatusEnum.APPROVED : ApprovalStatusEnum.SKIPPED;
 
     for (const approval of pendingApprovals) {
