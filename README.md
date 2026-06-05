@@ -1,4 +1,4 @@
-# FieldForce Pro — FSM Platform
+# FieldForce Pro - FSM Platform
 
 A multi-tenant B2B SaaS Field Service Management 
 platform built with NestJS, React, PostgreSQL and Redis.
