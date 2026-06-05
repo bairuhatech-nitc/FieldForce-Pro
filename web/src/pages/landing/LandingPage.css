@@ -1999,11 +1999,56 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   position: relative;
   z-index: 1;
 }
+
+/* Trial badge inside each pricing card */
+.lp-trial-badge {
+  display: inline-block;
+  background: rgba(34, 51, 204, 0.08);
+  color: #2233CC;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  font-family: 'DM Sans', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* User count tag */
+.lp-pricing-users-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(34, 51, 204, 0.08);
+  color: #2233CC;
+  margin-bottom: 10px;
+  font-family: 'DM Sans', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Custom plan card — dashed border variant */
+.lp-price-card-custom {
+  border: 2px dashed rgba(34, 51, 204, 0.15) !important;
+  background: rgba(255, 255, 255, 0.50) !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-price-card-custom:hover {
+  border-color: rgba(34, 51, 204, 0.30) !important;
+}
+
 
 .lp-price-card {
   background: rgba(255, 255, 255, 0.80);
@@ -2378,7 +2423,7 @@
   }
 
   .lp-pricing-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .lp-footer-grid {
@@ -3119,6 +3164,25 @@
 
 .landing-page.dark .lp-price-features li .lp-check {
   color: #00D8FF;
+}
+
+.landing-page.dark .lp-trial-badge {
+  background: rgba(0, 216, 255, 0.10);
+  color: #00D8FF;
+}
+
+.landing-page.dark .lp-pricing-users-tag {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.landing-page.dark .lp-price-card-custom {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.landing-page.dark .lp-price-card-custom:hover {
+  border-color: rgba(255, 255, 255, 0.20) !important;
 }
 
 /* ---------- CTA Section ---------- */

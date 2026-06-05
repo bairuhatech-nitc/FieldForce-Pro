@@ -381,6 +381,7 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
                 max_managers INTEGER,
                 max_admins INTEGER,
                 max_total_users INTEGER,
+                max_appointments_monthly INTEGER,
                 price_monthly DECIMAL(10,2) NOT NULL DEFAULT 0,
                 price_yearly DECIMAL(10,2) NOT NULL DEFAULT 0,
                 features JSONB NOT NULL DEFAULT '[]',
@@ -391,20 +392,20 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
       },
       {
         name: 'subscription_plans: seed Basic plan',
-        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
-              VALUES (gen_random_uuid(), 'Basic', 5, 2, 1, 1, 10, 49.00, 490.00, '["service_requests","work_orders","invoices","basic_reports"]', NOW(), NOW())
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Basic', 5, 2, 1, 1, 200, 100, 49.00, 490.00, '["service_requests","work_orders","invoices","basic_reports"]', NOW(), NOW())
               ON CONFLICT (name) DO NOTHING;`,
       },
       {
         name: 'subscription_plans: seed Professional plan',
-        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
-              VALUES (gen_random_uuid(), 'Professional', 20, 5, 3, 2, 30, 149.00, 1490.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access"]', NOW(), NOW())
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Professional', 20, 5, 3, 2, 200, 500, 149.00, 1490.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access"]', NOW(), NOW())
               ON CONFLICT (name) DO NOTHING;`,
       },
       {
         name: 'subscription_plans: seed Enterprise plan',
-        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, price_monthly, price_yearly, features, created_at, updated_at)
-              VALUES (gen_random_uuid(), 'Enterprise', NULL, NULL, NULL, NULL, NULL, 399.00, 3990.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access","custom_fields","webhooks","ai_features"]', NOW(), NOW())
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Enterprise', NULL, NULL, NULL, NULL, 200, 2000, 399.00, 3990.00, '["service_requests","work_orders","invoices","estimates","scheduling","advanced_reports","api_access","custom_fields","webhooks","ai_features"]', NOW(), NOW())
               ON CONFLICT (name) DO NOTHING;`,
       },
 
@@ -697,7 +698,29 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
               WHERE assigned_to IS NOT NULL
               ON CONFLICT (service_request_id, technician_id) DO NOTHING;`,
       },
+      {
+        name: 'subscription_plans: add currency column',
+        sql: `ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS currency VARCHAR(10) NOT NULL DEFAULT 'USD';`,
+      },
+      {
+        name: 'subscription_plans: seed Custom plan',
+        sql: `INSERT INTO subscription_plans (id, name, max_technicians, max_dispatchers, max_managers, max_admins, max_total_users, max_appointments_monthly, price_monthly, price_yearly, features, currency, created_at, updated_at)
+              VALUES (gen_random_uuid(), 'Custom', NULL, NULL, NULL, NULL, 200, NULL, 0.00, 0.00, '[]', 'USD', NOW(), NOW())
+              ON CONFLICT (name) DO NOTHING;`,
+      },
+      {
+        name: 'subscription_plans: add max_appointments_monthly column',
+        sql: `ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS max_appointments_monthly INTEGER;`,
+      },
+      {
+        name: 'subscription_plans: update plans default limits (user cap 200 and appointments cap)',
+        sql: `UPDATE subscription_plans SET max_appointments_monthly = 100, max_total_users = 200 WHERE name = 'Basic';
+              UPDATE subscription_plans SET max_appointments_monthly = 500, max_total_users = 200 WHERE name = 'Professional';
+              UPDATE subscription_plans SET max_appointments_monthly = 2000, max_total_users = 200 WHERE name = 'Enterprise';
+              UPDATE subscription_plans SET max_total_users = 200 WHERE name = 'Custom';`,
+      },
     ];
+
 
     for (const migration of migrations) {
       try {

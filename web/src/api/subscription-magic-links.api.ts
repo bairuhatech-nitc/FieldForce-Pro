@@ -21,7 +21,8 @@ export interface SubscriptionMagicLink {
   signup_url?: string;
   created_at: string;
   updated_at: string;
-  plan?: { id: string; name: string; price_monthly: number };
+  plan?: { id: string; name: string; price_monthly: number; currency?: string };
+
   creator?: { id: string; email: string; first_name: string; last_name: string };
 }
 

@@ -120,6 +120,8 @@ const IntegrationGuidePage = lazy(() => import('@/pages/integrations/Integration
 const LandingPage = lazy(() => import('@/pages/landing/LandingPage'));
 const SuperAdminDashboardPage = lazy(() => import('@/pages/super-admin/SuperAdminDashboardPage'));
 const TenantDetailPage = lazy(() => import('@/pages/super-admin/TenantDetailPage'));
+const PricingPlansPage = lazy(() => import('@/pages/super-admin/PricingPlansPage'));
+
 const SuperAdminProfilePage = lazy(() => import('@/pages/super-admin/SuperAdminProfilePage'));
 const AuditLogsPage = lazy(() => import('@/pages/super-admin/AuditLogsPage'));
 const SuperAdminApiKeysPage = lazy(() => import('@/pages/super-admin/ApiKeysPage'));
@@ -1009,6 +1011,17 @@ export const routes: RouteObject[] = [
           </SuperAdminRoute>
         ),
       },
+      {
+        path: 'admin/pricing',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <PricingPlansPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+
       {
         path: 'admin/platform-health',
         element: (

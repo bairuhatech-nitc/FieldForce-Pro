@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Space, Tooltip, Progress, Tag, Typography } from 'antd';
+import { Button, Space, Tooltip, Progress, Tag, Typography, Alert } from 'antd';
 import { PlusOutlined, EyeOutlined, TeamOutlined, LinkOutlined, UserAddOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
@@ -182,6 +182,8 @@ export default function UserListPage() {
     },
   ];
 
+  const isLimitReached = !currentUser?.is_super_admin && usageLimit != null && usageCurrent != null && usageCurrent >= usageLimit;
+
   return (
     <div>
       <PageHeader
@@ -189,25 +191,41 @@ export default function UserListPage() {
         extra={
           <Space>
             <PermissionGuard permission="users:create">
-              <Button
-                icon={<UserAddOutlined />}
-                onClick={() => setInviteModalOpen(true)}
-              >
-                {t('users.inviteUser')}
-              </Button>
+              <Tooltip title={isLimitReached ? "User limit reached. Upgrade your plan to invite more users." : ""}>
+                <Button
+                  icon={<UserAddOutlined />}
+                  onClick={() => setInviteModalOpen(true)}
+                  disabled={isLimitReached}
+                >
+                  {t('users.inviteUser')}
+                </Button>
+              </Tooltip>
             </PermissionGuard>
             <PermissionGuard permission="users:create">
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => navigate('/users/create')}
-              >
-                {t('users.createUser')}
-              </Button>
+              <Tooltip title={isLimitReached ? "User limit reached. Upgrade your plan to create more users." : ""}>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => navigate('/users/create')}
+                  disabled={isLimitReached}
+                >
+                  {t('users.createUser')}
+                </Button>
+              </Tooltip>
             </PermissionGuard>
           </Space>
         }
       />
+
+      {isLimitReached && (
+        <Alert
+          message="User Limit Reached"
+          description="Your company has reached the maximum number of users allowed by your subscription plan. To add more team members, please upgrade your plan."
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       {usage && (
         <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid #f0f0f0' }}>

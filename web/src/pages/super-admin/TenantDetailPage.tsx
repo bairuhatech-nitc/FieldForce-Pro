@@ -18,6 +18,7 @@ import {
   useTenantUsage, useSubscriptionPlans, useUpdateTenantSubscription,
 } from '@/hooks/use-super-admin';
 import { formatDateTime } from '@/utils/format-date';
+import { CURRENCY_SYMBOLS, CurrencyType } from '@/utils/pricing';
 
 const { Title, Text } = Typography;
 
@@ -60,6 +61,7 @@ export default function TenantDetailPage() {
       subscription_status: tenant?.subscription_status ?? 'trial',
       subscription_end: tenant?.subscription_end ? dayjs(tenant.subscription_end) : null,
       max_users_override: tenant?.custom_limits?.max_total_users ?? null,
+      max_appointments_override: tenant?.custom_limits?.max_appointments_monthly ?? null,
     });
     setSubModalOpen(true);
   };
@@ -75,6 +77,7 @@ export default function TenantDetailPage() {
             ? (values.subscription_end as ReturnType<typeof dayjs>).toISOString()
             : null,
           max_users_override: values.max_users_override ?? null,
+          max_appointments_override: values.max_appointments_override ?? null,
         },
         {
           onSuccess: () => setSubModalOpen(false),
@@ -104,6 +107,10 @@ export default function TenantDetailPage() {
   const usageCurrent = usage?.usage?.total_users?.current ?? tenant.user_count;
   const usageLimit = usage?.usage?.total_users?.limit;
   const usagePct = usageLimit ? Math.round((usageCurrent / usageLimit) * 100) : 0;
+
+  const apptsCurrent = usage?.usage?.appointments?.current ?? 0;
+  const apptsLimit = usage?.usage?.appointments?.limit ?? null;
+  const apptsPct = apptsLimit ? Math.round((apptsCurrent / apptsLimit) * 100) : 0;
 
   return (
     <div>
@@ -237,7 +244,7 @@ export default function TenantDetailPage() {
               <Text>{tenant.subscription_end ? formatDateTime(tenant.subscription_end) : '—'}</Text>
             </div>
           </Col>
-          <Col xs={24}>
+          <Col xs={24} sm={12}>
             <Text type="secondary" style={{ fontSize: 12 }}>
               {t('tenantDetail.usersUsage', { current: usageCurrent, limit: usageLimit ?? '∞' })}
             </Text>
@@ -251,6 +258,23 @@ export default function TenantDetailPage() {
             ) : (
               <div style={{ marginTop: 4 }}>
                 <Text type="secondary">{t('tenantDetail.unlimitedUsers')}</Text>
+              </div>
+            )}
+          </Col>
+          <Col xs={24} sm={12}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Monthly Appointments: {apptsCurrent} / {apptsLimit ?? '∞'}
+            </Text>
+            {apptsLimit ? (
+              <Progress
+                percent={apptsPct}
+                strokeColor={getProgressColor(apptsPct)}
+                status={getProgressStatus(apptsPct)}
+                style={{ marginTop: 4 }}
+              />
+            ) : (
+              <div style={{ marginTop: 4 }}>
+                <Text type="secondary">Unlimited Appointments</Text>
               </div>
             )}
           </Col>
@@ -310,10 +334,14 @@ export default function TenantDetailPage() {
             <Select
               placeholder={t('tenantDetail.selectAPlan')}
               allowClear
-              options={plans?.map((p) => ({
-                label: `${p.name} ($${p.price_monthly}/mo)`,
-                value: p.id,
-              }))}
+              options={plans?.map((p) => {
+                const sym = CURRENCY_SYMBOLS[(p.currency || 'USD') as CurrencyType] || '$';
+                return {
+                  label: `${p.name} (${sym}${p.price_monthly}/mo)`,
+                  value: p.id,
+                };
+              })}
+
             />
           </Form.Item>
 
@@ -342,6 +370,18 @@ export default function TenantDetailPage() {
             <InputNumber
               min={1}
               placeholder={t('tenantDetail.exampleUsersPlaceholder')}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="max_appointments_override"
+            label="Max Appointments Override"
+            extra="Set custom appointments cap or leave blank to use plan default"
+          >
+            <InputNumber
+              min={1}
+              placeholder="e.g. 500"
               style={{ width: '100%' }}
             />
           </Form.Item>

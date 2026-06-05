@@ -50,6 +50,11 @@ export class RegisterDto {
   @IsString()
   @MaxLength(20)
   phone?: string;
+
+  @ApiPropertyOptional({ example: 'professional', enum: ['basic', 'professional', 'enterprise'] })
+  @IsOptional()
+  @IsString()
+  plan_slug?: 'basic' | 'professional' | 'enterprise';
 }
 
 export class LoginDto {

@@ -17,6 +17,7 @@ import { SuperAdminAuditLog } from './SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_l
 import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 import { SubscriptionMagicLinksService } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.service';
 import { SubscriptionMagicLink } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.entity';
+import { ServiceAppointment } from '../SERVICE_APPOINTMENTS/service_appointments.entity';
 
 const superAdminProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -27,6 +28,7 @@ const superAdminProviders = [
   { provide: REPOSITORY.SUPER_ADMIN_AUDIT_LOGS, useValue: SuperAdminAuditLog },
   { provide: REPOSITORY.SUBSCRIPTION_PLANS, useValue: SubscriptionPlan },
   { provide: REPOSITORY.SUBSCRIPTION_MAGIC_LINKS, useValue: SubscriptionMagicLink },
+  { provide: REPOSITORY.SERVICE_APPOINTMENTS, useValue: ServiceAppointment },
 ];
 
 @Module({

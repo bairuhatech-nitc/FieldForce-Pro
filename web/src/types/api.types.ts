@@ -79,6 +79,7 @@ export interface RegisterPayload {
   last_name: string;
   company_name: string;
   phone?: string;
+  plan_slug?: 'basic' | 'professional' | 'enterprise';
 }
 
 export interface LoginPayload {

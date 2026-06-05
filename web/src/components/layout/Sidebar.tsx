@@ -271,8 +271,10 @@ export default function Sidebar() {
       section: 'sidebar.superAdmin',
       items: [
         { key: '/admin/tenants', icon: <CrownOutlined />, labelKey: 'sidebar.tenants' },
+        { key: '/admin/pricing', icon: <DollarOutlined />, labelKey: 'Pricing Plans' },
         { key: '/admin/magic-links', icon: <LinkOutlined />, labelKey: 'Magic Links' },
         { key: '/admin/analytics', icon: <LineChartOutlined />, labelKey: 'sidebar.analytics' },
+
         { key: '/admin/platform-health', icon: <DesktopOutlined />, labelKey: 'sidebar.systemHealth' },
         { key: '/admin/api-keys', icon: <KeyOutlined />, labelKey: 'sidebar.apiKeys' },
         { key: '/admin/audit-logs', icon: <AuditOutlined />, labelKey: 'sidebar.auditLogs' },

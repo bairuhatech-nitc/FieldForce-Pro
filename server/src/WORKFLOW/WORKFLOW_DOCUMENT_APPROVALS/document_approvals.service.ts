@@ -32,6 +32,8 @@ import { Invoice } from '../../INVOICES/invoices.entity';
 import { NotificationsService } from '../../NOTIFICATIONS/notifications.service';
 import { EmailService } from '../../shared/services/email.service';
 import { UsersService } from '../../USERS/users.service';
+import { Tenant } from '../../TENANTS/tenants.entity';
+import { SubscriptionPlan } from '../../SUBSCRIPTION_PLANS/subscription_plans.entity';
 
 @Injectable()
 export class DocumentApprovalsService {
@@ -1156,6 +1158,38 @@ export class DocumentApprovalsService {
       if (existing) {
         this.logger.log(`Appointment already exists for WO ${workOrder.id}, skipping auto-create`);
         return;
+      }
+
+      // Check appointment limit before auto-scheduling
+      const tenant = await Tenant.findByPk(tenantId);
+      if (tenant) {
+        const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_appointments_monthly ?? null;
+        let limit: number | null = customMax;
+
+        if (limit === null && tenant.subscription_plan_id) {
+          const plan = await SubscriptionPlan.findByPk(tenant.subscription_plan_id);
+          limit = plan?.max_appointments_monthly ?? null;
+        }
+
+        if (limit !== null) {
+          const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+          const currentCount = await this.serviceAppointmentRepository.count({
+            where: {
+              tenant_id: tenantId,
+              is_deleted: false,
+              created_at: {
+                [Op.gte]: startOfMonth,
+              },
+            },
+          });
+
+          if (currentCount >= limit) {
+            this.logger.warn(
+              `Tenant ${tenantId} reached monthly appointment limit (${currentCount}/${limit}). Skipping auto-creation.`,
+            );
+            return;
+          }
+        }
       }
 
       // Use WO scheduled dates if available, otherwise default to tomorrow 9am-5pm

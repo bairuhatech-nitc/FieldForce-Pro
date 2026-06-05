@@ -34,7 +34,11 @@ export interface Tenant {
   domain: string | null;
   logo_url: string | null;
   settings: Record<string, unknown>;
-  subscription_plan: SubscriptionPlan;
+  subscription_plan: SubscriptionPlan | string;
+  subscription_plan_id: string | null;
+  subscription_status: 'trial' | 'active' | 'expired' | 'suspended' | 'cancelled' | string;
+  subscription_start: string | null;
+  subscription_end: string | null;
   max_users: number;
   is_active: boolean;
   created_at: string;

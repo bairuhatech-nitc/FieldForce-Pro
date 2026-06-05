@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SharedModule } from './shared/shared.module';
 import { EmailModule } from './shared/email.module';
@@ -89,6 +90,7 @@ import { EmailChannelsModule } from './EMAIL_CHANNELS/email_channels.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     SharedModule,
     EmailModule,
     DatabaseModule,

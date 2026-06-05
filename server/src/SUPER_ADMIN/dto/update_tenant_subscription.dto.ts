@@ -23,4 +23,10 @@ export class UpdateTenantSubscriptionDto {
   @IsOptional()
   @Type(() => Number)
   max_users_override?: number | null;
+
+  @ApiPropertyOptional({ nullable: true, description: 'null clears the override, a number overrides plan limit' })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  max_appointments_override?: number | null;
 }

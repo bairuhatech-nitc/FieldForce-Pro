@@ -102,4 +102,9 @@ export const authApi = {
   regenerateRecoveryCodes() {
     return api.post<ApiResponse<EnableMFAResponse>>('/mfa/regenerate-recovery-codes');
   },
+
+  getSubscriptionPlans() {
+    return api.get<ApiResponse<any[]>>('/auth/subscription-plans');
+  },
 };
+

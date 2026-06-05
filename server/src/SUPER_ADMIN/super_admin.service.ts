@@ -1,5 +1,6 @@
 import { Injectable, Inject, NotFoundException, UnauthorizedException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { Op } from 'sequelize';
 import { REPOSITORY } from '../shared/constants/keynames';
 import { Tenant } from '../TENANTS/tenants.entity';
 import { User } from '../USERS/users.entity';
@@ -7,8 +8,11 @@ import { ServiceRequest } from '../SERVICE_REQUESTS/service_requests.entity';
 import { WorkOrder } from '../WORK_ORDERS/work_orders.entity';
 import { Invoice } from '../INVOICES/invoices.entity';
 import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
+import { ServiceAppointment } from '../SERVICE_APPOINTMENTS/service_appointments.entity';
 import { TenantsService } from '../TENANTS/tenants.service';
 import { UpdateTenantSubscriptionDto } from './dto/update_tenant_subscription.dto';
+import { UpdateSubscriptionPlanDto } from './dto/update_subscription_plan.dto';
+
 
 // Note: USERS and SERVICE_REQUESTS repositories are provided locally in SuperAdminModule
 // to enable cross-tenant queries without being constrained by tenant-scoped services.
@@ -29,6 +33,8 @@ export class SuperAdminService {
     private readonly invoiceRepository: typeof Invoice,
     @Inject(REPOSITORY.SUBSCRIPTION_PLANS)
     private readonly subscriptionPlanRepository: typeof SubscriptionPlan,
+    @Inject(REPOSITORY.SERVICE_APPOINTMENTS)
+    private readonly serviceAppointmentRepository: typeof ServiceAppointment,
   ) {}
 
   async listTenants() {
@@ -131,9 +137,19 @@ export class SuperAdminService {
     return this.subscriptionPlanRepository.findAll({
       where: { is_active: true },
       order: [['price_monthly', 'ASC']],
-      attributes: ['id', 'name', 'max_total_users', 'price_monthly', 'price_yearly'],
+      attributes: ['id', 'name', 'max_total_users', 'max_appointments_monthly', 'price_monthly', 'price_yearly', 'currency', 'features'],
     });
   }
+
+  async updateSubscriptionPlan(id: string, dto: UpdateSubscriptionPlanDto) {
+    const plan = await this.subscriptionPlanRepository.findByPk(id);
+    if (!plan) {
+      throw new NotFoundException('Subscription plan not found');
+    }
+    await plan.update(dto);
+    return plan;
+  }
+
 
   async updateTenantSubscription(tenantId: string, dto: UpdateTenantSubscriptionDto) {
     const tenant = await this.tenantsService.findById(tenantId);
@@ -142,10 +158,30 @@ export class SuperAdminService {
     if (dto.plan_id !== undefined) updates.subscription_plan_id = dto.plan_id;
     if (dto.subscription_status !== undefined) updates.subscription_status = dto.subscription_status;
     if (dto.subscription_end !== undefined) updates.subscription_end = dto.subscription_end ? new Date(dto.subscription_end) : null;
+    const customLimits = (tenant.custom_limits as Record<string, number | null> | null) || {};
+    let hasLimitsChanges = false;
+    const newLimits = { ...customLimits };
+
     if (dto.max_users_override !== undefined) {
-      updates.custom_limits = dto.max_users_override !== null
-        ? { ...(tenant.custom_limits || {}), max_total_users: dto.max_users_override }
-        : null;
+      if (dto.max_users_override === null) {
+        delete newLimits.max_total_users;
+      } else {
+        newLimits.max_total_users = dto.max_users_override;
+      }
+      hasLimitsChanges = true;
+    }
+
+    if (dto.max_appointments_override !== undefined) {
+      if (dto.max_appointments_override === null) {
+        delete newLimits.max_appointments_monthly;
+      } else {
+        newLimits.max_appointments_monthly = dto.max_appointments_override;
+      }
+      hasLimitsChanges = true;
+    }
+
+    if (hasLimitsChanges) {
+      updates.custom_limits = Object.keys(newLimits).length > 0 ? newLimits : null;
     }
 
     await tenant.update(updates);
@@ -160,11 +196,20 @@ export class SuperAdminService {
       plan = await this.subscriptionPlanRepository.findByPk(tenant.subscription_plan_id);
     }
 
-    const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_total_users ?? null;
-    const totalUsersLimit: number | null = customMax ?? plan?.max_total_users ?? null;
+    const customMaxUsers = (tenant.custom_limits as Record<string, number | null> | null)?.max_total_users ?? null;
+    const totalUsersLimit: number | null = customMaxUsers ?? plan?.max_total_users ?? 200;
 
     const currentUsers = await this.userRepository.count({
       where: { tenant_id: tenantId, is_deleted: false },
+    });
+
+    const customMaxAppts = (tenant.custom_limits as Record<string, number | null> | null)?.max_appointments_monthly ?? null;
+    const appointmentsLimit: number | null = customMaxAppts ?? plan?.max_appointments_monthly ?? null;
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentAppointments = await this.serviceAppointmentRepository.count({
+      where: { tenant_id: tenantId, is_deleted: false, created_at: { [Op.gte]: startOfMonth } },
     });
 
     return {
@@ -173,6 +218,7 @@ export class SuperAdminService {
       subscription_end: tenant.subscription_end,
       usage: {
         total_users: { current: currentUsers, limit: totalUsersLimit },
+        appointments: { current: currentAppointments, limit: appointmentsLimit },
       },
     };
   }

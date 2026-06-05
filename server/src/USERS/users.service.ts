@@ -154,6 +154,9 @@ export class UsersService {
   }
 
   async create(tenantId: string, dto: CreateUserDto): Promise<User> {
+    // Check if the tenant has exceeded the maximum number of users allowed by their plan
+    await this.checkUserLimit(tenantId);
+
     const existing = await this.userRepository.findOne({
       where: { email: dto.email, tenant_id: tenantId, is_deleted: false },
     });
@@ -184,17 +187,16 @@ export class UsersService {
     const tenant = await this.tenantRepository.findByPk(tenantId);
     if (!tenant) throw new NotFoundException('Tenant not found');
 
-    // custom_limits takes precedence over subscription plan
+    // custom_limits takes precedence over subscription plan. Defaults to 200.
     const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_total_users ?? null;
     let limit: number | null = customMax;
 
     if (limit === null && tenant.subscription_plan_id) {
       const plan = await this.subscriptionPlanRepository.findByPk(tenant.subscription_plan_id);
-      limit = plan?.max_total_users ?? null;
+      limit = plan?.max_total_users ?? 200;
+    } else if (limit === null) {
+      limit = 200;
     }
-
-    // null means unlimited
-    if (limit === null) return;
 
     const currentCount = await this.userRepository.count({
       where: { tenant_id: tenantId, is_deleted: false },
@@ -291,7 +293,7 @@ export class UsersService {
     }
 
     const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_total_users ?? null;
-    const limit: number | null = customMax ?? plan?.max_total_users ?? null;
+    const limit: number | null = customMax ?? plan?.max_total_users ?? 200;
 
     const current = await this.userRepository.count({
       where: { tenant_id: tenantId, is_deleted: false },
