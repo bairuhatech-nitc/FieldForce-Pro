@@ -177,8 +177,21 @@ export class WhatsAppAiService {
         return this.parseAiResponse(response, existingCollectedData);
       } catch (fallbackError) {
         this.logger.error(`Gemini fallback also failed: ${fallbackError.message}`);
+        
+        let errorMessage = "I'm having trouble processing your request right now. Please try again in a moment.";
+        
+        // Detect quota exceeded error specifically
+        if (
+          fallbackError.message?.toLowerCase().includes('quota') ||
+          fallbackError.message?.includes('429') ||
+          error.message?.toLowerCase().includes('quota') ||
+          error.message?.includes('429')
+        ) {
+          errorMessage = "Our AI assistant is currently unavailable due to high demand (Quota Exceeded). Please try again later or contact support directly.";
+        }
+
         return {
-          reply: "I'm having trouble processing your request right now. Please try again in a moment.",
+          reply: errorMessage,
           collected_fields: existingCollectedData,
           is_complete: false,
           should_create_ticket: false,

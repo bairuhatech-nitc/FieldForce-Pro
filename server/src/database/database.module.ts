@@ -75,6 +75,8 @@ import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_
 import { ServiceRequestTechnician } from '../SERVICE_REQUESTS/service_request_technician.entity';
 import { WhatsAppChannel } from '../WHATSAPP_CHANNELS/whatsapp_channels.entity';
 import { WhatsAppConversation } from '../WHATSAPP_CHANNELS/whatsapp_conversations.entity';
+import { EmailChannel } from '../EMAIL_CHANNELS/email_channels.entity';
+import { EmailThread } from '../EMAIL_CHANNELS/email_threads.entity';
 
 @Module({
   imports: [
@@ -111,7 +113,8 @@ import { WhatsAppConversation } from '../WHATSAPP_CHANNELS/whatsapp_conversation
           RequestAttachment, EstimateAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
           SubscriptionMagicLink,
           ApiKey, MagicLink, SuperAdminApiKey, SuperAdminAuditLog, ServiceRequestTechnician,
-          WhatsAppChannel, WhatsAppConversation
+          WhatsAppChannel, WhatsAppConversation,
+          EmailChannel, EmailThread
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,
