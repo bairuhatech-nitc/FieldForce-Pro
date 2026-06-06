@@ -24,19 +24,18 @@ export class CreateServiceRequestDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({
-    description: 'Priority level',
-    enum: ['low', 'medium', 'high', 'urgent'],
-    example: 'medium',
-  })
-  @IsEnum(['low', 'medium', 'high', 'urgent'])
+  @ApiPropertyOptional({ description: 'Priority ID', example: 'uuid' })
+  @IsUUID()
   @IsOptional()
-  priority?: string;
+  priority_id?: string;
 
-  @ApiPropertyOptional({ description: 'Category', example: 'HVAC' })
-  @IsString()
-  @IsOptional()
-  category?: string;
+  @ApiProperty({ description: 'Category ID', example: 'uuid' })
+  @IsUUID()
+  category_id: string;
+
+  @ApiProperty({ description: 'Sub Category ID', example: 'uuid' })
+  @IsUUID()
+  sub_category_id: string;
 
   @ApiPropertyOptional({
     description: 'Status',

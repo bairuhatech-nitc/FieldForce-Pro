@@ -14,6 +14,7 @@ import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PermissionGuard } from '@/components/permissions';
 import { formatDateTime } from '@/utils/format-date';
 import SearchFilter from '@/components/common/SearchFilter';
+import { SlaCountdownCell } from '@/components/common/SlaCountdownCell';
 
 const priorityColors: Record<string, string> = {
   urgent: 'red',
@@ -237,9 +238,10 @@ export default function RequestListPage() {
       title: t('serviceRequests.table.status'),
       dataIndex: 'status',
       key: 'status',
+      width: 160,
       render: (status: string) => (
-        <Tag color={statusColors[status] || 'default'}>
-          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+        <Tag color={statusColors[status] || 'default'} style={{ whiteSpace: 'nowrap' }}>
+          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\\b\\w/g, (l) => l.toUpperCase())}
         </Tag>
       ),
     },
@@ -247,9 +249,10 @@ export default function RequestListPage() {
       title: t('serviceRequests.table.channel'),
       dataIndex: 'channel',
       key: 'channel',
+      width: 120,
       render: (channel: string) =>
         channel ? (
-          <Tag>{channel.charAt(0).toUpperCase() + channel.slice(1)}</Tag>
+          <Tag style={{ whiteSpace: 'nowrap' }}>{channel.charAt(0).toUpperCase() + channel.slice(1)}</Tag>
         ) : (
           <span style={{ opacity: 0.5 }}>-</span>
         ),
@@ -286,6 +289,20 @@ export default function RequestListPage() {
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    },
+    {
+      title: 'Response SLA',
+      key: 'response_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.response_deadline} status={record.sla.response_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
+    },
+    {
+      title: 'Completion SLA',
+      key: 'resolution_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.resolution_deadline} status={record.sla.resolution_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
     },
   ];
 
@@ -463,9 +480,10 @@ export default function RequestListPage() {
       title: t('serviceRequests.table.status'),
       dataIndex: 'status',
       key: 'status',
+      width: 160,
       render: (status: string) => (
-        <Tag color={statusColors[status] || 'default'}>
-          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+        <Tag color={statusColors[status] || 'default'} style={{ whiteSpace: 'nowrap' }}>
+          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\\b\\w/g, (l) => l.toUpperCase())}
         </Tag>
       ),
     },
@@ -474,6 +492,20 @@ export default function RequestListPage() {
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
+    },
+    {
+      title: 'Response SLA',
+      key: 'response_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.response_deadline} status={record.sla.response_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
+    },
+    {
+      title: 'Completion SLA',
+      key: 'resolution_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.resolution_deadline} status={record.sla.resolution_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
     },
     {
       title: t('serviceRequests.table.actions'),
@@ -564,11 +596,13 @@ export default function RequestListPage() {
         )}
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={requests}
-        rowKey="id"
-        loading={isLoading}
+      <div style={{ overflowX: 'auto' }}>
+        <Table
+          columns={columns}
+          dataSource={requests}
+          scroll={{ x: 1200 }}
+          rowKey="id"
+          loading={isLoading}
         pagination={{
           current: page,
           pageSize,
@@ -580,7 +614,8 @@ export default function RequestListPage() {
             setPageSize(newPageSize);
           },
         }}
-      />
+        />
+      </div>
 
       {/* Approval Action Modal */}
       <Modal

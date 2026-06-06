@@ -25,6 +25,8 @@ import { User } from '../USERS/users.entity';
 import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
 import { WorkOrder } from '../WORK_ORDERS/work_orders.entity';
 import axios from 'axios';
+import { SlaService } from '../SLA_MODULE/sla.service';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   new: ['triaged', 'rejected', 'closed', 'spam'],
@@ -54,6 +56,7 @@ export class ServiceRequestsService {
     private readonly serviceLocationRepository: typeof ServiceLocation,
     private readonly documentApprovalsService: DocumentApprovalsService,
     private readonly notificationsService: NotificationsService,
+    private readonly slaService: SlaService,
   ) {}
 
   async findAllPaginated(
@@ -96,6 +99,10 @@ export class ServiceRequestsService {
           attributes: ['id', 'first_name', 'last_name', 'email'],
           through: { attributes: [] },
         },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
+        },
       ],
       order: [['created_at', pageOptionsDto.order]],
       limit: pageOptionsDto.take,
@@ -109,6 +116,7 @@ export class ServiceRequestsService {
   async findAll(tenantId: string): Promise<ServiceRequest[]> {
     return this.serviceRequestRepository.findAll({
       where: { tenant_id: tenantId, is_deleted: false },
+      include: [{ model: ServiceRequestSla, as: 'sla' }],
       order: [['created_at', 'DESC']],
     });
   }
@@ -193,6 +201,10 @@ export class ServiceRequestsService {
           as: 'technicians',
           attributes: ['id', 'first_name', 'last_name', 'email'],
           through: { attributes: [] },
+        },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
         },
       ],
     });
@@ -300,7 +312,13 @@ export class ServiceRequestsService {
       );
     }
 
-    return serviceRequest;
+    try {
+      await this.slaService.attachSlaToServiceRequest(tenantId, serviceRequest);
+    } catch (error) {
+      this.logger.error(`Failed to attach SLA for SR ${serviceRequest.id}: ${(error as Error).message}`);
+    }
+
+    return this.findById(serviceRequest.id, tenantId);
   }
 
   private async triggerApprovalChain(
@@ -574,6 +592,7 @@ export class ServiceRequestsService {
       include: [
         { model: Contact, attributes: ['id', 'first_name', 'last_name'] },
         { model: ServiceLocation, attributes: ['id', 'address'] },
+        { model: ServiceRequestSla, as: 'sla' },
       ],
     });
   }

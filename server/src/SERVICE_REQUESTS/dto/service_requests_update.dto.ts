@@ -25,19 +25,20 @@ export class UpdateServiceRequestDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({
-    description: 'Priority level',
-    enum: ['low', 'medium', 'high', 'urgent'],
-    example: 'medium',
-  })
-  @IsEnum(['low', 'medium', 'high', 'urgent'])
+  @ApiPropertyOptional({ description: 'Priority ID', example: 'uuid' })
+  @IsUUID()
   @IsOptional()
-  priority?: string;
+  priority_id?: string;
 
-  @ApiPropertyOptional({ description: 'Category', example: 'HVAC' })
-  @IsString()
+  @ApiPropertyOptional({ description: 'Category ID', example: 'uuid' })
+  @IsUUID()
   @IsOptional()
-  category?: string;
+  category_id?: string;
+
+  @ApiPropertyOptional({ description: 'Sub Category ID', example: 'uuid' })
+  @IsUUID()
+  @IsOptional()
+  sub_category_id?: string;
 
   @ApiPropertyOptional({
     description: 'Status',
