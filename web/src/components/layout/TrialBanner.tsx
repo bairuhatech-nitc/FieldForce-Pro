@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CloseOutlined, RocketOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface TrialBannerProps {
   subscriptionEnd: string | null;
@@ -10,6 +11,7 @@ interface TrialBannerProps {
 export function TrialBanner({ subscriptionEnd, subscriptionStatus }: TrialBannerProps) {
   const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Re-show banner if status changes (e.g. after page reload)
   useEffect(() => {
@@ -46,8 +48,8 @@ export function TrialBanner({ subscriptionEnd, subscriptionStatus }: TrialBanner
       <RocketOutlined style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14 }} />
       <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>
         {isUrgent
-          ? `⚠️ Your free trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}! Upgrade now to keep access.`
-          : `Your free trial ends in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}. Enjoy exploring FieldForce Pro!`}
+          ? t('trialBanner.urgentMessage', { count: daysLeft })
+          : t('trialBanner.normalMessage', { count: daysLeft })}
       </span>
       <button
         onClick={() => navigate('/settings/subscription')}
@@ -63,7 +65,7 @@ export function TrialBanner({ subscriptionEnd, subscriptionStatus }: TrialBanner
           whiteSpace: 'nowrap',
         }}
       >
-        Upgrade Plan
+        {t('trialBanner.upgradePlan')}
       </button>
       <button
         onClick={() => setDismissed(true)}

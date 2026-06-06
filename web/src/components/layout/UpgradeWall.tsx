@@ -1,10 +1,12 @@
 import { MailOutlined, PhoneOutlined, LockOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useLogout, usePublicSubscriptionPlans } from '@/hooks/use-auth';
 import { useUiStore } from '@/store/ui.store';
 import { formatPlanPrice, getPlanPricing } from '@/utils/pricing';
 
 export function UpgradeWall() {
+  const { t } = useTranslation();
   const logout = useLogout();
   const currency = useUiStore((s) => s.currency);
   const { data: plans } = usePublicSubscriptionPlans();
@@ -17,14 +19,14 @@ export function UpgradeWall() {
   const professionalPrice = professionalPlan ? `${formatPlanPrice(professionalPlan.price_monthly, professionalPlan.currency || 'USD', currency)}/mo` : getPlanPricing('professional', currency).formatted + '/mo';
   const enterprisePrice = enterprisePlan ? `${formatPlanPrice(enterprisePlan.price_monthly, enterprisePlan.currency || 'USD', currency)}/mo` : getPlanPricing('enterprise', currency).formatted + '/mo';
 
-  const basicLimit = basicPlan?.max_appointments_monthly !== undefined ? (basicPlan.max_appointments_monthly ? `${basicPlan.max_appointments_monthly} appts/mo` : 'Unlimited appts') : '100 appts/mo';
-  const professionalLimit = professionalPlan?.max_appointments_monthly !== undefined ? (professionalPlan.max_appointments_monthly ? `${professionalPlan.max_appointments_monthly} appts/mo` : 'Unlimited appts') : '500 appts/mo';
-  const enterpriseLimit = enterprisePlan?.max_appointments_monthly !== undefined ? (enterprisePlan.max_appointments_monthly ? `${enterprisePlan.max_appointments_monthly} appts/mo` : 'Unlimited appts') : '2000 appts/mo';
+  const basicLimit = basicPlan?.max_appointments_monthly !== undefined ? (basicPlan.max_appointments_monthly ? `${basicPlan.max_appointments_monthly} ${t('upgradeWall.apptsMo')}` : t('upgradeWall.unlimitedAppts')) : t('upgradeWall.basicDefaultLimit');
+  const professionalLimit = professionalPlan?.max_appointments_monthly !== undefined ? (professionalPlan.max_appointments_monthly ? `${professionalPlan.max_appointments_monthly} ${t('upgradeWall.apptsMo')}` : t('upgradeWall.unlimitedAppts')) : t('upgradeWall.proDefaultLimit');
+  const enterpriseLimit = enterprisePlan?.max_appointments_monthly !== undefined ? (enterprisePlan.max_appointments_monthly ? `${enterprisePlan.max_appointments_monthly} ${t('upgradeWall.apptsMo')}` : t('upgradeWall.unlimitedAppts')) : t('upgradeWall.enterpriseDefaultLimit');
 
   const renderPlans = [
-    { name: 'Basic', price: basicPrice, limit: basicLimit },
-    { name: 'Pro', price: professionalPrice, limit: professionalLimit },
-    { name: 'Enterprise', price: enterprisePrice, limit: enterpriseLimit },
+    { name: t('upgradeWall.plans.basic'), price: basicPrice, limit: basicLimit },
+    { name: t('upgradeWall.plans.pro'), price: professionalPrice, limit: professionalLimit },
+    { name: t('upgradeWall.plans.enterprise'), price: enterprisePrice, limit: enterpriseLimit },
   ];
 
 
@@ -71,12 +73,11 @@ export function UpgradeWall() {
         </div>
 
         <h2 style={{ color: '#fff', fontSize: 24, fontWeight: 800, margin: '0 0 12px' }}>
-          Your free trial has ended
+          {t('upgradeWall.title')}
         </h2>
 
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, lineHeight: 1.7, margin: '0 0 32px' }}>
-          Your 15-day free trial has expired and your account has been temporarily suspended.
-          To continue using FieldForce Pro, please upgrade to a paid plan.
+          {t('upgradeWall.description')}
         </p>
 
         {/* Plan highlights */}
@@ -110,7 +111,7 @@ export function UpgradeWall() {
 
         {/* Contact */}
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 16 }}>
-          Contact us to activate your subscription:
+          {t('upgradeWall.contactLabel')}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
@@ -159,7 +160,7 @@ export function UpgradeWall() {
           onClick={() => logout.mutate()}
           style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}
         >
-          Sign out
+          {t('upgradeWall.signOut')}
         </Button>
       </div>
     </div>

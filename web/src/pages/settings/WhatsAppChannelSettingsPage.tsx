@@ -42,6 +42,7 @@ import {
   EyeOutlined,
   PhoneOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/common/PageHeader';
 import {
   whatsappApi,
@@ -58,21 +59,22 @@ const { Text, Title, Paragraph } = Typography;
 // ── Status badge helper ─────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const config: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
     connected: {
       color: '#52c41a',
       icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-      label: 'Connected',
+      label: t('whatsapp.statusConnected'),
     },
     pending: {
       color: '#faad14',
       icon: <SyncOutlined spin style={{ color: '#faad14' }} />,
-      label: 'Pending Verification',
+      label: t('whatsapp.statusPending'),
     },
     disconnected: {
       color: '#ff4d4f',
       icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-      label: 'Disconnected',
+      label: t('whatsapp.statusDisconnected'),
     },
   };
 
@@ -94,22 +96,21 @@ function ConnectionMethodSelector({
   selected: 'twilio_qr' | 'business_api';
   onSelect: (method: 'twilio_qr' | 'business_api') => void;
 }) {
+  const { t } = useTranslation();
   const methods = [
     {
       key: 'twilio_qr' as const,
       icon: <QrcodeOutlined style={{ fontSize: 36, color: '#25D366' }} />,
-      title: 'Scan QR Code (Twilio)',
-      description:
-        'Connect via Twilio. Each company gets a Twilio-provisioned virtual number. Customers scan a QR code to start messaging.',
-      badge: 'Recommended',
+      title: t('whatsapp.twilioTitle'),
+      description: t('whatsapp.twilioDescription'),
+      badge: t('whatsapp.recommended'),
     },
     {
       key: 'business_api' as const,
       icon: <ApiOutlined style={{ fontSize: 36, color: '#0088cc' }} />,
-      title: 'WhatsApp Business API',
-      description:
-        'Connect directly via Meta Cloud API with your verified WhatsApp Business number. Requires a Meta Developer account.',
-      badge: 'Advanced',
+      title: t('whatsapp.businessApiTitle'),
+      description: t('whatsapp.businessApiDescription'),
+      badge: t('whatsapp.advanced'),
     },
   ];
 
@@ -164,11 +165,12 @@ function TwilioConfigForm({
   onLoadQr: () => void;
   loadingQr: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
-          <Form.Item label="Twilio Account SID">
+          <Form.Item label={t('whatsapp.twilioSidLabel')}>
             <Input
               placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
               value={(config.account_sid as string) || ''}
@@ -177,16 +179,16 @@ function TwilioConfigForm({
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item label="Twilio Auth Token">
+          <Form.Item label={t('whatsapp.twilioTokenLabel')}>
             <Input.Password
-              placeholder="Your Twilio Auth Token"
+              placeholder={t('whatsapp.twilioTokenPlaceholder')}
               value={(config.auth_token as string) || ''}
               onChange={(e) => onChange({ ...config, auth_token: e.target.value })}
             />
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item label="Twilio Virtual Number">
+          <Form.Item label={t('whatsapp.twilioNumberLabel')}>
             <Input
               placeholder="+14155238886 (sandbox default)"
               value={(config.twilio_number as string) || ''}
@@ -195,7 +197,7 @@ function TwilioConfigForm({
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item label="Join Code">
+          <Form.Item label={t('whatsapp.joinCodeLabel')}>
             <Input
               placeholder="join your-company"
               value={(config.join_code as string) || ''}
@@ -205,7 +207,7 @@ function TwilioConfigForm({
         </Col>
       </Row>
 
-      <Divider>Customer QR Code</Divider>
+      <Divider>{t('whatsapp.customerQrCode')}</Divider>
 
       <div style={{ textAlign: 'center' }}>
         <Button
@@ -215,7 +217,7 @@ function TwilioConfigForm({
           loading={loadingQr}
           style={{ marginBottom: 16 }}
         >
-          Generate QR Code
+          {t('whatsapp.generateQrCode')}
         </Button>
 
         {qrInfo && (
@@ -238,7 +240,7 @@ function TwilioConfigForm({
             </div>
             <div>
               <Text type="secondary">
-                Customers scan this QR code to start messaging <strong>{qrInfo.sandbox_number}</strong>
+                {t('whatsapp.scanInstruction')} <strong>{qrInfo.sandbox_number}</strong>
               </Text>
               <br />
               <Text code copyable>
@@ -261,28 +263,29 @@ function MetaConfigForm({
   config: Record<string, unknown>;
   onChange: (config: Record<string, unknown>) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Row gutter={[16, 16]}>
       <Col xs={24} md={12}>
-        <Form.Item label="Meta App ID">
+        <Form.Item label={t('whatsapp.metaAppIdLabel')}>
           <Input
-            placeholder="Your Meta App ID"
+            placeholder={t('whatsapp.metaAppIdPlaceholder')}
             value={(config.app_id as string) || ''}
             onChange={(e) => onChange({ ...config, app_id: e.target.value })}
           />
         </Form.Item>
       </Col>
       <Col xs={24} md={12}>
-        <Form.Item label="App Secret">
+        <Form.Item label={t('whatsapp.appSecretLabel')}>
           <Input.Password
-            placeholder="Your Meta App Secret"
+            placeholder={t('whatsapp.appSecretPlaceholder')}
             value={(config.app_secret as string) || ''}
             onChange={(e) => onChange({ ...config, app_secret: e.target.value })}
           />
         </Form.Item>
       </Col>
       <Col xs={24} md={12}>
-        <Form.Item label="Phone Number ID">
+        <Form.Item label={t('whatsapp.phoneNumberIdLabel')}>
           <Input
             placeholder="e.g. 123456789012345"
             value={(config.phone_number_id as string) || ''}
@@ -291,27 +294,27 @@ function MetaConfigForm({
         </Form.Item>
       </Col>
       <Col xs={24} md={12}>
-        <Form.Item label="Access Token">
+        <Form.Item label={t('whatsapp.accessTokenLabel')}>
           <Input.Password
-            placeholder="Permanent or long-lived access token"
+            placeholder={t('whatsapp.accessTokenPlaceholder')}
             value={(config.access_token as string) || ''}
             onChange={(e) => onChange({ ...config, access_token: e.target.value })}
           />
         </Form.Item>
       </Col>
       <Col xs={24} md={12}>
-        <Form.Item label="WABA ID (optional)">
+        <Form.Item label={t('whatsapp.wabaIdLabel')}>
           <Input
-            placeholder="WhatsApp Business Account ID"
+            placeholder={t('whatsapp.wabaIdPlaceholder')}
             value={(config.waba_id as string) || ''}
             onChange={(e) => onChange({ ...config, waba_id: e.target.value })}
           />
         </Form.Item>
       </Col>
       <Col xs={24} md={12}>
-        <Form.Item label="Webhook Verify Token">
+        <Form.Item label={t('whatsapp.webhookTokenLabel')}>
           <Input
-            placeholder="A custom verify token for webhook"
+            placeholder={t('whatsapp.webhookTokenPlaceholder')}
             value={(config.verify_token as string) || ''}
             onChange={(e) => onChange({ ...config, verify_token: e.target.value })}
           />
@@ -321,10 +324,10 @@ function MetaConfigForm({
         <Alert
           type="info"
           showIcon
-          message="Webhook URL"
+          message={t('whatsapp.webhookUrl')}
           description={
             <span>
-              Set this as your Meta webhook URL:{' '}
+              {t('whatsapp.webhookInstruction')}{' '}
               <Text code copyable>
                 {`${window.location.origin}/api/whatsapp/webhook/meta`}
               </Text>
@@ -339,6 +342,7 @@ function MetaConfigForm({
 // ── Main Page Component ─────────────────────────────────────────────────────
 
 export default function WhatsAppChannelSettingsPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -440,9 +444,9 @@ export default function WhatsAppChannelSettingsPage() {
 
       const { data } = await whatsappApi.upsertChannel(payload);
       setChannel(data?.data || null);
-      message.success('WhatsApp channel settings saved!');
+      message.success(t('whatsapp.settingsSaved'));
     } catch (err: unknown) {
-      message.error((err as Error)?.message || 'Failed to save settings');
+      message.error((err as Error)?.message || t('whatsapp.failedSave'));
     } finally {
       setSaving(false);
     }
@@ -459,10 +463,10 @@ export default function WhatsAppChannelSettingsPage() {
         message.success(result.message);
         void loadChannel();
       } else {
-        message.warning(result?.message || 'Connection test failed');
+        message.warning(result?.message || t('whatsapp.testFailed'));
       }
     } catch (err: unknown) {
-      message.error((err as Error)?.message || 'Connection test failed');
+      message.error((err as Error)?.message || t('whatsapp.testFailed'));
     } finally {
       setTesting(false);
     }
@@ -473,10 +477,10 @@ export default function WhatsAppChannelSettingsPage() {
   const handleDisconnect = async () => {
     try {
       await whatsappApi.disconnect();
-      message.info('WhatsApp channel disconnected');
+      message.info(t('whatsapp.disconnected'));
       void loadChannel();
     } catch (err: unknown) {
-      message.error((err as Error)?.message || 'Failed to disconnect');
+      message.error((err as Error)?.message || t('whatsapp.failedDisconnect'));
     }
   };
 
@@ -488,7 +492,7 @@ export default function WhatsAppChannelSettingsPage() {
       const { data } = await whatsappApi.getQrCode();
       setQrInfo(data?.data || null);
     } catch (err: unknown) {
-      message.error((err as Error)?.message || 'Failed to load QR code. Save your Twilio config first.');
+      message.error((err as Error)?.message || t('whatsapp.failedLoadQr'));
     } finally {
       setLoadingQr(false);
     }
@@ -502,7 +506,7 @@ export default function WhatsAppChannelSettingsPage() {
       setSelectedConversation(data?.data || null);
       setConversationModalOpen(true);
     } catch {
-      message.error('Failed to load conversation');
+      message.error(t('whatsapp.failedLoadConversation'));
     }
   };
 
@@ -516,7 +520,7 @@ export default function WhatsAppChannelSettingsPage() {
 
   const conversationColumns = [
     {
-      title: 'Phone',
+      title: t('whatsapp.columnPhone'),
       dataIndex: 'customer_phone',
       key: 'customer_phone',
       render: (phone: string) => (
@@ -527,7 +531,7 @@ export default function WhatsAppChannelSettingsPage() {
       ),
     },
     {
-      title: 'Status',
+      title: t('whatsapp.columnStatus'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
@@ -539,20 +543,20 @@ export default function WhatsAppChannelSettingsPage() {
       },
     },
     {
-      title: 'Ticket',
+      title: t('whatsapp.columnTicket'),
       dataIndex: 'service_request_id',
       key: 'service_request_id',
       render: (id: string | null) =>
-        id ? <Tag color="green">Created</Tag> : <Tag>Pending</Tag>,
+        id ? <Tag color="green">{t('whatsapp.created')}</Tag> : <Tag>{t('whatsapp.pending')}</Tag>,
     },
     {
-      title: 'Last Message',
+      title: t('whatsapp.columnLastMessage'),
       dataIndex: 'last_customer_message_at',
       key: 'last_customer_message_at',
       render: (d: string) => (d ? dayjs(d).format('MMM D, HH:mm') : '—'),
     },
     {
-      title: 'Actions',
+      title: t('whatsapp.columnActions'),
       key: 'actions',
       render: (_: unknown, record: WhatsAppConversation) => (
         <Button
@@ -560,7 +564,7 @@ export default function WhatsAppChannelSettingsPage() {
           icon={<EyeOutlined />}
           onClick={() => void handleViewConversation(record)}
         >
-          View
+          {t('whatsapp.view')}
         </Button>
       ),
     },
@@ -571,8 +575,8 @@ export default function WhatsAppChannelSettingsPage() {
   return (
     <div>
       <PageHeader
-        title="WhatsApp Channel"
-        subtitle="Connect WhatsApp to receive and auto-create service requests via AI"
+        title={t('whatsapp.pageTitle')}
+        subtitle={t('whatsapp.pageSubtitle')}
       />
 
       {/* Connection Status Banner */}
@@ -589,7 +593,7 @@ export default function WhatsAppChannelSettingsPage() {
               <WhatsAppOutlined style={{ fontSize: 40, color: '#25D366' }} />
               <div>
                 <Title level={4} style={{ margin: 0 }}>
-                  {displayName || 'WhatsApp AI Support'}
+                  {displayName || t('whatsapp.defaultDisplayName')}
                 </Title>
                 <StatusBadge status={channel?.status || 'disconnected'} />
                 {phoneNumber && (
@@ -605,8 +609,8 @@ export default function WhatsAppChannelSettingsPage() {
               <Switch
                 checked={isActive}
                 onChange={setIsActive}
-                checkedChildren="Active"
-                unCheckedChildren="Inactive"
+                checkedChildren={t('whatsapp.active')}
+                unCheckedChildren={t('whatsapp.inactive')}
               />
               <Button
                 icon={<ThunderboltOutlined />}
@@ -614,7 +618,7 @@ export default function WhatsAppChannelSettingsPage() {
                 loading={testing}
                 disabled={!channel}
               >
-                Test
+                {t('whatsapp.testButton')}
               </Button>
               {channel?.status === 'connected' && (
                 <Button
@@ -622,7 +626,7 @@ export default function WhatsAppChannelSettingsPage() {
                   danger
                   onClick={() => void handleDisconnect()}
                 >
-                  Disconnect
+                  {t('whatsapp.disconnectButton')}
                 </Button>
               )}
             </Space>
@@ -639,14 +643,14 @@ export default function WhatsAppChannelSettingsPage() {
               key: 'connection',
               label: (
                 <span>
-                  <LinkOutlined /> Connection
+                  <LinkOutlined /> {t('whatsapp.tabConnection')}
                 </span>
               ),
               children: (
                 <div>
-                  <Title level={5}>Connection Method</Title>
+                  <Title level={5}>{t('whatsapp.connectionMethod')}</Title>
                   <Paragraph type="secondary" style={{ marginBottom: 20 }}>
-                    Choose how your WhatsApp number connects to FieldForce Pro.
+                    {t('whatsapp.connectionMethodDescription')}
                   </Paragraph>
 
                   <ConnectionMethodSelector
@@ -658,7 +662,7 @@ export default function WhatsAppChannelSettingsPage() {
 
                   <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Business Display Name">
+                      <Form.Item label={t('whatsapp.displayNameLabel')}>
                         <Input
                           placeholder="e.g. FieldForce HVAC Support"
                           value={displayName}
@@ -668,7 +672,7 @@ export default function WhatsAppChannelSettingsPage() {
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item label="WhatsApp Business Number">
+                      <Form.Item label={t('whatsapp.businessNumberLabel')}>
                         <Input
                           placeholder="+971 50 123 4567"
                           value={phoneNumber}
@@ -697,12 +701,12 @@ export default function WhatsAppChannelSettingsPage() {
               key: 'messages',
               label: (
                 <span>
-                  <MessageOutlined /> Messages
+                  <MessageOutlined /> {t('whatsapp.tabMessages')}
                 </span>
               ),
               children: (
                 <div>
-                  <Form.Item label="Greeting Message (first message the AI sends)">
+                  <Form.Item label={t('whatsapp.greetingLabel')}>
                     <TextArea
                       rows={3}
                       value={greeting}
@@ -711,7 +715,7 @@ export default function WhatsAppChannelSettingsPage() {
                     />
                   </Form.Item>
 
-                  <Form.Item label="Confirmation Message (sent after ticket is created)">
+                  <Form.Item label={t('whatsapp.confirmationLabel')}>
                     <TextArea
                       rows={3}
                       value={confirmation}
@@ -723,7 +727,7 @@ export default function WhatsAppChannelSettingsPage() {
                   <Alert
                     type="info"
                     showIcon
-                    message="Use {ticket_number} as a placeholder in the confirmation message to include the auto-generated ticket number."
+                    message={t('whatsapp.placeholderInfo')}
                     style={{ marginTop: 12 }}
                   />
                 </div>
@@ -733,22 +737,22 @@ export default function WhatsAppChannelSettingsPage() {
               key: 'intake',
               label: (
                 <span>
-                  <SettingOutlined /> Intake Fields
+                  <SettingOutlined /> {t('whatsapp.tabIntake')}
                 </span>
               ),
               children: (
                 <div>
                   <Paragraph type="secondary" style={{ marginBottom: 20 }}>
-                    Toggle which fields the AI must collect from the customer before creating a ticket.
+                    {t('whatsapp.intakeDescription')}
                   </Paragraph>
 
                   <Row gutter={[16, 16]}>
                     {Object.entries({
-                      name: 'Customer Name',
-                      location: 'Service Location / Address',
-                      category: 'Issue Category',
-                      photos: 'Photos / Evidence',
-                      preferred_time: 'Preferred Date/Time',
+                      name: t('whatsapp.fieldCustomerName'),
+                      location: t('whatsapp.fieldLocation'),
+                      category: t('whatsapp.fieldCategory'),
+                      photos: t('whatsapp.fieldPhotos'),
+                      preferred_time: t('whatsapp.fieldPreferredTime'),
                     }).map(([key, label]) => (
                       <Col xs={24} sm={12} md={8} key={key}>
                         <Card size="small" style={{ borderRadius: 8 }}>
@@ -770,21 +774,21 @@ export default function WhatsAppChannelSettingsPage() {
 
                   <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Default Priority">
+                      <Form.Item label={t('whatsapp.defaultPriorityLabel')}>
                         <Select
                           value={defaultPriority}
                           onChange={setDefaultPriority}
                           options={[
-                            { value: 'LOW', label: 'Low' },
-                            { value: 'MEDIUM', label: 'Medium' },
-                            { value: 'HIGH', label: 'High' },
-                            { value: 'CRITICAL', label: 'Urgent / Critical' },
+                            { value: 'LOW', label: t('whatsapp.priorityLow') },
+                            { value: 'MEDIUM', label: t('whatsapp.priorityMedium') },
+                            { value: 'HIGH', label: t('whatsapp.priorityHigh') },
+                            { value: 'CRITICAL', label: t('whatsapp.priorityCritical') },
                           ]}
                         />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Human Handoff Team / Queue">
+                      <Form.Item label={t('whatsapp.handoffTeamLabel')}>
                         <Input
                           placeholder="e.g. Support Team"
                           value={handoffTeam}
@@ -801,17 +805,17 @@ export default function WhatsAppChannelSettingsPage() {
               key: 'languages',
               label: (
                 <span>
-                  <GlobalOutlined /> Languages & Hours
+                  <GlobalOutlined /> {t('whatsapp.tabLanguagesHours')}
                 </span>
               ),
               children: (
                 <div>
-                  <Form.Item label="Supported Languages">
+                  <Form.Item label={t('whatsapp.supportedLanguagesLabel')}>
                     <Select
                       mode="multiple"
                       value={languages}
                       onChange={setLanguages}
-                      placeholder="Select languages"
+                      placeholder={t('whatsapp.selectLanguages')}
                       options={[
                         { value: 'en', label: '🇬🇧 English' },
                         { value: 'ar', label: '🇦🇪 Arabic' },
@@ -827,15 +831,15 @@ export default function WhatsAppChannelSettingsPage() {
                     />
                   </Form.Item>
 
-                  <Divider>Working Hours</Divider>
+                  <Divider>{t('whatsapp.workingHoursDivider')}</Divider>
 
-                  <Form.Item label="AI Availability">
+                  <Form.Item label={t('whatsapp.aiAvailabilityLabel')}>
                     <Select
                       value={workingHoursMode}
                       onChange={setWorkingHoursMode}
                       options={[
-                        { value: '24_7', label: '24/7 — AI captures requests around the clock' },
-                        { value: 'office_hours', label: 'Office Hours — AI adds an after-hours note' },
+                        { value: '24_7', label: t('whatsapp.mode247') },
+                        { value: 'office_hours', label: t('whatsapp.modeOfficeHours') },
                       ]}
                     />
                   </Form.Item>
@@ -843,7 +847,7 @@ export default function WhatsAppChannelSettingsPage() {
                   {workingHoursMode === 'office_hours' && (
                     <Row gutter={[16, 16]}>
                       <Col xs={24} md={8}>
-                        <Form.Item label="Start Time">
+                        <Form.Item label={t('whatsapp.startTimeLabel')}>
                           <TimePicker
                             value={dayjs(officeHoursStart, 'HH:mm')}
                             format="HH:mm"
@@ -857,7 +861,7 @@ export default function WhatsAppChannelSettingsPage() {
                         </Form.Item>
                       </Col>
                       <Col xs={24} md={8}>
-                        <Form.Item label="End Time">
+                        <Form.Item label={t('whatsapp.endTimeLabel')}>
                           <TimePicker
                             value={dayjs(officeHoursEnd, 'HH:mm')}
                             format="HH:mm"
@@ -871,7 +875,7 @@ export default function WhatsAppChannelSettingsPage() {
                         </Form.Item>
                       </Col>
                       <Col xs={24} md={8}>
-                        <Form.Item label="Timezone">
+                        <Form.Item label={t('whatsapp.timezoneLabel')}>
                           <Select
                             value={timezone}
                             onChange={setTimezone}
@@ -896,18 +900,18 @@ export default function WhatsAppChannelSettingsPage() {
               key: 'conversations',
               label: (
                 <span>
-                  <MessageOutlined /> Conversation Log
+                  <MessageOutlined /> {t('whatsapp.tabConversationLog')}
                 </span>
               ),
               children: (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <Title level={5} style={{ margin: 0 }}>Recent Conversations</Title>
+                    <Title level={5} style={{ margin: 0 }}>{t('whatsapp.recentConversations')}</Title>
                     <Button
                       icon={<ReloadOutlined />}
                       onClick={() => void loadConversations()}
                     >
-                      Refresh
+                      {t('whatsapp.refresh')}
                     </Button>
                   </div>
 
@@ -916,7 +920,7 @@ export default function WhatsAppChannelSettingsPage() {
                     columns={conversationColumns}
                     rowKey="id"
                     pagination={{ pageSize: 10 }}
-                    locale={{ emptyText: 'No WhatsApp conversations yet' }}
+                    locale={{ emptyText: t('whatsapp.noConversations') }}
                     size="middle"
                   />
                 </div>
@@ -928,7 +932,7 @@ export default function WhatsAppChannelSettingsPage() {
         <Divider />
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-          <Button onClick={() => void loadChannel()}>Reset</Button>
+          <Button onClick={() => void loadChannel()}>{t('whatsapp.resetButton')}</Button>
           <Button
             type="primary"
             size="large"
@@ -941,7 +945,7 @@ export default function WhatsAppChannelSettingsPage() {
               fontWeight: 600,
             }}
           >
-            Save WhatsApp Settings
+            {t('whatsapp.saveButton')}
           </Button>
         </div>
       </Card>
@@ -951,7 +955,7 @@ export default function WhatsAppChannelSettingsPage() {
         title={
           <Space>
             <WhatsAppOutlined style={{ color: '#25D366' }} />
-            Conversation with {selectedConversation?.customer_phone}
+            {t('whatsapp.conversationWith', { phone: selectedConversation?.customer_phone })}
           </Space>
         }
         open={conversationModalOpen}
@@ -1002,7 +1006,7 @@ export default function WhatsAppChannelSettingsPage() {
         {selectedConversation?.collected_data &&
           Object.keys(selectedConversation.collected_data).length > 0 && (
             <div style={{ marginTop: 16 }}>
-              <Divider>Collected Data</Divider>
+              <Divider>{t('whatsapp.collectedData')}</Divider>
               {Object.entries(selectedConversation.collected_data).map(([key, value]) => (
                 <div key={key} style={{ marginBottom: 4 }}>
                   <Text type="secondary">{key}: </Text>
