@@ -14,6 +14,7 @@ import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVAL
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
 import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { SlaService } from '../SLA_MODULE/sla.service';
 
 // Valid status transitions for work orders
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -37,6 +38,7 @@ export class WorkOrdersService {
     private readonly workOrderRepository: typeof WorkOrder,
     private readonly documentApprovalsService: DocumentApprovalsService,
     private readonly notificationsService: NotificationsService,
+    private readonly slaService: SlaService,
   ) { }
 
   async findAllPaginated(
@@ -273,6 +275,12 @@ export class WorkOrdersService {
       slaHours,
       slaBreachAt,
     });
+
+    try {
+      await this.slaService.attachSlaToWorkOrder(tenantId, workOrder);
+    } catch (error) {
+      this.logger.error(`Failed to attach SLA for WO ${workOrder.id}: ${(error as Error).message}`);
+    }
 
     // Fetch the created work order with includes
     return this.findById(workOrder.id, tenantId);

@@ -29,6 +29,7 @@ import { EmailService } from '../shared/services/email.service';
 import { User } from '../USERS/users.entity';
 import { Invoice } from '../INVOICES/invoices.entity';
 import { InvoiceLineItem } from '../INVOICE_LINE_ITEMS/invoice_line_items.entity';
+import { SlaService } from '../SLA_MODULE/sla.service';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ['sent', 'pending_approval'],
@@ -61,6 +62,7 @@ export class EstimatesService {
     @Optional() private readonly notificationsService: NotificationsService,
     @Optional() private readonly emailService: EmailService,
     @Inject(KEYNAMES.USERS) @Optional() private readonly userRepository: typeof User,
+    private readonly slaService: SlaService,
   ) {}
 
   async findAllPaginated(
@@ -286,6 +288,12 @@ export class EstimatesService {
 
     // Auto-trigger ESTIMATE_APPROVAL workflow on creation
     await this.autoStartApprovalWorkflow(tenantId, estimate);
+
+    try {
+      await this.slaService.attachSlaToEstimate(tenantId, estimate);
+    } catch (error) {
+      this.logger.error(`Failed to attach SLA for Estimate ${estimate.id}: ${(error as Error).message}`);
+    }
 
     return estimate;
   }

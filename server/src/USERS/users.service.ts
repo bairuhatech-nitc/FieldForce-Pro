@@ -75,6 +75,14 @@ export class UsersService {
     return this.userRepository.findAll({
       where: { tenant_id: tenantId, is_deleted: false, is_active: true },
       attributes: ['id', 'first_name', 'last_name', 'email'],
+      include: [
+        {
+          model: Role,
+          through: { attributes: [] },
+          where: { name: { [Op.iLike]: '%technician%' } },
+          required: true,
+        },
+      ],
       order: [['first_name', 'ASC']],
     });
   }

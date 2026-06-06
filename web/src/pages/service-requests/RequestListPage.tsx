@@ -230,7 +230,7 @@ export default function RequestListPage() {
       key: 'priority',
       render: (priority: string) => (
         <Tag color={priorityColors[priority] || 'default'}>
-          {priority?.charAt(0).toUpperCase() + priority?.slice(1)}
+          {priority ? t(`priorities.${priority.charAt(0).toUpperCase() + priority.slice(1)}`, priority.charAt(0).toUpperCase() + priority.slice(1)) : '-'}
         </Tag>
       ),
     },

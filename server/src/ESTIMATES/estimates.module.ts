@@ -12,9 +12,10 @@ import { invoiceLineItemsProviders } from '../INVOICE_LINE_ITEMS/invoice_line_it
 import { NotificationsModule } from '../NOTIFICATIONS/notifications.module';
 import { EmailService } from '../shared/services/email.service';
 import { usersProviders } from '../USERS/users.provider';
+import { SlaModule } from '../SLA_MODULE/sla.module';
 
 @Module({
-  imports: [DatabaseModule, WorkflowModule, WorkOrdersModule, WorkOrderLineItemsModule, NotificationsModule],
+  imports: [DatabaseModule, WorkflowModule, WorkOrdersModule, WorkOrderLineItemsModule, NotificationsModule, SlaModule],
   controllers: [EstimatesController],
   providers: [EstimatesService, EmailService, ...estimatesProviders, ...workflowTemplatesProviders, ...invoicesProviders, ...invoiceLineItemsProviders, ...usersProviders],
   exports: [EstimatesService],

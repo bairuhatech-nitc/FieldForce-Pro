@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { StartupMigrationsService } from './startup-migrations.service';
+import { LookupSeederService } from './lookup-seeder.service';
 import { AppConfigService } from '../shared/config/config.service';
 import { User } from '../USERS/users.entity';
 import { Tenant } from '../TENANTS/tenants.entity';
@@ -159,8 +160,9 @@ import { EmailThread } from '../EMAIL_CHANNELS/email_threads.entity';
       }),
       inject: [AppConfigService],
     }),
+    SequelizeModule.forFeature([Priority, Category, SubCategory, ServiceLocation, Tenant]),
   ],
-  providers: [StartupMigrationsService],
-  exports: [StartupMigrationsService],
+  providers: [StartupMigrationsService, LookupSeederService],
+  exports: [StartupMigrationsService, LookupSeederService],
 })
 export class DatabaseModule { }

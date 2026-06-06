@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Descriptions, Button, Space, Skeleton, Tag, Steps, Modal, Input, Alert, Select, Tabs, Table, Badge } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, MinusCircleOutlined, UserAddOutlined, SwapOutlined, EnvironmentOutlined, PlusOutlined, FileTextOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import {
   useServiceRequest,
   useDeleteServiceRequest,
@@ -89,6 +90,7 @@ interface ApprovalItem {
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const { isAdmin } = usePermission();
   const { data: request, isLoading, error: requestError } = useServiceRequest(id!);
@@ -337,7 +339,7 @@ export default function RequestDetailPage() {
 
                     <Descriptions.Item label="Priority">
                       <Tag color={priorityColors[request.priority] || 'default'}>
-                        {request.priority?.charAt(0).toUpperCase() + request.priority?.slice(1)}
+                        {request.priority ? t(`priorities.${request.priority.charAt(0).toUpperCase() + request.priority.slice(1)}`, request.priority.charAt(0).toUpperCase() + request.priority.slice(1)) : '-'}
                       </Tag>
                     </Descriptions.Item>
 
@@ -350,7 +352,7 @@ export default function RequestDetailPage() {
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Category">
-                      {request.category ? <Tag>{request.category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>}
+                      {request.category ? <Tag>{t(`categories.${request.category}`, request.category)}</Tag> : <span style={{ opacity: 0.5 }}>-</span>}
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Customer">

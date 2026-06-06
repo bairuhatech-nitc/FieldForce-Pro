@@ -569,7 +569,7 @@ export default function RequestFormPage() {
                   <Form.Item name="priority_id" label={t('serviceRequests.priority')}>
                     <Select placeholder={t('serviceRequests.select')}>
                       {priorities?.map(p => (
-                        <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>
+                        <Select.Option key={p.id} value={p.id}>{t(`priorities.${p.name}`, p.name)}</Select.Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -578,16 +578,16 @@ export default function RequestFormPage() {
                   <Form.Item name="category_id" label={t('serviceRequests.category')} rules={[{ required: true, message: t('serviceRequests.categoryRequired', 'Please select a category') }]}>
                     <Select placeholder={t('serviceRequests.select')} allowClear onChange={() => form.setFieldValue('sub_category_id', undefined)}>
                       {categories?.map(c => (
-                        <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
+                        <Select.Option key={c.id} value={c.id}>{t(`categories.${c.name}`, c.name)}</Select.Option>
                       ))}
                     </Select>
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="sub_category_id" label="Sub Category" rules={[{ required: true, message: 'Please select a sub-category' }]}>
+                  <Form.Item name="sub_category_id" label={t('sla.subCategory', 'Sub Category')} rules={[{ required: true, message: 'Please select a sub-category' }]}>
                     <Select placeholder={t('serviceRequests.select')} allowClear disabled={!categoryId}>
                       {subCategories?.map(sc => (
-                        <Select.Option key={sc.id} value={sc.id}>{sc.name}</Select.Option>
+                        <Select.Option key={sc.id} value={sc.id}>{t(`subCategories.${sc.name}`, sc.name)}</Select.Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -597,7 +597,7 @@ export default function RequestFormPage() {
               <Form.Item name="technician_ids" label={t('serviceRequests.assignedTechnicians')}>
                 <Select
                   mode="multiple"
-                  placeholder={t('serviceRequests.selectTechnicians')}
+                  placeholder={t('serviceRequests.selectTechnicians', 'Select technicians')}
                   allowClear
                   options={agents?.map((a) => ({
                     value: a.id,
