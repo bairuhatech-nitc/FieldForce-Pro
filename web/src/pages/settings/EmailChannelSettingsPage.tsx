@@ -37,6 +37,7 @@ import {
   type EmailChannelConfig,
   type UpsertEmailChannelPayload,
 } from '@/api/email-channel.api';
+import { useTranslation } from 'react-i18next';
 
 const { TextArea } = Input;
 const { Text, Title, Paragraph } = Typography;
@@ -44,21 +45,22 @@ const { Text, Title, Paragraph } = Typography;
 // ── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const config: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
     receiving: {
       color: '#52c41a',
       icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-      label: '🟢 Receiving',
+      label: t('emailChannel.status.receiving'),
     },
     error: {
       color: '#faad14',
       icon: <SyncOutlined spin style={{ color: '#faad14' }} />,
-      label: '⚠️ Error',
+      label: t('emailChannel.status.error'),
     },
     not_receiving: {
       color: '#ff4d4f',
       icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-      label: '🔴 Not Receiving',
+      label: t('emailChannel.status.notReceiving'),
     },
   };
 
@@ -80,32 +82,30 @@ function ConnectionMethodSelector({
   selected: 'forwarding' | 'mailbox' | 'platform_provided';
   onSelect: (method: 'forwarding' | 'mailbox' | 'platform_provided') => void;
 }) {
+  const { t } = useTranslation();
   const methods = [
     {
       key: 'forwarding' as const,
       icon: <MailOutlined style={{ fontSize: 36, color: '#1677ff' }} />,
-      title: 'Email Forwarding',
-      description:
-        'Keep your existing inbox and set a rule to auto-forward a copy to our secure platform address. Easiest to set up.',
-      badge: 'Recommended',
+      title: t('emailChannel.connection.forwardingTitle'),
+      description: t('emailChannel.connection.forwardingDesc'),
+      badge: t('emailChannel.connection.recommended'),
       badgeColor: 'blue',
     },
     {
       key: 'mailbox' as const,
       icon: <LinkOutlined style={{ fontSize: 36, color: '#722ed1' }} />,
-      title: 'Direct Mailbox (IMAP)',
-      description:
-        'Connect directly to your mailbox via secure OAuth (Google/Microsoft) or IMAP. Allows two-way threading from the real address.',
-      badge: 'Coming Soon',
+      title: t('emailChannel.connection.mailboxTitle'),
+      description: t('emailChannel.connection.mailboxDesc'),
+      badge: t('emailChannel.connection.comingSoon'),
       badgeColor: 'purple',
     },
     {
       key: 'platform_provided' as const,
       icon: <ThunderboltOutlined style={{ fontSize: 36, color: '#13c2c2' }} />,
-      title: 'Platform-Provided Address',
-      description:
-        'We issue an address like company@tickets.yourfsm.com that you publish or forward to. Zero email setup on your side.',
-      badge: 'Easy',
+      title: t('emailChannel.connection.platformTitle'),
+      description: t('emailChannel.connection.platformDesc'),
+      badge: t('emailChannel.connection.easy'),
       badgeColor: 'cyan',
     },
   ];
@@ -150,26 +150,20 @@ function ConnectionMethodSelector({
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function EmailChannelSettingsPage() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [channel, setChannel] = useState<EmailChannelConfig | null>(null);
 
-  // Form state
   const [connectionMethod, setConnectionMethod] = useState<'forwarding' | 'mailbox' | 'platform_provided'>('forwarding');
   const [supportEmail, setSupportEmail] = useState('');
   const [platformEmail, setPlatformEmail] = useState('');
-  const [replyFromName, setReplyFromName] = useState('Support Team');
+  const [replyFromName, setReplyFromName] = useState(t('emailChannel.defaults.supportTeam'));
   const [replyFromEmail, setReplyFromEmail] = useState('');
-  const [ackTemplate, setAckTemplate] = useState(
-    "Thanks for contacting us. We've logged your request as {ticket_number}.\n\n• Issue: {summary}\n• Category: {category}\n\nWe'll be in touch shortly. Just reply to this email if you have more details.",
-  );
-  const [clarificationTemplate, setClarificationTemplate] = useState(
-    "Thanks for reaching out. So we can help quickly, could you tell us more about what exactly isn't working and where?\n\nWe've logged this as {ticket_number} in the meantime.",
-  );
-  const [categoryMapping, setCategoryMapping] = useState<string[]>([
-    'General', 'Electrical', 'Plumbing', 'HVAC', 'IT', 'Cleaning', 'Other',
-  ]);
+  const [ackTemplate, setAckTemplate] = useState(t('emailChannel.defaults.ackTemplate'));
+  const [clarificationTemplate, setClarificationTemplate] = useState(t('emailChannel.defaults.clarifyTemplate'));
+  const [categoryMapping, setCategoryMapping] = useState<string[]>(['General', 'Electrical', 'Plumbing', 'HVAC', 'IT', 'Cleaning', 'Other']);
   const [priorityRules, setPriorityRules] = useState<Record<string, unknown>>({
     keywords: { urgent: 'HIGH', emergency: 'CRITICAL', asap: 'HIGH', down: 'HIGH' },
   });
@@ -178,22 +172,17 @@ export default function EmailChannelSettingsPage() {
   const [allowedSenders, setAllowedSenders] = useState<string[]>([]);
   const [blockedSenders, setBlockedSenders] = useState<string[]>(['no-reply@', 'noreply@', 'mailer-daemon@']);
   const [spamFilterEnabled, setSpamFilterEnabled] = useState(true);
-  const [humanHandoffKeywords, setHumanHandoffKeywords] = useState<string[]>([
-    'lawyer', 'legal', 'refund', 'sue', 'complaint',
-  ]);
+  const [humanHandoffKeywords, setHumanHandoffKeywords] = useState<string[]>(['lawyer', 'legal', 'refund', 'sue', 'complaint']);
   const [handoffTeam, setHandoffTeam] = useState('');
   const [isActive, setIsActive] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState('');
 
-  // Category input
   const [newCategory, setNewCategory] = useState('');
   const [newBlockedSender, setNewBlockedSender] = useState('');
   const [newAllowedSender, setNewAllowedSender] = useState('');
   const [newHandoffKeyword, setNewHandoffKeyword] = useState('');
   const [newPriorityKeyword, setNewPriorityKeyword] = useState('');
   const [newPriorityLevel, setNewPriorityLevel] = useState('HIGH');
-
-  // ── Load channel ────────────────────────────────────────────────────────────
 
   const loadChannel = useCallback(async () => {
     try {
@@ -205,7 +194,7 @@ export default function EmailChannelSettingsPage() {
         setConnectionMethod(ch.connection_method as 'forwarding' | 'mailbox' | 'platform_provided');
         setSupportEmail(ch.support_email || '');
         setPlatformEmail(ch.platform_email || '');
-        setReplyFromName(ch.reply_from_name || 'Support Team');
+        setReplyFromName(ch.reply_from_name || t('emailChannel.defaults.supportTeam'));
         setReplyFromEmail(ch.reply_from_email || '');
         setAckTemplate(ch.acknowledgement_template || '');
         setClarificationTemplate(ch.clarification_template || '');
@@ -222,17 +211,14 @@ export default function EmailChannelSettingsPage() {
         setWebhookSecret(ch.webhook_secret || '');
       }
     } catch {
-      // Not configured yet
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadChannel();
   }, [loadChannel]);
-
-  // ── Save ────────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     setSaving(true);
@@ -260,15 +246,13 @@ export default function EmailChannelSettingsPage() {
 
       const { data } = await emailChannelApi.upsertChannel(payload);
       setChannel(data?.data || null);
-      message.success('Email channel settings saved!');
+      message.success(t('emailChannel.messages.saved'));
     } catch (err: unknown) {
-      message.error((err as Error)?.message || 'Failed to save settings');
+      message.error((err as Error)?.message || t('emailChannel.messages.saveFailed'));
     } finally {
       setSaving(false);
     }
   };
-
-  // ── Test ────────────────────────────────────────────────────────────────────
 
   const handleTest = async () => {
     setTesting(true);
@@ -279,43 +263,36 @@ export default function EmailChannelSettingsPage() {
         message.success(result.message);
         void loadChannel();
       } else {
-        message.warning(result?.message || 'Connection test failed');
+        message.warning(result?.message || t('emailChannel.messages.testFailed'));
       }
     } catch (err: unknown) {
-      message.error((err as Error)?.message || 'Connection test failed');
+      message.error((err as Error)?.message || t('emailChannel.messages.testFailed'));
     } finally {
       setTesting(false);
     }
   };
 
-  // ── Disconnect ──────────────────────────────────────────────────────────────
-
   const handleDisconnect = async () => {
     try {
       await emailChannelApi.disconnect();
-      message.info('Email channel disconnected');
+      message.info(t('emailChannel.messages.disconnected'));
       void loadChannel();
     } catch (err: unknown) {
-      message.error((err as Error)?.message || 'Failed to disconnect');
+      message.error((err as Error)?.message || t('emailChannel.messages.disconnectFailed'));
     }
   };
-
-  // ── Loading ─────────────────────────────────────────────────────────────────
 
   if (loading) {
     return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   return (
     <div>
       <PageHeader
-        title="Email Channel"
-        subtitle="Connect a support email to receive and auto-create service requests via AI"
+        title={t('emailChannel.title')}
+        subtitle={t('emailChannel.subtitle')}
       />
 
-      {/* Status Banner */}
       <Card
         style={{
           marginBottom: 24,
@@ -329,7 +306,7 @@ export default function EmailChannelSettingsPage() {
               <MailOutlined style={{ fontSize: 40, color: '#1677ff' }} />
               <div>
                 <Title level={4} style={{ margin: 0 }}>
-                  {supportEmail || 'Email AI Support'}
+                  {supportEmail || t('emailChannel.defaults.supportLabel')}
                 </Title>
                 <StatusBadge status={channel?.status || 'not_receiving'} />
               </div>
@@ -340,8 +317,8 @@ export default function EmailChannelSettingsPage() {
               <Switch
                 checked={isActive}
                 onChange={setIsActive}
-                checkedChildren="Active"
-                unCheckedChildren="Inactive"
+                checkedChildren={t('emailChannel.status.active')}
+                unCheckedChildren={t('emailChannel.status.inactive')}
               />
               <Button
                 icon={<ThunderboltOutlined />}
@@ -349,7 +326,7 @@ export default function EmailChannelSettingsPage() {
                 loading={testing}
                 disabled={!channel}
               >
-                Test
+                {t('emailChannel.actions.test')}
               </Button>
               {channel?.status === 'receiving' && (
                 <Button
@@ -357,7 +334,7 @@ export default function EmailChannelSettingsPage() {
                   danger
                   onClick={() => void handleDisconnect()}
                 >
-                  Disconnect
+                  {t('emailChannel.actions.disconnect')}
                 </Button>
               )}
             </Space>
@@ -365,7 +342,6 @@ export default function EmailChannelSettingsPage() {
         </Row>
       </Card>
 
-      {/* Main Config Tabs */}
       <Card>
         <Tabs
           defaultActiveKey="connection"
@@ -374,14 +350,14 @@ export default function EmailChannelSettingsPage() {
               key: 'connection',
               label: (
                 <span>
-                  <LinkOutlined /> Connection
+                  <LinkOutlined /> {t('emailChannel.tabs.connection')}
                 </span>
               ),
               children: (
                 <div>
-                  <Title level={5}>Connection Method</Title>
+                  <Title level={5}>{t('emailChannel.connection.methodTitle')}</Title>
                   <Paragraph type="secondary" style={{ marginBottom: 20 }}>
-                    Choose how emails reach the platform.
+                    {t('emailChannel.connection.methodDesc')}
                   </Paragraph>
 
                   <ConnectionMethodSelector
@@ -393,9 +369,9 @@ export default function EmailChannelSettingsPage() {
 
                   <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Support Email Address">
+                      <Form.Item label={t('emailChannel.form.supportEmail')}>
                         <Input
-                          placeholder="e.g. support@fieldforce.com"
+                          placeholder={t('emailChannel.placeholders.email')}
                           value={supportEmail}
                           onChange={(e) => setSupportEmail(e.target.value)}
                           prefix={<MailOutlined style={{ color: '#1677ff' }} />}
@@ -404,9 +380,9 @@ export default function EmailChannelSettingsPage() {
                     </Col>
                     {connectionMethod === 'platform_provided' && (
                       <Col xs={24} md={12}>
-                        <Form.Item label="Platform-Provided Address">
+                        <Form.Item label={t('emailChannel.form.platformAddress')}>
                           <Input
-                            placeholder="company@tickets.yourfsm.com"
+                            placeholder={t('emailChannel.placeholders.platformEmail')}
                             value={platformEmail}
                             onChange={(e) => setPlatformEmail(e.target.value)}
                           />
@@ -414,9 +390,9 @@ export default function EmailChannelSettingsPage() {
                       </Col>
                     )}
                     <Col xs={24} md={12}>
-                      <Form.Item label="Webhook Secret (for validating inbound requests)">
+                      <Form.Item label={t('emailChannel.form.webhookSecret')}>
                         <Input.Password
-                          placeholder="A secret token for webhook validation"
+                          placeholder={t('emailChannel.placeholders.webhookSecret')}
                           value={webhookSecret}
                           onChange={(e) => setWebhookSecret(e.target.value)}
                         />
@@ -428,16 +404,15 @@ export default function EmailChannelSettingsPage() {
                     <Alert
                       type="info"
                       showIcon
-                      message="Forwarding Setup"
+                      message={t('emailChannel.alerts.forwardingSetup')}
                       description={
                         <span>
-                          Set your email inbox to auto-forward a copy of incoming emails to your
-                          platform webhook URL:{' '}
+                          {t('emailChannel.alerts.forwardingDescPart1')}{' '}
                           <Text code copyable>
                             {`${window.location.origin}/api/email-channel/webhook/inbound`}
                           </Text>
                           <br />
-                          Or use SendGrid Inbound Parse:{' '}
+                          {t('emailChannel.alerts.forwardingDescPart2')}{' '}
                           <Text code copyable>
                             {`${window.location.origin}/api/email-channel/webhook/sendgrid`}
                           </Text>
@@ -453,25 +428,25 @@ export default function EmailChannelSettingsPage() {
               key: 'replies',
               label: (
                 <span>
-                  <EditOutlined /> Reply Templates
+                  <EditOutlined /> {t('emailChannel.tabs.replies')}
                 </span>
               ),
               children: (
                 <div>
                   <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Reply &quot;From&quot; Name">
+                      <Form.Item label={t('emailChannel.form.replyName')}>
                         <Input
-                          placeholder="e.g. FieldForce Support"
+                          placeholder={t('emailChannel.placeholders.replyName')}
                           value={replyFromName}
                           onChange={(e) => setReplyFromName(e.target.value)}
                         />
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Reply &quot;From&quot; Email">
+                      <Form.Item label={t('emailChannel.form.replyEmail')}>
                         <Input
-                          placeholder="e.g. support@fieldforce.com"
+                          placeholder={t('emailChannel.placeholders.email')}
                           value={replyFromEmail}
                           onChange={(e) => setReplyFromEmail(e.target.value)}
                           prefix={<MailOutlined />}
@@ -480,7 +455,7 @@ export default function EmailChannelSettingsPage() {
                     </Col>
                   </Row>
 
-                  <Form.Item label="Acknowledgement Template (sent when ticket is created)">
+                  <Form.Item label={t('emailChannel.form.ackTemplate')}>
                     <TextArea
                       rows={5}
                       value={ackTemplate}
@@ -488,7 +463,7 @@ export default function EmailChannelSettingsPage() {
                     />
                   </Form.Item>
 
-                  <Form.Item label="Clarification Template (sent when info is missing)">
+                  <Form.Item label={t('emailChannel.form.clarifyTemplate')}>
                     <TextArea
                       rows={4}
                       value={clarificationTemplate}
@@ -499,7 +474,7 @@ export default function EmailChannelSettingsPage() {
                   <Alert
                     type="info"
                     showIcon
-                    message="Available placeholders: {ticket_number}, {summary}, {category}"
+                    message={t('emailChannel.placeholders.placeholdersInfo')}
                     style={{ marginTop: 8 }}
                   />
                 </div>
@@ -509,14 +484,14 @@ export default function EmailChannelSettingsPage() {
               key: 'classification',
               label: (
                 <span>
-                  <SettingOutlined /> AI Classification
+                  <SettingOutlined /> {t('emailChannel.tabs.ai')}
                 </span>
               ),
               children: (
                 <div>
-                  <Title level={5}>Categories</Title>
+                  <Title level={5}>{t('emailChannel.ai.categories')}</Title>
                   <Paragraph type="secondary">
-                    Categories the AI can assign to incoming emails.
+                    {t('emailChannel.ai.categoriesDesc')}
                   </Paragraph>
 
                   <div style={{ marginBottom: 16 }}>
@@ -533,7 +508,7 @@ export default function EmailChannelSettingsPage() {
                   </div>
                   <Space>
                     <Input
-                      placeholder="New category"
+                      placeholder={t('emailChannel.placeholders.category')}
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
                       onPressEnter={() => {
@@ -553,15 +528,15 @@ export default function EmailChannelSettingsPage() {
                         }
                       }}
                     >
-                      Add
+                      {t('emailChannel.actions.add')}
                     </Button>
                   </Space>
 
                   <Divider />
 
-                  <Title level={5}>Priority Rules</Title>
+                  <Title level={5}>{t('emailChannel.ai.priorityRules')}</Title>
                   <Paragraph type="secondary">
-                    Keywords that trigger higher priority (e.g. &quot;urgent&quot; → HIGH).
+                    {t('emailChannel.ai.priorityDesc')}
                   </Paragraph>
 
                   <div style={{ marginBottom: 16 }}>
@@ -579,13 +554,13 @@ export default function EmailChannelSettingsPage() {
                         }}
                         style={{ marginBottom: 4 }}
                       >
-                        &quot;{keyword}&quot; → {level}
+                        "{keyword}" → {level}
                       </Tag>
                     ))}
                   </div>
                   <Space>
                     <Input
-                      placeholder="Keyword"
+                      placeholder={t('emailChannel.placeholders.keyword')}
                       value={newPriorityKeyword}
                       onChange={(e) => setNewPriorityKeyword(e.target.value)}
                       style={{ width: 150 }}
@@ -614,7 +589,7 @@ export default function EmailChannelSettingsPage() {
                         }
                       }}
                     >
-                      Add
+                      {t('emailChannel.actions.add')}
                     </Button>
                   </Space>
 
@@ -622,7 +597,7 @@ export default function EmailChannelSettingsPage() {
 
                   <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Default Category (when AI is unsure)">
+                      <Form.Item label={t('emailChannel.ai.defaultCategory')}>
                         <Select
                           value={defaultCategory}
                           onChange={setDefaultCategory}
@@ -631,15 +606,15 @@ export default function EmailChannelSettingsPage() {
                       </Form.Item>
                     </Col>
                     <Col xs={24} md={12}>
-                      <Form.Item label="Default Priority">
+                      <Form.Item label={t('emailChannel.ai.defaultPriority')}>
                         <Select
                           value={defaultPriority}
                           onChange={setDefaultPriority}
                           options={[
-                            { value: 'LOW', label: 'Low' },
-                            { value: 'MEDIUM', label: 'Medium' },
-                            { value: 'HIGH', label: 'High' },
-                            { value: 'CRITICAL', label: 'Urgent / Critical' },
+                            { value: 'LOW', label: t('emailChannel.priorities.low') },
+                            { value: 'MEDIUM', label: t('emailChannel.priorities.medium') },
+                            { value: 'HIGH', label: t('emailChannel.priorities.high') },
+                            { value: 'CRITICAL', label: t('emailChannel.priorities.critical') },
                           ]}
                         />
                       </Form.Item>
@@ -652,7 +627,7 @@ export default function EmailChannelSettingsPage() {
               key: 'filtering',
               label: (
                 <span>
-                  <FilterOutlined /> Sender Rules
+                  <FilterOutlined /> {t('emailChannel.tabs.filtering')}
                 </span>
               ),
               children: (
@@ -662,10 +637,10 @@ export default function EmailChannelSettingsPage() {
                       <Card size="small" style={{ borderRadius: 8 }}>
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                           <div>
-                            <Text strong>Spam & Auto-Reply Filtering</Text>
+                            <Text strong>{t('emailChannel.filtering.spamTitle')}</Text>
                             <br />
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              Ignore out-of-office replies, bounce messages, and marketing emails
+                              {t('emailChannel.filtering.spamDesc')}
                             </Text>
                           </div>
                           <Switch
@@ -677,9 +652,9 @@ export default function EmailChannelSettingsPage() {
                     </Col>
                   </Row>
 
-                  <Title level={5}>Blocked Senders</Title>
+                  <Title level={5}>{t('emailChannel.filtering.blockedTitle')}</Title>
                   <Paragraph type="secondary">
-                    Emails matching these patterns will be ignored (e.g. no-reply@, noreply@).
+                    {t('emailChannel.filtering.blockedDesc')}
                   </Paragraph>
                   <div style={{ marginBottom: 12 }}>
                     {blockedSenders.map((sender) => (
@@ -696,7 +671,7 @@ export default function EmailChannelSettingsPage() {
                   </div>
                   <Space>
                     <Input
-                      placeholder="e.g. no-reply@"
+                      placeholder={t('emailChannel.placeholders.blocked')}
                       value={newBlockedSender}
                       onChange={(e) => setNewBlockedSender(e.target.value)}
                       onPressEnter={() => {
@@ -716,15 +691,15 @@ export default function EmailChannelSettingsPage() {
                         }
                       }}
                     >
-                      Block
+                      {t('emailChannel.actions.block')}
                     </Button>
                   </Space>
 
                   <Divider />
 
-                  <Title level={5}>Allowed Senders (Optional)</Title>
+                  <Title level={5}>{t('emailChannel.filtering.allowedTitle')}</Title>
                   <Paragraph type="secondary">
-                    If set, only emails from these domains/addresses will be processed. Leave empty to accept all.
+                    {t('emailChannel.filtering.allowedDesc')}
                   </Paragraph>
                   <div style={{ marginBottom: 12 }}>
                     {allowedSenders.map((sender) => (
@@ -739,12 +714,12 @@ export default function EmailChannelSettingsPage() {
                       </Tag>
                     ))}
                     {allowedSenders.length === 0 && (
-                      <Text type="secondary" italic>No allowlist — all senders accepted</Text>
+                      <Text type="secondary" italic>{t('emailChannel.filtering.noAllowlist')}</Text>
                     )}
                   </div>
                   <Space>
                     <Input
-                      placeholder="e.g. @acme.com"
+                      placeholder={t('emailChannel.placeholders.allowed')}
                       value={newAllowedSender}
                       onChange={(e) => setNewAllowedSender(e.target.value)}
                       onPressEnter={() => {
@@ -764,7 +739,7 @@ export default function EmailChannelSettingsPage() {
                         }
                       }}
                     >
-                      Allow
+                      {t('emailChannel.actions.allow')}
                     </Button>
                   </Space>
                 </div>
@@ -774,14 +749,13 @@ export default function EmailChannelSettingsPage() {
               key: 'handoff',
               label: (
                 <span>
-                  <SafetyOutlined /> Human Handoff
+                  <SafetyOutlined /> {t('emailChannel.tabs.handoff')}
                 </span>
               ),
               children: (
                 <div>
                   <Paragraph type="secondary" style={{ marginBottom: 20 }}>
-                    Emails containing these keywords will be flagged for human review instead of
-                    auto-processing (e.g. legal threats, refund demands).
+                    {t('emailChannel.handoff.desc')}
                   </Paragraph>
 
                   <div style={{ marginBottom: 16 }}>
@@ -799,7 +773,7 @@ export default function EmailChannelSettingsPage() {
                   </div>
                   <Space>
                     <Input
-                      placeholder="e.g. lawyer"
+                      placeholder={t('emailChannel.placeholders.keyword')}
                       value={newHandoffKeyword}
                       onChange={(e) => setNewHandoffKeyword(e.target.value)}
                       onPressEnter={() => {
@@ -819,15 +793,15 @@ export default function EmailChannelSettingsPage() {
                         }
                       }}
                     >
-                      Add
+                      {t('emailChannel.actions.add')}
                     </Button>
                   </Space>
 
                   <Divider />
 
-                  <Form.Item label="Handoff Team / Queue">
+                  <Form.Item label={t('emailChannel.handoff.teamLabel')}>
                     <Input
-                      placeholder="e.g. Manager Queue"
+                      placeholder={t('emailChannel.placeholders.team')}
                       value={handoffTeam}
                       onChange={(e) => setHandoffTeam(e.target.value)}
                       prefix={<TeamOutlined />}
@@ -850,7 +824,7 @@ export default function EmailChannelSettingsPage() {
             onClick={() => void handleSave()}
             loading={saving}
           >
-            Save Email Channel Settings
+            {t('emailChannel.actions.save')}
           </Button>
         </div>
       </Card>

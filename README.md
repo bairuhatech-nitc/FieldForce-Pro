@@ -3,6 +3,8 @@
 A multi-tenant B2B SaaS Field Service Management 
 platform built with NestJS, React, PostgreSQL and Redis.
 
+## View [changelogs & documentation](docs/) 👈
+
 ## Prerequisites
 - Docker Desktop installed
 - Git installed
