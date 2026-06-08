@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Table, Space, Tag, Tooltip, Select, Switch } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -75,14 +75,14 @@ export default function PricebookListPage() {
       title: t('pricebook.columns.name'),
       dataIndex: 'name',
       key: 'name',
-      render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
+      render: (name: string, record: any) => <Link to={`/pricebook/${record.id}`}><span style={{ fontWeight: 500 }}>{name}</span></Link>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
       title: t('pricebook.columns.tier'),
       dataIndex: 'tier',
       key: 'tier',
-      render: (tier: string) => (
+      render: (tier: string, record: any) => (
         <Tag color={TIER_COLORS[tier] || 'default'}>
           {tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : '-'}
         </Tag>
@@ -92,14 +92,14 @@ export default function PricebookListPage() {
       title: t('pricebook.columns.price'),
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      render: (price: number, record: any) => `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       sorter: (a, b) => a.price - b.price,
     },
     {
       title: t('pricebook.columns.description'),
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => (
+      render: (desc: string, record: any) => (
         <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {desc || <span style={{ opacity: 0.5 }}>-</span>}
         </div>
@@ -125,11 +125,6 @@ export default function PricebookListPage() {
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <PermissionGuard permission="pricebook:read">
-            <Tooltip title={t('common.view')}>
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/pricebook/${record.id}`)} />
-            </Tooltip>
-          </PermissionGuard>
           <PermissionGuard permission="pricebook:update">
             <Tooltip title={t('common.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/pricebook/${record.id}/edit`)} />

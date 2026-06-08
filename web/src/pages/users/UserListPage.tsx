@@ -134,7 +134,7 @@ export default function UserListPage() {
       title: t('users.lastLogin'),
       dataIndex: 'last_login_at',
       key: 'last_login_at',
-      render: (val: string) => formatDateTime(val),
+      render: (val: string, record: any) => formatDateTime(val),
     },
     {
       title: t('common.actions'),

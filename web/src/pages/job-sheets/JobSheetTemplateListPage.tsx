@@ -51,27 +51,27 @@ export default function JobSheetTemplateListPage() {
       title: t('jobSheetTemplates.columns.name'),
       dataIndex: 'name',
       key: 'name',
-      render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
+      render: (name: string, record: any) => <span style={{ fontWeight: 500 }}>{name}</span>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
       title: t('jobSheetTemplates.columns.category'),
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
+      render: (category: string, record: any) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
       title: t('jobSheetTemplates.columns.active'),
       dataIndex: 'is_active',
       key: 'is_active',
-      render: (active: boolean) =>
+      render: (active: boolean, record: any) =>
         active ? <Tag color="green">{t('jobSheetTemplates.status.active')}</Tag> : <Tag color="red">{t('jobSheetTemplates.status.inactive')}</Tag>,
     },
     {
       title: t('jobSheetTemplates.columns.created'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => formatDateTime(date),
+      render: (date: string, record: any) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
@@ -81,11 +81,6 @@ export default function JobSheetTemplateListPage() {
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <PermissionGuard permission="job-sheets:read">
-            <Tooltip title={t('common.view')}>
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/job-sheets/templates/${record.id}`)} />
-            </Tooltip>
-          </PermissionGuard>
           <PermissionGuard permission="job-sheets:update">
             <Tooltip title={t('common.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/job-sheets/templates/${record.id}/edit`)} />

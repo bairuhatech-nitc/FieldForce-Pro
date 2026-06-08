@@ -171,14 +171,6 @@ export class PaymentsController {
     return DataResponseDto.success(payments, 'Payments fetched successfully');
   }
 
-  @Get(':id')
-  @Permissions('payments:read')
-  @ApiOperation({ summary: 'Get payment by ID' })
-  async findOne(@Param('id') id: string, @TenantId() tenantId: string) {
-    const payment = await this.paymentsService.findById(id, tenantId);
-    return DataResponseDto.success(payment);
-  }
-
   // ── Pending verification endpoints ───────────────────────────────────────
 
   @Get('pending-verification')
@@ -188,6 +180,16 @@ export class PaymentsController {
     const payments = await this.paymentsService.getPendingVerification(tenantId);
     return DataResponseDto.success(payments);
   }
+
+  @Get(':id')
+  @Permissions('payments:read')
+  @ApiOperation({ summary: 'Get payment by ID' })
+  async findOne(@Param('id') id: string, @TenantId() tenantId: string) {
+    const payment = await this.paymentsService.findById(id, tenantId);
+    return DataResponseDto.success(payment);
+  }
+
+
 
   @Patch(':id/confirm')
   @Permissions('payments:update')

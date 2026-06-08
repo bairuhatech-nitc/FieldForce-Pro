@@ -79,7 +79,7 @@ export default function AuditLogListPage() {
       title: t('auditLog.columns.action'),
       dataIndex: 'action',
       key: 'action',
-      render: (action: string) => (
+      render: (action: string, record: any) => (
         <Tag color={ACTION_COLORS[action] || 'default'}>
           {action ? action.toUpperCase() : '-'}
         </Tag>
@@ -89,13 +89,13 @@ export default function AuditLogListPage() {
       title: t('auditLog.columns.entityType'),
       dataIndex: 'entity_type',
       key: 'entity_type',
-      render: (type: string) => <Tag>{type}</Tag>,
+      render: (type: string, record: any) => <Tag>{type}</Tag>,
     },
     {
       title: t('auditLog.columns.entityId'),
       dataIndex: 'entity_id',
       key: 'entity_id',
-      render: (id: string) => (
+      render: (id: string, record: any) => (
         <code style={{ fontSize: '11px' }}>
           {id ? id.substring(0, 8) + '...' : '-'}
         </code>
@@ -105,13 +105,13 @@ export default function AuditLogListPage() {
       title: t('auditLog.columns.ipAddress'),
       dataIndex: 'ip_address',
       key: 'ip_address',
-      render: (ip: string) => <code style={{ fontSize: '11px' }}>{ip || '-'}</code>,
+      render: (ip: string, record: any) => <code style={{ fontSize: '11px' }}>{ip || '-'}</code>,
     },
     {
       title: t('auditLog.columns.timestamp'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => formatDateTime(date),
+      render: (date: string, record: any) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
@@ -121,11 +121,6 @@ export default function AuditLogListPage() {
       width: 80,
       render: (_, record) => (
         <Space size="small">
-          <PermissionGuard permission="audit-logs:read">
-            <Tooltip title={t('auditLog.viewDetails')}>
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/security/audit-logs/${record.id}`)} />
-            </Tooltip>
-          </PermissionGuard>
         </Space>
       ),
     },
