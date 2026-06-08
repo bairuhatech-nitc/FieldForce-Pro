@@ -30,6 +30,7 @@ import { User } from '../USERS/users.entity';
 import { Invoice } from '../INVOICES/invoices.entity';
 import { InvoiceLineItem } from '../INVOICE_LINE_ITEMS/invoice_line_items.entity';
 import { SlaService } from '../SLA_MODULE/sla.service';
+import { WhatsAppWebJsService } from '../WHATSAPP_CHANNELS/whatsapp_webjs.service';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ['sent', 'pending_approval'],
@@ -63,6 +64,7 @@ export class EstimatesService {
     @Optional() private readonly emailService: EmailService,
     @Inject(KEYNAMES.USERS) @Optional() private readonly userRepository: typeof User,
     private readonly slaService: SlaService,
+    private readonly whatsappWebJsService: WhatsAppWebJsService,
   ) {}
 
   async findAllPaginated(
@@ -71,11 +73,16 @@ export class EstimatesService {
     status?: string,
     excludeStatus?: string,
     createdBy?: string,
+    isTemplate?: boolean,
   ): Promise<PageDto<Estimate>> {
     const where: Record<string, unknown> = {
       tenant_id: tenantId,
       is_deleted: false,
     };
+
+    if (isTemplate !== undefined) {
+      where.is_template = isTemplate;
+    }
 
     // Filter by status (supports comma-separated list)
     if (status) {
@@ -238,9 +245,13 @@ export class EstimatesService {
     return new PageDto(rows, meta);
   }
 
-  async findAll(tenantId: string): Promise<Estimate[]> {
+  async findAll(tenantId: string, isTemplate?: boolean): Promise<Estimate[]> {
+    const where: Record<string, unknown> = { tenant_id: tenantId, is_deleted: false };
+    if (isTemplate !== undefined) {
+      where.is_template = isTemplate;
+    }
     return this.estimateRepository.findAll({
-      where: { tenant_id: tenantId, is_deleted: false },
+      where,
       include: [
         { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
       ],
@@ -296,6 +307,82 @@ export class EstimatesService {
     }
 
     return estimate;
+  }
+
+  async createFromTemplate(templateId: string, tenantId: string, userId?: string, updates?: Partial<CreateEstimateDto>): Promise<Estimate> {
+    const template = await this.findById(templateId, tenantId);
+    if (!template.is_template) {
+      throw new BadRequestException('Source estimate is not a template');
+    }
+
+    // Prepare new estimate data from template
+    const newDto: CreateEstimateDto = {
+      ...updates,
+      subtotal: template.subtotal,
+      tax: template.tax,
+      discount: template.discount,
+      total: template.total,
+      notes: template.notes,
+      custom_fields: template.custom_fields,
+      is_template: false,
+      status: 'draft',
+    };
+
+    const estimate = await this.create(tenantId, newDto, userId);
+
+    // Copy line items if they exist
+    if (template.line_items && template.line_items.length > 0) {
+      const EstimateLineItemModel = this.estimateRepository.sequelize!.model('EstimateLineItem');
+      await Promise.all(
+        template.line_items.map((item) =>
+          EstimateLineItemModel.create({
+            tenant_id: tenantId,
+            estimate_id: estimate.id,
+            type: item.type,
+            name: item.name,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            tax_rate: item.tax_rate,
+            discount: item.discount,
+            total: item.total,
+            sort_order: item.sort_order,
+          })
+        )
+      );
+    }
+
+    return this.findById(estimate.id, tenantId);
+  }
+
+  async sendWhatsApp(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    
+    if (!estimate.contact || !estimate.contact.phone) {
+      throw new BadRequestException('Estimate does not have a contact with a phone number');
+    }
+
+    // Ensure we have a public token
+    let linkEstimate = estimate;
+    if (!linkEstimate.public_token) {
+      linkEstimate = await this.generatePublicLink(id, tenantId);
+    }
+
+    // We assume the frontend domain is in process.env.FRONTEND_URL
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const magicLink = `${frontendUrl}/estimates/view/${linkEstimate.public_token}`;
+    
+    const messageBody = `Hello ${estimate.contact.first_name || 'there'}, your estimate ${estimate.estimate_number || ''} is ready for review. You can view and approve it here: ${magicLink}`;
+
+    try {
+      await this.whatsappWebJsService.sendMessage(tenantId, estimate.contact.phone, messageBody);
+      this.logger.log(`WhatsApp message sent for Estimate ${id}`);
+    } catch (error) {
+      this.logger.error(`Failed to send WhatsApp message for Estimate ${id}: ${(error as Error).message}`);
+      throw new BadRequestException('Failed to send WhatsApp message: ' + (error as Error).message);
+    }
+
+    return linkEstimate;
   }
 
   private async autoStartApprovalWorkflow(tenantId: string, estimate: Estimate): Promise<void> {

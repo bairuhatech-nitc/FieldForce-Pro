@@ -1,6 +1,6 @@
 # AI Chatbot Evaluation Results
 
-Corpus: 1002 chunks. Model: gemini-2.5-flash.
+Corpus: 1002 chunks. Model: gemini-2.0-flash.
 
 
 ---

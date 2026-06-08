@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const PRIMARY_MODEL = 'gemini-2.5-flash';
+const PRIMARY_MODEL = 'gemini-2.0-flash';
 const FALLBACK_MODEL = 'gemini-1.5-flash';
 
 /**

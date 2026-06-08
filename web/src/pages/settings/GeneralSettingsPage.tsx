@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/auth.store';
+import { useUiStore } from '@/store/ui.store';
 import { useTenant, useUpdateTenant } from '@/hooks/use-tenants';
 import PageHeader from '@/components/common/PageHeader';
 import { useEffect, useMemo } from 'react';
@@ -91,6 +92,13 @@ export default function GeneralSettingsPage() {
               render={({ field }) => (
                 <Switch checked={field.value} onChange={field.onChange} />
               )}
+            />
+          </Form.Item>
+
+          <Form.Item label="AI Chatbot Enabled">
+            <Switch
+              checked={useUiStore((s) => s.chatbotEnabled)}
+              onChange={(checked) => useUiStore.getState().setChatbotEnabled(checked)}
             />
           </Form.Item>
 

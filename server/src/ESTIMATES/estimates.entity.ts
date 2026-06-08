@@ -216,4 +216,17 @@ export class Estimate extends Model {
     defaultValue: DataType.NOW,
   })
   updated_at: Date;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  is_template: boolean;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
+  template_name: string;
 }

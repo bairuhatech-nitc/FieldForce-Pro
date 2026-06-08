@@ -516,6 +516,16 @@ export class StartupMigrationsService implements OnApplicationBootstrap {
         sql: `ALTER TABLE estimates ALTER COLUMN status SET DEFAULT 'draft';`,
       },
 
+      // estimates: support templates
+      {
+        name: 'estimates: add is_template column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS is_template BOOLEAN NOT NULL DEFAULT FALSE;`,
+      },
+      {
+        name: 'estimates: add template_name column',
+        sql: `ALTER TABLE estimates ADD COLUMN IF NOT EXISTS template_name VARCHAR(255);`,
+      },
+
       // invoices: add estimate_id so we can track which estimate generated an invoice
       {
         name: 'invoices: add estimate_id column',

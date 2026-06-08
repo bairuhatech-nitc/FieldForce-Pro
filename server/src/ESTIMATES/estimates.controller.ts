@@ -54,6 +54,10 @@ export class EstimatePageOptionsDto extends PageOptionsDto {
   @IsString()
   @IsOptional()
   readonly createdBy?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by is_template flag' })
+  @IsOptional()
+  readonly isTemplate?: boolean;
 }
 
 @ApiTags('Estimates')
@@ -73,7 +77,7 @@ export class EstimatesController {
     @TenantId() tenantId: string,
     @Query() query: EstimatePageOptionsDto,
   ) {
-    const result = await this.estimatesService.findAllPaginated(tenantId, query, query.status, query.excludeStatus, query.createdBy);
+    const result = await this.estimatesService.findAllPaginated(tenantId, query, query.status, query.excludeStatus, query.createdBy, query.isTemplate);
     return DataResponseDto.success(result.data, 'Estimates fetched successfully', {
       ...result.meta,
     } as unknown as Record<string, unknown>);
@@ -90,8 +94,9 @@ export class EstimatesController {
   @Get('all')
   @Permissions('estimates:read')
   @ApiOperation({ summary: 'Get all estimates (non-paginated)' })
-  async findAllNonPaginated(@TenantId() tenantId: string) {
-    const estimates = await this.estimatesService.findAll(tenantId);
+  async findAllNonPaginated(@TenantId() tenantId: string, @Query('isTemplate') isTemplate?: string) {
+    const isTemplateBool = isTemplate ? isTemplate === 'true' : undefined;
+    const estimates = await this.estimatesService.findAll(tenantId, isTemplateBool);
     return DataResponseDto.success(estimates, 'Estimates fetched successfully');
   }
 
@@ -313,6 +318,27 @@ export class EstimatesController {
   async sendToCustomer(@Param('id') id: string, @TenantId() tenantId: string) {
     const estimate = await this.estimatesService.sendToCustomer(id, tenantId);
     return DataResponseDto.success(estimate, 'Estimate sent to customer successfully');
+  }
+
+  @Post(':id/send-whatsapp')
+  @Permissions('estimates:update')
+  @ApiOperation({ summary: 'Send estimate to customer via WhatsApp' })
+  async sendWhatsApp(@Param('id') id: string, @TenantId() tenantId: string) {
+    const estimate = await this.estimatesService.sendWhatsApp(id, tenantId);
+    return DataResponseDto.success(estimate, 'Estimate sent via WhatsApp successfully');
+  }
+
+  @Post('create-from-template/:templateId')
+  @Permissions('estimates:create')
+  @ApiOperation({ summary: 'Create estimate from a template' })
+  async createFromTemplate(
+    @Param('templateId') templateId: string,
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+    @Body() dto: Partial<CreateEstimateDto>,
+  ) {
+    const estimate = await this.estimatesService.createFromTemplate(templateId, tenantId, userId, dto);
+    return DataResponseDto.created(estimate, 'Estimate created from template successfully');
   }
 
   @Post(':id/generate-link')

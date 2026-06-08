@@ -259,6 +259,8 @@ export default function EstimateBuilderPage() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [itemSource,   setItemSource]   = useState<ItemSource>('service');
   const [isSaving,     setIsSaving]     = useState(false);
+  const [templateModalVisible, setTemplateModalVisible] = useState(false);
+  const [templateName, setTemplateName] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -447,6 +449,7 @@ export default function EstimateBuilderPage() {
             terms_and_conditions: (values.terms_and_conditions as string) || '',
             location_id:          (values.location_id as string) || '',
           },
+          is_template: false,
         };
 
         let estimateId: string | undefined = id;
@@ -500,6 +503,75 @@ export default function EstimateBuilderPage() {
      updateEstimate, createEstimate, sendEstimate, createLineItem, navigate, t],
   );
 
+  const doSaveAsTemplate = async () => {
+    if (!templateName) {
+      message.error('Template name is required');
+      return;
+    }
+
+    let values: Record<string, unknown>;
+    try { values = await form.validateFields(); } catch { return; }
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        contact_id:     values.contact_id as string,
+        request_id:     (serviceRequestId || estimate?.request_id) ?? undefined,
+        work_order_id:  (searchParams.get('work_order_id') || estimate?.work_order_id) ?? undefined,
+        estimate_type:  isEdit ? undefined : estimateTypeParam,
+        expiry_date:    values.expiry_date ? (values.expiry_date as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
+        scheduled_start: values.scheduled_start ? (values.scheduled_start as dayjs.Dayjs).toISOString() : undefined,
+        notes:          (values.notes as string) || undefined,
+        subtotal, tax: totalTax, discount: totalDiscount, total: grandTotal,
+        custom_fields: {
+          title:                (values.title as string) || '',
+          priority:             (values.priority as string) || '',
+          terms_and_conditions: (values.terms_and_conditions as string) || '',
+          location_id:          (values.location_id as string) || '',
+        },
+        is_template: true,
+        template_name: templateName,
+      };
+
+      const res = await createEstimate.mutateAsync(payload);
+      const estimateId = (res.data?.data as { id?: string } | undefined)?.id;
+
+      if (!estimateId) { message.error(t('estimateBuilder.errors.noId')); return; }
+
+      for (const item of lineItems) {
+        const qty      = Number(item.quantity)   || 1;
+        const price    = Number(item.unit_price) || 0;
+        const discType = item.discount_type || 'fixed';
+        const discVal  = Number(item.discount)   || 0;
+        const discAmt  = discType === 'percentage' ? (qty * price) * (discVal / 100) : discVal;
+        const taxRate  = Number(item.tax_rate)   || 0;
+        const lineBase = qty * price - discAmt;
+        await createLineItem.mutateAsync({
+          estimate_id: estimateId,
+          type:        (String(item.type || 'service')) as LineItemType,
+          name:        String(item.name || ''),
+          description: item.description ?? undefined,
+          quantity:    qty,
+          unit:        item.unit,
+          unit_price:  price,
+          tax_rate:    taxRate,
+          discount_type: discType,
+          discount:    discVal,
+          total:       lineBase + lineBase * (taxRate / 100),
+          sort_order:  item.sort_order || 0,
+        });
+      }
+
+      message.success('Estimate saved as template');
+      setTemplateModalVisible(false);
+      navigate('/estimates?tab=templates');
+    } catch (err: unknown) {
+      message.error((err as { message?: string })?.message || t('estimateBuilder.errors.failedToSave'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isEdit && isLoading) {
     return <div style={{ textAlign: 'center', padding: 100 }}><Spin size="large" /></div>;
   }
@@ -521,6 +593,9 @@ export default function EstimateBuilderPage() {
         extra={
           <Space>
             <Button onClick={() => navigate('/estimates')}>{t('estimateBuilder.cancel')}</Button>
+            <Button onClick={() => setTemplateModalVisible(true)} loading={isSaving}>
+              Save as Template
+            </Button>
             <Button icon={<SaveOutlined />} onClick={() => doSave(false)} loading={isSaving}>
               {t('estimateBuilder.saveDraft')}
             </Button>
@@ -958,6 +1033,23 @@ export default function EstimateBuilderPage() {
             </Col>
           </Row>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Save as Template"
+        open={templateModalVisible}
+        onOk={doSaveAsTemplate}
+        onCancel={() => setTemplateModalVisible(false)}
+        confirmLoading={isSaving}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text>Please enter a name for this template:</Text>
+        </div>
+        <Input
+          placeholder="e.g., Standard Installation"
+          value={templateName}
+          onChange={(e) => setTemplateName(e.target.value)}
+        />
       </Modal>
     </div>
   );

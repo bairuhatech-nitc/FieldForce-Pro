@@ -10,7 +10,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
 
-const PRIMARY_MODEL = 'gemini-2.5-flash';
+const PRIMARY_MODEL = 'gemini-2.0-flash';
 const MAX_CONTEXT_CHUNKS = 24;
 const MAX_TROUBLESHOOTING_CHUNKS = 5;
 const MAX_CONCEPT_CHUNKS = 6;
@@ -87,142 +87,142 @@ CONCEPTUAL QUERIES ("What is X?"):
 4. GENERAL DOCS & UI MAPS: search <fsm_general_docs> for UI layouts, workflows, roles.
 `.trim();
 
-const STOP_WORDS = new Set(['what','is','are','how','do','does','the','a','an','to','for','in','on','at','of','and','or','can','i','me','my','us','you','we','they','show','tell','explain','about','find','get','see','want','need','where','when','use','using','with','this','that','there','here','from','into','it','be','have','add','new']);
+const STOP_WORDS = new Set(['what', 'is', 'are', 'how', 'do', 'does', 'the', 'a', 'an', 'to', 'for', 'in', 'on', 'at', 'of', 'and', 'or', 'can', 'i', 'me', 'my', 'us', 'you', 'we', 'they', 'show', 'tell', 'explain', 'about', 'find', 'get', 'see', 'want', 'need', 'where', 'when', 'use', 'using', 'with', 'this', 'that', 'there', 'here', 'from', 'into', 'it', 'be', 'have', 'add', 'new']);
 
 const corpus = [];
 const searchableTerms = [];
 
-function tokenize(s){return s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(t=>t.length>=3);}
-function addChunk(source,title,text){
-  const titleTokens=tokenize(title).filter(t=>!STOP_WORDS.has(t));
-  const bodyTokens=new Set(tokenize(text));
-  corpus.push({source,title,text:text.trim(),titleTokens,bodyTokens});
+function tokenize(s) { return s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(t => t.length >= 3); }
+function addChunk(source, title, text) {
+  const titleTokens = tokenize(title).filter(t => !STOP_WORDS.has(t));
+  const bodyTokens = new Set(tokenize(text));
+  corpus.push({ source, title, text: text.trim(), titleTokens, bodyTokens });
 }
-function readJson(p){if(!fs.existsSync(p))return[];try{return JSON.parse(fs.readFileSync(p,'utf-8'));}catch(e){console.error('parse',p,e.message);return[];}}
-function chunkMarkdownFile(filePath){
-  let content;try{content=fs.readFileSync(filePath,'utf-8');}catch(e){return;}
-  const base=path.basename(filePath).toLowerCase();
-  const isGeneral=base.includes('glossary')||base.includes('faq')||base.includes('index')||base.includes('overview')||base.startsWith('ui-map');
-  const source=isGeneral?'general':'capability';
-  const h1=content.match(/^#\s+(.+)$/m);
-  const rawTitle=h1?h1[1].trim():path.basename(filePath,'.md');
-  const docTitle=rawTitle.replace(/^(WF|UI)-[A-Z0-9-]+\s*[—–-]\s*/i,'').trim()||rawTitle;
-  const parts=content.split(/^##\s+/m);
-  for(let i=0;i<parts.length;i++){
-    const raw=parts[i].trim();if(!raw)continue;
-    const sectionTitle=i===0?docTitle:raw.split('\n')[0].trim();
-    const text=i===0?raw.replace(/^#\s+.+$/m,'').trim():`## ${raw}`;
-    if(!text)continue;
-    addChunk(source,`${docTitle} ${sectionTitle}`,`[${docTitle}]\n${text}`);
+function readJson(p) { if (!fs.existsSync(p)) return []; try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch (e) { console.error('parse', p, e.message); return []; } }
+function chunkMarkdownFile(filePath) {
+  let content; try { content = fs.readFileSync(filePath, 'utf-8'); } catch (e) { return; }
+  const base = path.basename(filePath).toLowerCase();
+  const isGeneral = base.includes('glossary') || base.includes('faq') || base.includes('index') || base.includes('overview') || base.startsWith('ui-map');
+  const source = isGeneral ? 'general' : 'capability';
+  const h1 = content.match(/^#\s+(.+)$/m);
+  const rawTitle = h1 ? h1[1].trim() : path.basename(filePath, '.md');
+  const docTitle = rawTitle.replace(/^(WF|UI)-[A-Z0-9-]+\s*[—–-]\s*/i, '').trim() || rawTitle;
+  const parts = content.split(/^##\s+/m);
+  for (let i = 0; i < parts.length; i++) {
+    const raw = parts[i].trim(); if (!raw) continue;
+    const sectionTitle = i === 0 ? docTitle : raw.split('\n')[0].trim();
+    const text = i === 0 ? raw.replace(/^#\s+.+$/m, '').trim() : `## ${raw}`;
+    if (!text) continue;
+    addChunk(source, `${docTitle} ${sectionTitle}`, `[${docTitle}]\n${text}`);
   }
 }
-function readMarkdownChunks(dir){
-  if(!fs.existsSync(dir))return;
-  const walk=d=>{for(const f of fs.readdirSync(d)){const full=path.join(d,f);const st=fs.statSync(full);if(st.isDirectory())walk(full);else if(f.toLowerCase().endsWith('.md')&&f.toLowerCase()!=='readme.md')chunkMarkdownFile(full);}};
+function readMarkdownChunks(dir) {
+  if (!fs.existsSync(dir)) return;
+  const walk = d => { for (const f of fs.readdirSync(d)) { const full = path.join(d, f); const st = fs.statSync(full); if (st.isDirectory()) walk(full); else if (f.toLowerCase().endsWith('.md') && f.toLowerCase() !== 'readme.md') chunkMarkdownFile(full); } };
   walk(dir);
 }
-function buildCorpus(){
-  const docsDir=path.join(process.cwd(),'docs');
-  for(const c of readJson(path.join(docsDir,'fsm-concepts.json'))){
-    const related=Array.isArray(c.related_workflows)?c.related_workflows.join(', '):'';
-    const text=`${c.entity_name}: ${c.definition??''} ${c.business_value??''}`+(related?`\nRelated actions: ${related}`:'');
-    addChunk('concept',c.entity_name??'',text);
+function buildCorpus() {
+  const docsDir = path.join(process.cwd(), 'docs');
+  for (const c of readJson(path.join(docsDir, 'fsm-concepts.json'))) {
+    const related = Array.isArray(c.related_workflows) ? c.related_workflows.join(', ') : '';
+    const text = `${c.entity_name}: ${c.definition ?? ''} ${c.business_value ?? ''}` + (related ? `\nRelated actions: ${related}` : '');
+    addChunk('concept', c.entity_name ?? '', text);
   }
-  for(const t of readJson(path.join(docsDir,'fsm-troubleshooting.json'))){
-    const symptoms=Array.isArray(t.user_symptoms)?t.user_symptoms.join('; '):'';
-    const text=`Error: ${t.error_state}\nSymptoms: ${symptoms}\nCause: ${t.root_cause??''}\nResolution: ${t.resolution??''}`;
-    addChunk('troubleshooting',`${t.error_state} ${symptoms}`,text);
+  for (const t of readJson(path.join(docsDir, 'fsm-troubleshooting.json'))) {
+    const symptoms = Array.isArray(t.user_symptoms) ? t.user_symptoms.join('; ') : '';
+    const text = `Error: ${t.error_state}\nSymptoms: ${symptoms}\nCause: ${t.root_cause ?? ''}\nResolution: ${t.resolution ?? ''}`;
+    addChunk('troubleshooting', `${t.error_state} ${symptoms}`, text);
   }
-  readMarkdownChunks(path.join(docsDir,'fsm-knowledge'));
+  readMarkdownChunks(path.join(docsDir, 'fsm-knowledge'));
 }
-function buildSearchIndex(){const seen=new Set();for(const ch of corpus){const c=ch.title.trim();if(!c||seen.has(c))continue;seen.add(c);searchableTerms.push({tokens:ch.titleTokens,canonical:c});}}
-function levenshtein(a,b){const m=a.length,n=b.length;const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);return dp[m][n];}
-function getQueryHint(msg){
-  if(!searchableTerms.length)return null;
-  const q=tokenize(msg).filter(t=>!STOP_WORDS.has(t));if(!q.length)return null;
-  let best='',bestScore=-1;
-  for(const{tokens,canonical}of searchableTerms){if(!tokens.length)continue;let mc=0;for(const qt of q){for(const tt of tokens){const th=qt.length<=5?1:2;if(qt===tt||levenshtein(qt,tt)<=th){mc++;break;}}}const score=mc/tokens.length;if(score>0.5&&score>bestScore){bestScore=score;best=canonical;}}
-  return best||null;
+function buildSearchIndex() { const seen = new Set(); for (const ch of corpus) { const c = ch.title.trim(); if (!c || seen.has(c)) continue; seen.add(c); searchableTerms.push({ tokens: ch.titleTokens, canonical: c }); } }
+function levenshtein(a, b) { const m = a.length, n = b.length; const dp = Array.from({ length: m + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)); for (let i = 1; i <= m; i++)for (let j = 1; j <= n; j++)dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]); return dp[m][n]; }
+function getQueryHint(msg) {
+  if (!searchableTerms.length) return null;
+  const q = tokenize(msg).filter(t => !STOP_WORDS.has(t)); if (!q.length) return null;
+  let best = '', bestScore = -1;
+  for (const { tokens, canonical } of searchableTerms) { if (!tokens.length) continue; let mc = 0; for (const qt of q) { for (const tt of tokens) { const th = qt.length <= 5 ? 1 : 2; if (qt === tt || levenshtein(qt, tt) <= th) { mc++; break; } } } const score = mc / tokens.length; if (score > 0.5 && score > bestScore) { bestScore = score; best = canonical; } }
+  return best || null;
 }
-function scoreChunk(q,ch){let ts=0;for(const qt of q){for(const tt of ch.titleTokens){const th=qt.length<=5?1:2;if(qt===tt||levenshtein(qt,tt)<=th){ts++;break;}}}let bs=0;for(const qt of q)if(ch.bodyTokens.has(qt))bs++;return ts*3+bs;}
-function retrieve(query){
-  const q=tokenize(query).filter(t=>!STOP_WORDS.has(t));if(!q.length)return[];
-  const scored=corpus.map(ch=>({chunk:ch,score:scoreChunk(q,ch)})).filter(s=>s.score>0).sort((a,b)=>b.score-a.score);
-  if(!scored.length)return[];
-  const picked=[];const taken=new Set();let tc=0,cc=0;
-  for(const{chunk}of scored){if(picked.length>=MAX_CONTEXT_CHUNKS)break;if(taken.has(chunk))continue;if(chunk.source==='troubleshooting'&&tc>=MAX_TROUBLESHOOTING_CHUNKS)continue;if(chunk.source==='concept'&&cc>=MAX_CONCEPT_CHUNKS)continue;picked.push(chunk);taken.add(chunk);if(chunk.source==='troubleshooting')tc++;if(chunk.source==='concept')cc++;}
+function scoreChunk(q, ch) { let ts = 0; for (const qt of q) { for (const tt of ch.titleTokens) { const th = qt.length <= 5 ? 1 : 2; if (qt === tt || levenshtein(qt, tt) <= th) { ts++; break; } } } let bs = 0; for (const qt of q) if (ch.bodyTokens.has(qt)) bs++; return ts * 3 + bs; }
+function retrieve(query) {
+  const q = tokenize(query).filter(t => !STOP_WORDS.has(t)); if (!q.length) return [];
+  const scored = corpus.map(ch => ({ chunk: ch, score: scoreChunk(q, ch) })).filter(s => s.score > 0).sort((a, b) => b.score - a.score);
+  if (!scored.length) return [];
+  const picked = []; const taken = new Set(); let tc = 0, cc = 0;
+  for (const { chunk } of scored) { if (picked.length >= MAX_CONTEXT_CHUNKS) break; if (taken.has(chunk)) continue; if (chunk.source === 'troubleshooting' && tc >= MAX_TROUBLESHOOTING_CHUNKS) continue; if (chunk.source === 'concept' && cc >= MAX_CONCEPT_CHUNKS) continue; picked.push(chunk); taken.add(chunk); if (chunk.source === 'troubleshooting') tc++; if (chunk.source === 'concept') cc++; }
   return picked;
 }
-function buildExpertInstruction(query){
-  const sel=retrieve(query);
-  const join=cs=>cs.map(c=>c.text).join('\n\n').trim()||'(none relevant to this question)';
+function buildExpertInstruction(query) {
+  const sel = retrieve(query);
+  const join = cs => cs.map(c => c.text).join('\n\n').trim() || '(none relevant to this question)';
   return EXPERT_SYSTEM_PROMPT_BASE
-    .replace('[INJECT JSON DATA HERE]',()=>join(sel.filter(c=>c.source==='capability')))
-    .replace('[INJECT TROUBLESHOOTING DATA HERE]',()=>join(sel.filter(c=>c.source==='troubleshooting')))
-    .replace('[INJECT CONCEPTUAL JSON HERE]',()=>join(sel.filter(c=>c.source==='concept')))
-    .replace('[INJECT GENERAL DOCS HERE]',()=>join(sel.filter(c=>c.source==='general')));
+    .replace('[INJECT JSON DATA HERE]', () => join(sel.filter(c => c.source === 'capability')))
+    .replace('[INJECT TROUBLESHOOTING DATA HERE]', () => join(sel.filter(c => c.source === 'troubleshooting')))
+    .replace('[INJECT CONCEPTUAL JSON HERE]', () => join(sel.filter(c => c.source === 'concept')))
+    .replace('[INJECT GENERAL DOCS HERE]', () => join(sel.filter(c => c.source === 'general')));
 }
-function scrubResponse(rawText){
-  let text=rawText;
-  text=text.replace(/<thought>[\s\S]*?<\/thought>/gi,'');
-  text=text.replace(/^[\s\S]*?<\/thought>/i,'');
-  text=text.replace(/^[\s\S]*?\bsearch strategy\b[^\n]*\n+/i,'');
-  text=text.replace(/^\s*\d+\.\s*Analyze User Input[\s\S]*?(?=\n\s*\n|\n\d+\.\s)/i,'');
-  text=text.replace(/<\/?(thought|step_list|steps|answer|response|final)>/gi,'');
-  text=text.replace(/```[a-z_]*\n?/gi,'').replace(/```/g,'');
-  text=text.replace(/\\"/g,'"');
-  text=text.replace(/\b(WF|UI)-[A-Z0-9-]+(\.md)?\b\s*[—–-]?\s*/gi,'');
-  text=text.replace(/\b[\w/-]+\.(md|json|txt)\b/gi,'');
-  text=text.replace(/workflows\//gi,'');
-  text=text.replace(/See\s+\S+\.(md|json|txt)/gi,'');
-  text=text.replace(/--- FILE:.*?---/gi,'');
-  const apiEndpoints=[];
-  text=text.replace(/\b(POST|GET|PUT|PATCH|DELETE)\s+(\/[a-z0-9][a-z0-9/_:{}.-]*)/gi,(m)=>{apiEndpoints.push(m);return ` API${apiEndpoints.length-1} `;});
-  text=text.replace(/\b(?:navigate|go|head)\s+to\s+`?\/[a-z0-9][a-z0-9/_:.-]*`?\s*\.?/gi,'');
-  text=text.replace(/`\/[a-z0-9][a-z0-9/_:.-]*`/gi,'');
-  text=text.replace(/\/[a-z0-9][a-z0-9_.-]*\/[a-z0-9_.:?=&{}-]+/gi,'');
-  text=text.replace(/\*\*\s*\*\*/g,'');
-  text=text.replace(/`\s*`/g,'');
-  text=text.replace(/\bAPI(\d+)\b/g,(_,i)=>apiEndpoints[+i]??'');
-  text=text.replace(/[ \t]{2,}/g,' ');
+function scrubResponse(rawText) {
+  let text = rawText;
+  text = text.replace(/<thought>[\s\S]*?<\/thought>/gi, '');
+  text = text.replace(/^[\s\S]*?<\/thought>/i, '');
+  text = text.replace(/^[\s\S]*?\bsearch strategy\b[^\n]*\n+/i, '');
+  text = text.replace(/^\s*\d+\.\s*Analyze User Input[\s\S]*?(?=\n\s*\n|\n\d+\.\s)/i, '');
+  text = text.replace(/<\/?(thought|step_list|steps|answer|response|final)>/gi, '');
+  text = text.replace(/```[a-z_]*\n?/gi, '').replace(/```/g, '');
+  text = text.replace(/\\"/g, '"');
+  text = text.replace(/\b(WF|UI)-[A-Z0-9-]+(\.md)?\b\s*[—–-]?\s*/gi, '');
+  text = text.replace(/\b[\w/-]+\.(md|json|txt)\b/gi, '');
+  text = text.replace(/workflows\//gi, '');
+  text = text.replace(/See\s+\S+\.(md|json|txt)/gi, '');
+  text = text.replace(/--- FILE:.*?---/gi, '');
+  const apiEndpoints = [];
+  text = text.replace(/\b(POST|GET|PUT|PATCH|DELETE)\s+(\/[a-z0-9][a-z0-9/_:{}.-]*)/gi, (m) => { apiEndpoints.push(m); return ` API${apiEndpoints.length - 1} `; });
+  text = text.replace(/\b(?:navigate|go|head)\s+to\s+`?\/[a-z0-9][a-z0-9/_:.-]*`?\s*\.?/gi, '');
+  text = text.replace(/`\/[a-z0-9][a-z0-9/_:.-]*`/gi, '');
+  text = text.replace(/\/[a-z0-9][a-z0-9_.-]*\/[a-z0-9_.:?=&{}-]+/gi, '');
+  text = text.replace(/\*\*\s*\*\*/g, '');
+  text = text.replace(/`\s*`/g, '');
+  text = text.replace(/\bAPI(\d+)\b/g, (_, i) => apiEndpoints[+i] ?? '');
+  text = text.replace(/[ \t]{2,}/g, ' ');
   return text.trim();
 }
 
-const genAI=new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-async function ask(question,isAuthenticated){
-  let systemInstruction,userMessage;
-  if(!isAuthenticated){systemInstruction=SALES_SYSTEM_PROMPT;userMessage=question;}
-  else{const hint=getQueryHint(question);const rq=hint?`${question} ${hint}`:question;systemInstruction=buildExpertInstruction(rq);userMessage=hint?`[Resolved term: "${hint}"]\n${question}`:question;}
-  for(let attempt=0;attempt<4;attempt++){
-    try{
-      const model=genAI.getGenerativeModel({model:PRIMARY_MODEL,systemInstruction});
-      const chat=model.startChat({history:[]});
-      const result=await chat.sendMessage(userMessage);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function ask(question, isAuthenticated) {
+  let systemInstruction, userMessage;
+  if (!isAuthenticated) { systemInstruction = SALES_SYSTEM_PROMPT; userMessage = question; }
+  else { const hint = getQueryHint(question); const rq = hint ? `${question} ${hint}` : question; systemInstruction = buildExpertInstruction(rq); userMessage = hint ? `[Resolved term: "${hint}"]\n${question}` : question; }
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const model = genAI.getGenerativeModel({ model: PRIMARY_MODEL, systemInstruction });
+      const chat = model.startChat({ history: [] });
+      const result = await chat.sendMessage(userMessage);
       return scrubResponse((await result.response).text());
-    }catch(e){
-      const msg=e.message||'';
-      if((msg.includes('429')||msg.includes('503')||msg.includes('overloaded'))&&attempt<3){await sleep(8000*(attempt+1));continue;}
-      return `__ERROR__ ${msg.slice(0,300)}`;
+    } catch (e) {
+      const msg = e.message || '';
+      if ((msg.includes('429') || msg.includes('503') || msg.includes('overloaded')) && attempt < 3) { await sleep(8000 * (attempt + 1)); continue; }
+      return `__ERROR__ ${msg.slice(0, 300)}`;
     }
   }
 }
 
-const QUESTIONS=require('./'+(process.argv[2]||'ai_eval_questions.json'));
-const OUT_FILE=process.argv[3]||'ai_eval_results.md';
+const QUESTIONS = require('./' + (process.argv[2] || 'ai_eval_questions.json'));
+const OUT_FILE = process.argv[3] || 'ai_eval_results.md';
 
-(async()=>{
-  buildCorpus();buildSearchIndex();
+(async () => {
+  buildCorpus(); buildSearchIndex();
   console.error(`Corpus: ${corpus.length} chunks, ${searchableTerms.length} terms. Running ${QUESTIONS.length} questions...`);
-  const out=[`# AI Chatbot Evaluation Results\n\nCorpus: ${corpus.length} chunks. Model: ${PRIMARY_MODEL}.\n`];
-  for(let i=0;i<QUESTIONS.length;i++){
-    const{c,q,auth}=QUESTIONS[i];
-    const mode=auth?'EXPERT(logged-in)':'SALES(pre-login)';
-    process.stderr.write(`[${i+1}/${QUESTIONS.length}] (${c}) ${q.slice(0,60)}\n`);
-    const ans=await ask(q,!!auth);
-    out.push(`\n---\n\n## Q${i+1} [${c}] (${mode})\n**Q:** ${q}\n\n**A:** ${ans}\n`);
+  const out = [`# AI Chatbot Evaluation Results\n\nCorpus: ${corpus.length} chunks. Model: ${PRIMARY_MODEL}.\n`];
+  for (let i = 0; i < QUESTIONS.length; i++) {
+    const { c, q, auth } = QUESTIONS[i];
+    const mode = auth ? 'EXPERT(logged-in)' : 'SALES(pre-login)';
+    process.stderr.write(`[${i + 1}/${QUESTIONS.length}] (${c}) ${q.slice(0, 60)}\n`);
+    const ans = await ask(q, !!auth);
+    out.push(`\n---\n\n## Q${i + 1} [${c}] (${mode})\n**Q:** ${q}\n\n**A:** ${ans}\n`);
     await sleep(2500);
   }
-  fs.writeFileSync(path.join(process.cwd(),'scripts',OUT_FILE),out.join('\n'),'utf-8');
-  console.error('DONE -> scripts/'+OUT_FILE);
+  fs.writeFileSync(path.join(process.cwd(), 'scripts', OUT_FILE), out.join('\n'), 'utf-8');
+  console.error('DONE -> scripts/' + OUT_FILE);
 })();

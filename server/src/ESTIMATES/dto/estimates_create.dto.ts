@@ -105,4 +105,13 @@ export class CreateEstimateDto {
   @IsObject()
   @IsOptional()
   custom_fields?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ description: 'Flag to mark as template' })
+  @IsOptional()
+  is_template?: boolean;
+
+  @ApiPropertyOptional({ description: 'Name of the template' })
+  @IsString()
+  @IsOptional()
+  template_name?: string;
 }

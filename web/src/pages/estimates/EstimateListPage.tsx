@@ -5,7 +5,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EyeOutlined, InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useTranslation } from 'react-i18next';
-import { useEstimates, useMyEstimateDrafts, useMyEstimateApprovals, useEstimateAssignedCreator, useAdminApproveEstimate, useAdminRejectEstimate } from '@/hooks/use-estimates';
+import { useEstimates, useMyEstimateDrafts, useMyEstimateApprovals, useEstimateAssignedCreator, useAdminApproveEstimate, useAdminRejectEstimate, useCreateEstimateFromTemplate } from '@/hooks/use-estimates';
 import EstimateInternalReviewCard from '@/components/estimates/EstimateInternalReviewCard';
 import SendEstimateModal from '@/components/estimates/SendEstimateModal';
 import { usePermission } from '@/components/permissions/usePermission';
@@ -44,7 +44,7 @@ export default function EstimateListPage() {
     const tabParam = searchParams.get('tab');
     // Map old 'internal-review' to 'review' for backwards compat
     if (tabParam === 'internal-review') return 'review';
-    return tabParam && ['all', 'drafts', 'review', 'pending-review'].includes(tabParam) ? tabParam : 'all';
+    return tabParam && ['all', 'drafts', 'review', 'pending-review', 'templates'].includes(tabParam) ? tabParam : 'all';
   });
 
   // Sync tab from URL query params (e.g. navigated from notification)
@@ -65,6 +65,8 @@ export default function EstimateListPage() {
   const [reviewPageSize, setReviewPageSize] = useState(10);
   const [pendingReviewPage, setPendingReviewPage] = useState(1);
   const [pendingReviewPageSize, setPendingReviewPageSize] = useState(10);
+  const [templatesPage, setTemplatesPage] = useState(1);
+  const [templatesPageSize, setTemplatesPageSize] = useState(10);
 
   // Shared search (per-tab)
   const [searchInput, setSearchInput] = useState('');
@@ -79,7 +81,7 @@ export default function EstimateListPage() {
 
   // Queries for each tab — only enabled when active
   const allQuery = useEstimates(
-    { page: allPage, take: allPageSize, search, excludeStatus: 'draft' },
+    { page: allPage, take: allPageSize, search, excludeStatus: 'draft', isTemplate: false },
     activeTab === 'all',
   );
   const draftsQuery = useMyEstimateDrafts(
@@ -91,15 +93,20 @@ export default function EstimateListPage() {
     activeTab === 'review',
   );
   const pendingReviewQuery = useEstimates(
-    { page: pendingReviewPage, take: pendingReviewPageSize, search, status: 'pending_approval' },
+    { page: pendingReviewPage, take: pendingReviewPageSize, search, status: 'pending_approval', isTemplate: false },
     activeTab === 'pending-review',
+  );
+  const templatesQuery = useEstimates(
+    { page: templatesPage, take: templatesPageSize, search, isTemplate: true },
+    activeTab === 'templates',
   );
 
   const adminApproveEstimate = useAdminApproveEstimate();
   const adminRejectEstimate = useAdminRejectEstimate();
+  const createFromTemplate = useCreateEstimateFromTemplate();
 
-  // Pick active query (for table-based tabs: all, drafts, pending-review)
-  const currentQuery = activeTab === 'all' ? allQuery : activeTab === 'drafts' ? draftsQuery : activeTab === 'pending-review' ? pendingReviewQuery : reviewQuery;
+  // Pick active query (for table-based tabs: all, drafts, pending-review, templates)
+  const currentQuery = activeTab === 'all' ? allQuery : activeTab === 'drafts' ? draftsQuery : activeTab === 'pending-review' ? pendingReviewQuery : activeTab === 'templates' ? templatesQuery : reviewQuery;
   const estimates = currentQuery.data?.data || [];
   const meta = currentQuery.data?.meta;
   const isLoading = currentQuery.isLoading;
@@ -108,10 +115,10 @@ export default function EstimateListPage() {
   const reviewEstimates = reviewQuery.data?.data || [];
 
   // Current pagination setters
-  const currentPage = activeTab === 'all' ? allPage : activeTab === 'drafts' ? draftsPage : activeTab === 'pending-review' ? pendingReviewPage : reviewPage;
-  const currentPageSize = activeTab === 'all' ? allPageSize : activeTab === 'drafts' ? draftsPageSize : activeTab === 'pending-review' ? pendingReviewPageSize : reviewPageSize;
-  const setCurrentPage = activeTab === 'all' ? setAllPage : activeTab === 'drafts' ? setDraftsPage : activeTab === 'pending-review' ? setPendingReviewPage : setReviewPage;
-  const setCurrentPageSize = activeTab === 'all' ? setAllPageSize : activeTab === 'drafts' ? setDraftsPageSize : activeTab === 'pending-review' ? setPendingReviewPageSize : setReviewPageSize;
+  const currentPage = activeTab === 'all' ? allPage : activeTab === 'drafts' ? draftsPage : activeTab === 'pending-review' ? pendingReviewPage : activeTab === 'templates' ? templatesPage : reviewPage;
+  const currentPageSize = activeTab === 'all' ? allPageSize : activeTab === 'drafts' ? draftsPageSize : activeTab === 'pending-review' ? pendingReviewPageSize : activeTab === 'templates' ? templatesPageSize : reviewPageSize;
+  const setCurrentPage = activeTab === 'all' ? setAllPage : activeTab === 'drafts' ? setDraftsPage : activeTab === 'pending-review' ? setPendingReviewPage : activeTab === 'templates' ? setTemplatesPage : setReviewPage;
+  const setCurrentPageSize = activeTab === 'all' ? setAllPageSize : activeTab === 'drafts' ? setDraftsPageSize : activeTab === 'pending-review' ? setPendingReviewPageSize : activeTab === 'templates' ? setTemplatesPageSize : setReviewPageSize;
 
   // Debounce search input
   useEffect(() => {
@@ -134,12 +141,21 @@ export default function EstimateListPage() {
 
   // Shared data columns (no actions)
   const sharedColumns: ColumnsType<Estimate> = [
-    {
-      title: t('estimateList.columns.number'),
-      dataIndex: 'estimate_number',
-      key: 'estimate_number',
-      render: (num: string) => <span style={{ fontWeight: 500 }}>{num || '-'}</span>,
-    },
+    ...(activeTab === 'templates' ? [
+      {
+        title: 'Template Name',
+        dataIndex: 'template_name',
+        key: 'template_name',
+        render: (name: string) => <span style={{ fontWeight: 500 }}>{name || 'Unnamed Template'}</span>,
+      }
+    ] : [
+      {
+        title: t('estimateList.columns.number'),
+        dataIndex: 'estimate_number',
+        key: 'estimate_number',
+        render: (num: string) => <span style={{ fontWeight: 500 }}>{num || '-'}</span>,
+      }
+    ]),
     {
       title: t('estimateList.columns.customer'),
       key: 'contact',
@@ -224,6 +240,42 @@ export default function EstimateListPage() {
     ),
   };
 
+  // Templates tab actions — View + Edit + Create Estimate
+  const templatesAction: ColumnsType<Estimate>[number] = {
+    title: t('estimateList.columns.actions'),
+    key: 'actions',
+    fixed: 'right',
+    width: 200,
+    render: (_, record) => (
+      <Space size="small">
+        <Tooltip title={t('common.view')}>
+          <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/estimates/${record.id}`)} />
+        </Tooltip>
+        <Tooltip title={t('estimateList.actions.edit')}>
+          <Button type="text" icon={<PlusOutlined />} size="small" onClick={() => navigate(`/estimates/${record.id}/edit`)} />
+        </Tooltip>
+        <Button
+          size="small"
+          type="primary"
+          loading={createFromTemplate.isPending}
+          onClick={async () => {
+            try {
+              const res = await createFromTemplate.mutateAsync({ templateId: record.id });
+              const newEstimateId = (res.data?.data as { id?: string })?.id;
+              if (newEstimateId) {
+                navigate(`/estimates/${newEstimateId}/edit`);
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+        >
+          Create Estimate
+        </Button>
+      </Space>
+    ),
+  };
+
   // Pending Review tab: inline Approve / Reject
   const pendingReviewAction: ColumnsType<Estimate>[number] = {
     title: t('estimateList.columns.actions'),
@@ -275,6 +327,8 @@ export default function EstimateListPage() {
       ? [...sharedColumns, draftsAction]
       : activeTab === 'pending-review'
       ? [...sharedColumns, pendingReviewAction]
+      : activeTab === 'templates'
+      ? [...sharedColumns, templatesAction] // Templates also have Create Estimate
       : [...sharedColumns, viewOnlyAction];
 
   const tabItems = [
@@ -293,6 +347,10 @@ export default function EstimateListPage() {
     {
       key: 'review',
       label: t('estimateList.tabs.approveReject'),
+    },
+    {
+      key: 'templates',
+      label: 'Templates',
     },
   ];
 
