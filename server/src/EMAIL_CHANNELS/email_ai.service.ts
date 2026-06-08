@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const PRIMARY_MODEL = 'gemini-2.0-flash';
+const PRIMARY_MODEL = 'gemini-2.5-flash';
 const FALLBACK_MODEL = 'gemini-1.5-flash';
 
 /**
@@ -70,8 +70,8 @@ function buildEmailClassificationPrompt(config: {
 
   const priorityKeywords = config.priorityRules?.['keywords']
     ? Object.entries(config.priorityRules['keywords'] as Record<string, string>)
-        .map(([word, level]) => `"${word}" → ${level}`)
-        .join(', ')
+      .map(([word, level]) => `"${word}" → ${level}`)
+      .join(', ')
     : '"urgent" → HIGH, "emergency" → CRITICAL, "asap" → HIGH';
 
   return `

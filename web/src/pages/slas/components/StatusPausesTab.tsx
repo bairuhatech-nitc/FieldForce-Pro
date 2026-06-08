@@ -56,12 +56,10 @@ export default function StatusPausesTab() {
   const columns = [
     {
       title: t('sla.policyName', 'SLA Policy'),
-      title: t('sla.policyName', 'SLA Policy'),
       key: 'sla_policy_id',
       render: (_: any, record: any) => record.policy?.name || policies?.find((p: any) => p.id === record.sla_policy_id)?.name || record.sla_policy_id,
     },
     { 
-      title: t('sla.triggerStatus', 'Trigger Status'), 
       title: t('sla.triggerStatus', 'Trigger Status'), 
       key: 'trigger_status',
       render: (_: any, record: any) => <Tag color="processing">{record.status_name || record.trigger_status}</Tag>

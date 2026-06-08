@@ -6553,12 +6553,9 @@
     "connection": {
       "forwardingTitle": "Email Forwarding",
       "forwardingDesc": "Keep your existing inbox and set a rule to auto-forward a copy to our secure platform address. Easiest to set up.",
-      "mailboxTitle": "Direct Mailbox (IMAP)",
-      "mailboxDesc": "Connect directly to your mailbox via secure OAuth (Google/Microsoft) or IMAP. Allows two-way threading from the real address.",
       "platformTitle": "Platform-Provided Address",
       "platformDesc": "We issue an address like company@tickets.yourfsm.com that you publish or forward to. Zero email setup on your side.",
       "recommended": "Recommended",
-      "comingSoon": "Coming Soon",
       "easy": "Easy",
       "methodTitle": "Connection Method",
       "methodDesc": "Choose how emails reach the platform."

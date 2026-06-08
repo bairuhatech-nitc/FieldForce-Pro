@@ -6,7 +6,7 @@ import * as path from 'path';
 
 // ─── Gemini model name ────────────────────────────────────────────────────────
 
-const PRIMARY_MODEL = 'gemini-2.0-flash';
+const PRIMARY_MODEL = 'gemini-2.5-flash';
 const FALLBACK_MODEL = 'gemini-1.5-flash';
 
 // ─── Pre-Login: Sales AI Persona ──────────────────────────────────────────────
@@ -261,8 +261,8 @@ export class AiService {
           if (name) this.searchableTerms.push({ tokens: tokenize(name), canonical: name });
         }
       };
-      addTerms(JSON.parse(caps),     'intent_name');
-      addTerms(JSON.parse(errors),   'error_state');
+      addTerms(JSON.parse(caps), 'intent_name');
+      addTerms(JSON.parse(errors), 'error_state');
       addTerms(JSON.parse(concepts), 'entity_name');
       this.logger.log(`Fuzzy index built: ${this.searchableTerms.length} searchable terms.`);
     } catch {
