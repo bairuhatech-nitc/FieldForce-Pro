@@ -144,7 +144,7 @@ export default function ServiceLocationListPage() {
     <div>
       <PageHeader
         title={t('nav.serviceLocations')}
-        subtitle={t('serviceLocations.manageSubtitle')}
+        subtitle="Maintain a centralized directory of standard client addresses and service points. Service locations ensure records remain uniform, reducing data entry errors and saving time when creating recurring service contracts or schedules."
         extra={
           <PermissionGuard permission="service_locations:create">
             <Button

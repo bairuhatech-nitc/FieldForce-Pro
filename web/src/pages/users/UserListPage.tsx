@@ -188,6 +188,7 @@ export default function UserListPage() {
     <div>
       <PageHeader
         title={t('users.title')}
+        subtitle="Manage the accounts and active profiles of your workforce. Dynamically configure user access levels, assign dispatch crews, align territories, and establish skill sets to streamline field operations."
         extra={
           <Space>
             <PermissionGuard permission="users:create">
@@ -228,7 +229,7 @@ export default function UserListPage() {
       )}
 
       {usage && (
-        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid #f0f0f0' }}>
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: 'var(--primary-light)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
           <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 6 }}>
             <Text type="secondary" style={{ fontSize: 13 }}>
               {t('users.plan')}: <strong>{usage.plan_name}</strong>
