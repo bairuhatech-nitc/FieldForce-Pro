@@ -204,18 +204,7 @@ const menuSections: MenuSection[] = [
     section: 'sidebar.systemAnalytics',
     items: [
       { key: '/reports', icon: <BarChartOutlined />, labelKey: 'nav.reports', permission: 'reports:read' },
-      { key: '/integrations/api-keys', icon: <KeyOutlined />, labelKey: 'sidebar.apiKeys', permission: 'settings:read' },
       { key: '/settings', icon: <SettingOutlined />, labelKey: 'nav.settings', permission: 'settings:read' },
-      { key: '/admin/mobile-logs', icon: <MobileOutlined />, labelKey: 'Mobile Usage Logs', permission: 'audit_logs:read' },
-      {
-        key: 'security-submenu',
-        icon: <SafetyOutlined />,
-        labelKey: 'nav.security',
-        permission: 'audit_logs:read',
-        children: [
-          { key: '/security/settings', labelKey: 'sidebar.securitySettings', permission: 'settings:read' },
-        ],
-      },
     ],
   },
 ];

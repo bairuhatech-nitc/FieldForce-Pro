@@ -1091,11 +1091,7 @@ export const routes: RouteObject[] = [
       // API Key Management (Company Admin)
       {
         path: 'integrations/api-keys',
-        element: (
-          <SuspenseWrapper>
-            <ApiKeysPage />
-          </SuspenseWrapper>
-        ),
+        element: <Navigate to="/settings/api-keys" replace />,
       },
       {
         path: 'integrations/guide',
@@ -1271,11 +1267,7 @@ export const routes: RouteObject[] = [
       // Mobile Usage Logs (admin)
       {
         path: 'admin/mobile-logs',
-        element: (
-          <SuspenseWrapper>
-            <MobileUsageLogs />
-          </SuspenseWrapper>
-        ),
+        element: <Navigate to="/settings/mobile-logs" replace />,
       },
       // Reports
       {
@@ -1557,15 +1549,35 @@ export const routes: RouteObject[] = [
               </SuspenseWrapper>
             ),
           },
+          {
+            path: 'security',
+            element: (
+              <SuspenseWrapper>
+                <SecuritySettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'mobile-logs',
+            element: (
+              <SuspenseWrapper>
+                <MobileUsageLogs />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'api-keys',
+            element: (
+              <SuspenseWrapper>
+                <ApiKeysPage />
+              </SuspenseWrapper>
+            ),
+          },
         ],
       },
       {
         path: 'security/settings',
-        element: (
-          <SuspenseWrapper>
-            <SecuritySettingsPage />
-          </SuspenseWrapper>
-        ),
+        element: <Navigate to="/settings/security" replace />,
       },
       {
         path: 'reports/builder',

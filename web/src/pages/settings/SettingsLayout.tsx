@@ -15,6 +15,9 @@ import {
   WhatsAppOutlined,
   DownloadOutlined,
   RobotOutlined,
+  MobileOutlined,
+  KeyOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -104,6 +107,12 @@ export default function SettingsLayout() {
       title: t('settings.categories.security', 'Security Control'),
       items: [
         {
+          key: 'security',
+          label: t('settings.submodules.security', 'Security Settings'),
+          icon: <LockOutlined />,
+          path: '/settings/security',
+        },
+        {
           key: 'profiles',
           label: t('settings.submodules.profiles', 'Profiles'),
           icon: <SafetyOutlined />,
@@ -114,6 +123,23 @@ export default function SettingsLayout() {
           label: t('settings.submodules.auditLog', 'Audit Log'),
           icon: <AuditOutlined />,
           path: '/settings/audit-logs',
+        },
+        {
+          key: 'mobile-logs',
+          label: t('settings.submodules.mobileLogs', 'Mobile Usage Logs'),
+          icon: <MobileOutlined />,
+          path: '/settings/mobile-logs',
+        },
+      ],
+    },
+    {
+      title: t('settings.categories.integrations', 'Integrations'),
+      items: [
+        {
+          key: 'api-keys',
+          label: t('settings.submodules.apiKeys', 'API Keys'),
+          icon: <KeyOutlined />,
+          path: '/settings/api-keys',
         },
       ],
     },
