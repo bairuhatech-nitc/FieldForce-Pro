@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Button, Table, Space, Tooltip, Badge } from 'antd';
+import { Button, Table, Space, Tooltip, Badge, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -97,6 +97,19 @@ export default function ServiceLocationListPage() {
           );
         }
         return <span style={{ color: '#999' }}>{t('serviceLocations.notSet')}</span>;
+      },
+    },
+    {
+      title: t('serviceLocations.columns.territory', 'Territory'),
+      key: 'territory',
+      render: (_, record: any) => {
+        const territory = record.custom_fields?.territory;
+        if (territory && territory !== 'Out of Bounds') {
+          return <Tag color="blue">{territory}</Tag>;
+        } else if (territory === 'Out of Bounds') {
+          return <Tag color="red">{territory}</Tag>;
+        }
+        return <span style={{ opacity: 0.5 }}>-</span>;
       },
     },
     {

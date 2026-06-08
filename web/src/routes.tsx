@@ -23,6 +23,7 @@ const RolesPermissionsPage = lazy(() => import('@/pages/settings/RolesPermission
 const SettingsLayout = lazy(() => import('@/pages/settings/SettingsLayout'));
 const CurrencySettingsPage = lazy(() => import('@/pages/settings/CurrencySettingsPage'));
 const TerritoriesSettingsPage = lazy(() => import('@/pages/settings/TerritoriesSettingsPage'));
+const TerritoryFormPage = lazy(() => import('@/pages/settings/TerritoryFormPage'));
 const SkillsSettingsPage = lazy(() => import('@/pages/settings/SkillsSettingsPage'));
 const ShiftsSettingsPage = lazy(() => import('@/pages/settings/ShiftsSettingsPage'));
 const HolidaysSettingsPage = lazy(() => import('@/pages/settings/HolidaysSettingsPage'));
@@ -1450,6 +1451,22 @@ export const routes: RouteObject[] = [
             element: (
               <SuspenseWrapper>
                 <TerritoriesSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'territories/new',
+            element: (
+              <SuspenseWrapper>
+                <TerritoryFormPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'territories/:id/edit',
+            element: (
+              <SuspenseWrapper>
+                <TerritoryFormPage />
               </SuspenseWrapper>
             ),
           },

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, Tag, Tooltip } from 'antd';
+import { Table, Button, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CompassOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useSetting, useUpsertSetting } from '@/hooks/use-settings';
 import { useUsers } from '@/hooks/use-users';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
-import { useNotificationStore } from '@/store/notification.store';
 
 interface TerritoryItem {
   id: string;
@@ -15,33 +15,13 @@ interface TerritoryItem {
   zip_codes: string[];
   dispatcher_ids: string[];
   technician_ids: string[];
+  coordinates?: [number, number][];
+  color?: string;
 }
-
-const INITIAL_TERRITORIES: TerritoryItem[] = [
-  {
-    id: 't-1',
-    name: 'North Region',
-    description: 'Servicing northern metro zones',
-    zip_codes: ['10001', '10002', '10003'],
-    dispatcher_ids: [],
-    technician_ids: [],
-  },
-  {
-    id: 't-2',
-    name: 'South Region',
-    description: 'Coverage for southern division',
-    zip_codes: ['90001', '90002'],
-    dispatcher_ids: [],
-    technician_ids: [],
-  },
-];
 
 export default function TerritoriesSettingsPage() {
   const { t } = useTranslation();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<TerritoryItem | null>(null);
-  const [form] = Form.useForm();
-  const addNotification = useNotificationStore((s) => s.add);
+  const navigate = useNavigate();
 
   // Fetch setting key
   const { data: settingData, isLoading } = useSetting('territories_settings');
@@ -51,7 +31,7 @@ export default function TerritoriesSettingsPage() {
   const { data: usersData } = useUsers({ take: 100 });
   const users = usersData?.data || [];
 
-  const [territories, setTerritories] = useState<TerritoryItem[]>(INITIAL_TERRITORIES);
+  const [territories, setTerritories] = useState<TerritoryItem[]>([]);
 
   useEffect(() => {
     if (settingData?.value?.list) {
@@ -65,65 +45,7 @@ export default function TerritoriesSettingsPage() {
       category: 'workforce',
       value: { list: newList },
     });
-    setCurrencies(newList); // Wait, make sure we use setTerritories!
-  };
-
-  // Fix: setTerritories is the correct state setter
-  const setCurrencies = (list: TerritoryItem[]) => {
-    setTerritories(list);
-  };
-
-  const handleCreateOrEdit = (record?: TerritoryItem) => {
-    if (record) {
-      setEditingItem(record);
-      form.setFieldsValue({
-        ...record,
-        zip_codes: record.zip_codes.join(', '),
-      });
-    } else {
-      setEditingItem(null);
-      form.resetFields();
-    }
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (values: any) => {
-    const zipArray = values.zip_codes
-      ? values.zip_codes
-          .split(',')
-          .map((z: string) => z.trim())
-          .filter(Boolean)
-      : [];
-
-    let newList = [...territories];
-
-    if (editingItem) {
-      newList = newList.map((item) =>
-        item.id === editingItem.id
-          ? {
-              ...item,
-              name: values.name,
-              description: values.description,
-              zip_codes: zipArray,
-              dispatcher_ids: values.dispatcher_ids || [],
-              technician_ids: values.technician_ids || [],
-            }
-          : item
-      );
-    } else {
-      newList.push({
-        id: `t-${Date.now()}`,
-        name: values.name,
-        description: values.description,
-        zip_codes: zipArray,
-        dispatcher_ids: values.dispatcher_ids || [],
-        technician_ids: values.technician_ids || [],
-      });
-    }
-
-    await saveTerritories(newList);
-    setIsModalOpen(false);
-    form.resetFields();
+    setTerritories(newList);
   };
 
   const handleDelete = (record: TerritoryItem) => {
@@ -154,8 +76,16 @@ export default function TerritoriesSettingsPage() {
       title: t('settings.territories.colName', 'Name'),
       dataIndex: 'name',
       key: 'name',
-      render: (name: string) => (
+      render: (name: string, record) => (
         <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>
+          <span style={{
+            display: 'inline-block',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            backgroundColor: record.color || '#3B82F6',
+            marginRight: 8
+          }}></span>
           <CompassOutlined style={{ marginRight: 6 }} /> {name}
         </span>
       ),
@@ -164,6 +94,20 @@ export default function TerritoriesSettingsPage() {
       title: t('settings.territories.colDesc', 'Description'),
       dataIndex: 'description',
       key: 'description',
+    },
+    {
+      title: t('settings.territories.colBoundary', 'Map Boundary'),
+      key: 'boundary',
+      render: (_, record) => {
+        const pointsCount = record.coordinates?.length || 0;
+        return pointsCount >= 3 ? (
+          <Tag color="cyan">{pointsCount} Points (Polygon)</Tag>
+        ) : pointsCount > 0 ? (
+          <Tag color="orange">{pointsCount} Points (Incomplete)</Tag>
+        ) : (
+          <Tag color="default">No Boundary Map</Tag>
+        );
+      }
     },
     {
       title: t('settings.territories.colZips', 'Zip Codes'),
@@ -216,7 +160,7 @@ export default function TerritoriesSettingsPage() {
               type="text"
               icon={<EditOutlined />}
               size="small"
-              onClick={() => handleCreateOrEdit(record)}
+              onClick={() => navigate(`/settings/territories/${record.id}/edit`)}
             />
           </Tooltip>
           <Tooltip title={t('common.delete', 'Delete')}>
@@ -254,7 +198,7 @@ export default function TerritoriesSettingsPage() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => handleCreateOrEdit()}
+          onClick={() => navigate('/settings/territories/new')}
         >
           {t('settings.territories.addBtn', 'Create Territory')}
         </Button>
@@ -267,78 +211,6 @@ export default function TerritoriesSettingsPage() {
         loading={isLoading}
         pagination={false}
       />
-
-      <Modal
-        title={
-          editingItem
-            ? t('settings.territories.editTitle', 'Edit Territory')
-            : t('settings.territories.createTitle', 'Create Territory')
-        }
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          form.resetFields();
-        }}
-        onOk={() => form.submit()}
-        confirmLoading={upsertMutation.isPending}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="name"
-            label={t('settings.territories.formName', 'Territory Name')}
-            rules={[{ required: true, message: t('settings.territories.requiredName', 'Please input the name') }]}
-          >
-            <Input placeholder="East Coast Region" />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label={t('settings.territories.formDesc', 'Description')}
-          >
-            <Input.TextArea placeholder="Coverage for East Coast states and zip codes" rows={2} />
-          </Form.Item>
-
-          <Form.Item
-            name="zip_codes"
-            label={t('settings.territories.formZips', 'Zip / Postal Codes (Comma-separated)')}
-            rules={[{ required: true, message: t('settings.territories.requiredZips', 'Please input at least one zip code') }]}
-          >
-            <Input placeholder="10001, 10002, 10003" />
-          </Form.Item>
-
-          <Form.Item
-            name="dispatcher_ids"
-            label={t('settings.territories.formDispatchers', 'Assign Dispatchers')}
-          >
-            <Select
-              mode="multiple"
-              placeholder={t('settings.territories.selectDispatchers', 'Select dispatchers')}
-              options={users.map((u) => ({
-                label: `${u.first_name} ${u.last_name}`,
-                value: u.id,
-              }))}
-              optionFilterProp="label"
-              maxTagCount="responsive"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="technician_ids"
-            label={t('settings.territories.formTechnicians', 'Assign Technicians')}
-          >
-            <Select
-              mode="multiple"
-              placeholder={t('settings.territories.selectTechnicians', 'Select technicians')}
-              options={users.map((u) => ({
-                label: `${u.first_name} ${u.last_name}`,
-                value: u.id,
-              }))}
-              optionFilterProp="label"
-              maxTagCount="responsive"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 }
