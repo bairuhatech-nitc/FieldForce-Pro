@@ -79,6 +79,7 @@ export interface RegisterPayload {
   last_name: string;
   company_name: string;
   phone?: string;
+  plan_slug?: 'basic' | 'professional' | 'enterprise';
 }
 
 export interface LoginPayload {
@@ -104,4 +105,22 @@ export interface ChangePasswordPayload {
 
 export interface RefreshTokenPayload {
   refresh_token: string;
+}
+
+export interface RequestMagicLinkPayload {
+  email: string;
+}
+
+export interface RegisterMagicLinkPayload {
+  email: string;
+  first_name: string;
+  last_name: string;
+  company_name: string;
+  phone?: string;
+}
+
+export interface VerifyMagicLinkPayload {
+  token: string;
+  device_name?: string;
+  device_type?: string;
 }

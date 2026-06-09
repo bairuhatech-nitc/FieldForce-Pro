@@ -8,6 +8,7 @@ import {
   IsDateString,
   IsUrl,
   IsObject,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateEstimateDto {
@@ -18,6 +19,14 @@ export class CreateEstimateDto {
   @IsUUID()
   @IsOptional()
   request_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Work order ID reference (no formal FK)',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsUUID()
+  @IsOptional()
+  work_order_id?: string;
 
   @ApiPropertyOptional({
     description: 'Contact ID',
@@ -37,10 +46,10 @@ export class CreateEstimateDto {
 
   @ApiPropertyOptional({
     description: 'Estimate status',
-    enum: ['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'],
+    enum: ['draft', 'pending_approval', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo', 'converted_to_invoice'],
     default: 'draft',
   })
-  @IsEnum(['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'])
+  @IsEnum(['draft', 'pending_approval', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo', 'converted_to_invoice'])
   @IsOptional()
   status?: string;
 
@@ -97,4 +106,19 @@ export class CreateEstimateDto {
   @IsObject()
   @IsOptional()
   custom_fields?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ description: 'Flag to mark as template' })
+  @IsBoolean()
+  @IsOptional()
+  is_template?: boolean;
+
+  @ApiPropertyOptional({ description: 'Name of the template' })
+  @IsString()
+  @IsOptional()
+  template_name?: string;
+
+  @ApiPropertyOptional({ description: 'Estimate Type' })
+  @IsString()
+  @IsOptional()
+  estimate_type?: string;
 }

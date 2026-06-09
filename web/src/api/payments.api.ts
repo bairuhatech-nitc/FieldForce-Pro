@@ -1,15 +1,29 @@
+import axios from 'axios';
 import api from './axios-instance';
+import { API_URL } from '@/utils/constants';
 import type { ApiResponse, PageOptions } from '@/types/api.types';
 import type { Payment, PaymentGateway } from '@/types/models.types';
+
+const publicAxios = axios.create({ baseURL: API_URL, headers: { 'Content-Type': 'application/json' } });
 
 export interface CreatePaymentPayload {
   invoice_id: string;
   amount: number;
-  method?: 'card' | 'cash' | 'bank_transfer' | 'online' | 'check' | 'other';
+  method?: string;
   gateway_transaction_id?: string;
   paid_at?: string;
   notes?: string;
+  received_by?: string;
   custom_fields?: Record<string, unknown>;
+}
+
+export interface PortalPaymentPayload {
+  invoice_token: string;
+  amount: number;
+  method: string;
+  reference?: string;
+  notes?: string;
+  screenshot_url?: string;
 }
 
 export interface UpdatePaymentPayload {
@@ -49,6 +63,22 @@ export const paymentsApi = {
 
   delete(id: string) {
     return api.delete<ApiResponse<null>>(`/payments/${id}`);
+  },
+
+  getPendingVerification() {
+    return api.get<ApiResponse<Payment[]>>('/payments/pending-verification');
+  },
+
+  confirm(id: string) {
+    return api.patch<ApiResponse<Payment>>(`/payments/${id}/confirm`);
+  },
+
+  reject(id: string, reason: string) {
+    return api.patch<ApiResponse<Payment>>(`/payments/${id}/reject`, { reason });
+  },
+
+  submitFromPortal(payload: PortalPaymentPayload) {
+    return publicAxios.post<ApiResponse<Payment>>(`${API_URL}/payments/portal`, payload);
   },
 };
 

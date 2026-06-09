@@ -24,6 +24,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
@@ -64,6 +65,7 @@ const DEMO_DATA: EquipmentHealth[] = [
 ];
 
 export default function EquipmentHealthDashboardPage() {
+  const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [riskFilter, setRiskFilter] = useState<string | undefined>();
 
@@ -83,7 +85,7 @@ export default function EquipmentHealthDashboardPage() {
 
   const columns: ColumnsType<EquipmentHealth> = [
     {
-      title: 'Equipment',
+      title: t('equipmentHealth.columns.equipment'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record) => (
@@ -94,7 +96,7 @@ export default function EquipmentHealthDashboardPage() {
       ),
     },
     {
-      title: 'Health Score',
+      title: t('equipmentHealth.columns.healthScore'),
       dataIndex: 'health_score',
       key: 'health_score',
       sorter: (a, b) => a.health_score - b.health_score,
@@ -108,7 +110,7 @@ export default function EquipmentHealthDashboardPage() {
       ),
     },
     {
-      title: 'Risk Level',
+      title: t('equipmentHealth.columns.riskLevel'),
       dataIndex: 'risk_level',
       key: 'risk_level',
       render: (risk: string) => (
@@ -118,7 +120,7 @@ export default function EquipmentHealthDashboardPage() {
       ),
     },
     {
-      title: 'Failure Probability',
+      title: t('equipmentHealth.columns.failureProbability'),
       dataIndex: 'failure_probability',
       key: 'failure_probability',
       sorter: (a, b) => a.failure_probability - b.failure_probability,
@@ -129,24 +131,24 @@ export default function EquipmentHealthDashboardPage() {
       ),
     },
     {
-      title: 'Last Maintenance',
+      title: t('equipmentHealth.columns.lastMaintenance'),
       dataIndex: 'last_maintenance',
       key: 'last_maintenance',
     },
     {
-      title: 'Predicted Failure',
+      title: t('equipmentHealth.columns.predictedFailure'),
       dataIndex: 'predicted_failure',
       key: 'predicted_failure',
       render: (date: string | null) =>
-        date ? <Text type="danger">{date}</Text> : <Text type="secondary">N/A</Text>,
+        date ? <Text type="danger">{date}</Text> : <Text type="secondary">{t('equipmentHealth.common.na')}</Text>,
     },
     {
-      title: 'Actions',
+      title: t('equipmentHealth.columns.actions'),
       key: 'actions',
       render: () => (
         <Space>
-          <Button type="link" size="small">View Details</Button>
-          <Button type="link" size="small">Run Prediction</Button>
+          <Button type="link" size="small">{t('equipmentHealth.actions.viewDetails')}</Button>
+          <Button type="link" size="small">{t('equipmentHealth.actions.runPrediction')}</Button>
         </Space>
       ),
     },
@@ -158,24 +160,24 @@ export default function EquipmentHealthDashboardPage() {
         <Row justify="space-between" align="middle">
           <Col>
             <Title level={3} style={{ margin: 0 }}>
-              <DashboardOutlined /> Equipment Health Dashboard
+              <DashboardOutlined /> {t('equipmentHealth.dashboardTitle')}
             </Title>
           </Col>
           <Col>
-            <Button icon={<ReloadOutlined />}>Refresh Scores</Button>
+            <Button icon={<ReloadOutlined />}>{t('equipmentHealth.buttons.refresh')}</Button>
           </Col>
         </Row>
 
         <Row gutter={16}>
           <Col xs={24} sm={12} md={6}>
             <Card>
-              <Statistic title="Total Equipment" value={stats.total} />
+              <Statistic title={t('equipmentHealth.stats.total')} value={stats.total} />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
-                title="Healthy"
+                title={t('equipmentHealth.stats.healthy')}
                 value={stats.healthy}
                 valueStyle={{ color: '#3f8600' }}
                 prefix={<CheckCircleOutlined />}
@@ -185,7 +187,7 @@ export default function EquipmentHealthDashboardPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
-                title="Needs Attention"
+                title={t('equipmentHealth.stats.needsAttention')}
                 value={stats.warning}
                 valueStyle={{ color: '#cf8700' }}
                 prefix={<WarningOutlined />}
@@ -195,7 +197,7 @@ export default function EquipmentHealthDashboardPage() {
           <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
-                title="Critical"
+                title={t('equipmentHealth.stats.critical')}
                 value={stats.critical}
                 valueStyle={{ color: '#cf1322' }}
                 prefix={<CloseCircleOutlined />}
@@ -209,7 +211,7 @@ export default function EquipmentHealthDashboardPage() {
             <Col>
               <Space>
                 <Input
-                  placeholder="Search equipment..."
+                  placeholder={t('equipmentHealth.filters.search')}
                   prefix={<SearchOutlined />}
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
@@ -217,24 +219,24 @@ export default function EquipmentHealthDashboardPage() {
                   allowClear
                 />
                 <Select
-                  placeholder="Risk Level"
+                  placeholder={t('equipmentHealth.filters.riskLevel')}
                   value={riskFilter}
                   onChange={setRiskFilter}
                   allowClear
                   style={{ width: 150 }}
                   options={[
-                    { label: 'Low', value: 'low' },
-                    { label: 'Medium', value: 'medium' },
-                    { label: 'High', value: 'high' },
-                    { label: 'Critical', value: 'critical' },
+                    { label: t('equipmentHealth.riskLevels.low'), value: 'low' },
+                    { label: t('equipmentHealth.riskLevels.medium'), value: 'medium' },
+                    { label: t('equipmentHealth.riskLevels.high'), value: 'high' },
+                    { label: t('equipmentHealth.riskLevels.critical'), value: 'critical' },
                   ]}
                 />
               </Space>
             </Col>
             <Col>
-              <Tooltip title="Average Health Score">
+              <Tooltip title={t('equipmentHealth.tooltips.avgHealth')}>
                 <Tag color={stats.avgHealth >= 70 ? 'green' : stats.avgHealth >= 50 ? 'orange' : 'red'}>
-                  Avg Health: {stats.avgHealth}%
+                  {t('equipmentHealth.stats.avgHealthLabel')}: {stats.avgHealth}%
                 </Tag>
               </Tooltip>
             </Col>

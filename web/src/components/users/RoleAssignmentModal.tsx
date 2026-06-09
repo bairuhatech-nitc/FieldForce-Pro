@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Transfer, Spin, Alert } from 'antd';
 import type { Key } from 'antd/es/table/interface';
+import { useTranslation } from 'react-i18next';
 import { useAllRoles } from '@/hooks/use-roles';
 import { useUser } from '@/hooks/use-users';
 import { useAssignRoles } from '@/hooks/use-user-roles';
@@ -22,6 +23,7 @@ export default function RoleAssignmentModal({
   open,
   onClose,
 }: RoleAssignmentModalProps) {
+  const { t } = useTranslation();
   const [targetKeys, setTargetKeys] = useState<Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
 
@@ -88,14 +90,14 @@ export default function RoleAssignmentModal({
 
   return (
     <Modal
-      title={`Assign Roles - ${user?.first_name} ${user?.last_name}`}
+      title={`${t('roleAssignment.title')} - ${user?.first_name} ${user?.last_name}`}
       open={open}
       onOk={handleOk}
       onCancel={handleCancel}
       confirmLoading={assignRolesMutation.isPending}
       width={700}
-      okText="Save"
-      cancelText="Cancel"
+      okText={t('roleAssignment.save')}
+      cancelText={t('roleAssignment.cancel')}
     >
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -105,15 +107,15 @@ export default function RoleAssignmentModal({
         <>
           {!allRoles || allRoles.length === 0 ? (
             <Alert
-              message="No roles available"
-              description="Please create roles before assigning them to users."
+              message={t('roleAssignment.noRolesAvailable')}
+              description={t('roleAssignment.pleaseCreateRoles')}
               type="warning"
               showIcon
             />
           ) : (
             <Transfer
               dataSource={dataSource}
-              titles={['Available Roles', 'Assigned Roles']}
+              titles={[t('roleAssignment.availableRoles'), t('roleAssignment.assignedRoles')]}
               targetKeys={targetKeys}
               selectedKeys={selectedKeys}
               onChange={handleChange}

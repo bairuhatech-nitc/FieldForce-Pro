@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import * as echarts from 'echarts';
 import ReactECharts from 'echarts-for-react';
+import { useTranslation } from 'react-i18next';
 import { Card, Space, Typography, Tag, Row, Col, Statistic, Alert } from 'antd';
 import {
   ArrowUpOutlined,
@@ -22,6 +23,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
   forecast,
   height = 400,
 }) => {
+  const { t } = useTranslation();
   const chartOptions = useMemo(() => {
     const dates = forecast.forecast.map((f) => new Date(f.date).toLocaleDateString());
     const predicted = forecast.forecast.map((f) => f.predicted_demand);
@@ -30,7 +32,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
 
     return {
       title: {
-        text: 'Service Demand Forecast',
+        text: t('demandForecast.chartTitle'),
         left: 'center',
       },
       tooltip: {
@@ -50,7 +52,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
         },
       },
       legend: {
-        data: ['Predicted Demand', 'Upper Bound', 'Lower Bound'],
+        data: [t('demandForecast.predictedDemand'), t('demandForecast.upperBound'), t('demandForecast.lowerBound')],
         top: 30,
       },
       toolbox: {
@@ -79,7 +81,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
       },
       yAxis: {
         type: 'value',
-        name: 'Number of Jobs',
+        name: t('demandForecast.numberOfJobs'),
         axisLabel: {
           formatter: '{value}',
         },
@@ -97,7 +99,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
       ],
       series: [
         {
-          name: 'Predicted Demand',
+          name: t('demandForecast.predictedDemand'),
           type: 'line',
           data: predicted,
           smooth: true,
@@ -115,18 +117,18 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
           },
           markPoint: {
             data: [
-              { type: 'max', name: 'Peak' },
-              { type: 'min', name: 'Low' },
+              { type: 'max', name: t('demandForecast.peak') },
+              { type: 'min', name: t('demandForecast.low') },
             ],
           },
           markLine: {
             data: [
-              { type: 'average', name: 'Average' },
+              { type: 'average', name: t('demandForecast.average') },
             ],
           },
         },
         {
-          name: 'Upper Bound',
+          name: t('demandForecast.upperBound'),
           type: 'line',
           data: upperBound,
           smooth: true,
@@ -143,7 +145,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
           },
         },
         {
-          name: 'Lower Bound',
+          name: t('demandForecast.lowerBound'),
           type: 'line',
           data: lowerBound,
           smooth: true,
@@ -172,7 +174,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
         },
       ],
     };
-  }, [forecast]);
+  }, [forecast, t]);
 
   const getTrendIcon = () => {
     switch (forecast.trend) {
@@ -185,25 +187,13 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
     }
   };
 
-  const getTrendColor = () => {
-    switch (forecast.trend) {
-      case 'increasing':
-        return 'green';
-      case 'decreasing':
-        return 'red';
-      default:
-        return 'blue';
-    }
-  };
-
   return (
     <Card>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        {/* Summary Statistics */}
         <Row gutter={16}>
           <Col span={6}>
             <Statistic
-              title="Trend"
+              title={t('demandForecast.trend')}
               value={forecast.trend}
               prefix={getTrendIcon()}
               valueStyle={{ textTransform: 'capitalize' }}
@@ -211,35 +201,34 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
           </Col>
           <Col span={6}>
             <Statistic
-              title="Avg Daily Capacity"
+              title={t('demandForecast.avgDailyCapacity')}
               value={forecast.capacity_recommendations.average_daily_capacity}
-              suffix="jobs"
+              suffix={t('demandForecast.jobs')}
             />
           </Col>
           <Col span={6}>
             <Statistic
-              title="Peak Capacity"
+              title={t('demandForecast.peakCapacity')}
               value={forecast.capacity_recommendations.peak_capacity}
-              suffix="jobs"
+              suffix={t('demandForecast.jobs')}
               valueStyle={{ color: '#ff4d4f' }}
             />
           </Col>
           <Col span={6}>
             <Statistic
-              title="Min Technicians"
+              title={t('demandForecast.minTechnicians')}
               value={forecast.capacity_recommendations.minimum_technicians}
               prefix={<TeamOutlined />}
             />
           </Col>
         </Row>
 
-        {/* Alerts for Peak Days */}
         {forecast.capacity_recommendations.peak_days && forecast.capacity_recommendations.peak_days.length > 0 && (
           <Alert
-            message="Peak Demand Days"
+            message={t('demandForecast.peakDemandDays')}
             description={
               <Space direction="vertical">
-                <Text>High demand expected on the following days:</Text>
+                <Text>{t('demandForecast.highDemandExpected')}</Text>
                 <Space wrap>
                   {forecast.capacity_recommendations.peak_days.map((day) => (
                     <Tag key={day} icon={<CalendarOutlined />} color="orange">
@@ -248,7 +237,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
                   ))}
                 </Space>
                 <Text type="secondary">
-                  Consider scheduling additional technicians or overtime for these days.
+                  {t('demandForecast.considerScheduling')}
                 </Text>
               </Space>
             }
@@ -258,62 +247,54 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
           />
         )}
 
-        {/* Forecast Chart */}
         <ReactECharts option={chartOptions} style={{ height }} />
 
-        {/* Seasonality Information */}
         {forecast.seasonality && Object.keys(forecast.seasonality).length > 0 && (
-          <Card size="small" style={{ backgroundColor: '#fafafa' }}>
-            <Title level={5}>Seasonality Patterns</Title>
+          <Card size="small" style={{ backgroundColor: 'var(--bg-color)' }}>
+            <Title level={5}>{t('demandForecast.seasonalityPatterns')}</Title>
             <Space wrap>
               {forecast.seasonality.weekly && (
                 <Tag color="blue">
-                  Weekly Pattern: {forecast.seasonality.weekly.strength}
+                  {t('demandForecast.weeklyPattern')}: {forecast.seasonality.weekly.strength}
                 </Tag>
               )}
               {forecast.seasonality.yearly && (
                 <Tag color="green">
-                  Yearly Pattern: Peak in {forecast.seasonality.yearly.peak_months?.join(', ')}
+                  {t('demandForecast.yearlyPattern')}: {t('demandForecast.peakIn', { months: forecast.seasonality.yearly.peak_months?.join(', ') })}
                 </Tag>
               )}
             </Space>
           </Card>
         )}
 
-        {/* Capacity Recommendations */}
-        <Card size="small" style={{ backgroundColor: '#e6f7ff' }}>
-          <Title level={5}>AI Recommendations</Title>
+        <Card size="small" style={{ backgroundColor: 'rgba(22, 119, 255, 0.08)' }}>
+          <Title level={5}>{t('demandForecast.aiRecommendations')}</Title>
           <Space direction="vertical">
             <Text>
-              <TeamOutlined /> Maintain a minimum of{' '}
-              <strong>{forecast.capacity_recommendations.minimum_technicians}</strong> technicians
-              to handle average demand
+              <TeamOutlined /> {t('demandForecast.maintainMinimum')} <strong>{forecast.capacity_recommendations.minimum_technicians}</strong> {t('demandForecast.techniciansHandleAvg')}
             </Text>
             <Text>
-              <CalendarOutlined /> Add a{' '}
-              <strong>{forecast.capacity_recommendations.buffer_percentage}%</strong> buffer
-              for unexpected demand spikes
+              <CalendarOutlined /> {t('demandForecast.add')} <strong>{forecast.capacity_recommendations.buffer_percentage}%</strong> {t('demandForecast.bufferForSpikes')}
             </Text>
             {forecast.trend === 'increasing' && (
               <Text>
-                <ArrowUpOutlined style={{ color: '#52c41a' }} /> Demand is trending upward.
-                Consider hiring additional technicians or contractors.
+                <ArrowUpOutlined style={{ color: '#52c41a' }} /> {t('demandForecast.trendUpward')}
               </Text>
             )}
             {forecast.trend === 'decreasing' && (
               <Text>
-                <ArrowDownOutlined style={{ color: '#ff4d4f' }} /> Demand is trending downward.
-                Review staffing levels and consider cross-training for flexibility.
+                <ArrowDownOutlined style={{ color: '#ff4d4f' }} /> {t('demandForecast.trendDownward')}
               </Text>
             )}
           </Space>
         </Card>
 
-        {/* Metadata */}
         <Text type="secondary" style={{ fontSize: 12 }}>
-          Forecast generated using {forecast.metrics?.model_type || 'AI'} model with{' '}
-          {forecast.metrics?.confidence_level ? `${(forecast.metrics.confidence_level * 100).toFixed(0)}%` : '95%'}{' '}
-          confidence level. Based on {forecast.metrics?.historical_days || 'N/A'} days of historical data.
+          {t('demandForecast.footerMetadata', {
+            model: forecast.metrics?.model_type || 'AI',
+            confidence: forecast.metrics?.confidence_level ? `${(forecast.metrics.confidence_level * 100).toFixed(0)}%` : '95%',
+            days: forecast.metrics?.historical_days || 'N/A'
+          })}
         </Text>
       </Space>
     </Card>

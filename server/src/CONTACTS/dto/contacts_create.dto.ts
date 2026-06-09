@@ -8,7 +8,6 @@ import {
   IsUUID,
   IsArray,
   IsObject,
-  IsBoolean,
 } from 'class-validator';
 
 export class CreateContactDto {
@@ -51,23 +50,6 @@ export class CreateContactDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
-
-  @ApiPropertyOptional({ example: 'Facility Manager' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  job_title?: string;
-
-  @ApiPropertyOptional({ example: '+0987654321' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  mobile_phone?: string;
-
-  @ApiPropertyOptional({ example: true })
-  @IsOptional()
-  @IsBoolean()
-  is_primary?: boolean;
 
   @ApiPropertyOptional({ example: { preferredContactMethod: 'email' } })
   @IsOptional()

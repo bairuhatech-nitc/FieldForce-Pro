@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { Input, Button, Card, Space, Typography, Tag, Table, Empty, Alert } from 'antd';
 import { SearchOutlined, ThunderboltOutlined, BarChartOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useNLQuery } from '../../hooks/use-analytics';
 
 const { Text, Paragraph } = Typography;
 
 const VIZ_ICONS: Record<string, string> = {
-  bar_chart: 'Bar Chart',
-  line_chart: 'Line Chart',
-  pie_chart: 'Pie Chart',
-  metric: 'Metric',
+  bar_chart: 'barChart',
+  line_chart: 'lineChart',
+  pie_chart: 'pieChart',
+  metric: 'metric',
 };
 
 export default function NLQueryBar() {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const nlQuery = useNLQuery();
 
@@ -28,7 +30,7 @@ export default function NLQueryBar() {
       title={
         <Space>
           <ThunderboltOutlined />
-          <span>AI Analytics Query</span>
+          <span>{t('nlQueryBar.aiAnalyticsQuery')}</span>
         </Space>
       }
     >
@@ -37,7 +39,7 @@ export default function NLQueryBar() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask a question about your data... e.g., 'How many work orders are open?'"
+            placeholder={t('nlQueryBar.placeholder')}
             onPressEnter={handleSearch}
             size="large"
             prefix={<SearchOutlined />}
@@ -48,12 +50,12 @@ export default function NLQueryBar() {
             onClick={handleSearch}
             loading={nlQuery.isPending}
           >
-            Query
+            {t('nlQueryBar.query')}
           </Button>
         </Space.Compact>
 
         <Space wrap>
-          <Text type="secondary">Try:</Text>
+          <Text type="secondary">{t('nlQueryBar.try')}:</Text>
           {[
             'How many work orders by status?',
             'Show me overdue invoices',
@@ -75,7 +77,7 @@ export default function NLQueryBar() {
         {result && (
           <Card size="small" style={{ marginTop: 8 }}>
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Text strong>Result</Text>
+              <Text strong>{t('nlQueryBar.result')}</Text>
               <Paragraph type="secondary">{result.explanation}</Paragraph>
 
               {result.sql_query && (
@@ -92,7 +94,7 @@ export default function NLQueryBar() {
 
               {result.visualization_hint && (
                 <Tag icon={<BarChartOutlined />} color="purple">
-                  Suggested: {VIZ_ICONS[result.visualization_hint] || result.visualization_hint}
+                  {t('nlQueryBar.suggested')}: {t(`nlQueryBar.vizTypes.${VIZ_ICONS[result.visualization_hint]}` as any) || result.visualization_hint}
                 </Tag>
               )}
 
@@ -111,7 +113,7 @@ export default function NLQueryBar() {
               ) : (
                 result.sql_query && (
                   <Text type="secondary">
-                    Query generated successfully. Execute on the server to see results.
+                    {t('nlQueryBar.queryGeneratedSuccess')}
                   </Text>
                 )
               )}
@@ -120,7 +122,7 @@ export default function NLQueryBar() {
         )}
 
         {!result && !nlQuery.isPending && (
-          <Empty description="Ask a question to get started" />
+          <Empty description={t('nlQueryBar.emptyDescription')} />
         )}
       </Space>
     </Card>

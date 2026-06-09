@@ -40,14 +40,14 @@ export default function ForgotPasswordPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#f5f5f5',
+          background: 'var(--bg-color)',
         }}
       >
         <Card style={{ width: 420 }}>
           <Result
             status="success"
-            title="Check your email"
-            subTitle="A password reset link has been sent to your email address."
+            title={t('auth.checkEmail')}
+            subTitle={t('auth.resetEmailSent')}
             extra={<Link to="/login">{t('auth.backToLogin')}</Link>}
           />
         </Card>
@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f5f5f5',
+        background: 'var(--bg-color)',
       }}
     >
       <Card style={{ width: 420, padding: 8 }}>
@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
           <Title level={2} style={{ marginBottom: 4 }}>
             {t('auth.forgotPassword')}
           </Title>
-          <Text type="secondary">Enter your email to receive a reset link</Text>
+          <Text type="secondary">{t('auth.resetPasswordInstructions')}</Text>
         </div>
 
         <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>

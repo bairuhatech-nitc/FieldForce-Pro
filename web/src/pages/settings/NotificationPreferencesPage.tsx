@@ -4,6 +4,7 @@ import { SaveOutlined, BellOutlined, MailOutlined, MessageOutlined, MobileOutlin
 import PageHeader from '@/components/common/PageHeader';
 import { useNotificationStore } from '@/store/notification.store';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next'; // Rule 1
 
 const { Title, Text } = Typography;
 
@@ -35,6 +36,7 @@ interface NotificationPreferences {
 }
 
 export default function NotificationPreferencesPage() {
+  const { t } = useTranslation(); // Rule 2
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const addNotification = useNotificationStore((s) => s.add);
@@ -69,9 +71,9 @@ export default function NotificationPreferencesPage() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      addNotification({ type: 'success', message: 'Notification preferences saved successfully' });
+      addNotification({ type: 'success', message: t('notificationPreferences.messages.saveSuccess') }); // Rule 5
     } catch (error) {
-      addNotification({ type: 'error', message: 'Failed to save preferences' });
+      addNotification({ type: 'error', message: t('notificationPreferences.messages.saveError') }); // Rule 5
     } finally {
       setSaving(false);
     }
@@ -93,7 +95,7 @@ export default function NotificationPreferencesPage() {
         borderBottom: '1px solid #f0f0f0',
       }}
     >
-      <Text>{label}</Text>
+      <Text>{label}</Text> {/* label is already translated via props */}
       <Space size="large">
         <Form.Item
           name={[fieldPrefix, 'email']}
@@ -123,19 +125,19 @@ export default function NotificationPreferencesPage() {
   return (
     <div>
       <PageHeader
-        title="Notification Preferences"
-        subtitle="Configure how and when you receive notifications"
+        title={t('notificationPreferences.pageHeader.title')} // Rule 4
+        subtitle={t('notificationPreferences.pageHeader.subtitle')} // Rule 4
       />
 
       <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={initialValues}>
-        <Card title="Global Settings" style={{ marginBottom: 24 }}>
+        <Card title={t('notificationPreferences.globalSettings.title')} style={{ marginBottom: 24 }}> {/* Rule 4 */}
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <Text strong>Email Notifications</Text>
+                <Text strong>{t('notificationPreferences.globalSettings.emailNotifications.title')}</Text> {/* Rule 3 */}
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Receive notifications via email
+                    {t('notificationPreferences.globalSettings.emailNotifications.description')} {/* Rule 3 */}
                   </Text>
                 </div>
               </div>
@@ -146,10 +148,10 @@ export default function NotificationPreferencesPage() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <Text strong>SMS Notifications</Text>
+                <Text strong>{t('notificationPreferences.globalSettings.smsNotifications.title')}</Text> {/* Rule 3 */}
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Receive notifications via text message
+                    {t('notificationPreferences.globalSettings.smsNotifications.description')} {/* Rule 3 */}
                   </Text>
                 </div>
               </div>
@@ -160,10 +162,10 @@ export default function NotificationPreferencesPage() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <Text strong>Push Notifications</Text>
+                <Text strong>{t('notificationPreferences.globalSettings.pushNotifications.title')}</Text> {/* Rule 3 */}
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Receive push notifications on mobile devices
+                    {t('notificationPreferences.globalSettings.pushNotifications.description')} {/* Rule 3 */}
                   </Text>
                 </div>
               </div>
@@ -174,10 +176,10 @@ export default function NotificationPreferencesPage() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <Text strong>In-App Notifications</Text>
+                <Text strong>{t('notificationPreferences.globalSettings.inAppNotifications.title')}</Text> {/* Rule 3 */}
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Show notification bell in the app
+                    {t('notificationPreferences.globalSettings.inAppNotifications.description')} {/* Rule 3 */}
                   </Text>
                 </div>
               </div>
@@ -188,48 +190,51 @@ export default function NotificationPreferencesPage() {
           </Space>
         </Card>
 
-        <Card title="Event Notifications" style={{ marginBottom: 24 }}>
+        <Card title={t('notificationPreferences.eventNotifications.title')} style={{ marginBottom: 24 }}> {/* Rule 4 */}
           <div style={{ marginBottom: 16 }}>
             <Space size="large">
-              <Text type="secondary" style={{ fontSize: 12 }}>Email</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>SMS</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>Push</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>{t('notificationPreferences.eventNotifications.emailChannel')}</Text> {/* Rule 3 */}
+              <Text type="secondary" style={{ fontSize: 12 }}>{t('notificationPreferences.eventNotifications.smsChannel')}</Text> {/* Rule 3 */}
+              <Text type="secondary" style={{ fontSize: 12 }}>{t('notificationPreferences.eventNotifications.pushChannel')}</Text> {/* Rule 3 */}
             </Space>
           </div>
 
-          <NotificationChannelRow label="Work Order Assigned" fieldPrefix="work_order_assigned" />
-          <NotificationChannelRow label="Work Order Completed" fieldPrefix="work_order_completed" />
-          <NotificationChannelRow label="Appointment Scheduled" fieldPrefix="appointment_scheduled" />
-          <NotificationChannelRow label="Appointment Reminder" fieldPrefix="appointment_reminder" />
-          <NotificationChannelRow label="Estimate Approved" fieldPrefix="estimate_approved" />
-          <NotificationChannelRow label="Invoice Generated" fieldPrefix="invoice_generated" />
-          <NotificationChannelRow label="Payment Received" fieldPrefix="payment_received" />
+          <NotificationChannelRow label={t('notificationPreferences.eventNotifications.workOrderAssigned')} fieldPrefix="work_order_assigned" /> {/* Rule 4 */}
+          <NotificationChannelRow label={t('notificationPreferences.eventNotifications.workOrderCompleted')} fieldPrefix="work_order_completed" /> {/* Rule 4 */}
+          <NotificationChannelRow label={t('notificationPreferences.eventNotifications.appointmentScheduled')} fieldPrefix="appointment_scheduled" /> {/* Rule 4 */}
+          <NotificationChannelRow label={t('notificationPreferences.eventNotifications.appointmentReminder')} fieldPrefix="appointment_reminder" /> {/* Rule 4 */}
+          <NotificationChannelRow label={t('notificationPreferences.eventNotifications.estimateApproved')} fieldPrefix="estimate_approved" /> {/* Rule 4 */}
+          <NotificationChannelRow label={t('notificationPreferences.eventNotifications.invoiceGenerated')} fieldPrefix="invoice_generated" /> {/* Rule 4 */}
+          <NotificationChannelRow label={t('notificationPreferences.eventNotifications.paymentReceived')} fieldPrefix="payment_received" /> {/* Rule 4 */}
         </Card>
 
-        <Card title="Quiet Hours" style={{ marginBottom: 24 }}>
+        <Card title={t('notificationPreferences.quietHours.title')} style={{ marginBottom: 24 }}> {/* Rule 4 */}
           <Form.Item
             name="quiet_hours_enabled"
-            label="Enable Quiet Hours"
+            label={t('notificationPreferences.quietHours.enableQuietHours')} // Rule 4
             valuePropName="checked"
           >
-            <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+            <Switch
+              checkedChildren={t('notificationPreferences.quietHours.enabledState')} // Rule 4
+              unCheckedChildren={t('notificationPreferences.quietHours.disabledState')} // Rule 4
+            />
           </Form.Item>
 
           <Alert
-            message="Notifications will not be sent during quiet hours"
+            message={t('notificationPreferences.quietHours.alertMessage')} // Rule 4
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
           />
 
           <Space size="large">
-            <Form.Item name="quiet_hours_start" label="Start Time">
+            <Form.Item name="quiet_hours_start" label={t('notificationPreferences.quietHours.startTime')}> {/* Rule 4 */}
               <TimePicker
                 format="HH:mm"
                 style={{ width: 120 }}
               />
             </Form.Item>
-            <Form.Item name="quiet_hours_end" label="End Time">
+            <Form.Item name="quiet_hours_end" label={t('notificationPreferences.quietHours.endTime')}> {/* Rule 4 */}
               <TimePicker
                 format="HH:mm"
                 style={{ width: 120 }}
@@ -238,14 +243,14 @@ export default function NotificationPreferencesPage() {
           </Space>
         </Card>
 
-        <Card title="Digest Notifications" style={{ marginBottom: 24 }}>
+        <Card title={t('notificationPreferences.digestNotifications.title')} style={{ marginBottom: 24 }}> {/* Rule 4 */}
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <Text strong>Daily Digest</Text>
+                <Text strong>{t('notificationPreferences.digestNotifications.dailyDigest.title')}</Text> {/* Rule 3 */}
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Receive a daily summary of all notifications
+                    {t('notificationPreferences.digestNotifications.dailyDigest.description')} {/* Rule 3 */}
                   </Text>
                 </div>
               </div>
@@ -261,23 +266,23 @@ export default function NotificationPreferencesPage() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <Text strong>Weekly Digest</Text>
+                <Text strong>{t('notificationPreferences.digestNotifications.weeklyDigest.title')}</Text> {/* Rule 3 */}
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Receive a weekly summary
+                    {t('notificationPreferences.digestNotifications.weeklyDigest.description')} {/* Rule 3 */}
                   </Text>
                 </div>
               </div>
               <Space>
                 <Form.Item name="weekly_digest_day" noStyle>
                   <Select style={{ width: 140 }}>
-                    <Select.Option value={1}>Monday</Select.Option>
-                    <Select.Option value={2}>Tuesday</Select.Option>
-                    <Select.Option value={3}>Wednesday</Select.Option>
-                    <Select.Option value={4}>Thursday</Select.Option>
-                    <Select.Option value={5}>Friday</Select.Option>
-                    <Select.Option value={6}>Saturday</Select.Option>
-                    <Select.Option value={0}>Sunday</Select.Option>
+                    <Select.Option value={1}>{t('notificationPreferences.digestNotifications.weeklyDigest.monday')}</Select.Option> {/* Rule 3 */}
+                    <Select.Option value={2}>{t('notificationPreferences.digestNotifications.weeklyDigest.tuesday')}</Select.Option> {/* Rule 3 */}
+                    <Select.Option value={3}>{t('notificationPreferences.digestNotifications.weeklyDigest.wednesday')}</Select.Option> {/* Rule 3 */}
+                    <Select.Option value={4}>{t('notificationPreferences.digestNotifications.weeklyDigest.thursday')}</Select.Option> {/* Rule 3 */}
+                    <Select.Option value={5}>{t('notificationPreferences.digestNotifications.weeklyDigest.friday')}</Select.Option> {/* Rule 3 */}
+                    <Select.Option value={6}>{t('notificationPreferences.digestNotifications.weeklyDigest.saturday')}</Select.Option> {/* Rule 3 */}
+                    <Select.Option value={0}>{t('notificationPreferences.digestNotifications.weeklyDigest.sunday')}</Select.Option> {/* Rule 3 */}
                   </Select>
                 </Form.Item>
                 <Form.Item name="weekly_digest_enabled" valuePropName="checked" noStyle>
@@ -290,7 +295,7 @@ export default function NotificationPreferencesPage() {
 
         <Card>
           <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-            Save Preferences
+            {t('notificationPreferences.saveButton')} {/* Rule 3 */}
           </Button>
         </Card>
       </Form>

@@ -2,6 +2,8 @@ import {
   Injectable,
   Inject,
   NotFoundException,
+  BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { Payment } from './payments.entity';
 import { CreatePaymentDto } from './dto/payments_create.dto';
@@ -14,6 +16,7 @@ import { Op } from 'sequelize';
 import { Invoice } from '../INVOICES/invoices.entity';
 import { InvoicesService } from '../INVOICES/invoices.service';
 import { Contact } from '../CONTACTS/contacts.entity';
+import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
 
 @Injectable()
 export class PaymentsService {
@@ -21,6 +24,7 @@ export class PaymentsService {
     @Inject(KEYNAMES.PAYMENTS)
     private readonly paymentRepository: typeof Payment,
     private readonly invoicesService: InvoicesService,
+    @Optional() private readonly notificationsService: NotificationsService,
   ) { }
 
   async findAllPaginated(
@@ -96,18 +100,117 @@ export class PaymentsService {
     });
   }
 
-  async create(tenantId: string, dto: CreatePaymentDto): Promise<Payment> {
+  async create(tenantId: string, dto: CreatePaymentDto & { received_by?: string; source?: string }): Promise<Payment> {
     const payment = await this.paymentRepository.create({
       tenant_id: tenantId,
+      status: 'confirmed',
+      source: dto.source || 'manual',
+      received_by: dto.received_by,
       ...dto,
     });
 
-    // Record payment in the invoice to update balance and status
+    // Recalculate invoice balance from all confirmed payments
     if (dto.invoice_id) {
-      await this.invoicesService.recordPayment(dto.invoice_id, tenantId, dto.amount);
+      await this.invoicesService.recalculatePaidAmount(dto.invoice_id, tenantId);
     }
 
     return payment;
+  }
+
+  async getPendingVerification(tenantId: string): Promise<Payment[]> {
+    return this.paymentRepository.findAll({
+      where: { tenant_id: tenantId, status: 'pending_verification', is_deleted: false },
+      include: [
+        {
+          model: Invoice,
+          attributes: ['id', 'invoice_number', 'total', 'contact_id'],
+          include: [{ model: Contact, attributes: ['id', 'first_name', 'last_name'] }],
+        },
+      ],
+      order: [['created_at', 'ASC']],
+    });
+  }
+
+  async createFromPortal(invoicePublicToken: string, dto: {
+    amount: number;
+    method: string;
+    reference?: string;
+    notes?: string;
+    screenshot_url?: string;
+  }): Promise<Payment> {
+    const invoice = await this.invoicesService.getByPublicToken(invoicePublicToken);
+
+    const payment = await this.paymentRepository.create({
+      tenant_id: invoice.tenant_id,
+      invoice_id: invoice.id,
+      amount: dto.amount,
+      method: dto.method,
+      gateway_transaction_id: dto.reference,
+      notes: dto.notes,
+      screenshot_url: dto.screenshot_url,
+      source: 'portal',
+      status: 'pending_verification',
+      paid_at: new Date(),
+    } as any);
+
+    // Notify all admins/dispatchers in this tenant
+    if (this.notificationsService) {
+      const customerName = invoice.contact
+        ? `${(invoice.contact as any).first_name} ${(invoice.contact as any).last_name}`
+        : 'Customer';
+      await this.notifyTenantUsers(
+        invoice.tenant_id,
+        `New payment of ${dto.amount} submitted by ${customerName} for Invoice ${invoice.invoice_number || invoice.id} — pending your verification`,
+        'payment_pending_verification',
+        { payment_id: payment.id, invoice_id: invoice.id },
+      );
+    }
+
+    return payment;
+  }
+
+  async confirmPayment(id: string, tenantId: string): Promise<Payment> {
+    const payment = await this.findById(id, tenantId);
+    if (payment.status !== 'pending_verification') {
+      throw new BadRequestException('Payment is not pending verification');
+    }
+    await payment.update({ status: 'confirmed' });
+    await this.invoicesService.recalculatePaidAmount(payment.invoice_id, tenantId);
+
+    // Notify customer via portal notification (best-effort)
+    return payment;
+  }
+
+  async rejectPayment(id: string, tenantId: string, reason: string): Promise<Payment> {
+    const payment = await this.findById(id, tenantId);
+    if (payment.status !== 'pending_verification') {
+      throw new BadRequestException('Payment is not pending verification');
+    }
+    await payment.update({ status: 'rejected', rejection_reason: reason });
+    return payment;
+  }
+
+  private async notifyTenantUsers(tenantId: string, message: string, type: string, data: any): Promise<void> {
+    if (!this.notificationsService) return;
+    try {
+      const { User } = await import('../USERS/users.entity');
+      const admins = await User.findAll({
+        where: { tenant_id: tenantId, is_deleted: false, is_active: true },
+        attributes: ['id'],
+      });
+      for (const admin of admins) {
+        await this.notificationsService.create(tenantId, {
+          user_id: admin.id,
+          type,
+          title: 'Payment Pending Verification',
+          body: message,
+          data,
+          channel: 'in_app',
+        });
+      }
+    } catch (e) {
+      // Best-effort
+    }
   }
 
   async update(

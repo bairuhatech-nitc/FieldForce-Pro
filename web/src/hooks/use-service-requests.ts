@@ -150,3 +150,86 @@ export function useProcessServiceRequestApproval() {
     },
   });
 }
+
+export function useConvertToWorkOrder() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => serviceRequestsApi.convertToWorkOrder(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['work-orders'] });
+      const woNumber = response.data.data?.workOrder?.wo_number;
+      addNotification({ type: 'success', message: `Work Order ${woNumber} created successfully` });
+    },
+    onError: (err) => {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = e?.response?.data?.message || e?.message || 'Failed to convert to work order';
+      addNotification({ type: 'error', message: msg });
+    },
+  });
+}
+
+export function useApproveAndConvert() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => serviceRequestsApi.approveAndConvert(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['work-orders'] });
+      const woNumber = response.data.data?.workOrder?.wo_number;
+      addNotification({ type: 'success', message: `Work Order ${woNumber} created successfully` });
+    },
+    onError: (err) => {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = e?.response?.data?.message || e?.message || 'Failed to approve and convert';
+      addNotification({ type: 'error', message: msg });
+    },
+  });
+}
+
+export function useAssignServiceRequestTechnician() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ id, technicianId, technicianName }: { id: string; technicianId: string; technicianName: string }) =>
+      serviceRequestsApi.assignTechnician(id, technicianId, technicianName),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      addNotification({ type: 'success', message: 'Technician assigned successfully' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to assign technician' });
+    },
+  });
+}
+
+export function useQueue() {
+  return useQuery({
+    queryKey: ['service-requests', 'queue'],
+    queryFn: async () => {
+      const response = await serviceRequestsApi.getQueue();
+      return response.data.data;
+    },
+  });
+}
+
+export function useUpdatePriority() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ id, priority }: { id: string; priority: string }) => serviceRequestsApi.updatePriority(id, priority),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      addNotification({ type: 'success', message: 'Priority updated successfully' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to update priority' });
+    },
+  });
+}

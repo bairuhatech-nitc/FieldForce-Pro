@@ -24,6 +24,7 @@ import type {
   PartsCatalogItem,
   AssetMaintenancePlan,
   ServiceRequest,
+  RequestAttachment,
   Estimate,
   EstimateLineItem,
   WorkOrderNote,
@@ -100,6 +101,14 @@ export const workOrdersApi = {
 
   updateStatus: (id: string, status: string) =>
     api.patch<ApiResponse<WorkOrder>>(`/work-orders/${id}/status`, { status }),
+
+  // Technician accepts an assigned job (transitions to scheduled).
+  accept: (id: string) =>
+    api.post<ApiResponse<WorkOrder>>(`/work-orders/${id}/accept`),
+
+  // Technician declines an assigned job (unassigns, resets to new). Reason required.
+  decline: (id: string, reason: string) =>
+    api.post<ApiResponse<WorkOrder>>(`/work-orders/${id}/decline`, { reason }),
 
   update: (id: string, dto: Partial<WorkOrder>) =>
     api.put<ApiResponse<WorkOrder>>(`/work-orders/${id}`, dto),
@@ -332,6 +341,10 @@ export const serviceRequestsApi = {
 
   updateStatus: (id: string, status: string) =>
     api.patch<ApiResponse<ServiceRequest>>(`/service-requests/${id}/status`, { status }),
+
+  // Attachments uploaded against this service request (request_attachments).
+  getAttachments: (requestId: string) =>
+    api.get<ApiResponse<RequestAttachment[]>>(`/attachments/${requestId}`),
 };
 
 // ─── Service Agreements API ──────────────────────────────────────────────────
@@ -356,9 +369,13 @@ export const estimatesApi = {
   getById: (id: string) =>
     api.get<ApiResponse<Estimate>>(`/estimates/${id}`),
 
+  getByWorkOrder: (workOrderId: string) =>
+    api.get<ApiResponse<Estimate[]>>(`/estimates/work-order/${workOrderId}`),
+
   create: (dto: {
     contact_id?: string;
     request_id?: string;
+    work_order_id?: string;
     notes?: string;
     expiry_date?: string;
     subtotal?: number;
@@ -378,6 +395,18 @@ export const estimatesApi = {
 
   reject: (id: string, reason?: string) =>
     api.post<ApiResponse<Estimate>>(`/estimates/${id}/reject`, reason ? { reason } : {}),
+
+  submitForApproval: (id: string) =>
+    api.post<ApiResponse<Estimate>>(`/estimates/${id}/submit-for-approval`),
+
+  adminApprove: (id: string) =>
+    api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-approve`),
+
+  adminReject: (id: string, reason?: string) =>
+    api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-reject`, { reason }),
+
+  generateInvoice: (id: string) =>
+    api.post<ApiResponse<Invoice>>(`/estimates/${id}/generate-invoice`),
 
   convertToWorkOrder: (id: string) =>
     api.post<ApiResponse<unknown>>(`/estimates/${id}/convert-to-work-order`),
@@ -575,8 +604,20 @@ export const invoicesApi = {
   updateStatus: (id: string, status: string) =>
     api.patch<ApiResponse<Invoice>>(`/invoices/${id}/status`, { status }),
 
+  // Persist the customer's on-screen signature against the invoice.
+  saveSignature: (id: string, signatureUrl: string, signedByName?: string) =>
+    api.post<ApiResponse<Invoice>>(`/invoices/${id}/signature`, {
+      signature_url: signatureUrl,
+      ...(signedByName ? { signed_by_name: signedByName } : {}),
+    }),
+
+  // Submit the invoice into the approval chain (Step 8).
+  submitForApproval: (id: string) =>
+    api.post<ApiResponse<Invoice>>(`/invoices/${id}/submit-for-approval`),
+
   create: (dto: {
     work_order_id?: string;
+    service_request_id?: string;
     contact_id?: string;
     total?: number;
     subtotal?: number;
@@ -601,7 +642,6 @@ export const invoiceLineItemsApi = {
     tax_rate?: number;
     discount?: number;
     total?: number;
-    sort_order?: number;
   }) => api.post<ApiResponse<InvoiceLineItem>>('/invoice-line-items', dto),
 
   getByInvoice: (invoiceId: string) =>
@@ -677,6 +717,8 @@ export const paymentsApi = {
     amount: number;
     method: string;
     gateway_transaction_id?: string;
+    status?: string;
+    paid_at?: string;
     notes?: string;
   }) => api.post<ApiResponse<Payment>>('/payments', dto),
 
@@ -696,7 +738,7 @@ export const paymentsApi = {
     currency?: string;
     invoice_id?: string;
     appointment_id?: string;
-  }) => api.post<ApiResponse<{ order_id: string; amount: number; currency: string; key_id: string }>>('/payments/razorpay/create-order', dto),
+  }) => api.post<ApiResponse<{ order_id: string; amount: number; currency: string; key_id: string; mock?: boolean }>>('/payments/razorpay/create-order', dto),
 
   verifyRazorpayPayment: (dto: {
     razorpay_order_id: string;
@@ -709,6 +751,24 @@ export const paymentsApi = {
   // UPI
   getUpiConfig: () =>
     api.get<ApiResponse<{ configured: boolean; vpa?: string; name?: string }>>('/payments/upi/config'),
+};
+
+// ─── Tenant payment settings (Step 12) ───────────────────────────────────────
+
+export interface TenantPaymentConfig {
+  upi_vpa?: string;
+  upi_name?: string;
+  qr_image_url?: string;
+  bank_account_name?: string;
+  bank_account_number?: string;
+  bank_ifsc?: string;
+  bank_name?: string;
+  instructions?: string;
+}
+
+export const tenantPaymentApi = {
+  getPaymentSettings: () =>
+    api.get<ApiResponse<TenantPaymentConfig>>('/tenants/me/payment-settings'),
 };
 
 // ─── Notifications API ───────────────────────────────────────────────────────
@@ -779,6 +839,21 @@ export const reportsApi = {
     api.get<ApiResponse<any>>('/reports/performance', { params }),
 };
 
+// ─── Audit Logs API ──────────────────────────────────────────────────────────
+
+export interface MobileAuditLogPayload {
+  action: string;
+  module: string;
+  record_id?: string;
+  old_values?: Record<string, unknown>;
+  new_values?: Record<string, unknown>;
+}
+
+export const auditLogsApi = {
+  create: (payload: MobileAuditLogPayload) =>
+    api.post<ApiResponse<null>>('/audit-logs', payload),
+};
+
 // ─── Reviews API ──────────────────────────────────────────────────────────────
 
 export const reviewsApi = {
@@ -801,4 +876,14 @@ export const voiceApi = {
     api.post<ApiResponse<any>>('/voice/transcribe', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+};
+
+// ─── Document Approvals API ──────────────────────────────────────────────────
+
+export const documentApprovalsApi = {
+  getByDocument: (documentId: string) =>
+    api.get<ApiResponse<any[]>>(`/document-approvals/document/${documentId}`),
+
+  process: (id: string, dto: { action: 'APPROVE' | 'REJECT'; comments?: string }) =>
+    api.post<ApiResponse<any>>(`/document-approvals/${id}/process`, dto),
 };

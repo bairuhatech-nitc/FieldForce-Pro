@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Form,
@@ -73,6 +74,7 @@ interface JobSheetItem {
 }
 
 export default function JobSheetBuilderPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -105,7 +107,7 @@ export default function JobSheetBuilderPage() {
 
   const handleSubmit = async (values: Record<string, unknown>) => {
     if (items.length === 0) {
-      message.warning('Please add at least one item to the job sheet');
+      message.warning(t('jobSheetsBuilder.errorEmptyItems'));
       return;
     }
 
@@ -127,16 +129,21 @@ export default function JobSheetBuilderPage() {
   };
 
   const addItem = (type: string) => {
+    const typeLabel = t(`jobSheetsBuilder.itemTypes.${type}.label`, { defaultValue: type });
     const newItem: JobSheetItem = {
       id: `item_${Date.now()}`,
       type,
-      label: `New ${type} item`,
+      label: t('jobSheetsBuilder.newItemLabel', { type: typeLabel }),
       required: false,
       description: '',
     };
 
     if (type === 'dropdown') {
-      newItem.options = ['Option 1', 'Option 2', 'Option 3'];
+      newItem.options = [
+        t('jobSheetsBuilder.defaultOption1'),
+        t('jobSheetsBuilder.defaultOption2'),
+        t('jobSheetsBuilder.defaultOption3'),
+      ];
     }
 
     setItems([...items, newItem]);
@@ -151,14 +158,14 @@ export default function JobSheetBuilderPage() {
 
   const deleteItem = (itemId: string) => {
     setItems(items.filter((item) => item.id !== itemId));
-    message.success('Item deleted');
+    message.success(t('jobSheetsBuilder.itemDeleted'));
   };
 
   const saveItemEdit = (editedItem: JobSheetItem) => {
     setItems(items.map((item) => (item.id === editedItem.id ? editedItem : item)));
     setEditModalVisible(false);
     setCurrentItem(null);
-    message.success('Item updated');
+    message.success(t('jobSheetsBuilder.itemUpdated'));
   };
 
   const handleDragStart = (index: number) => {
@@ -189,7 +196,7 @@ export default function JobSheetBuilderPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('jobSheetsBuilder.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -198,8 +205,8 @@ export default function JobSheetBuilderPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Job Sheet Template' : 'Create Job Sheet Template'}
-        subtitle="Build interactive checklists with drag-and-drop"
+        title={isEdit ? t('jobSheetsBuilder.editTitle') : t('jobSheetsBuilder.createTitle')}
+        subtitle={t('jobSheetsBuilder.subtitle')}
         onBack={() => navigate('/job-sheets/templates')}
       />
 
@@ -219,34 +226,34 @@ export default function JobSheetBuilderPage() {
                   <Col xs={24} md={12}>
                     <Form.Item
                       name="name"
-                      label="Template Name"
-                      rules={[{ required: true, message: 'Please enter a template name' }]}
+                      label={t('jobSheetsBuilder.templateName')}
+                      rules={[{ required: true, message: t('jobSheetsBuilder.templateNameRequired') }]}
                       style={{ marginBottom: 0 }}
                     >
-                      <Input placeholder="e.g. HVAC Inspection Checklist" />
+                      <Input placeholder={t('jobSheetsBuilder.templateNamePlaceholder')} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={8}>
-                    <Form.Item name="category" label="Category" style={{ marginBottom: 0 }}>
-                      <Select placeholder="Select category" allowClear>
-                        <Select.Option value="Inspection">Inspection</Select.Option>
-                        <Select.Option value="Maintenance">Maintenance</Select.Option>
-                        <Select.Option value="Repair">Repair</Select.Option>
-                        <Select.Option value="Installation">Installation</Select.Option>
-                        <Select.Option value="Safety">Safety</Select.Option>
-                        <Select.Option value="General">General</Select.Option>
+                    <Form.Item name="category" label={t('jobSheetsBuilder.category')} style={{ marginBottom: 0 }}>
+                      <Select placeholder={t('jobSheetsBuilder.categoryPlaceholder')} allowClear>
+                        <Select.Option value="Inspection">{t('jobSheetsBuilder.categories.inspection')}</Select.Option>
+                        <Select.Option value="Maintenance">{t('jobSheetsBuilder.categories.maintenance')}</Select.Option>
+                        <Select.Option value="Repair">{t('jobSheetsBuilder.categories.repair')}</Select.Option>
+                        <Select.Option value="Installation">{t('jobSheetsBuilder.categories.installation')}</Select.Option>
+                        <Select.Option value="Safety">{t('jobSheetsBuilder.categories.safety')}</Select.Option>
+                        <Select.Option value="General">{t('jobSheetsBuilder.categories.general')}</Select.Option>
                       </Select>
                     </Form.Item>
                   </Col>
                   <Col xs={24} md={4}>
-                    <Form.Item name="is_active" label="Status" valuePropName="checked" style={{ marginBottom: 0 }}>
-                      <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+                    <Form.Item name="is_active" label={t('jobSheetsBuilder.status')} valuePropName="checked" style={{ marginBottom: 0 }}>
+                      <Switch checkedChildren={t('jobSheetsBuilder.active')} unCheckedChildren={t('jobSheetsBuilder.inactive')} />
                     </Form.Item>
                   </Col>
                 </Row>
 
-                <Form.Item name="description" label="Description" style={{ marginBottom: 0 }}>
-                  <TextArea rows={2} placeholder="Describe this template" />
+                <Form.Item name="description" label={t('jobSheetsBuilder.description')} style={{ marginBottom: 0 }}>
+                  <TextArea rows={2} placeholder={t('jobSheetsBuilder.descriptionPlaceholder')} />
                 </Form.Item>
               </Space>
             </Card>
@@ -260,28 +267,28 @@ export default function JobSheetBuilderPage() {
                     key: 'builder',
                     label: (
                       <span>
-                        <EditOutlined /> Builder
+                        <EditOutlined /> {t('jobSheetsBuilder.builderTab')}
                       </span>
                     ),
                     children: (
                       <div>
                         <div style={{ marginBottom: 16 }}>
                           <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                            Checklist Items ({items.length})
+                            {t('jobSheetsBuilder.checklistItemsCount', { count: items.length })}
                           </Text>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            Drag items to reorder. Click to edit or delete.
+                            {t('jobSheetsBuilder.checklistItemsSubtitle')}
                           </Text>
                         </div>
 
                         {items.length === 0 ? (
                           <Empty
-                            description="No items added yet"
+                            description={t('jobSheetsBuilder.noItemsAdded')}
                             image={Empty.PRESENTED_IMAGE_SIMPLE}
                             style={{ padding: '40px 0' }}
                           >
                             <Text type="secondary">
-                              Add items from the panel on the right to build your checklist
+                              {t('jobSheetsBuilder.noItemsAddedSub')}
                             </Text>
                           </Empty>
                         ) : (
@@ -310,8 +317,8 @@ export default function JobSheetBuilderPage() {
                                   <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                       <Text strong>{item.label}</Text>
-                                      {item.required && <Tag color="red">Required</Tag>}
-                                      <Tag color="blue">{item.type}</Tag>
+                                      {item.required && <Tag color="red">{t('jobSheetsBuilder.required')}</Tag>}
+                                      <Tag color="blue">{t(`jobSheetsBuilder.itemTypes.${item.type}.label`, { defaultValue: item.type })}</Tag>
                                     </div>
                                     {item.description && (
                                       <Text type="secondary" style={{ fontSize: 12 }}>
@@ -320,7 +327,7 @@ export default function JobSheetBuilderPage() {
                                     )}
                                   </div>
                                   <Space size="small">
-                                    <Tooltip title="Edit">
+                                    <Tooltip title={t('jobSheetsBuilder.edit')}>
                                       <Button
                                         type="text"
                                         size="small"
@@ -328,7 +335,7 @@ export default function JobSheetBuilderPage() {
                                         onClick={() => editItem(item)}
                                       />
                                     </Tooltip>
-                                    <Tooltip title="Delete">
+                                    <Tooltip title={t('jobSheetsBuilder.delete')}>
                                       <Button
                                         type="text"
                                         size="small"
@@ -350,7 +357,7 @@ export default function JobSheetBuilderPage() {
                     key: 'preview',
                     label: (
                       <span>
-                        <EyeOutlined /> Preview
+                        <EyeOutlined /> {t('jobSheetsBuilder.previewTab')}
                       </span>
                     ),
                     children: (
@@ -365,7 +372,7 @@ export default function JobSheetBuilderPage() {
                           }}
                         >
                           <Title level={4} style={{ marginTop: 0 }}>
-                            {form.getFieldValue('name') || 'Job Sheet Template'}
+                            {form.getFieldValue('name') || t('jobSheetsBuilder.defaultTemplateName')}
                           </Title>
                           {form.getFieldValue('description') && (
                             <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
@@ -374,7 +381,7 @@ export default function JobSheetBuilderPage() {
                           )}
 
                           {items.length === 0 ? (
-                            <Empty description="No items to preview" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                            <Empty description={t('jobSheetsBuilder.noItemsPreview')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
                           ) : (
                             <Space direction="vertical" style={{ width: '100%' }} size="large">
                               {items.map((item, index) => (
@@ -395,18 +402,18 @@ export default function JobSheetBuilderPage() {
 
                                   {/* Preview different item types */}
                                   {item.type === 'checkbox' && (
-                                    <Checkbox>Completed</Checkbox>
+                                    <Checkbox>{t('jobSheetsBuilder.completed')}</Checkbox>
                                   )}
                                   {item.type === 'text' && (
-                                    <Input placeholder={item.placeholder || 'Enter text'} disabled />
+                                    <Input placeholder={item.placeholder || t('jobSheetsBuilder.enterText')} disabled />
                                   )}
                                   {item.type === 'textarea' && (
-                                    <TextArea rows={3} placeholder={item.placeholder || 'Enter text'} disabled />
+                                    <TextArea rows={3} placeholder={item.placeholder || t('jobSheetsBuilder.enterText')} disabled />
                                   )}
                                   {item.type === 'number' && (
                                     <InputNumber
                                       style={{ width: 200 }}
-                                      placeholder="Enter number"
+                                      placeholder={t('jobSheetsBuilder.enterNumber')}
                                       min={item.min}
                                       max={item.max}
                                       disabled
@@ -419,7 +426,7 @@ export default function JobSheetBuilderPage() {
                                     <DatePicker.TimePicker style={{ width: 200 }} disabled />
                                   )}
                                   {item.type === 'dropdown' && (
-                                    <Select style={{ width: '100%' }} placeholder="Select an option" disabled>
+                                    <Select style={{ width: '100%' }} placeholder={t('jobSheetsBuilder.selectOption')} disabled { ... { value: undefined } }>
                                       {item.options?.map((opt, i) => (
                                         <Select.Option key={i} value={opt}>
                                           {opt}
@@ -444,7 +451,7 @@ export default function JobSheetBuilderPage() {
                                     >
                                       <CameraOutlined style={{ fontSize: 32 }} />
                                       <Text type="secondary" style={{ fontSize: 12 }}>
-                                        Capture Photo
+                                        {t('jobSheetsBuilder.capturePhoto')}
                                       </Text>
                                     </div>
                                   )}
@@ -461,7 +468,7 @@ export default function JobSheetBuilderPage() {
                                         color: '#999',
                                       }}
                                     >
-                                      <Text type="secondary">Signature Area</Text>
+                                      <Text type="secondary">{t('jobSheetsBuilder.signatureArea')}</Text>
                                     </div>
                                   )}
                                   {item.type === 'rating' && (
@@ -480,7 +487,7 @@ export default function JobSheetBuilderPage() {
                         </div>
                         <Divider />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          This is how the job sheet will appear to field technicians.
+                          {t('jobSheetsBuilder.previewSubtitle')}
                         </Text>
                       </div>
                     ),
@@ -498,10 +505,10 @@ export default function JobSheetBuilderPage() {
                     loading={createTemplate.isPending || updateTemplate.isPending}
                     size="large"
                   >
-                    {isEdit ? 'Update Template' : 'Create Template'}
+                    {isEdit ? t('jobSheetsBuilder.updateTemplate') : t('jobSheetsBuilder.createTemplate')}
                   </Button>
                   <Button onClick={() => navigate('/job-sheets/templates')} size="large">
-                    Cancel
+                    {t('jobSheetsBuilder.cancel')}
                   </Button>
                 </Space>
               </Form.Item>
@@ -511,12 +518,12 @@ export default function JobSheetBuilderPage() {
           {/* Item Types Sidebar */}
           <Col xs={24} lg={8}>
             <Card
-              title="Add Items"
+              title={t('jobSheetsBuilder.addItemsTitle')}
               size="small"
               style={{ position: 'sticky', top: 16 }}
             >
               <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 16 }}>
-                Click an item type to add it to your checklist
+                {t('jobSheetsBuilder.addItemsSubtitle')}
               </Text>
 
               <Space direction="vertical" style={{ width: '100%' }} size="small">
@@ -538,9 +545,9 @@ export default function JobSheetBuilderPage() {
                       {itemType.icon}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 500 }}>{itemType.label}</div>
+                      <div style={{ fontWeight: 500 }}>{t(`jobSheetsBuilder.itemTypes.${itemType.value}.label`)}</div>
                       <div style={{ fontSize: 11, color: '#999', fontWeight: 400 }}>
-                        {itemType.description}
+                        {t(`jobSheetsBuilder.itemTypes.${itemType.value}.description`)}
                       </div>
                     </div>
                     <PlusOutlined style={{ color: '#1890ff' }} />
@@ -552,14 +559,14 @@ export default function JobSheetBuilderPage() {
 
               <div style={{ padding: '12px', backgroundColor: '#fff7e6', borderRadius: 6, border: '1px solid #ffd591' }}>
                 <Title level={5} style={{ marginTop: 0, fontSize: 13 }}>
-                  💡 Builder Tips
+                  {t('jobSheetsBuilder.builderTipsTitle')}
                 </Title>
                 <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12 }}>
-                  <li>Drag items to reorder</li>
-                  <li>Click edit to configure</li>
-                  <li>Mark items as required</li>
-                  <li>Use preview to test flow</li>
-                  <li>Photo/signature for proof</li>
+                  <li>{t('jobSheetsBuilder.tips.dragToReorder')}</li>
+                  <li>{t('jobSheetsBuilder.tips.clickEdit')}</li>
+                  <li>{t('jobSheetsBuilder.tips.markRequired')}</li>
+                  <li>{t('jobSheetsBuilder.tips.usePreview')}</li>
+                  <li>{t('jobSheetsBuilder.tips.photoSignature')}</li>
                 </ul>
               </div>
             </Card>
@@ -590,6 +597,7 @@ interface ItemEditModalProps {
 }
 
 function ItemEditModal({ visible, item, onSave, onCancel }: ItemEditModalProps) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -634,9 +642,11 @@ function ItemEditModal({ visible, item, onSave, onCancel }: ItemEditModalProps) 
 
   if (!item) return null;
 
+  const typeLabel = t(`jobSheetsBuilder.itemTypes.${item.type}.label`, { defaultValue: item.type });
+
   return (
     <Modal
-      title={`Edit ${item.type} Item`}
+      title={t('jobSheetsBuilder.editItemModalTitle', { type: typeLabel })}
       open={visible}
       onOk={handleSave}
       onCancel={() => {
@@ -644,41 +654,41 @@ function ItemEditModal({ visible, item, onSave, onCancel }: ItemEditModalProps) 
         onCancel();
       }}
       width={600}
-      okText="Save"
+      okText={t('jobSheetsBuilder.save')}
     >
       <Form form={form} layout="vertical">
         <Form.Item
           name="label"
-          label="Label"
-          rules={[{ required: true, message: 'Please enter a label' }]}
+          label={t('jobSheetsBuilder.modal.label')}
+          rules={[{ required: true, message: t('jobSheetsBuilder.modal.labelRequired') }]}
         >
-          <Input placeholder="e.g. Check filter condition" />
+          <Input placeholder={t('jobSheetsBuilder.modal.labelPlaceholder')} />
         </Form.Item>
 
-        <Form.Item name="description" label="Description (optional)">
-          <TextArea rows={2} placeholder="Add instructions or notes" />
+        <Form.Item name="description" label={t('jobSheetsBuilder.modal.description')}>
+          <TextArea rows={2} placeholder={t('jobSheetsBuilder.modal.descriptionPlaceholder')} />
         </Form.Item>
 
         <Form.Item name="required" valuePropName="checked">
-          <Checkbox>Required field</Checkbox>
+          <Checkbox>{t('jobSheetsBuilder.modal.requiredField')}</Checkbox>
         </Form.Item>
 
         {(item.type === 'text' || item.type === 'textarea') && (
-          <Form.Item name="placeholder" label="Placeholder">
-            <Input placeholder="Placeholder text" />
+          <Form.Item name="placeholder" label={t('jobSheetsBuilder.modal.placeholder')}>
+            <Input placeholder={t('jobSheetsBuilder.modal.placeholderPlaceholder')} />
           </Form.Item>
         )}
 
         {item.type === 'number' && (
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="min" label="Minimum Value">
-                <InputNumber style={{ width: '100%' }} placeholder="Min" />
+              <Form.Item name="min" label={t('jobSheetsBuilder.modal.minValue')}>
+                <InputNumber style={{ width: '100%' }} placeholder={t('jobSheetsBuilder.modal.minPlaceholder')} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="max" label="Maximum Value">
-                <InputNumber style={{ width: '100%' }} placeholder="Max" />
+              <Form.Item name="max" label={t('jobSheetsBuilder.modal.maxValue')}>
+                <InputNumber style={{ width: '100%' }} placeholder={t('jobSheetsBuilder.modal.maxPlaceholder')} />
               </Form.Item>
             </Col>
           </Row>
@@ -687,12 +697,12 @@ function ItemEditModal({ visible, item, onSave, onCancel }: ItemEditModalProps) 
         {item.type === 'dropdown' && (
           <Form.Item
             name="options"
-            label="Options (one per line)"
-            rules={[{ required: true, message: 'Please enter options' }]}
+            label={t('jobSheetsBuilder.modal.options')}
+            rules={[{ required: true, message: t('jobSheetsBuilder.modal.optionsRequired') }]}
           >
             <TextArea
               rows={5}
-              placeholder="Option 1&#10;Option 2&#10;Option 3"
+              placeholder={t('jobSheetsBuilder.modal.optionsPlaceholder')}
             />
           </Form.Item>
         )}

@@ -66,4 +66,16 @@ export const workOrdersApi = {
   submitForApproval(id: string, payload: { workflow_id: string; due_date?: string }) {
     return api.post<ApiResponse<unknown>>(`/work-orders/${id}/submit-for-approval`, payload);
   },
+
+  getMyJobs(params?: PageOptions & { status?: string }) {
+    return api.get<ApiResponse<WorkOrder[]>>('/work-orders/my-jobs', { params });
+  },
+
+  acceptJob(id: string) {
+    return api.post<ApiResponse<WorkOrder>>(`/work-orders/${id}/accept`);
+  },
+
+  declineJob(id: string, reason: string) {
+    return api.post<ApiResponse<WorkOrder>>(`/work-orders/${id}/decline`, { reason });
+  },
 };

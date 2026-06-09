@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button, Table, Space, Tag, Tooltip, Select } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EyeOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useCommunications } from '@/hooks/use-communications';
 import PageHeader from '@/components/common/PageHeader';
@@ -58,50 +58,50 @@ export default function CommunicationListPage() {
 
   const columns: ColumnsType<CommunicationRecord> = [
     {
-      title: 'Contact',
+      title: t('communications.columns.contact'),
       key: 'contact',
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Type',
+      title: t('communications.columns.type'),
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => <Tag>{type}</Tag>,
+      render: (type: string, record: any) => (<Link to={`/communications/${record.id}`}><Tag>{type}</Tag></Link>),
     },
     {
-      title: 'Channel',
+      title: t('communications.columns.channel'),
       dataIndex: 'channel',
       key: 'channel',
-      render: (channel: string) => (
+      render: (channel: string, record: any) => (
         <Tag color={CHANNEL_COLORS[channel] || 'default'}>
           {channel ? channel.charAt(0).toUpperCase() + channel.slice(1) : '-'}
         </Tag>
       ),
     },
     {
-      title: 'Subject',
+      title: t('communications.columns.subject'),
       dataIndex: 'subject',
       key: 'subject',
-      render: (subject: string) => <span style={{ fontWeight: 500 }}>{subject}</span>,
+      render: (subject: string, record: any) => <span style={{ fontWeight: 500 }}>{subject}</span>,
     },
     {
-      title: 'Body',
+      title: t('communications.columns.body'),
       dataIndex: 'body',
       key: 'body',
-      render: (body: string) => (
+      render: (body: string, record: any) => (
         <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {body || <span style={{ color: '#999' }}>-</span>}
+          {body || <span style={{ opacity: 0.5 }}>-</span>}
         </div>
       ),
     },
     {
-      title: 'Sent At',
+      title: t('communications.columns.sentAt'),
       dataIndex: 'sent_at',
       key: 'sent_at',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string, record: any) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => {
         if (!a.sent_at) return -1;
         if (!b.sent_at) return 1;
@@ -109,16 +109,14 @@ export default function CommunicationListPage() {
       },
     },
     {
-      title: 'Actions',
+      title: t('communications.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 80,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="communications:read">
-            <Tooltip title="View">
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/communications/${record.id}`)} />
-            </Tooltip>
+            
           </PermissionGuard>
         </Space>
       ),
@@ -128,12 +126,12 @@ export default function CommunicationListPage() {
   return (
     <div>
       <PageHeader
-        title="Communications"
-        subtitle="View communication history across all channels"
+        title={t('communications.title')}
+        subtitle={t('communications.subtitle')}
         extra={
           <PermissionGuard permission="communications:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/communications/new')}>
-              New Communication
+              {t('communications.newCommunication')}
             </Button>
           </PermissionGuard>
         }
@@ -141,24 +139,24 @@ export default function CommunicationListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search communications..."
+          placeholder={t('communications.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           style={{ width: 400 }}
         />
         <Select
-          placeholder="Filter by channel"
+          placeholder={t('communications.filterPlaceholder')}
           allowClear
           value={channelFilter}
           onChange={(value) => { setChannelFilter(value); setPage(1); }}
           style={{ width: 200 }}
           options={[
-            { value: 'email', label: 'Email' },
-            { value: 'sms', label: 'SMS' },
-            { value: 'whatsapp', label: 'WhatsApp' },
-            { value: 'push', label: 'Push' },
-            { value: 'in_app', label: 'In-App' },
+            { value: 'email', label: t('communications.channels.email') },
+            { value: 'sms', label: t('communications.channels.sms') },
+            { value: 'whatsapp', label: t('communications.channels.whatsapp') },
+            { value: 'push', label: t('communications.channels.push') },
+            { value: 'in_app', label: t('communications.channels.inApp') },
           ]}
         />
       </div>
@@ -173,7 +171,7 @@ export default function CommunicationListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} communications`,
+          showTotal: (total) => t('communications.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

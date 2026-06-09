@@ -2,7 +2,37 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Alert, Button, Table, Space, Tooltip, Tag, Tabs, Card, Descriptions, Skeleton, Modal, Select, Divider, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, UserAddOutlined, ReloadOutlined, CalendarOutlined, FileTextOutlined, TeamOutlined } from '@ant-design/icons';
+import { EyeOutlined, UserAddOutlined, ReloadOutlined, CalendarOutlined, FileTextOutlined, TeamOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { workOrdersApi } from '@/api/work-orders.api';
+import type { WorkOrder } from '@/types/models.types';
+
+// Fix default Leaflet marker icons in bundlers
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+const blueIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+const greenIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
 
 const { Text } = Typography;
 import { useTranslation } from 'react-i18next';
@@ -28,13 +58,6 @@ const statusColors: Record<string, string> = {
   cancelled: 'red',
 };
 
-const statusOptions = [
-  { value: 'scheduled', label: 'Scheduled' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
-
 const statusTransitions: Record<string, string[]> = {
   scheduled: ['in_progress', 'cancelled'],
   in_progress: ['completed', 'cancelled'],
@@ -42,13 +65,23 @@ const statusTransitions: Record<string, string[]> = {
   cancelled: [],
 };
 
-function formatStatus(status: string): string {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-}
-
 export default function DispatchBoardPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
+
+  const formatStatus = (status: string): string => {
+    const key = status === 'in_progress' ? 'inProgress' : status;
+    return t(`dispatchBoard.status.${key}`, {
+      defaultValue: status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+    });
+  };
+
+  const statusOptions = [
+    { value: 'scheduled', label: t('dispatchBoard.status.scheduled') },
+    { value: 'in_progress', label: t('dispatchBoard.status.inProgress') },
+    { value: 'completed', label: t('dispatchBoard.status.completed') },
+    { value: 'cancelled', label: t('dispatchBoard.status.cancelled') },
+  ];
 
   const initialTab = searchParams.get('tab') || 'all';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -178,19 +211,34 @@ export default function DispatchBoardPage() {
     queryClient.invalidateQueries({ queryKey: ['appointments'] });
   }, [queryClient]);
 
+  // Live map: fetch all work orders with locations, auto-refresh every 30s
+  const { data: mapWorkOrders = [], refetch: refetchMap } = useQuery({
+    queryKey: ['work-orders', 'dispatch-map'],
+    queryFn: async () => {
+      const res = await workOrdersApi.getAllNonPaginated();
+      return (res.data.data || []) as WorkOrder[];
+    },
+    enabled: activeTab === 'map',
+    refetchInterval: activeTab === 'map' ? 30000 : false,
+  });
+
+  const jobsWithLocation = mapWorkOrders.filter(
+    (wo) => wo.location?.lat && wo.location?.lng,
+  );
+
   // ─── Shared columns (without actions) ─────────────────────────────
 
   const baseColumns: ColumnsType<ServiceAppointment> = [
     {
-      title: 'Agent',
+      title: t('dispatchBoard.columns.agent'),
       key: 'agent',
       render: (_, record) =>
         record.agent
           ? `${record.agent.first_name} ${record.agent.last_name}`
-          : <Tag color="orange">Unassigned</Tag>,
+          : <Tag color="orange">{t('dispatchBoard.status.unassigned')}</Tag>,
     },
     {
-      title: 'Work Order',
+      title: t('dispatchBoard.columns.workOrder'),
       key: 'work_order',
       render: (_, record) =>
         record.work_order
@@ -198,7 +246,7 @@ export default function DispatchBoardPage() {
           : <span style={{ color: '#999' }}>{record.work_order_id || '-'}</span>,
     },
     {
-      title: 'Status',
+      title: t('dispatchBoard.columns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -208,24 +256,24 @@ export default function DispatchBoardPage() {
       ),
     },
     {
-      title: 'Scheduled Start',
+      title: t('dispatchBoard.columns.scheduledStart'),
       dataIndex: 'scheduled_start',
       key: 'scheduled_start',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime(),
     },
     {
-      title: 'Scheduled End',
+      title: t('dispatchBoard.columns.scheduledEnd'),
       dataIndex: 'scheduled_end',
       key: 'scheduled_end',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.scheduled_end).getTime() - new Date(b.scheduled_end).getTime(),
     },
     {
-      title: 'Created At',
+      title: t('dispatchBoard.columns.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       defaultSortOrder: 'descend',
     },
@@ -237,15 +285,12 @@ export default function DispatchBoardPage() {
   const allColumns: ColumnsType<ServiceAppointment> = [
     ...baseColumns,
     {
-      title: 'Actions',
+      title: t('dispatchBoard.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 80,
       render: (_, record) => (
         <PermissionGuard anyPermissions={['service_appointments:read', 'scheduling:read']}>
-          <Tooltip title="View">
-            <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => handleViewDetail(record)} />
-          </Tooltip>
         </PermissionGuard>
       ),
     },
@@ -255,21 +300,18 @@ export default function DispatchBoardPage() {
   const newColumns: ColumnsType<ServiceAppointment> = [
     ...baseColumns,
     {
-      title: 'Actions',
+      title: t('dispatchBoard.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard anyPermissions={['service_appointments:read', 'scheduling:read']}>
-            <Tooltip title="View">
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => handleViewDetail(record)} />
-            </Tooltip>
           </PermissionGuard>
           {canAssign && !record.agent_id && (
-            <Tooltip title="Assign Technician">
+            <Tooltip title={t('dispatchBoard.actions.assignTechnician')}>
               <Button type="primary" icon={<UserAddOutlined />} size="small" onClick={() => handleOpenAssign(record)}>
-                Assign
+                {t('dispatchBoard.actions.assign')}
               </Button>
             </Tooltip>
           )}
@@ -285,15 +327,16 @@ export default function DispatchBoardPage() {
     : [];
 
   const tabItems = [
-    { key: 'all', label: 'All Appointments' },
-    { key: 'new', label: 'New / Assign' },
+    { key: 'all', label: t('dispatchBoard.tabs.allAppointments') },
+    { key: 'new', label: t('dispatchBoard.tabs.newAssign') },
+    { key: 'map', label: <span><EnvironmentOutlined style={{ marginRight: 4 }} />{t('dispatchBoard.tabs.liveMap')}</span> },
   ];
 
   return (
     <div>
       <PageHeader
         title={t('nav.scheduling')}
-        subtitle="Dispatch board for service appointments"
+        subtitle={t('dispatchBoard.header.subtitle')}
       />
 
       <Tabs
@@ -303,65 +346,123 @@ export default function DispatchBoardPage() {
         style={{ marginBottom: 16 }}
       />
 
-      <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <SearchFilter
-          placeholder="Search appointments..."
-          allowClear
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          style={{ width: 400 }}
-        />
-        {activeTab === 'all' && (
-          <Select
-            placeholder="Filter by status"
-            allowClear
-            value={statusFilter}
-            onChange={(value) => { setStatusFilter(value); setPage(1); }}
-            options={statusOptions}
-            style={{ width: 200 }}
-          />
-        )}
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={handleReload}
-        >
-          Reload
-        </Button>
-      </div>
+      {activeTab !== 'map' && (
+        <>
+          <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <SearchFilter
+              placeholder={t('dispatchBoard.filters.searchPlaceholder')}
+              allowClear
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              style={{ width: 400 }}
+            />
+            {activeTab === 'all' && (
+              <Select
+                placeholder={t('dispatchBoard.filters.statusPlaceholder')}
+                allowClear
+                value={statusFilter}
+                onChange={(value) => { setStatusFilter(value); setPage(1); }}
+                options={statusOptions}
+                style={{ width: 200 }}
+              />
+            )}
+            <Button icon={<ReloadOutlined />} onClick={handleReload}>{t('dispatchBoard.actions.reload')}</Button>
+          </div>
 
-      {activeTab === 'new' && (
-        <Alert
-          type={canAssign ? 'info' : 'warning'}
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={
-            canAssign
-              ? `You are the designated assigner for scheduling.${assignerName ? ` (${assignerName})` : ''}`
-              : scheduleAssignerId
-                ? `Only the designated assigner${assignerName ? ` (${assignerName})` : ''} can assign technicians.`
-                : 'No SCHEDULE workflow is configured. Configure a SCHEDULE workflow in Workflow Settings to designate an assigner.'
-          }
-        />
+          {activeTab === 'new' && (
+            <Alert
+              type={canAssign ? 'info' : 'warning'}
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                canAssign
+                  ? t('dispatchBoard.alerts.canAssign', { name: assignerName ? ` (${assignerName})` : '' })
+                  : scheduleAssignerId
+                    ? t('dispatchBoard.alerts.cannotAssign', { name: assignerName ? ` (${assignerName})` : '' })
+                    : t('dispatchBoard.alerts.noWorkflow')
+              }
+            />
+          )}
+
+          <Table
+            columns={columns}
+            dataSource={appointments}
+            rowKey="id"
+            loading={isLoading}
+            scroll={{ x: 1200 }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: meta?.itemCount || 0,
+              showSizeChanger: true,
+              showTotal: (total) => t('dispatchBoard.pagination.total', { total }),
+              onChange: (newPage, newPageSize) => {
+                setPage(newPage);
+                setPageSize(newPageSize);
+              },
+            }}
+          />
+        </>
       )}
 
-      <Table
-        columns={columns}
-        dataSource={appointments}
-        rowKey="id"
-        loading={isLoading}
-        scroll={{ x: 1200 }}
-        pagination={{
-          current: page,
-          pageSize,
-          total: meta?.itemCount || 0,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} appointments`,
-          onChange: (newPage, newPageSize) => {
-            setPage(newPage);
-            setPageSize(newPageSize);
-          },
-        }}
-      />
+      {activeTab === 'map' && (
+        <Card
+          extra={
+            <Button icon={<ReloadOutlined />} size="small" onClick={() => refetchMap()}>
+              {t('dispatchBoard.actions.refresh')}
+            </Button>
+          }
+        >
+          <Space style={{ marginBottom: 12 }}>
+            <Tag color="red">{t('dispatchBoard.status.unassigned')}</Tag>
+            <Tag color="blue">{t('dispatchBoard.status.assignedInProgress')}</Tag>
+            <Tag color="green">{t('dispatchBoard.status.completed')}</Tag>
+            <Text type="secondary" style={{ fontSize: 12 }}>{t('dispatchBoard.map.autoRefresh')}</Text>
+          </Space>
+          {jobsWithLocation.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px 0', color: '#999' }}>
+              {t('dispatchBoard.map.noLocations')}
+            </div>
+          ) : (
+            <div style={{ height: 500, width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid #d9d9d9' }}>
+              <MapContainer
+                center={[Number(jobsWithLocation[0].location!.lat), Number(jobsWithLocation[0].location!.lng)]}
+                zoom={11}
+                style={{ height: '100%', width: '100%' }}
+                scrollWheelZoom
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {jobsWithLocation.map((wo) => {
+                  const lat = Number(wo.location!.lat);
+                  const lng = Number(wo.location!.lng);
+                  const icon = wo.status === 'completed' || wo.status === 'closed'
+                    ? greenIcon
+                    : wo.assigned_to
+                      ? blueIcon
+                      : redIcon;
+                  return (
+                    <Marker key={wo.id} position={[lat, lng]} icon={icon}>
+                      <Popup>
+                        <strong>{wo.wo_number || wo.id}</strong>
+                        <div style={{ fontSize: 12, marginTop: 4 }}>{wo.summary}</div>
+                        <div style={{ fontSize: 12, marginTop: 2 }}>
+                          {t('dispatchBoard.map.statusLabel')}: <Tag style={{ fontSize: 11 }}>{formatStatus(wo.status)}</Tag>
+                        </div>
+                        {wo.location?.address && (
+                          <div style={{ fontSize: 12, marginTop: 2, color: '#666' }}>{wo.location.address}</div>
+                        )}
+                      </Popup>
+                    </Marker>
+                  );
+                })}
+              </MapContainer>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Assign Technician Modal */}
       <Modal
@@ -369,7 +470,7 @@ export default function DispatchBoardPage() {
         open={assignVisible}
         onCancel={() => { setAssignVisible(false); setAssignTarget(null); setSelectedAgentId(undefined); }}
         onOk={handleAssignSubmit}
-        okText="Assign"
+        okText={t('dispatchBoard.actions.assign')}
         okButtonProps={{ disabled: !selectedAgentId, loading: assignTechnician.isPending }}
         width={520}
       >
@@ -384,8 +485,8 @@ export default function DispatchBoardPage() {
               }}>
                 <UserAddOutlined style={{ fontSize: 22, color: '#fff' }} />
               </div>
-              <div style={{ fontSize: 18, fontWeight: 600 }}>Assign Technician</div>
-              <Text type="secondary">Select a technician to assign to this job</Text>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{t('dispatchBoard.assignModal.title')}</div>
+              <Text type="secondary">{t('dispatchBoard.assignModal.subtitle')}</Text>
             </div>
 
             <Card size="small" style={{ marginBottom: 20, background: '#fafafa', border: '1px solid #f0f0f0' }}>
@@ -393,7 +494,7 @@ export default function DispatchBoardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <FileTextOutlined style={{ color: '#1677ff', fontSize: 16 }} />
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Work Order</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('dispatchBoard.assignModal.workOrder')}</Text>
                     <div style={{ fontWeight: 500 }}>
                       {assignTarget.work_order
                         ? `${assignTarget.work_order.wo_number || 'N/A'}`
@@ -408,12 +509,12 @@ export default function DispatchBoardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <CalendarOutlined style={{ color: '#52c41a', fontSize: 16 }} />
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Schedule</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('dispatchBoard.assignModal.schedule')}</Text>
                     <div style={{ fontWeight: 500 }}>
                       {assignTarget.scheduled_start ? formatDateTime(assignTarget.scheduled_start) : '-'}
                     </div>
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      to {assignTarget.scheduled_end ? formatDateTime(assignTarget.scheduled_end) : '-'}
+                      {t('dispatchBoard.assignModal.to')} {assignTarget.scheduled_end ? formatDateTime(assignTarget.scheduled_end) : '-'}
                     </Text>
                   </div>
                 </div>
@@ -422,10 +523,10 @@ export default function DispatchBoardPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <TeamOutlined style={{ color: '#1677ff' }} />
-              <Text strong>Select Technician</Text>
+              <Text strong>{t('dispatchBoard.assignModal.selectTechnician')}</Text>
             </div>
             <Select
-              placeholder="Search and select a technician..."
+              placeholder={t('dispatchBoard.assignModal.selectPlaceholder')}
               showSearch
               size="large"
               value={selectedAgentId}
@@ -443,7 +544,7 @@ export default function DispatchBoardPage() {
 
       {/* Appointment Detail Modal */}
       <Modal
-        title="Appointment Details"
+        title={t('dispatchBoard.detailModal.title')}
         open={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={null}
@@ -454,7 +555,7 @@ export default function DispatchBoardPage() {
             {availableTransitions.length > 0 && (
               <Card size="small" style={{ marginBottom: 16 }}>
                 <Space>
-                  <span style={{ fontWeight: 500 }}>Transition to:</span>
+                  <span style={{ fontWeight: 500 }}>{t('dispatchBoard.detailModal.transitionTo')}</span>
                   {availableTransitions.map((status) => (
                     <Button
                       key={status}
@@ -470,49 +571,49 @@ export default function DispatchBoardPage() {
               </Card>
             )}
             <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="Agent">
+              <Descriptions.Item label={t('dispatchBoard.columns.agent')}>
                 {selectedAppointment.agent
                   ? `${selectedAppointment.agent.first_name} ${selectedAppointment.agent.last_name}`
-                  : <Tag color="orange">Unassigned</Tag>}
+                  : <Tag color="orange">{t('dispatchBoard.status.unassigned')}</Tag>}
               </Descriptions.Item>
-              <Descriptions.Item label="Status">
+              <Descriptions.Item label={t('dispatchBoard.columns.status')}>
                 <Tag color={statusColors[selectedAppointment.status] || 'default'}>
                   {formatStatus(selectedAppointment.status)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Work Order">
+              <Descriptions.Item label={t('dispatchBoard.columns.workOrder')}>
                 {selectedAppointment.work_order
                   ? selectedAppointment.work_order.wo_number || selectedAppointment.work_order.summary
-                  : selectedAppointment.work_order_id || <span style={{ color: '#999' }}>-</span>}
+                  : selectedAppointment.work_order_id || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Crew ID">
-                {selectedAppointment.crew_id || <span style={{ color: '#999' }}>-</span>}
+              <Descriptions.Item label={t('dispatchBoard.detailModal.crewId')}>
+                {selectedAppointment.crew_id || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Scheduled Start">
-                {selectedAppointment.scheduled_start ? formatDateTime(selectedAppointment.scheduled_start) : <span style={{ color: '#999' }}>-</span>}
+              <Descriptions.Item label={t('dispatchBoard.columns.scheduledStart')}>
+                {selectedAppointment.scheduled_start ? formatDateTime(selectedAppointment.scheduled_start) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Scheduled End">
-                {selectedAppointment.scheduled_end ? formatDateTime(selectedAppointment.scheduled_end) : <span style={{ color: '#999' }}>-</span>}
+              <Descriptions.Item label={t('dispatchBoard.columns.scheduledEnd')}>
+                {selectedAppointment.scheduled_end ? formatDateTime(selectedAppointment.scheduled_end) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Actual Start">
-                {selectedAppointment.actual_start ? formatDateTime(selectedAppointment.actual_start) : <span style={{ color: '#999' }}>-</span>}
+              <Descriptions.Item label={t('dispatchBoard.detailModal.actualStart')}>
+                {selectedAppointment.actual_start ? formatDateTime(selectedAppointment.actual_start) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Actual End">
-                {selectedAppointment.actual_end ? formatDateTime(selectedAppointment.actual_end) : <span style={{ color: '#999' }}>-</span>}
+              <Descriptions.Item label={t('dispatchBoard.detailModal.actualEnd')}>
+                {selectedAppointment.actual_end ? formatDateTime(selectedAppointment.actual_end) : <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Recurring">
-                {selectedAppointment.is_recurring ? <Tag color="blue">Yes</Tag> : <Tag>No</Tag>}
+              <Descriptions.Item label={t('dispatchBoard.detailModal.recurring')}>
+                {selectedAppointment.is_recurring ? <Tag color="blue">{t('dispatchBoard.detailModal.yes')}</Tag> : <Tag>{t('dispatchBoard.detailModal.no')}</Tag>}
               </Descriptions.Item>
-              <Descriptions.Item label="Recurrence Rule">
-                {selectedAppointment.recurrence_rule || <span style={{ color: '#999' }}>-</span>}
+              <Descriptions.Item label={t('dispatchBoard.detailModal.recurrenceRule')}>
+                {selectedAppointment.recurrence_rule || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Notes" span={2}>
-                {selectedAppointment.notes || <span style={{ color: '#999' }}>-</span>}
+              <Descriptions.Item label={t('dispatchBoard.detailModal.notes')} span={2}>
+                {selectedAppointment.notes || <span style={{ opacity: 0.5 }}>-</span>}
               </Descriptions.Item>
-              <Descriptions.Item label="Created At">
+              <Descriptions.Item label={t('dispatchBoard.columns.createdAt')}>
                 {formatDateTime(selectedAppointment.created_at)}
               </Descriptions.Item>
-              <Descriptions.Item label="Updated At">
+              <Descriptions.Item label={t('dispatchBoard.detailModal.updatedAt')}>
                 {formatDateTime(selectedAppointment.updated_at)}
               </Descriptions.Item>
             </Descriptions>

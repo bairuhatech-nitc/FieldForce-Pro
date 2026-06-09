@@ -40,7 +40,7 @@ export default function AgentListPage() {
 
   const columns: ColumnsType<User> = [
     {
-      title: 'Agent',
+      title: t('agentListPage.agent'),
       key: 'agent',
       render: (_, record) => (
         <Space>
@@ -57,14 +57,14 @@ export default function AgentListPage() {
               {record.first_name} {record.last_name}
             </div>
             <div style={{ fontSize: 12, color: '#999' }}>
-              {record.roles?.map((r) => r.name).join(', ') || 'No role'}
+              {record.roles?.map((r) => r.name).join(', ') || t('agentListPage.noRole')}
             </div>
           </div>
         </Space>
       ),
     },
     {
-      title: 'Contact',
+      title: t('agentListPage.contact'),
       key: 'contact',
       render: (_, record) => (
         <Space direction="vertical" size={0}>
@@ -82,47 +82,47 @@ export default function AgentListPage() {
       ),
     },
     {
-      title: 'Status',
+      title: t('agentListPage.status'),
       key: 'status',
       width: 100,
       render: (_, record) =>
         record.is_active ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">Active</Tag>
+          <Tag icon={<CheckCircleOutlined />} color="success">{t('agentListPage.active')}</Tag>
         ) : (
-          <Tag icon={<CloseCircleOutlined />} color="default">Inactive</Tag>
+          <Tag icon={<CloseCircleOutlined />} color="default">{t('agentListPage.inactive')}</Tag>
         ),
       filters: [
-        { text: 'Active', value: true },
-        { text: 'Inactive', value: false },
+        { text: t('agentListPage.active'), value: true },
+        { text: t('agentListPage.inactive'), value: false },
       ],
       onFilter: (value, record) => record.is_active === value,
     },
     {
-      title: 'Verified',
+      title: t('agentListPage.verified'),
       key: 'verified',
       width: 120,
       render: (_, record) => (
         <Space size={4}>
-          <Tooltip title={record.email_verified ? 'Email verified' : 'Email not verified'}>
+          <Tooltip title={record.email_verified ? t('agentListPage.emailVerified') : t('agentListPage.emailNotVerified')}>
             <Tag color={record.email_verified ? 'green' : 'default'} style={{ fontSize: 11 }}>
-              <MailOutlined /> {record.email_verified ? 'Yes' : 'No'}
+              <MailOutlined /> {record.email_verified ? t('agentListPage.yes') : t('agentListPage.no')}
             </Tag>
           </Tooltip>
-          <Tooltip title={record.phone_verified ? 'Phone verified' : 'Phone not verified'}>
+          <Tooltip title={record.phone_verified ? t('agentListPage.phoneVerified') : t('agentListPage.phoneNotVerified')}>
             <Tag color={record.phone_verified ? 'green' : 'default'} style={{ fontSize: 11 }}>
-              <PhoneOutlined /> {record.phone_verified ? 'Yes' : 'No'}
+              <PhoneOutlined /> {record.phone_verified ? t('agentListPage.yes') : t('agentListPage.no')}
             </Tag>
           </Tooltip>
         </Space>
       ),
     },
     {
-      title: 'Last Login',
+      title: t('agentListPage.lastLogin'),
       dataIndex: 'last_login_at',
       key: 'last_login_at',
       width: 160,
-      render: (val: string | null) =>
-        val ? formatDateTime(val) : <span style={{ color: '#999' }}>Never</span>,
+      render: (val: string | null, record: any) =>
+        val ? formatDateTime(val) : <span style={{ color: '#999' }}>{t('agentListPage.never')}</span>,
       sorter: (a, b) => {
         if (!a.last_login_at) return -1;
         if (!b.last_login_at) return 1;
@@ -130,12 +130,12 @@ export default function AgentListPage() {
       },
     },
     {
-      title: 'Actions',
+      title: t('agentListPage.actions'),
       key: 'actions',
       width: 100,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View Profile">
+          <Tooltip title={t('agentListPage.viewProfile')}>
             <Button
               type="text"
               icon={<EyeOutlined />}
@@ -143,7 +143,7 @@ export default function AgentListPage() {
               onClick={() => navigate(`/users/${record.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Track Location">
+          <Tooltip title={t('agentListPage.trackLocation')}>
             <Button
               type="text"
               icon={<EnvironmentOutlined />}
@@ -160,7 +160,7 @@ export default function AgentListPage() {
     <div>
       <PageHeader
         title={t('nav.workforce')}
-        subtitle="Manage field agents, track availability, and monitor team performance"
+        subtitle={t('agentListPage.headerSubtitle')}
       />
 
       {/* Stats */}
@@ -168,7 +168,7 @@ export default function AgentListPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Total Agents"
+              title={t('agentListPage.totalAgents')}
               value={meta?.itemCount || users.length}
               prefix={<TeamOutlined />}
             />
@@ -177,7 +177,7 @@ export default function AgentListPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Active"
+              title={t('agentListPage.active')}
               value={activeCount}
               valueStyle={{ color: '#52c41a' }}
               prefix={<CheckCircleOutlined />}
@@ -187,7 +187,7 @@ export default function AgentListPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Inactive"
+              title={t('agentListPage.inactive')}
               value={inactiveCount}
               valueStyle={{ color: '#999' }}
               prefix={<CloseCircleOutlined />}
@@ -197,7 +197,7 @@ export default function AgentListPage() {
         <Col xs={12} sm={6}>
           <Card>
             <Statistic
-              title="Verified"
+              title={t('agentListPage.verified')}
               value={users.filter((u) => u.email_verified).length}
               valueStyle={{ color: '#1890ff' }}
               prefix={<MailOutlined />}
@@ -210,7 +210,7 @@ export default function AgentListPage() {
       <Card>
         <div style={{ marginBottom: 16 }}>
           <Input
-            placeholder="Search agents by name, email, or phone..."
+            placeholder={t('agentListPage.searchPlaceholder')}
             prefix={<SearchOutlined />}
             allowClear
             value={search}
@@ -232,7 +232,7 @@ export default function AgentListPage() {
             pageSize,
             total: meta?.itemCount || 0,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} agents`,
+            showTotal: (total) => t('agentListPage.totalAgentsCount', { total }),
             onChange: (p, ps) => {
               setPage(p);
               setPageSize(ps);

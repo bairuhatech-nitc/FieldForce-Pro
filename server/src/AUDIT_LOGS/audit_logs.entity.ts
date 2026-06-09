@@ -51,9 +51,9 @@ export class AuditLog extends Model {
 
   @Column({
     type: DataType.UUID,
-    allowNull: false,
+    allowNull: true,
   })
-  record_id: string;
+  record_id: string | null;
 
   @Column({
     type: DataType.JSONB,

@@ -49,7 +49,12 @@ export class UpdateWorkOrderLineItemDto {
   @IsOptional()
   tax_rate?: number;
 
-  @ApiPropertyOptional({ description: 'Discount amount', example: 5.0 })
+  @ApiPropertyOptional({ description: 'Discount type', enum: ['fixed', 'percentage'] })
+  @IsEnum(['fixed', 'percentage'])
+  @IsOptional()
+  discount_type?: string;
+
+  @ApiPropertyOptional({ description: 'Discount amount or percentage', example: 5.0 })
   @IsNumber()
   @IsOptional()
   discount?: number;

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/auth.store';
 import { hasPermission, hasAnyPermission, hasAllPermissions } from '@/utils/permissions';
 
@@ -35,13 +36,13 @@ interface PermissionGuardProps {
  * @example
  * // Single permission
  * <PermissionGuard permission="users:create">
- *   <Button>Create User</Button>
+ *   <Button>{t('permissionGuard.createUser')}</Button>
  * </PermissionGuard>
  *
  * @example
  * // Any of multiple permissions (OR logic)
  * <PermissionGuard anyPermissions={["users:create", "users:update"]}>
- *   <Button>Modify User</Button>
+ *   <Button>{t('permissionGuard.modifyUser')}</Button>
  * </PermissionGuard>
  *
  * @example
@@ -54,7 +55,7 @@ interface PermissionGuardProps {
  * // With fallback
  * <PermissionGuard
  *   permission="admin:access"
- *   fallback={<Text>Access Denied</Text>}
+ *   fallback={<Text>{t('permissionGuard.accessDenied')}</Text>}
  * >
  *   <AdminPanel />
  * </PermissionGuard>
@@ -66,6 +67,7 @@ export default function PermissionGuard({
   children,
   fallback = null,
 }: PermissionGuardProps) {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
 
   // Use permissions array from JWT if available, otherwise fall back to roles-based check
@@ -74,7 +76,7 @@ export default function PermissionGuard({
 
   // Admin role bypass — Admin users have full access
   const isAdmin = roles?.some((role) =>
-    typeof role === 'string' ? role === 'Admin' : role.name === 'Admin',
+    typeof role === 'string' ? role === t('permissionGuard.adminRole') : role.name === t('permissionGuard.adminRole'),
   );
   if (isAdmin) return <>{children}</>;
 

@@ -34,21 +34,6 @@ export class CreateCompanyDto {
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'Company status', example: 'Active' })
-  @IsString()
-  @IsOptional()
-  status?: string;
-
-  @ApiPropertyOptional({ description: 'Phone number', example: '+1234567890' })
-  @IsString()
-  @IsOptional()
-  phone_number?: string;
-
-  @ApiPropertyOptional({ description: 'Shipping address', example: '456 Delivery Rd, City, State 12345' })
-  @IsString()
-  @IsOptional()
-  shipping_address?: string;
-
   @ApiPropertyOptional({
     description: 'Custom fields (JSONB)',
     example: { annual_revenue: 1000000 },

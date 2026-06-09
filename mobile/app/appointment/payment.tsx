@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Image,
     Modal,
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -13,7 +15,8 @@ import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { appointmentsApi, invoicesApi, paymentsApi, workOrdersApi } from '@/api/endpoints';
+import { appointmentsApi, invoicesApi, paymentsApi, workOrdersApi, tenantPaymentApi, type TenantPaymentConfig } from '@/api/endpoints';
+import { TenantPaymentDetails } from '@/components/TenantPaymentDetails';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 const ACCENT = '#4F6BF6';
@@ -44,6 +47,8 @@ export default function PaymentScreen() {
     // UPI QR state
     const [upiConfig, setUpiConfig] = useState<{ configured: boolean; vpa?: string; name?: string } | null>(null);
     const [upiQrVisible, setUpiQrVisible] = useState(false);
+    const [tenantConfig, setTenantConfig] = useState<TenantPaymentConfig | null>(null);
+    const [transactionRef, setTransactionRef] = useState('');
 
     // ── Init: load appointment -> work order -> invoice (auto-generate if missing)
     useEffect(() => {
@@ -83,6 +88,11 @@ export default function PaymentScreen() {
                     paymentsApi.getUpiConfig()
                         .then(r => setUpiConfig(r.data.data ?? null))
                         .catch(() => setUpiConfig({ configured: false }));
+
+                    // Fetch Tenant-specific payment settings in background (Step 12)
+                    tenantPaymentApi.getPaymentSettings()
+                        .then(r => setTenantConfig(r.data.data ?? null))
+                        .catch(() => setTenantConfig(null));
                 } else {
                     setErrorMsg('Could not generate invoice for this work order');
                     setStatus('error');
@@ -314,6 +324,11 @@ export default function PaymentScreen() {
 
     // ── Render: main payment screen (invoice exists) ──────────────────────────
     const balance = invoice ? invoice.total - invoice.paid_amount : 0;
+    const hasTenantUpi = !!tenantConfig?.upi_vpa;
+    const hasTenantQrImage = !!tenantConfig?.qr_image_url;
+    const hasTenantBank = !!(tenantConfig?.bank_account_number || tenantConfig?.bank_account_name);
+    const hasTenantInstructions = !!tenantConfig?.instructions;
+    const isUpiOrQrConfigured = hasTenantUpi || hasTenantQrImage || hasTenantBank || hasTenantInstructions || !!upiConfig?.configured;
 
     return (
         <>
@@ -398,7 +413,7 @@ export default function PaymentScreen() {
                         )}
 
                         {/* UPI QR Payment */}
-                        {upiConfig?.configured && (
+                        {isUpiOrQrConfigured && (
                             <TouchableOpacity style={[styles.upiButton, { borderColor: '#6739B7' + '40', backgroundColor: '#6739B7' + '08' }]} onPress={handleUpiPayment}>
                                 <Ionicons name="qr-code-outline" size={22} color="#6739B7" />
                                 <Text style={[styles.upiButtonText, { color: '#6739B7' }]}>Pay via UPI / QR Code</Text>
@@ -461,42 +476,73 @@ export default function PaymentScreen() {
             <Modal
                 visible={upiQrVisible}
                 animationType="slide"
-                onRequestClose={() => setUpiQrVisible(false)}
+                onRequestClose={() => {
+                    setUpiQrVisible(false);
+                    setTransactionRef('');
+                }}
             >
                 <View style={[styles.webviewContainer, { paddingTop: insets.top, backgroundColor: isDark ? themeColors.background : '#F8F9FB' }]}>
                     <View style={[styles.webviewHeader, { backgroundColor: headerBg, borderBottomColor: borderColor }]}>
-                        <TouchableOpacity onPress={() => setUpiQrVisible(false)}>
+                        <TouchableOpacity onPress={() => {
+                            setUpiQrVisible(false);
+                            setTransactionRef('');
+                        }}>
                             <Ionicons name="close" size={28} color={themeColors.text} />
                         </TouchableOpacity>
-                        <Text style={[styles.webviewTitle, { color: themeColors.text }]}>UPI Payment</Text>
+                        <Text style={[styles.webviewTitle, { color: themeColors.text }]}>QR Code Payment</Text>
                         <View style={{ width: 28 }} />
                     </View>
-                    {invoice && upiConfig?.vpa && (
-                        <WebView
-                            source={{ html: buildUpiQrHtml({
-                                vpa: upiConfig.vpa,
-                                name: upiConfig.name || 'FieldForce Pro',
-                                amount: invoice.total - invoice.paid_amount,
-                                invoiceNumber: invoice.invoice_number || 'Payment',
-                                isDark,
-                            }) }}
-                            onMessage={(event) => {
-                                try {
-                                    const data = JSON.parse(event.nativeEvent.data);
-                                    if (data.event === 'upi.confirmed') {
-                                        handleUpiConfirm(data.transactionRef || '');
-                                    }
-                                } catch {}
-                            }}
-                            javaScriptEnabled
-                            domStorageEnabled
-                            startInLoadingState
-                            renderLoading={() => (
-                                <View style={[styles.centered, StyleSheet.absoluteFill]}>
-                                    <ActivityIndicator size="large" color="#6739B7" />
+
+                    {invoice && (
+                        <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
+                            {/* If tenant config has details configured, show TenantPaymentDetails */}
+                            {tenantConfig && (tenantConfig.upi_vpa || tenantConfig.qr_image_url || tenantConfig.bank_account_number || tenantConfig.instructions) ? (
+                                <TenantPaymentDetails amount={balance} note={invoice.invoice_number} />
+                            ) : upiConfig?.vpa ? (
+                                /* Fallback to system-wide default UPI QR */
+                                <View style={[styles.invoiceCard, { backgroundColor: cardBg, borderColor, alignItems: 'center', gap: spacing.sm }]}>
+                                    <Text style={[styles.invoiceNumber, { color: themeColors.textSecondary }]}>SCAN TO PAY</Text>
+                                    <Image
+                                        source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=${encodeURIComponent(`upi://pay?pa=${encodeURIComponent(upiConfig.vpa)}&pn=${encodeURIComponent(upiConfig.name || 'FieldForce Pro')}&am=${balance.toFixed(2)}&cu=INR&tn=${encodeURIComponent(invoice.invoice_number)}`)}` }}
+                                        style={{ width: 220, height: 220 }}
+                                        resizeMode="contain"
+                                    />
+                                    <Text style={{ ...typography.body, color: themeColors.text, fontWeight: '700' }}>{upiConfig.name || 'FieldForce Pro'}</Text>
+                                    <Text style={{ ...typography.bodySmall, color: themeColors.textSecondary }}>{upiConfig.vpa}</Text>
                                 </View>
+                            ) : (
+                                <Text style={{ color: themeColors.textSecondary, textAlign: 'center' }}>No payment settings configured.</Text>
                             )}
-                        />
+
+                            {/* Reference input & Confirm button */}
+                            <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
+                                <Text style={[styles.detailLabel, { color: themeColors.textSecondary }]}>
+                                    Transaction Reference (optional)
+                                </Text>
+                                <TextInput
+                                    style={{
+                                        borderWidth: 1,
+                                        borderColor: borderColor,
+                                        borderRadius: 8,
+                                        padding: 12,
+                                        color: themeColors.text,
+                                        backgroundColor: inputBg,
+                                        fontSize: 14,
+                                    }}
+                                    placeholder="Enter transaction ref / UTR"
+                                    placeholderTextColor={themeColors.textSecondary}
+                                    value={transactionRef}
+                                    onChangeText={setTransactionRef}
+                                    autoCapitalize="characters"
+                                />
+                                <TouchableOpacity
+                                    style={[styles.payButton, { backgroundColor: '#6739B7' }]}
+                                    onPress={() => handleUpiConfirm(transactionRef)}
+                                >
+                                    <Text style={styles.payButtonText}>Payment Received</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
                     )}
                 </View>
             </Modal>

@@ -5,6 +5,7 @@ import {
   BadRequestException,
   GoneException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Estimate } from './estimates.entity';
@@ -23,15 +24,24 @@ import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVAL
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
 import { WorkOrdersService } from '../WORK_ORDERS/work_orders.service';
 import { WorkOrderLineItemsService } from '../WORK_ORDER_LINE_ITEMS/work_order_line_items.service';
+import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
+import { EmailService } from '../shared/services/email.service';
+import { User } from '../USERS/users.entity';
+import { Invoice } from '../INVOICES/invoices.entity';
+import { InvoiceLineItem } from '../INVOICE_LINE_ITEMS/invoice_line_items.entity';
+import { SlaService } from '../SLA_MODULE/sla.service';
+import { WhatsAppWebJsService } from '../WHATSAPP_CHANNELS/whatsapp_webjs.service';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
-  draft: ['sent'],
+  draft: ['sent', 'pending_approval'],
+  pending_approval: ['approved', 'rejected'],
   sent: ['viewed', 'approved', 'rejected', 'expired'],
   viewed: ['approved', 'rejected', 'expired'],
-  approved: ['converted_to_wo'],
+  approved: ['converted_to_wo', 'converted_to_invoice'],
   rejected: ['draft'],
   expired: ['draft'],
   converted_to_wo: [],
+  converted_to_invoice: [],
 };
 
 @Injectable()
@@ -43,9 +53,18 @@ export class EstimatesService {
     private readonly estimateRepository: typeof Estimate,
     @Inject(KEYNAMES.WORKFLOW_TEMPLATES)
     private readonly templateRepository: typeof WorkflowTemplate,
+    @Inject(KEYNAMES.INVOICES)
+    private readonly invoiceRepository: typeof Invoice,
+    @Inject(KEYNAMES.INVOICE_LINE_ITEMS)
+    private readonly invoiceLineItemRepository: typeof InvoiceLineItem,
     private readonly documentApprovalsService: DocumentApprovalsService,
     private readonly workOrdersService: WorkOrdersService,
     private readonly workOrderLineItemsService: WorkOrderLineItemsService,
+    @Optional() private readonly notificationsService: NotificationsService,
+    @Optional() private readonly emailService: EmailService,
+    @Inject(KEYNAMES.USERS) @Optional() private readonly userRepository: typeof User,
+    private readonly slaService: SlaService,
+    private readonly whatsappWebJsService: WhatsAppWebJsService,
   ) {}
 
   async findAllPaginated(
@@ -54,11 +73,16 @@ export class EstimatesService {
     status?: string,
     excludeStatus?: string,
     createdBy?: string,
+    isTemplate?: boolean,
   ): Promise<PageDto<Estimate>> {
     const where: Record<string, unknown> = {
       tenant_id: tenantId,
       is_deleted: false,
     };
+
+    if (isTemplate !== undefined) {
+      where.is_template = isTemplate;
+    }
 
     // Filter by status (supports comma-separated list)
     if (status) {
@@ -221,9 +245,13 @@ export class EstimatesService {
     return new PageDto(rows, meta);
   }
 
-  async findAll(tenantId: string): Promise<Estimate[]> {
+  async findAll(tenantId: string, isTemplate?: boolean): Promise<Estimate[]> {
+    const where: Record<string, unknown> = { tenant_id: tenantId, is_deleted: false };
+    if (isTemplate !== undefined) {
+      where.is_template = isTemplate;
+    }
     return this.estimateRepository.findAll({
-      where: { tenant_id: tenantId, is_deleted: false },
+      where,
       include: [
         { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
       ],
@@ -262,15 +290,99 @@ export class EstimatesService {
   async create(tenantId: string, dto: CreateEstimateDto, userId?: string): Promise<Estimate> {
     const estimate = await this.estimateRepository.create({
       tenant_id: tenantId,
-      estimate_number: this.generateEstimateNumber(),
       created_by: userId || null,
       ...dto,
+      // These come AFTER the spread so dto's undefined values don't win
+      estimate_number: dto.estimate_number || this.generateEstimateNumber(),
+      status: dto.status ?? 'draft',
     });
 
     // Auto-trigger ESTIMATE_APPROVAL workflow on creation
     await this.autoStartApprovalWorkflow(tenantId, estimate);
 
+    try {
+      await this.slaService.attachSlaToEstimate(tenantId, estimate);
+    } catch (error) {
+      this.logger.error(`Failed to attach SLA for Estimate ${estimate.id}: ${(error as Error).message}`);
+    }
+
     return estimate;
+  }
+
+  async createFromTemplate(templateId: string, tenantId: string, userId?: string, updates?: Partial<CreateEstimateDto>): Promise<Estimate> {
+    const template = await this.findById(templateId, tenantId);
+    if (!template.is_template) {
+      throw new BadRequestException('Source estimate is not a template');
+    }
+
+    // Prepare new estimate data from template
+    const newDto: CreateEstimateDto = {
+      ...updates,
+      subtotal: template.subtotal,
+      tax: template.tax,
+      discount: template.discount,
+      total: template.total,
+      notes: template.notes,
+      custom_fields: template.custom_fields,
+      is_template: false,
+      status: 'draft',
+    };
+
+    const estimate = await this.create(tenantId, newDto, userId);
+
+    // Copy line items if they exist
+    if (template.line_items && template.line_items.length > 0) {
+      const EstimateLineItemModel = this.estimateRepository.sequelize!.model('EstimateLineItem');
+      await Promise.all(
+        template.line_items.map((item) =>
+          EstimateLineItemModel.create({
+            tenant_id: tenantId,
+            estimate_id: estimate.id,
+            type: item.type,
+            name: item.name,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            tax_rate: item.tax_rate,
+            discount: item.discount,
+            total: item.total,
+            sort_order: item.sort_order,
+          })
+        )
+      );
+    }
+
+    return this.findById(estimate.id, tenantId);
+  }
+
+  async sendWhatsApp(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    
+    if (!estimate.contact || !estimate.contact.phone) {
+      throw new BadRequestException('Estimate does not have a contact with a phone number');
+    }
+
+    // Ensure we have a public token
+    let linkEstimate = estimate;
+    if (!linkEstimate.public_token) {
+      linkEstimate = await this.generatePublicLink(id, tenantId);
+    }
+
+    // We assume the frontend domain is in process.env.FRONTEND_URL
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const magicLink = `${frontendUrl}/estimates/view/${linkEstimate.public_token}`;
+    
+    const messageBody = `Hello ${estimate.contact.first_name || 'there'}, your estimate ${estimate.estimate_number || ''} is ready for review. You can view and approve it here: ${magicLink}`;
+
+    try {
+      await this.whatsappWebJsService.sendMessage(tenantId, estimate.contact.phone, messageBody);
+      this.logger.log(`WhatsApp message sent for Estimate ${id}`);
+    } catch (error) {
+      this.logger.error(`Failed to send WhatsApp message for Estimate ${id}: ${(error as Error).message}`);
+      throw new BadRequestException('Failed to send WhatsApp message: ' + (error as Error).message);
+    }
+
+    return linkEstimate;
   }
 
   private async autoStartApprovalWorkflow(tenantId: string, estimate: Estimate): Promise<void> {
@@ -692,6 +804,411 @@ export class EstimatesService {
     // Return the first approver's ID as the designated estimate creator
     const sorted = [...template.approvers].sort((a, b) => (a.order_no ?? 0) - (b.order_no ?? 0));
     return sorted[0].approver_id;
+  }
+
+  async findByWorkOrder(workOrderId: string, tenantId: string): Promise<Estimate[]> {
+    return this.estimateRepository.findAll({
+      where: { work_order_id: workOrderId, tenant_id: tenantId, is_deleted: false },
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+        {
+          model: EstimateLineItem,
+          as: 'line_items',
+          where: { is_deleted: false },
+          required: false,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+  }
+
+  async findByServiceRequest(requestId: string, tenantId: string): Promise<Estimate[]> {
+    return this.estimateRepository.findAll({
+      where: { request_id: requestId, tenant_id: tenantId, is_deleted: false },
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name', 'email', 'phone'] },
+        {
+          model: EstimateLineItem,
+          as: 'line_items',
+          where: { is_deleted: false },
+          required: false,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+  }
+
+  // ── On-site estimate approval flow ──────────────────────────────────────
+
+  async getPendingInternalApprovals(tenantId: string, pageOptionsDto: PageOptionsDto): Promise<PageDto<Estimate>> {
+    return this.findAllPaginated(tenantId, pageOptionsDto, 'pending_internal_approval');
+  }
+
+  async submitForInternalApproval(id: string, tenantId: string, userId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    if (!['draft', 'revision_required'].includes(estimate.status)) {
+      throw new BadRequestException('Only draft or revision_required on-site estimates can be submitted for internal approval');
+    }
+    if (estimate.estimate_type !== 'on_site') {
+      throw new BadRequestException('Only on-site estimates use the internal approval flow');
+    }
+
+    await estimate.update({ status: 'pending_internal_approval', awaiting_internal_approval: true });
+
+    // Notify all admins/managers in the tenant
+    await this.notifyTenantAdmins(tenantId, estimate, userId, 'internal_approval_requested');
+
+    return estimate;
+  }
+
+  async internalApprove(id: string, tenantId: string, approverId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    if (estimate.status !== 'pending_internal_approval') {
+      throw new BadRequestException('Estimate is not pending internal approval');
+    }
+
+    const token = randomUUID();
+    const tokenExpires = new Date();
+    tokenExpires.setDate(tokenExpires.getDate() + 7);
+
+    await estimate.update({
+      status: 'pending_customer_approval',
+      internal_approval_status: 'approved',
+      internal_approved_by: approverId,
+      internal_approved_at: new Date(),
+      awaiting_internal_approval: false,
+      awaiting_customer_approval: true,
+      public_token: token,
+      public_token_expires_at: tokenExpires,
+    });
+
+    // Notify technician (the estimate creator)
+    if (estimate.created_by && this.notificationsService) {
+      await this.notificationsService.create(tenantId, {
+        user_id: estimate.created_by,
+        type: 'estimate_internal_approved',
+        title: 'Estimate Approved by Manager',
+        body: `Your on-site estimate ${estimate.estimate_number} has been approved by the manager and sent to the customer for approval.`,
+        data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id },
+        channel: 'in_app',
+      });
+    }
+
+    // Send email to customer if contact has email
+    const contact = estimate.contact;
+    if (contact?.email && this.emailService) {
+      const approvalUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/estimate/approve/${token}`;
+      await this.emailService.sendEmail(
+        contact.email,
+        `Estimate ${estimate.estimate_number} Ready for Your Approval`,
+        `<p>Dear ${contact.first_name || 'Customer'},</p>
+         <p>A service estimate of <strong>${estimate.total}</strong> has been prepared for your review.</p>
+         <p>Please review and approve the estimate by clicking the link below:</p>
+         <p><a href="${approvalUrl}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Review & Approve Estimate</a></p>
+         <p>This link expires in 7 days.</p>
+         <p>Estimate Number: ${estimate.estimate_number}<br/>Total Amount: ${estimate.total}</p>`,
+      );
+    }
+
+    return estimate;
+  }
+
+  async internalReject(id: string, tenantId: string, reason: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+    if (estimate.status !== 'pending_internal_approval') {
+      throw new BadRequestException('Estimate is not pending internal approval');
+    }
+    if (!reason?.trim()) {
+      throw new BadRequestException('Rejection reason is required');
+    }
+
+    await estimate.update({
+      status: 'revision_required',
+      internal_approval_status: 'rejected',
+      internal_rejection_reason: reason,
+      awaiting_internal_approval: false,
+    });
+
+    // Notify the technician with the reason
+    if (estimate.created_by && this.notificationsService) {
+      await this.notificationsService.create(tenantId, {
+        user_id: estimate.created_by,
+        type: 'estimate_revision_required',
+        title: 'Estimate Revision Required',
+        body: `Your on-site estimate ${estimate.estimate_number} requires revision. Reason: ${reason}`,
+        data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id, reason },
+        channel: 'in_app',
+      });
+    }
+
+    return estimate;
+  }
+
+  async customerApproveByToken(token: string, customerName: string, signature: string): Promise<Estimate> {
+    const estimate = await this.getByPublicToken(token);
+    if (estimate.status !== 'pending_customer_approval') {
+      throw new BadRequestException('This estimate is not pending customer approval');
+    }
+    if (!customerName?.trim()) throw new BadRequestException('Customer name is required');
+    if (!signature?.trim()) throw new BadRequestException('Signature is required');
+
+    await estimate.update({
+      status: 'customer_approved',
+      customer_approval_status: 'approved',
+      customer_approved_at: new Date(),
+      customer_name_signed: customerName,
+      customer_signature: signature,
+      awaiting_customer_approval: false,
+    });
+
+    // Auto-update WO to in_progress
+    if (estimate.work_order_id) {
+      try {
+        await this.workOrdersService.updateStatus(estimate.work_order_id, estimate.tenant_id, { status: 'in_progress' });
+      } catch (e) {
+        this.logger.warn(`Could not auto-update WO ${estimate.work_order_id} to in_progress: ${e.message}`);
+      }
+    }
+
+    // Notify technician and manager
+    if (this.notificationsService) {
+      if (estimate.created_by) {
+        await this.notificationsService.create(estimate.tenant_id, {
+          user_id: estimate.created_by,
+          type: 'estimate_customer_approved',
+          title: 'Customer Approved the Estimate',
+          body: `Customer approved estimate ${estimate.estimate_number}. You can now proceed with the work.`,
+          data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id },
+          channel: 'in_app',
+        });
+      }
+      await this.notifyTenantAdmins(estimate.tenant_id, estimate, estimate.created_by, 'customer_approved');
+    }
+
+    return estimate;
+  }
+
+  async customerRejectByToken(token: string, reason: string): Promise<Estimate> {
+    const estimate = await this.getByPublicToken(token);
+    if (estimate.status !== 'pending_customer_approval') {
+      throw new BadRequestException('This estimate is not pending customer approval');
+    }
+
+    await estimate.update({
+      status: 'customer_rejected',
+      customer_approval_status: 'rejected',
+      customer_rejection_reason: reason,
+      awaiting_customer_approval: false,
+    });
+
+    // Notify technician and manager
+    if (this.notificationsService) {
+      if (estimate.created_by) {
+        await this.notificationsService.create(estimate.tenant_id, {
+          user_id: estimate.created_by,
+          type: 'estimate_customer_rejected',
+          title: 'Customer Declined the Estimate',
+          body: `Customer declined estimate ${estimate.estimate_number}. Reason: ${reason || 'No reason given'}`,
+          data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id, reason },
+          channel: 'in_app',
+        });
+      }
+      await this.notifyTenantAdmins(estimate.tenant_id, estimate, estimate.created_by, 'customer_rejected');
+    }
+
+    return estimate;
+  }
+
+  private async notifyTenantAdmins(
+    tenantId: string,
+    estimate: Estimate,
+    excludeUserId: string,
+    eventType: string,
+  ): Promise<void> {
+    if (!this.notificationsService || !this.userRepository) return;
+    try {
+      const admins = await this.userRepository.findAll({
+        where: { tenant_id: tenantId, is_deleted: false, is_active: true },
+        attributes: ['id'],
+      });
+
+      const titles: Record<string, string> = {
+        internal_approval_requested: 'New On-Site Estimate Awaiting Review',
+        customer_approved: 'Customer Approved Estimate',
+        customer_rejected: 'Customer Declined Estimate',
+      };
+      const bodies: Record<string, string> = {
+        internal_approval_requested: `An on-site estimate ${estimate.estimate_number} (Total: ${estimate.total}) is waiting for your review.`,
+        customer_approved: `Customer approved estimate ${estimate.estimate_number}. Work Order can now proceed.`,
+        customer_rejected: `Customer declined estimate ${estimate.estimate_number}. Please follow up.`,
+      };
+
+      for (const admin of admins) {
+        if (admin.id === excludeUserId) continue;
+        await this.notificationsService.create(tenantId, {
+          user_id: admin.id,
+          type: `estimate_${eventType}`,
+          title: titles[eventType] || 'Estimate Update',
+          body: bodies[eventType] || `Estimate ${estimate.estimate_number} updated.`,
+          data: { estimate_id: estimate.id, work_order_id: estimate.work_order_id },
+          channel: 'in_app',
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`notifyTenantAdmins failed: ${e.message}`);
+    }
+  }
+
+  async submitForApproval(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (estimate.status !== 'draft') {
+      throw new BadRequestException('Only draft estimates can be submitted for approval');
+    }
+
+    await estimate.update({ status: 'pending_approval' });
+    return estimate;
+  }
+
+  async adminApprove(id: string, tenantId: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (!['draft', 'pending_approval'].includes(estimate.status)) {
+      throw new BadRequestException(
+        `Only draft or pending-approval estimates can be approved. Current status: '${estimate.status}'`,
+      );
+    }
+
+    await estimate.update({ status: 'approved' });
+    return estimate;
+  }
+
+  async adminReject(id: string, tenantId: string, reason?: string): Promise<Estimate> {
+    const estimate = await this.findById(id, tenantId);
+
+    if (!['draft', 'pending_approval'].includes(estimate.status)) {
+      throw new BadRequestException(
+        `Only draft or pending-approval estimates can be rejected. Current status: '${estimate.status}'`,
+      );
+    }
+
+    const customFields = { ...(estimate.custom_fields || {}) };
+    if (reason) {
+      customFields['rejection_reason'] = reason;
+      customFields['rejected_at'] = new Date().toISOString();
+    }
+
+    await estimate.update({ status: 'rejected', custom_fields: customFields });
+    return estimate;
+  }
+
+  private async generateInvoiceNumber(tenantId: string): Promise<string> {
+    const lastInvoice = await this.invoiceRepository.findOne({
+      where: { tenant_id: tenantId },
+      order: [['created_at', 'DESC']],
+      attributes: ['invoice_number'],
+    });
+
+    let nextNumber = 1;
+    if (lastInvoice?.invoice_number) {
+      const match = (lastInvoice.invoice_number as string).match(/INV-(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+
+    return `INV-${nextNumber.toString().padStart(6, '0')}`;
+  }
+
+  async generateInvoice(id: string, tenantId: string): Promise<Invoice> {
+    const estimate = await this.findById(id, tenantId);
+
+    // Idempotency: return existing invoice if already generated (checked before status gate
+    // so repeated calls on a converted_to_invoice estimate still return the invoice)
+    const existing = await this.invoiceRepository.findOne({
+      where: { estimate_id: id, tenant_id: tenantId, is_deleted: false },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    if (estimate.status !== 'approved') {
+      throw new BadRequestException('Only approved estimates can generate an invoice');
+    }
+
+    const lineItems = (estimate.line_items || []).map((item) => ({
+      type: item.type || 'service',
+      name: item.name,
+      description: item.description || null,
+      quantity: Number(item.quantity) || 1,
+      unit_price: Number(item.unit_price) || 0,
+      tax_rate: Number(item.tax_rate) || 0,
+      discount_type: (item as unknown as Record<string, string>)['discount_type'] || 'fixed',
+      discount: Number(item.discount) || 0,
+      total: Number(item.total) || 0,
+    }));
+
+    let subtotal = 0;
+    let taxTotal = 0;
+    let discountTotal = 0;
+    for (const item of lineItems) {
+      subtotal += item.total;
+      taxTotal += item.unit_price * item.quantity * (item.tax_rate / 100);
+      discountTotal += item.discount;
+    }
+
+    if (lineItems.length === 0) {
+      subtotal = Number(estimate.subtotal) || 0;
+      taxTotal = Number(estimate.tax) || 0;
+      discountTotal = Number(estimate.discount) || 0;
+    }
+
+    const totalAmount = subtotal + taxTotal - discountTotal;
+    const invoiceNumber = await this.generateInvoiceNumber(tenantId);
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+
+    const invoice = await this.invoiceRepository.create({
+      tenant_id: tenantId,
+      estimate_id: id,
+      contact_id: estimate.contact_id,
+      invoice_number: invoiceNumber,
+      due_date: dueDate.toISOString().split('T')[0],
+      status: 'draft',
+      subtotal,
+      tax: taxTotal,
+      discount: discountTotal,
+      total: totalAmount > 0 ? totalAmount : subtotal,
+      paid_amount: 0,
+      currency: 'INR',
+      notes: `Auto-generated from Estimate ${estimate.estimate_number || id.slice(0, 8)}`,
+    });
+
+    // Map estimate line item types to valid invoice_line_items ENUM values
+    const INVOICE_LI_TYPES = new Set(['service', 'part', 'travel', 'other']);
+    const mapType = (t: string): string =>
+      INVOICE_LI_TYPES.has(t) ? t : t === 'labor' ? 'service' : t === 'material' || t === 'equipment' ? 'part' : 'other';
+
+    for (const item of lineItems) {
+      await this.invoiceLineItemRepository.create({
+        tenant_id: tenantId,
+        invoice_id: invoice.id,
+        type: mapType(item.type ?? 'service'),
+        name: item.name,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        tax_rate: item.tax_rate,
+        discount_type: item.discount_type,
+        discount: item.discount,
+        total: item.total,
+      });
+    }
+
+    await estimate.update({ status: 'converted_to_invoice' });
+
+    return invoice;
   }
 
   async delete(id: string, tenantId: string): Promise<void> {

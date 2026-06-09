@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, Form, Input, Button, Space, Skeleton, Select, Rate } from 'antd';
 import { useReview, useCreateReview, useUpdateReview } from '@/hooks/use-reviews';
 import { useAllWorkOrders } from '@/hooks/use-work-orders';
@@ -9,6 +10,7 @@ import PageHeader from '@/components/common/PageHeader';
 const { TextArea } = Input;
 
 export default function ReviewFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -48,7 +50,7 @@ export default function ReviewFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('reviewForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -57,7 +59,7 @@ export default function ReviewFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Review' : 'Create Review'}
+        title={isEdit ? t('reviewForm.editReview') : t('reviewForm.createReview')}
         onBack={() => navigate('/reviews')}
       />
 
@@ -72,11 +74,11 @@ export default function ReviewFormPage() {
         >
           <Form.Item
             name="work_order_id"
-            label="Work Order"
-            rules={[{ required: true, message: 'Please select a work order' }]}
+            label={t('reviewForm.workOrder')}
+            rules={[{ required: true, message: t('reviewForm.pleaseSelectWorkOrder') }]}
           >
             <Select
-              placeholder="Select work order"
+              placeholder={t('reviewForm.selectWorkOrder')}
               allowClear
               showSearch
               optionFilterProp="label"
@@ -89,11 +91,11 @@ export default function ReviewFormPage() {
 
           <Form.Item
             name="contact_id"
-            label="Customer (Contact)"
-            rules={[{ required: true, message: 'Please select a contact' }]}
+            label={t('reviewForm.customerContact')}
+            rules={[{ required: true, message: t('reviewForm.pleaseSelectContact') }]}
           >
             <Select
-              placeholder="Select customer"
+              placeholder={t('reviewForm.selectCustomer')}
               allowClear
               showSearch
               optionFilterProp="label"
@@ -106,31 +108,31 @@ export default function ReviewFormPage() {
 
           <Form.Item
             name="rating"
-            label="Rating"
-            rules={[{ required: true, message: 'Please provide a rating' }]}
+            label={t('reviewForm.rating')}
+            rules={[{ required: true, message: t('reviewForm.pleaseProvideRating') }]}
           >
             <Rate allowHalf />
           </Form.Item>
 
           <Form.Item
             name="comment"
-            label="Comment"
-            rules={[{ required: true, message: 'Please enter a comment' }]}
+            label={t('reviewForm.comment')}
+            rules={[{ required: true, message: t('reviewForm.pleaseEnterComment') }]}
           >
-            <TextArea rows={4} placeholder="Write your review here..." />
+            <TextArea rows={4} placeholder={t('reviewForm.writeReviewHere')} />
           </Form.Item>
 
           <Form.Item
             name="platform"
-            label="Platform"
-            rules={[{ required: true, message: 'Please select a platform' }]}
+            label={t('reviewForm.platform')}
+            rules={[{ required: true, message: t('reviewForm.pleaseSelectPlatform') }]}
           >
-            <Select placeholder="Select platform">
-              <Select.Option value="internal">Internal</Select.Option>
-              <Select.Option value="google">Google</Select.Option>
-              <Select.Option value="yelp">Yelp</Select.Option>
-              <Select.Option value="facebook">Facebook</Select.Option>
-              <Select.Option value="other">Other</Select.Option>
+            <Select placeholder={t('reviewForm.selectPlatform')}>
+              <Select.Option value="internal">{t('reviewForm.platforms.internal')}</Select.Option>
+              <Select.Option value="google">{t('reviewForm.platforms.google')}</Select.Option>
+              <Select.Option value="yelp">{t('reviewForm.platforms.yelp')}</Select.Option>
+              <Select.Option value="facebook">{t('reviewForm.platforms.facebook')}</Select.Option>
+              <Select.Option value="other">{t('reviewForm.platforms.other')}</Select.Option>
             </Select>
           </Form.Item>
 
@@ -141,9 +143,9 @@ export default function ReviewFormPage() {
                 htmlType="submit"
                 loading={createReview.isPending || updateReview.isPending}
               >
-                {isEdit ? 'Update' : 'Submit Review'}
+                {isEdit ? t('reviewForm.update') : t('reviewForm.submitReview')}
               </Button>
-              <Button onClick={() => navigate('/reviews')}>Cancel</Button>
+              <Button onClick={() => navigate('/reviews')}>{t('reviewForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

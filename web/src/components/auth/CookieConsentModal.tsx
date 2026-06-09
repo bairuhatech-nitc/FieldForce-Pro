@@ -1,12 +1,14 @@
 import { Button, Typography } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
 
 const COOKIE_CONSENT_KEY = 'cookie_consent_accepted';
 
 export default function CookieConsentModal() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function CookieConsentModal() {
     >
       <div
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: 'var(--card-bg)',
           borderRadius: '20px',
           maxWidth: '600px',
           width: '100%',
@@ -76,24 +78,23 @@ export default function CookieConsentModal() {
             style={{
               marginBottom: '16px',
               fontSize: '26px',
-              color: '#262626',
               fontWeight: 600,
             }}
           >
-            We use cookies to keep you logged in
+            {t('cookieConsent.title')}
           </Title>
 
           <Paragraph
             style={{
               fontSize: '15px',
-              color: '#595959',
+              opacity: 0.8,
               marginBottom: '40px',
               maxWidth: '480px',
               margin: '0 auto 40px',
               lineHeight: 1.6,
             }}
           >
-            We use secure HTTP-only cookies for authentication. These cookies are essential for the app to work and protect your account from security threats.
+            {t('cookieConsent.message')}
           </Paragraph>
         </div>
 
@@ -120,7 +121,7 @@ export default function CookieConsentModal() {
               boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
             }}
           >
-            Accept & Continue
+            {t('cookieConsent.accept')}
           </Button>
 
           <Button
@@ -130,8 +131,8 @@ export default function CookieConsentModal() {
             onClick={handleClose}
             size="large"
             style={{
-              border: '1px solid #e8e8e8',
-              color: '#8c8c8c',
+              border: '1px solid var(--border-color)',
+              opacity: 0.6,
             }}
           />
         </div>
@@ -141,7 +142,7 @@ export default function CookieConsentModal() {
           <Paragraph
             style={{
               fontSize: '12px',
-              color: '#8c8c8c',
+              opacity: 0.5,
               margin: 0,
             }}
           >

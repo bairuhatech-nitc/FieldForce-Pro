@@ -8,18 +8,24 @@ import {
   Param,
   Body,
   Query,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ServiceRequestsService } from './service_requests.service';
 import { CreateServiceRequestDto } from './dto/service_requests_create.dto';
 import { UpdateServiceRequestDto } from './dto/service_requests_update.dto';
 import { TriageServiceRequestDto } from './dto/service_requests_triage.dto';
+import { InboundServiceRequestDto } from './dto/service_requests_inbound.dto';
 import { PageOptionsDto } from '../shared/dto/page-options.dto';
 import { ServiceRequestQueryDto } from './dto/service_requests_query.dto';
 import { DataResponseDto } from '../shared/dto/data-response.dto';
 import { TenantId } from '../shared/decorator/tenant.decorator';
 import { UserId } from '../shared/decorator/user.decorator';
 import { Permissions } from '../shared/decorator/permission.decorator';
+import { Public } from '../shared/decorator/public.decorator';
+import { ApiKeyGuard } from '../shared/guards/api-key.guard';
 import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.service';
 import { ApprovalActionEnum } from '../shared/enums/workflow.enum';
 
@@ -112,6 +118,33 @@ export class ServiceRequestsController {
     return DataResponseDto.success(approval, 'Approval processed successfully');
   }
 
+  @Post('inbound')
+  @Public()
+  @UseGuards(ApiKeyGuard)
+  @ApiOperation({ summary: 'Create service request from external website/integration (x-api-key auth, no JWT required)' })
+  async createInbound(@Req() req: Request, @Body() dto: InboundServiceRequestDto) {
+    const tenantId = (req as any).tenantId as string;
+    const { customer_name, customer_email, customer_phone, service_address, external_ref_id, custom_fields, ...srFields } = dto;
+
+    const sr = await this.serviceRequestsService.create(
+      tenantId,
+      {
+        ...srFields,
+        channel: 'api',
+        custom_fields: {
+          customer_name,
+          customer_email,
+          customer_phone,
+          service_address,
+          external_ref_id,
+          ...(custom_fields || {}),
+        },
+      } as unknown as CreateServiceRequestDto,
+    );
+
+    return DataResponseDto.created(sr, 'Service request submitted successfully');
+  }
+
   @Get(':id')
   @Permissions('service_requests:read')
   @ApiOperation({ summary: 'Get service request by ID' })
@@ -120,7 +153,27 @@ export class ServiceRequestsController {
       id,
       tenantId,
     );
-    return DataResponseDto.success(serviceRequest);
+
+    // Normalize customer contact details so the technician sees the same data
+    // regardless of how the request was created. Admin-created requests carry a
+    // linked Contact row; website/inbound requests (channel: 'api') have no
+    // contact_id and instead store the customer info inside custom_fields.
+    const sr: any = serviceRequest.toJSON();
+    const cf = sr.custom_fields || {};
+    const contact = sr.contact;
+    const contactName = contact
+      ? `${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim()
+      : '';
+
+    sr.customer = {
+      name: contactName || cf.customer_name || null,
+      email: contact?.email || cf.customer_email || null,
+      phone: contact?.phone || cf.customer_phone || null,
+      address: sr.location?.address || cf.service_address || null,
+      source: contact ? 'contact' : 'website',
+    };
+
+    return DataResponseDto.success(sr);
   }
 
   @Post()
@@ -178,6 +231,73 @@ export class ServiceRequestsController {
       serviceRequest,
       'Service request status updated successfully',
     );
+  }
+
+  @Post(':id/approve-and-convert')
+  @Permissions('service_requests:update')
+  @ApiOperation({ summary: 'Approve a service request and immediately convert it into a work order' })
+  async approveAndConvert(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() managerId: string,
+  ) {
+    const result = await this.serviceRequestsService.approveAndConvert(id, tenantId, managerId);
+    return DataResponseDto.created(result, `Work Order ${result.workOrder.wo_number} created successfully`);
+  }
+
+  @Post(':id/convert-to-work-order')
+  @Permissions('service_requests:update')
+  @ApiOperation({ summary: 'Convert an approved service request into a new work order' })
+  async convertToWorkOrder(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() managerId: string,
+  ) {
+    const result = await this.serviceRequestsService.convertToWorkOrder(id, tenantId, managerId);
+    return DataResponseDto.created(result, `Work Order ${result.workOrder.wo_number} created successfully`);
+  }
+
+  @Patch(':id/assign')
+  @Permissions('service_requests:update')
+  @ApiOperation({ summary: 'Assign a technician to a service request and notify them' })
+  async assignTechnician(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @Body('technician_id') technicianId: string,
+    @Body('technician_name') technicianName: string,
+  ) {
+    const serviceRequest = await this.serviceRequestsService.assignTechnician(
+      id,
+      tenantId,
+      technicianId,
+      technicianName || '',
+    );
+    return DataResponseDto.success(serviceRequest, 'Technician assigned successfully');
+  }
+
+  @Post(':id/accept')
+  @Permissions('service_requests:update')
+  @ApiOperation({ summary: 'Technician accepts the assigned service request' })
+  async acceptRequest(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+  ) {
+    const serviceRequest = await this.serviceRequestsService.acceptRequest(id, tenantId, userId);
+    return DataResponseDto.success(serviceRequest, 'Service request accepted successfully');
+  }
+
+  @Post(':id/reject')
+  @Permissions('service_requests:update')
+  @ApiOperation({ summary: 'Technician rejects the assigned service request' })
+  async rejectRequest(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+    @Body('reason') reason?: string,
+  ) {
+    const serviceRequest = await this.serviceRequestsService.rejectRequest(id, tenantId, userId, reason);
+    return DataResponseDto.success(serviceRequest, 'Service request rejected successfully');
   }
 
   @Delete(':id')

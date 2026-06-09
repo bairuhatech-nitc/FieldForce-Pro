@@ -23,6 +23,30 @@ import { Permissions } from '../shared/decorator/permission.decorator';
 export class DashboardsController {
   constructor(private readonly dashboardsService: DashboardsService) {}
 
+  @Get('stats')
+  @Permissions('dashboards:read')
+  @ApiOperation({ summary: 'Get cached dashboard KPIs and stats' })
+  async getStats(@TenantId() tenantId: string) {
+    const stats = await this.dashboardsService.getStats(tenantId);
+    return DataResponseDto.success(stats, 'Stats fetched successfully');
+  }
+
+  @Get('activity-feed')
+  @Permissions('dashboards:read')
+  @ApiOperation({ summary: 'Get recent activity feed for dashboard' })
+  async getActivityFeed(@TenantId() tenantId: string) {
+    const feed = await this.dashboardsService.getActivityFeed(tenantId);
+    return DataResponseDto.success(feed, 'Activity feed fetched successfully');
+  }
+
+  @Get('priority-summary')
+  @Permissions('dashboards:read')
+  @ApiOperation({ summary: 'Get breakdown of requests by priority' })
+  async getPrioritySummary(@TenantId() tenantId: string) {
+    const summary = await this.dashboardsService.getPrioritySummary(tenantId);
+    return DataResponseDto.success(summary, 'Priority summary fetched successfully');
+  }
+
   @Get()
   @Permissions('dashboards:read')
   @ApiOperation({ summary: 'Get all dashboards (paginated)' })

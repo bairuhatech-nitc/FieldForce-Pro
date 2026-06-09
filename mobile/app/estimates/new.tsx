@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
@@ -718,6 +718,7 @@ function LineItemRow({
 export default function NewEstimateScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { work_order_id: workOrderId } = useLocalSearchParams<{ work_order_id?: string }>();
   const { colors: c, isDark, cardBg, headerBg, inputBg, borderColor } = useAppTheme();
 
   // ── Line items state ────────────────────────────────────────────────────────
@@ -843,6 +844,7 @@ export default function NewEstimateScreen() {
       // 1. Create the estimate header
       const res = await estimatesApi.create({
         ...(selectedContact && { contact_id: selectedContact.id }),
+        ...(workOrderId && { work_order_id: workOrderId }),
         ...(notes.trim() && { notes: notes.trim() }),
         ...(expiryDate && { expiry_date: expiryDate }),
         subtotal: parseFloat(subtotal.toFixed(2)),
@@ -872,8 +874,12 @@ export default function NewEstimateScreen() {
         ),
       );
 
-      // Navigate to the new estimate's detail screen
-      router.replace(`/estimates/${estimateId}`);
+      // Navigate back to work order or the new estimate detail
+      if (workOrderId) {
+        router.replace(`/work-order/${workOrderId}`);
+      } else {
+        router.replace(`/estimates/${estimateId}`);
+      }
     } catch {
       Alert.alert('Error', 'Could not create estimate. Please try again.');
     } finally {

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button, Table, Space, Tag, Tooltip, Select } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useTemplates, useDeleteTemplate } from '@/hooks/use-templates';
 import PageHeader from '@/components/common/PageHeader';
@@ -57,8 +57,8 @@ export default function TemplateListPage() {
 
   const handleDelete = (record: TemplateRecord) => {
     showConfirmDialog({
-      title: 'Delete Template',
-      content: `Are you sure you want to delete "${record.name}"?`,
+      title: t('templates.deleteTemplate'),
+      content: t('templates.confirmDelete', { name: record.name }),
       onOk: async () => {
         await deleteTemplate.mutateAsync(record.id);
       },
@@ -68,62 +68,60 @@ export default function TemplateListPage() {
 
   const columns: ColumnsType<TemplateRecord> = [
     {
-      title: 'Name',
+      title: t('templates.columns.name'),
       dataIndex: 'name',
       key: 'name',
-      render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
+      render: (name: string, record: any) => (<Link to={`/customization/templates/${record.id}`}><span style={{ fontWeight: 500 }}>{name}</span></Link>),
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Type',
+      title: t('templates.columns.type'),
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => (
+      render: (type: string, record: any) => (
         <Tag color={TYPE_COLORS[type] || 'default'}>
           {type ? type.charAt(0).toUpperCase() + type.slice(1) : '-'}
         </Tag>
       ),
     },
     {
-      title: 'Subject',
+      title: t('templates.columns.subject'),
       dataIndex: 'subject',
       key: 'subject',
-      render: (subject: string) => subject || <span style={{ color: '#999' }}>-</span>,
+      render: (subject: string, record: any) => subject || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Default',
+      title: t('templates.columns.default'),
       dataIndex: 'is_default',
       key: 'is_default',
-      render: (isDefault: boolean) => (
-        isDefault ? <Tag color="green">Default</Tag> : null
+      render: (isDefault: boolean, record: any) => (
+        isDefault ? <Tag color="green">{t('templates.default')}</Tag> : null
       ),
     },
     {
-      title: 'Last Updated',
+      title: t('templates.columns.lastUpdated'),
       dataIndex: 'updated_at',
       key: 'updated_at',
-      render: (date: string) => formatDateTime(date),
+      render: (date: string, record: any) => formatDateTime(date),
       sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('templates.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
           <PermissionGuard permission="templates:read">
-            <Tooltip title="View">
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/customization/templates/${record.id}`)} />
-            </Tooltip>
+            
           </PermissionGuard>
           <PermissionGuard permission="templates:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('templates.actions.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/customization/templates/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="templates:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('templates.actions.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -135,12 +133,12 @@ export default function TemplateListPage() {
   return (
     <div>
       <PageHeader
-        title="Templates"
-        subtitle="Manage templates for invoices, estimates, emails, and reports"
+        title={t('templates.title')}
+        subtitle={t('templates.subtitle')}
         extra={
           <PermissionGuard permission="templates:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/customization/templates/new')}>
-              Create Template
+              {t('templates.createTemplate')}
             </Button>
           </PermissionGuard>
         }
@@ -148,21 +146,21 @@ export default function TemplateListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search templates..."
+          placeholder={t('templates.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <Select
-          placeholder="Filter by type"
+          placeholder={t('templates.filterPlaceholder')}
           allowClear
           value={typeFilter}
           onChange={(value) => { setTypeFilter(value); setPage(1); }}
           style={{ width: 200 }}
           options={[
-            { value: 'invoice', label: 'Invoice' },
-            { value: 'estimate', label: 'Estimate' },
-            { value: 'email', label: 'Email' },
-            { value: 'report', label: 'Report' },
+            { value: 'invoice', label: t('templates.types.invoice') },
+            { value: 'estimate', label: t('templates.types.estimate') },
+            { value: 'email', label: t('templates.types.email') },
+            { value: 'report', label: t('templates.types.report') },
           ]}
         />
       </div>
@@ -177,7 +175,7 @@ export default function TemplateListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} templates`,
+          showTotal: (total) => t('templates.totalTemplates', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

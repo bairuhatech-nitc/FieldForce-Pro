@@ -8,6 +8,7 @@ import {
   SwapOutlined,
   LinkOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useDocumentApproval, useApprovalHistory } from '@/hooks/use-workflow';
 import { formatDateTime } from '@/utils/format-date';
 
@@ -40,7 +41,7 @@ const actionIcons: Record<string, React.ReactNode> = {
   APPROVE: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
   REJECT: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
   REQUEST_CORRECTION: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
-  SKIP: <ClockCircleOutlined style={{ color: '#999' }} />,
+  SKIP: <ClockCircleOutlined style={{ opacity: 0.5 }} />,
   DELEGATE: <SwapOutlined style={{ color: '#1890ff' }} />,
   ESCALATE: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
 };
@@ -50,13 +51,14 @@ export default function ApprovalDetailsModal({
   onClose,
   approvalId,
 }: ApprovalDetailsModalProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: approval, isLoading: approvalLoading } = useDocumentApproval(approvalId);
   const { data: history, isLoading: historyLoading } = useApprovalHistory(approvalId);
 
   return (
     <Modal
-      title="Approval Details"
+      title={t('approvalDetails.title')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -67,7 +69,7 @@ export default function ApprovalDetailsModal({
       ) : approval ? (
         <>
           <Descriptions bordered column={2} size="small" style={{ marginBottom: 16 }}>
-            <Descriptions.Item label="Document ID">
+            <Descriptions.Item label={t('approvalDetails.documentId')}>
               <Text copyable>{approval.document_id}</Text>
               {documentRoutes[approval.document_type] && (
                 <Button
@@ -79,48 +81,48 @@ export default function ApprovalDetailsModal({
                     navigate(documentRoutes[approval.document_type](approval.document_id));
                   }}
                 >
-                  View
+                  {t('approvalDetails.view')}
                 </Button>
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Document Type">
+            <Descriptions.Item label={t('approvalDetails.documentType')}>
               <Tag>{approval.document_type.replace(/_/g, ' ')}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Approver">
+            <Descriptions.Item label={t('approvalDetails.approver')}>
               {approval.approver
                 ? `${approval.approver.first_name} ${approval.approver.last_name}`
                 : approval.approver_id}
             </Descriptions.Item>
-            <Descriptions.Item label="Step">#{approval.order_no}</Descriptions.Item>
-            <Descriptions.Item label="Status">
+            <Descriptions.Item label={t('approvalDetails.step')}>#{approval.order_no}</Descriptions.Item>
+            <Descriptions.Item label={t('approvalDetails.status')}>
               <Tag color={statusColors[approval.status]}>{approval.status}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Workflow">
+            <Descriptions.Item label={t('approvalDetails.workflow')}>
               {approval.workflow_template?.name || approval.workflow_id}
             </Descriptions.Item>
             {approval.comments && (
-              <Descriptions.Item label="Comments" span={2}>
+              <Descriptions.Item label={t('approvalDetails.comments')} span={2}>
                 {approval.comments}
               </Descriptions.Item>
             )}
             {approval.action_date && (
-              <Descriptions.Item label="Action Date">
+              <Descriptions.Item label={t('approvalDetails.actionDate')}>
                 {formatDateTime(approval.action_date)}
               </Descriptions.Item>
             )}
             {approval.due_date && (
-              <Descriptions.Item label="Due Date">
+              <Descriptions.Item label={t('approvalDetails.dueDate')}>
                 {formatDateTime(approval.due_date)}
               </Descriptions.Item>
             )}
             {approval.delegated_from_id && (
-              <Descriptions.Item label="Delegated From" span={2}>
+              <Descriptions.Item label={t('approvalDetails.delegatedFrom')} span={2}>
                 {approval.delegated_from_id}
               </Descriptions.Item>
             )}
           </Descriptions>
 
-          <h4>History</h4>
+          <h4>{t('approvalDetails.history')}</h4>
           {historyLoading ? (
             <Spin />
           ) : history && history.length > 0 ? (
@@ -130,9 +132,9 @@ export default function ApprovalDetailsModal({
                 children: (
                   <div>
                     <Text strong>{h.action.replace(/_/g, ' ')}</Text>
-                    <span style={{ marginLeft: 8, color: '#999' }}>
+                    <span style={{ marginLeft: 8, opacity: 0.5 }}>
                       {h.actor
-                        ? `by ${h.actor.first_name} ${h.actor.last_name}`
+                        ? `${t('approvalDetails.by')} ${h.actor.first_name} ${h.actor.last_name}`
                         : h.actor_id}
                     </span>
                     <br />
@@ -148,11 +150,11 @@ export default function ApprovalDetailsModal({
               }))}
             />
           ) : (
-            <Text type="secondary">No history available</Text>
+            <Text type="secondary">{t('approvalDetails.noHistory')}</Text>
           )}
         </>
       ) : (
-        <Text type="secondary">Approval not found</Text>
+        <Text type="secondary">{t('approvalDetails.notFound')}</Text>
       )}
     </Modal>
   );

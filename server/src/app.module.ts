@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SharedModule } from './shared/shared.module';
 import { EmailModule } from './shared/email.module';
@@ -69,10 +70,21 @@ import { SCHEDULINGModule } from './SCHEDULING/scheduling.module';
 import { IoTDataModule } from './IOT_DATA/iot_data.module';
 import { ChatbotSessionsModule } from './CHATBOT_SESSIONS/chatbot_sessions.module';
 import { DocumentsModule } from './DOCUMENTS/documents.module';
-import { CustomerPortalModule } from './CUSTOMER_PORTAL/customer-portal.module';
 import { WorkflowModule } from './WORKFLOW/workflow.module';
 import { WorkOrderTechnicianSessionsModule } from './WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.module';
+import { SlaTimersModule } from './SLA_TIMERS/sla_timers.module';
+import { OnboardingModule } from './ONBOARDING/onboarding.module';
+import { AttachmentsModule } from './ATTACHMENTS/attachments.module';
+import { FeedbackModule } from './FEEDBACK/feedback.module';
 import { AiModule } from './AI/ai.module';
+import { ApiKeysModule } from './API_KEYS/api_keys.module';
+import { SuperAdminModule } from './SUPER_ADMIN/super_admin.module';
+import { MagicLinksModule } from './MAGIC_LINKS/magic_links.module';
+import { SubscriptionPlansModule } from './SUBSCRIPTION_PLANS/subscription_plans.module';
+import { WhatsAppChannelsModule } from './WHATSAPP_CHANNELS/whatsapp_channels.module';
+import { SlaModule } from './SLA_MODULE/sla.module';
+import { LookupsModule } from './LOOKUPS/lookups.module';
+import { EmailChannelsModule } from './EMAIL_CHANNELS/email_channels.module';
 
 @Module({
   imports: [
@@ -80,6 +92,7 @@ import { AiModule } from './AI/ai.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     SharedModule,
     EmailModule,
     DatabaseModule,
@@ -142,10 +155,21 @@ import { AiModule } from './AI/ai.module';
     IoTDataModule,
     ChatbotSessionsModule,
     DocumentsModule,
-    CustomerPortalModule,
     WorkflowModule,
     WorkOrderTechnicianSessionsModule,
+    SlaTimersModule,
+    OnboardingModule,
+    AttachmentsModule,
+    FeedbackModule,
     AiModule,
+    ApiKeysModule,
+    SuperAdminModule,
+    MagicLinksModule,
+    SubscriptionPlansModule,
+    WhatsAppChannelsModule,
+    SlaModule,
+    LookupsModule,
+    EmailChannelsModule,
   ],
   providers: [
     {

@@ -59,7 +59,14 @@ export class Estimate extends Model {
   estimate_number: string;
 
   @Column({
-    type: DataType.ENUM('draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'),
+    type: DataType.UUID,
+    allowNull: true,
+    comment: 'Reference to work_orders (no formal FK to avoid circular dep)',
+  })
+  work_order_id: string;
+
+  @Column({
+    type: DataType.STRING(50),
     allowNull: false,
     defaultValue: 'draft',
   })
@@ -150,6 +157,43 @@ export class Estimate extends Model {
   })
   custom_fields: Record<string, unknown>;
 
+  // ── On-site estimate approval flow ────────────────────────────────────────
+  @Column({ type: DataType.STRING(20), allowNull: false, defaultValue: 'pre_visit' })
+  estimate_type: string;
+
+  @Column({ type: DataType.STRING(30), allowNull: true })
+  internal_approval_status: string;
+
+  @Column({ type: DataType.UUID, allowNull: true })
+  internal_approved_by: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  internal_approved_at: Date;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  internal_rejection_reason: string;
+
+  @Column({ type: DataType.STRING(30), allowNull: true })
+  customer_approval_status: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  customer_approved_at: Date;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  customer_rejection_reason: string;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  customer_signature: string;
+
+  @Column({ type: DataType.STRING(200), allowNull: true })
+  customer_name_signed: string;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  awaiting_internal_approval: boolean;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  awaiting_customer_approval: boolean;
+
   @HasMany(() => EstimateLineItem, { foreignKey: 'estimate_id', as: 'line_items' })
   line_items: EstimateLineItem[];
 
@@ -172,4 +216,17 @@ export class Estimate extends Model {
     defaultValue: DataType.NOW,
   })
   updated_at: Date;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  is_template: boolean;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
+  template_name: string;
 }

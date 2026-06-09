@@ -5,23 +5,29 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useLogin, useVerifyMFA } from '@/hooks/use-auth';
+import { useLogin, useVerifyMFA, useRequestMagicLink } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 import CookieConsentModal from '@/components/auth/CookieConsentModal';
 
 const { Title, Text } = Typography;
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().trim().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
+const magicLinkSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
 type LoginForm = z.infer<typeof loginSchema>;
+type MagicLinkForm = z.infer<typeof magicLinkSchema>;
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const [useMagicLink, setUseMagicLink] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaToken, setMfaToken] = useState('');
   const [mfaMethod, setMfaMethod] = useState<'email' | 'totp'>('email');
@@ -37,14 +43,26 @@ export default function LoginPage() {
 
   const loginMutation = useLogin(handleMFARequired);
   const verifyMFAMutation = useVerifyMFA();
+  const requestMagicLinkMutation = useRequestMagicLink();
 
   const {
     control,
     handleSubmit,
     formState: { errors },
+    reset: resetLogin
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
+  });
+
+  const {
+    control: controlMagicLink,
+    handleSubmit: handleMagicLinkSubmit,
+    formState: { errors: magicLinkErrors },
+    reset: resetMagicLink
+  } = useForm<MagicLinkForm>({
+    resolver: zodResolver(magicLinkSchema),
+    defaultValues: { email: '' },
   });
 
   const onSubmit = (data: LoginForm) => {
@@ -58,6 +76,17 @@ export default function LoginPage() {
           }
         },
       },
+    );
+  };
+
+  const onMagicLinkSubmit = (data: MagicLinkForm) => {
+    requestMagicLinkMutation.mutate(
+      { email: data.email },
+      {
+        onSuccess: () => {
+          // Success is handled by notification
+        }
+      }
     );
   };
 
@@ -87,10 +116,11 @@ export default function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #f0f5ff 0%, #ffffff 100%)',
+          background: 'var(--bg-color)',
           fontFamily: "'Inter', sans-serif",
           position: 'relative',
           overflow: 'hidden',
+          color:'var(--text-color)'
         }}
       >
         <Card style={{ 
@@ -98,7 +128,6 @@ export default function LoginPage() {
           padding: '40px 32px', 
           borderRadius: 24,
           border: '1px solid rgba(59, 130, 246, 0.1)',
-          background: '#ffffff',
           boxShadow: '0 20px 40px -10px rgba(37, 99, 235, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.05)',
         }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -110,20 +139,20 @@ export default function LoginPage() {
               <SafetyOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
             )}
             <Title level={3} style={{ marginBottom: 4 }}>
-              {useRecoveryCode ? 'Recovery Code' : 'Verification Required'}
+              {useRecoveryCode ? t('auth.recoveryCode') : t('auth.verificationRequired')}
             </Title>
             <Text type="secondary">
               {useRecoveryCode
-                ? 'Enter one of your recovery codes to sign in.'
+                ? t('auth.enterRecoveryCode')
                 : isTotp
-                  ? 'Enter the 6-digit code from your authenticator app.'
-                  : 'A 6-digit code has been sent to your email. Enter it below to continue.'}
+                  ? t('auth.enterTotpCode')
+                  : t('auth.enterEmailCode')}
             </Text>
           </div>
 
           <Form layout="vertical">
             {useRecoveryCode ? (
-              <Form.Item label="Recovery Code">
+              <Form.Item label={t('auth.recoveryCode')}>
                 <Input
                   size="large"
                   placeholder="XXXX-XXXX"
@@ -134,7 +163,7 @@ export default function LoginPage() {
                 />
               </Form.Item>
             ) : (
-              <Form.Item label="Verification Code">
+              <Form.Item label={t('auth.verificationCode')}>
                 <Input
                   size="large"
                   placeholder="000000"
@@ -155,7 +184,7 @@ export default function LoginPage() {
                 disabled={useRecoveryCode ? recoveryCode.length !== 9 : mfaCode.length !== 6}
                 onClick={onMFASubmit}
               >
-                {useRecoveryCode ? 'Verify Recovery Code' : 'Verify & Sign In'}
+                {useRecoveryCode ? t('auth.verifyRecoveryCode') : t('auth.verifySignIn')}
               </Button>
             </Form.Item>
           </Form>
@@ -168,7 +197,7 @@ export default function LoginPage() {
                   loading={loginMutation.isPending}
                   onClick={handleResendCode}
                 >
-                  Resend Code
+                  {t('auth.resendCode')}
                 </Button>
               )}
               <Button
@@ -179,7 +208,7 @@ export default function LoginPage() {
                   setMfaCode('');
                 }}
               >
-                {useRecoveryCode ? 'Use verification code instead' : 'Use a recovery code'}
+                {useRecoveryCode ? t('auth.useVerificationCode') : t('auth.useRecoveryCode')}
               </Button>
               <Button
                 type="link"
@@ -191,7 +220,7 @@ export default function LoginPage() {
                   setRecoveryCode('');
                 }}
               >
-                Back to Login
+                {t('auth.backToLogin')}
               </Button>
             </Space>
           </div>
@@ -209,10 +238,11 @@ export default function LoginPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #f0f5ff 0%, #ffffff 100%)',
+          background: 'var(--bg-color)',
           fontFamily: "'Inter', sans-serif",
           position: 'relative',
           overflow: 'hidden',
+          color:'var(--text-color)'
         }}
       >
         {/* Background decorative orbs */}
@@ -233,71 +263,123 @@ export default function LoginPage() {
           padding: '40px 32px',
           borderRadius: 24,
           border: '1px solid rgba(59, 130, 246, 0.1)',
-          background: '#ffffff',
           boxShadow: '0 20px 40px -10px rgba(37, 99, 235, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.05)',
         }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <Title level={2} style={{ marginBottom: 4, letterSpacing: '-0.03em', fontWeight: 700, color: '#1e293b' }}>
+          <Title level={2} style={{ marginBottom: 4, letterSpacing: '-0.03em', fontWeight: 700 }}>
             FieldForce Pro
           </Title>
           <Text type="secondary" style={{ fontSize: 14 }}>{t('auth.login')}</Text>
         </div>
 
-        <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
-          <Form.Item
-            label={t('auth.email')}
-            validateStatus={errors.email ? 'error' : ''}
-            help={errors.email?.message}
-          >
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  prefix={<MailOutlined />}
-                  placeholder="you@example.com"
-                  size="large"
-                />
-              )}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label={t('auth.password')}
-            validateStatus={errors.password ? 'error' : ''}
-            help={errors.password?.message}
-          >
-            <Controller
-              name="password"
-              control={control}
-              render={({ field }) => (
-                <Input.Password
-                  {...field}
-                  prefix={<LockOutlined />}
-                  placeholder="Password"
-                  size="large"
-                />
-              )}
-            />
-          </Form.Item>
-
-          <div style={{ textAlign: 'right', marginBottom: 16 }}>
-            <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
-          </div>
-
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loginMutation.isPending}
-              block
-              size="large"
+        {useMagicLink ? (
+          <Form key="magic-link-form" layout="vertical" onFinish={handleMagicLinkSubmit(onMagicLinkSubmit)}>
+            <Form.Item
+              label={t('auth.email')}
+              validateStatus={magicLinkErrors.email ? 'error' : ''}
+              help={magicLinkErrors.email?.message}
             >
-              {t('auth.login')}
-            </Button>
-          </Form.Item>
-        </Form>
+              <Controller
+                name="email"
+                control={controlMagicLink}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    prefix={<MailOutlined />}
+                    placeholder="you@example.com"
+                    size="large"
+                  />
+                )}
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={requestMagicLinkMutation.isPending}
+                block
+                size="large"
+              >
+                {t('auth.sendMagicLink')}
+              </Button>
+            </Form.Item>
+
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <Button type="link" onClick={() => {
+                setUseMagicLink(false);
+                resetMagicLink();
+              }}>
+                {t('auth.signInWithPassword')}
+              </Button>
+            </div>
+          </Form>
+        ) : (
+          <Form key="password-form" layout="vertical" onFinish={handleSubmit(onSubmit)}>
+            <Form.Item
+              label={t('auth.email')}
+              validateStatus={errors.email ? 'error' : ''}
+              help={errors.email?.message}
+            >
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    prefix={<MailOutlined />}
+                    placeholder="you@example.com"
+                    size="large"
+                  />
+                )}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={t('auth.password')}
+              validateStatus={errors.password ? 'error' : ''}
+              help={errors.password?.message}
+            >
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <Input.Password
+                    {...field}
+                    prefix={<LockOutlined />}
+                    placeholder={t('auth.password')}
+                    size="large"
+                  />
+                )}
+              />
+            </Form.Item>
+
+            <div style={{ textAlign: 'right', marginBottom: 16 }}>
+              <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+            </div>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loginMutation.isPending}
+                block
+                size="large"
+              >
+                {t('auth.login')}
+              </Button>
+            </Form.Item>
+
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <Button type="link" onClick={() => {
+                setUseMagicLink(true);
+                resetLogin();
+              }}>
+                {t('auth.signInWithMagicLink')}
+              </Button>
+            </div>
+          </Form>
+        )}
 
         <div style={{ textAlign: 'center' }}>
           <Space>

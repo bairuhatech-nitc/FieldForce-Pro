@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, DatePicker } from 'antd';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useEstimate, useCreateEstimate, useUpdateEstimate } from '@/hooks/use-estimates';
 import { useAllContacts } from '@/hooks/use-contacts';
@@ -9,8 +10,11 @@ import PageHeader from '@/components/common/PageHeader';
 const { TextArea } = Input;
 
 export default function EstimateFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const workOrderId = searchParams.get('work_order_id') || undefined;
   const [form] = Form.useForm();
   const isEdit = !!id;
 
@@ -44,10 +48,19 @@ export default function EstimateFormPage() {
     try {
       if (isEdit) {
         await updateEstimate.mutateAsync({ id: id!, ...payload });
+        navigate('/estimates');
       } else {
-        await createEstimate.mutateAsync(payload);
+        const result = await createEstimate.mutateAsync({ ...payload, work_order_id: workOrderId });
+        const newId = result.data.data?.id;
+        if (workOrderId) {
+          // Redirect back to the work order's estimates tab
+          navigate(`/work-orders/${workOrderId}?tab=estimates`);
+        } else if (newId) {
+          navigate(`/estimates/${newId}`);
+        } else {
+          navigate('/estimates');
+        }
       }
-      navigate('/estimates');
     } catch {
       // Error handled by mutation hooks
     }
@@ -56,7 +69,7 @@ export default function EstimateFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('estimateForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -65,8 +78,8 @@ export default function EstimateFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Estimate' : 'Create Estimate'}
-        onBack={() => navigate('/estimates')}
+        title={isEdit ? t('estimateForm.editEstimate') : workOrderId ? t('estimateForm.createEstimateForWorkOrder') : t('estimateForm.createEstimate')}
+        onBack={() => workOrderId ? navigate(`/work-orders/${workOrderId}`) : navigate('/estimates')}
       />
 
       <Card>
@@ -77,9 +90,9 @@ export default function EstimateFormPage() {
           autoComplete="off"
           style={{ maxWidth: 800 }}
         >
-          <Form.Item name="contact_id" label="Customer (Contact)">
+          <Form.Item name="contact_id" label={t('estimateForm.customerContact')}>
             <Select
-              placeholder="Select customer"
+              placeholder={t('estimateForm.selectCustomer')}
               allowClear
               showSearch
               optionFilterProp="label"
@@ -90,20 +103,20 @@ export default function EstimateFormPage() {
             />
           </Form.Item>
 
-          <Form.Item name="expiry_date" label="Expiry Date">
+          <Form.Item name="expiry_date" label={t('estimateForm.expiryDate')}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item name="scheduled_start" label="Scheduled Date">
+          <Form.Item name="scheduled_start" label={t('estimateForm.scheduledDate')}>
             <DatePicker
               format="YYYY-MM-DD"
-              placeholder="Select scheduled date"
+              placeholder={t('estimateForm.selectScheduledDate')}
               style={{ width: '100%' }}
             />
           </Form.Item>
 
-          <Form.Item name="notes" label="Notes">
-            <TextArea rows={4} placeholder="Additional notes for this estimate" />
+          <Form.Item name="notes" label={t('estimateForm.notes')}>
+            <TextArea rows={4} placeholder={t('estimateForm.additionalNotes')} />
           </Form.Item>
 
           <Form.Item>
@@ -113,9 +126,9 @@ export default function EstimateFormPage() {
                 htmlType="submit"
                 loading={createEstimate.isPending || updateEstimate.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('estimateForm.update') : t('estimateForm.create')}
               </Button>
-              <Button onClick={() => navigate('/estimates')}>Cancel</Button>
+              <Button onClick={() => navigate('/estimates')}>{t('estimateForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

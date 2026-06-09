@@ -1,5 +1,6 @@
 import { Card, Select } from 'antd';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 
@@ -18,22 +19,23 @@ const defaultData = [
 ];
 
 export default function RevenueChart({ data = defaultData }: RevenueChartProps) {
+  const { t } = useTranslation();
+
   return (
     <Card
       title={
-        <span style={{ fontSize: 16, fontWeight: 600, color: '#262626' }}>Revenue Overview</span>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>{t('revenueChart.revenueOverview')}</span>
       }
       extra={
         <Select defaultValue="weekly" style={{ width: 120 }} bordered={false}>
-          <Option value="daily">Daily</Option>
-          <Option value="weekly">Weekly</Option>
-          <Option value="monthly">Monthly</Option>
-          <Option value="yearly">Yearly</Option>
+          <Option value="daily">{t('revenueChart.daily')}</Option>
+          <Option value="weekly">{t('revenueChart.weekly')}</Option>
+          <Option value="monthly">{t('revenueChart.monthly')}</Option>
+          <Option value="yearly">{t('revenueChart.yearly')}</Option>
         </Select>
       }
       style={{
         borderRadius: 12,
-        border: '1px solid #f0f0f0',
       }}
       bodyStyle={{ padding: '24px' }}
     >
@@ -63,7 +65,7 @@ export default function RevenueChart({ data = defaultData }: RevenueChartProps) 
               border: '1px solid #f0f0f0',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
-            formatter={(value: number | undefined) => [`$${value?.toLocaleString() || '0'}`, 'Revenue']}
+            formatter={(value: number | undefined) => [`$${value?.toLocaleString() || '0'}`, t('revenueChart.revenue')]}
           />
           <Area
             type="monotone"

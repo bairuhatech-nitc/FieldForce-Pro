@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { useCreateContact } from '@/hooks/use-contacts';
 import type { Contact } from '@/types/models.types';
+import { useTranslation } from 'react-i18next';
 
 const { TextArea } = Input;
 
@@ -16,6 +17,7 @@ export default function CreateContactModal({
   onCancel,
   onSuccess,
 }: CreateContactModalProps) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const createContact = useCreateContact();
 
@@ -29,7 +31,7 @@ export default function CreateContactModal({
   const handleSubmit = async (values: any) => {
     try {
       const newContact = await createContact.mutateAsync(values);
-      message.success('Customer created successfully');
+      message.success(t('createContact.messages.success'));
       form.resetFields();
       onSuccess(newContact);
     } catch (error) {
@@ -39,13 +41,13 @@ export default function CreateContactModal({
 
   return (
     <Modal
-      title="Create New Customer"
+      title={t('createContact.title')}
       open={open}
       onCancel={onCancel}
       onOk={() => form.submit()}
       confirmLoading={createContact.isPending}
-      okText="Create"
-      cancelText="Cancel"
+      okText={t('createContact.okText')}
+      cancelText={t('createContact.cancelText')}
       width={600}
       destroyOnClose
     >
@@ -57,40 +59,40 @@ export default function CreateContactModal({
       >
         <Form.Item
           name="first_name"
-          label="First Name"
-          rules={[{ required: true, message: 'Please enter first name' }]}
+          label={t('createContact.fields.firstName.label')}
+          rules={[{ required: true, message: t('createContact.fields.firstName.required') }]}
         >
-          <Input placeholder="John" />
+          <Input placeholder={t('createContact.fields.firstName.placeholder')} />
         </Form.Item>
 
         <Form.Item
           name="last_name"
-          label="Last Name"
-          rules={[{ required: true, message: 'Please enter last name' }]}
+          label={t('createContact.fields.lastName.label')}
+          rules={[{ required: true, message: t('createContact.fields.lastName.required') }]}
         >
-          <Input placeholder="Doe" />
+          <Input placeholder={t('createContact.fields.lastName.placeholder')} />
         </Form.Item>
 
         <Form.Item
           name="email"
-          label="Email"
-          rules={[{ type: 'email', message: 'Please enter a valid email' }]}
+          label={t('createContact.fields.email.label')}
+          rules={[{ type: 'email', message: t('createContact.fields.email.invalid') }]}
         >
-          <Input placeholder="john.doe@example.com" />
+          <Input placeholder={t('createContact.fields.email.placeholder')} />
         </Form.Item>
 
-        <Form.Item name="phone" label="Phone">
-          <Input placeholder="+1234567890" />
+        <Form.Item name="phone" label={t('createContact.fields.phone.label')}>
+          <Input placeholder={t('createContact.fields.phone.placeholder')} />
         </Form.Item>
 
-        <Form.Item name="address" label="Address">
-          <TextArea rows={3} placeholder="123 Main St, City, State, 12345" />
+        <Form.Item name="address" label={t('createContact.fields.address.label')}>
+          <TextArea rows={3} placeholder={t('createContact.fields.address.placeholder')} />
         </Form.Item>
 
-        <Form.Item name="tags" label="Tags">
+        <Form.Item name="tags" label={t('createContact.fields.tags.label')}>
           <Select
             mode="tags"
-            placeholder="Add tags (press Enter to add)"
+            placeholder={t('createContact.fields.tags.placeholder')}
             style={{ width: '100%' }}
           />
         </Form.Item>

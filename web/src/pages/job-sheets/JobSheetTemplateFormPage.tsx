@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, Switch } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useJobSheetTemplate, useCreateJobSheetTemplate, useUpdateJobSheetTemplate } from '@/hooks/use-job-sheets';
 import PageHeader from '@/components/common/PageHeader';
 
 const { TextArea } = Input;
 
 export default function JobSheetTemplateFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -47,7 +49,7 @@ export default function JobSheetTemplateFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('jobSheetTemplate.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -56,7 +58,7 @@ export default function JobSheetTemplateFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Job Sheet Template' : 'Create Job Sheet Template'}
+        title={isEdit ? t('jobSheetTemplate.editJobSheetTemplate') : t('jobSheetTemplate.createJobSheetTemplate')}
         onBack={() => navigate('/job-sheets/templates')}
       />
 
@@ -71,30 +73,30 @@ export default function JobSheetTemplateFormPage() {
         >
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a template name' }]}
+            label={t('jobSheetTemplate.name')}
+            rules={[{ required: true, message: t('jobSheetTemplate.pleaseEnterATemplateName') }]}
           >
-            <Input placeholder="e.g. HVAC Inspection Checklist" />
+            <Input placeholder={t('jobSheetTemplate.placeholderName')} />
           </Form.Item>
 
-          <Form.Item name="description" label="Description">
-            <TextArea rows={4} placeholder="Describe this template" />
+          <Form.Item name="description" label={t('jobSheetTemplate.description')}>
+            <TextArea rows={4} placeholder={t('jobSheetTemplate.placeholderDescription')} />
           </Form.Item>
 
-          <Form.Item name="category" label="Category">
-            <Select placeholder="Select category" allowClear>
-              <Select.Option value="Inspection">Inspection</Select.Option>
-              <Select.Option value="Maintenance">Maintenance</Select.Option>
-              <Select.Option value="Repair">Repair</Select.Option>
-              <Select.Option value="Installation">Installation</Select.Option>
-              <Select.Option value="Safety">Safety</Select.Option>
-              <Select.Option value="General">General</Select.Option>
-              <Select.Option value="Other">Other</Select.Option>
+          <Form.Item name="category" label={t('jobSheetTemplate.category')}>
+            <Select placeholder={t('jobSheetTemplate.selectCategory')} allowClear>
+              <Select.Option value="Inspection">{t('jobSheetTemplate.categories.inspection')}</Select.Option>
+              <Select.Option value="Maintenance">{t('jobSheetTemplate.categories.maintenance')}</Select.Option>
+              <Select.Option value="Repair">{t('jobSheetTemplate.categories.repair')}</Select.Option>
+              <Select.Option value="Installation">{t('jobSheetTemplate.categories.installation')}</Select.Option>
+              <Select.Option value="Safety">{t('jobSheetTemplate.categories.safety')}</Select.Option>
+              <Select.Option value="General">{t('jobSheetTemplate.categories.general')}</Select.Option>
+              <Select.Option value="Other">{t('jobSheetTemplate.categories.other')}</Select.Option>
             </Select>
           </Form.Item>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked">
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+          <Form.Item name="is_active" label={t('jobSheetTemplate.active')} valuePropName="checked">
+            <Switch checkedChildren={t('jobSheetTemplate.active')} unCheckedChildren={t('jobSheetTemplate.inactive')} />
           </Form.Item>
 
           <Form.Item>
@@ -104,9 +106,9 @@ export default function JobSheetTemplateFormPage() {
                 htmlType="submit"
                 loading={createTemplate.isPending || updateTemplate.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('jobSheetTemplate.update') : t('jobSheetTemplate.create')}
               </Button>
-              <Button onClick={() => navigate('/job-sheets/templates')}>Cancel</Button>
+              <Button onClick={() => navigate('/job-sheets/templates')}>{t('jobSheetTemplate.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

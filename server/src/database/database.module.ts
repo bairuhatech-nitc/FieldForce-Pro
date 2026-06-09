@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { StartupMigrationsService } from './startup-migrations.service';
+import { LookupSeederService } from './lookup-seeder.service';
 import { AppConfigService } from '../shared/config/config.service';
 import { User } from '../USERS/users.entity';
 import { Tenant } from '../TENANTS/tenants.entity';
@@ -60,6 +61,33 @@ import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/docume
 import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_history.entity';
 import { IPWhitelist } from '../IP_WHITELIST/ip-whitelist.entity';
 import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/work_order_technician_sessions.entity';
+import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
+import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import { EstimateAttachment } from '../ATTACHMENTS/estimate_attachments.entity';
+import { SubscriptionMagicLink } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.entity';
+import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
+import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
+import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
+import { MagicLink } from '../MAGIC_LINKS/magic_links.entity';
+import { ApiKey } from '../API_KEYS/api_keys.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
+import { SuperAdminApiKey } from '../SUPER_ADMIN/SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
+import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.entity';
+import { ServiceRequestTechnician } from '../SERVICE_REQUESTS/service_request_technician.entity';
+import { WhatsAppChannel } from '../WHATSAPP_CHANNELS/whatsapp_channels.entity';
+import { WhatsAppConversation } from '../WHATSAPP_CHANNELS/whatsapp_conversations.entity';
+import { Category } from '../CATEGORIES/categories.entity';
+import { SubCategory } from '../SUB_CATEGORIES/sub_categories.entity';
+import { Priority } from '../PRIORITIES/priorities.entity';
+import { Location } from '../LOCATIONS/locations.entity';
+import { SlaPolicy } from '../SLA_MODULE/sla_policies.entity';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { SlaAuditLog } from '../SLA_MODULE/sla_audit_logs.entity';
+import { WorkingCalendar } from '../SLA_MODULE/working_calendars.entity';
+import { SlaEscalation } from '../SLA_MODULE/sla_escalations.entity';
+import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
+import { EmailChannel } from '../EMAIL_CHANNELS/email_channels.entity';
+import { EmailThread } from '../EMAIL_CHANNELS/email_threads.entity';
 
 @Module({
   imports: [
@@ -72,7 +100,7 @@ import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/wo
         password: configService.dbPassword,
         database: configService.dbName,
         models: [
-          User, Tenant, Role, Permission, RolePermission, UserRole,
+          SubscriptionPlan, User, Tenant, Role, Permission, RolePermission, UserRole,
           LoginSession, UserDocument, Contact, Company, ServiceLocation,
           Asset, AssetMaintenancePlan,
           ServicesCatalog, PartsCatalog,
@@ -92,6 +120,15 @@ import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/wo
           WorkflowTemplate, WorkflowApprover, DocumentApproval, ApprovalHistory,
           IPWhitelist,
           WorkOrderTechnicianSession,
+          SlaTimer,
+          RequestAttachment, EstimateAttachment, RequestAuditLog, TechnicianFeedback, CustomerSatisfaction,
+          SubscriptionMagicLink,
+          ApiKey, MagicLink, SuperAdminApiKey, SuperAdminAuditLog, ServiceRequestTechnician,
+          WhatsAppChannel, WhatsAppConversation,
+          Category, SubCategory, Priority, Location,
+          SlaPolicy, ServiceRequestSla, SlaAuditLog,
+          WorkingCalendar, SlaEscalation, SlaPauseTrigger,
+          EmailChannel, EmailThread
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,
@@ -123,8 +160,9 @@ import { WorkOrderTechnicianSession } from '../WORK_ORDER_TECHNICIAN_SESSIONS/wo
       }),
       inject: [AppConfigService],
     }),
+    SequelizeModule.forFeature([Priority, Category, SubCategory, ServiceLocation, Tenant]),
   ],
-  providers: [StartupMigrationsService],
-  exports: [StartupMigrationsService],
+  providers: [StartupMigrationsService, LookupSeederService],
+  exports: [StartupMigrationsService, LookupSeederService],
 })
 export class DatabaseModule { }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button, Table, Tag, Space, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
@@ -42,8 +42,8 @@ export default function ContactListPage() {
 
   const handleDelete = (contact: Contact) => {
     showConfirmDialog({
-      title: 'Delete Contact',
-      content: `Are you sure you want to delete ${contact.first_name} ${contact.last_name}?`,
+      title: t('contactList.deleteTitle'),
+      content: t('contactList.deleteConfirm', { firstName: contact.first_name, lastName: contact.last_name }),
       onOk: async () => {
         await deleteContact.mutateAsync(contact.id);
       },
@@ -53,17 +53,19 @@ export default function ContactListPage() {
 
   const columns: ColumnsType<Contact> = [
     {
-      title: 'Name',
+      title: t('contactList.name'),
       key: 'name',
       render: (_, record) => (
-        <span style={{ fontWeight: 500 }}>
-          {record.first_name} {record.last_name}
-        </span>
+        <Link to={`/contacts/${record.id}`}>
+          <span style={{ fontWeight: 500 }}>
+            {record.first_name} {record.last_name}
+          </span>
+        </Link>
       ),
       sorter: (a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`),
     },
     {
-      title: 'Email',
+      title: t('contactList.email'),
       dataIndex: 'email',
       key: 'email',
       render: (email: string) =>
@@ -73,11 +75,11 @@ export default function ContactListPage() {
             <a href={`mailto:${email}`}>{email}</a>
           </Space>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {
-      title: 'Phone',
+      title: t('contactList.phone'),
       dataIndex: 'phone',
       key: 'phone',
       render: (phone: string) =>
@@ -87,11 +89,11 @@ export default function ContactListPage() {
             <a href={`tel:${phone}`}>{phone}</a>
           </Space>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {
-      title: 'Tags',
+      title: t('contactList.tags'),
       dataIndex: 'tags',
       key: 'tags',
       render: (tags: string[]) =>
@@ -104,35 +106,26 @@ export default function ContactListPage() {
             ))}
           </>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {
-      title: 'Created',
+      title: t('contactList.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('contactList.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <PermissionGuard permission="contacts:read">
-            <Tooltip title="View">
-              <Button
-                type="text"
-                icon={<EyeOutlined />}
-                size="small"
-                onClick={() => navigate(`/contacts/${record.id}`)}
-              />
-            </Tooltip>
-          </PermissionGuard>
+          {/* Removed view button */}
           <PermissionGuard permission="contacts:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('contactList.edit')}>
               <Button
                 type="text"
                 icon={<EditOutlined />}
@@ -142,7 +135,7 @@ export default function ContactListPage() {
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="contacts:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('contactList.delete')}>
               <Button
                 type="text"
                 danger
@@ -161,7 +154,7 @@ export default function ContactListPage() {
     <div>
       <PageHeader
         title={t('nav.contacts')}
-        subtitle="Manage your contacts"
+        subtitle={t('contactList.subtitle')}
         extra={
           <PermissionGuard permission="contacts:create">
             <Button
@@ -169,7 +162,7 @@ export default function ContactListPage() {
               icon={<PlusOutlined />}
               onClick={() => navigate('/contacts/new')}
             >
-              Add Contact
+              {t('contactList.addContact')}
             </Button>
           </PermissionGuard>
         }
@@ -177,7 +170,7 @@ export default function ContactListPage() {
 
       <div style={{ marginBottom: 16 }}>
         <SearchFilter
-          placeholder="Search contacts by name, email, or phone"
+          placeholder={t('contactList.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -195,7 +188,7 @@ export default function ContactListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} contacts`,
+          showTotal: (total) => t('contactList.totalContacts', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

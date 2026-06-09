@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { Navigate, type RouteObject } from 'react-router-dom';
+import { Navigate, useLocation, useParams, type RouteObject } from 'react-router-dom';
+
 import { useAuthStore } from '@/store/auth.store';
 import { useMe } from '@/hooks/use-auth';
 import AppLayout from '@/components/layout/AppLayout';
@@ -9,6 +10,7 @@ const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/auth/ResetPasswordPage'));
+const VerifyMagicLinkPage = lazy(() => import('@/pages/auth/VerifyMagicLinkPage'));
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const LiveMapDashboard = lazy(() => import('@/pages/dashboard/LiveMapDashboard'));
 const DashboardBuilderPage = lazy(() => import('@/pages/dashboard/DashboardBuilderPage'));
@@ -17,6 +19,34 @@ const UserDetailPage = lazy(() => import('@/pages/users/UserDetailPage'));
 const UserFormPage = lazy(() => import('@/pages/users/UserFormPage'));
 const GeneralSettingsPage = lazy(() => import('@/pages/settings/GeneralSettingsPage'));
 const RolesPermissionsPage = lazy(() => import('@/pages/settings/RolesPermissionsPage'));
+
+const SettingsLayout = lazy(() => import('@/pages/settings/SettingsLayout'));
+const CurrencySettingsPage = lazy(() => import('@/pages/settings/CurrencySettingsPage'));
+const TerritoriesSettingsPage = lazy(() => import('@/pages/settings/TerritoriesSettingsPage'));
+const TerritoryFormPage = lazy(() => import('@/pages/settings/TerritoryFormPage'));
+const SkillsSettingsPage = lazy(() => import('@/pages/settings/SkillsSettingsPage'));
+const ShiftsSettingsPage = lazy(() => import('@/pages/settings/ShiftsSettingsPage'));
+const HolidaysSettingsPage = lazy(() => import('@/pages/settings/HolidaysSettingsPage'));
+const DataExportSettingsPage = lazy(() => import('@/pages/settings/DataExportSettingsPage'));
+const ChatbotSettingsPage = lazy(() => import('@/pages/settings/ChatbotSettingsPage'));
+
+// Redirect Helpers
+function RedirectToSettingsUsers() {
+  const { id } = useParams();
+  return <Navigate to={id ? `/settings/users/${id}` : '/settings/users'} replace />;
+}
+function RedirectToSettingsUsersEdit() {
+  const { id } = useParams();
+  return <Navigate to={`/settings/users/${id}/edit`} replace />;
+}
+function RedirectToSettingsServiceLocations() {
+  const { id } = useParams();
+  return <Navigate to={id ? `/settings/service-locations/${id}` : '/settings/service-locations'} replace />;
+}
+function RedirectToSettingsServiceLocationsEdit() {
+  const { id } = useParams();
+  return <Navigate to={`/settings/service-locations/${id}/edit`} replace />;
+}
 const ContactListPage = lazy(() => import('@/pages/contacts/ContactListPage'));
 const ContactDetailPage = lazy(() => import('@/pages/contacts/ContactDetailPage'));
 const ContactFormPage = lazy(() => import('@/pages/contacts/ContactFormPage'));
@@ -64,6 +94,7 @@ const PaymentListPage = lazy(() => import('@/pages/payments/PaymentListPage'));
 const PaymentDetailPage = lazy(() => import('@/pages/payments/PaymentDetailPage'));
 const PaymentFormPage = lazy(() => import('@/pages/payments/PaymentFormPage'));
 const PaymentGatewaySettingsPage = lazy(() => import('@/pages/settings/PaymentGatewaySettingsPage'));
+const CustomerPaymentSettingsPage = lazy(() => import('@/pages/settings/CustomerPaymentSettingsPage'));
 const EmailSmsTemplateManagementPage = lazy(() => import('@/pages/settings/EmailSmsTemplateManagementPage'));
 const NotificationPreferencesPage = lazy(() => import('@/pages/settings/NotificationPreferencesPage'));
 const SecuritySettingsPage = lazy(() => import('@/pages/security/SecuritySettingsPage'));
@@ -74,7 +105,6 @@ const AgreementFormPage = lazy(() => import('@/pages/agreements/AgreementFormPag
 const BlueprintListPage = lazy(() => import('@/pages/blueprints/BlueprintListPage'));
 const BlueprintEditorPage = lazy(() => import('@/pages/blueprints/BlueprintEditorPage'));
 const CommunicationListPage = lazy(() => import('@/pages/communications/CommunicationListPage'));
-const WebformListPage = lazy(() => import('@/pages/webforms/WebformListPage'));
 const PricebookListPage = lazy(() => import('@/pages/pricebook/PricebookListPage'));
 const CustomFieldListPage = lazy(() => import('@/pages/customization/CustomFieldListPage'));
 const TemplateListPage = lazy(() => import('@/pages/customization/TemplateListPage'));
@@ -84,20 +114,18 @@ const ReviewListPage = lazy(() => import('@/pages/reviews/ReviewListPage'));
 const ReviewDetailPage = lazy(() => import('@/pages/reviews/ReviewDetailPage'));
 const ReviewFormPage = lazy(() => import('@/pages/reviews/ReviewFormPage'));
 const CommunicationDetailPage = lazy(() => import('@/pages/communications/CommunicationDetailPage'));
-const WebformDetailPage = lazy(() => import('@/pages/webforms/WebformDetailPage'));
-const WebformFormPage = lazy(() => import('@/pages/webforms/WebformFormPage'));
 const PricebookFormPage = lazy(() => import('@/pages/pricebook/PricebookFormPage'));
 const CustomFieldFormPage = lazy(() => import('@/pages/customization/CustomFieldFormPage'));
 const TemplateBuilderPage = lazy(() => import('@/pages/customization/TemplateBuilderPage'));
 const WorkflowRuleFormPage = lazy(() => import('@/pages/customization/WorkflowRuleFormPage'));
 const WebhookFormPage = lazy(() => import('@/pages/customization/WebhookFormPage'));
 const AuditLogListPage = lazy(() => import('@/pages/security/AuditLogListPage'));
+const MobileUsageLogs = lazy(() => import('@/pages/admin/MobileUsageLogs'));
 const ReportListPage = lazy(() => import('@/pages/reports/ReportListPage'));
 const ReportDetailPage = lazy(() => import('@/pages/reports/ReportDetailPage'));
 const AgentListPage = lazy(() => import('@/pages/workforce/AgentListPage'));
 const CalendarViewPage = lazy(() => import('@/pages/scheduling/CalendarViewPage'));
 const MapViewPage = lazy(() => import('@/pages/scheduling/MapViewPage'));
-const PortalDashboardPage = lazy(() => import('@/pages/portal/PortalDashboardPage'));
 const SLAComplianceDashboard = lazy(() => import('@/pages/agreements/SLAComplianceDashboard'));
 const EquipmentHealthDashboardPage = lazy(() => import('@/pages/maintenance/EquipmentHealthDashboardPage'));
 const DocumentUploadPage = lazy(() => import('@/pages/documents/DocumentUploadPage'));
@@ -110,7 +138,31 @@ const WorkflowTemplateDetailPage = lazy(() => import('@/pages/workflow/WorkflowT
 const DocumentApprovalListPage = lazy(() => import('@/pages/workflow/DocumentApprovalListPage'));
 const ApprovalDashboardPage = lazy(() => import('@/pages/workflow/ApprovalDashboardPage'));
 const EstimatePublicSignPage = lazy(() => import('@/pages/estimates/EstimatePublicSignPage'));
+const EstimateApprovalPage = lazy(() => import('@/pages/estimates/EstimateApprovalPage'));
+const SignupFromMagicLinkPage = lazy(() => import('@/pages/auth/SignupFromMagicLinkPage'));
+const InvoicePortalPage = lazy(() => import('@/pages/invoices/InvoicePortalPage'));
+const SubscriptionMagicLinksPage = lazy(() => import('@/pages/super-admin/SubscriptionMagicLinksPage'));
+const DashboardRouter = lazy(() => import('@/pages/dashboard/DashboardRouter'));
+const ApiKeysPage = lazy(() => import('@/pages/integrations/ApiKeysPage'));
+const IntegrationGuidePage = lazy(() => import('@/pages/integrations/IntegrationGuidePage'));
 const LandingPage = lazy(() => import('@/pages/landing/LandingPage'));
+const SuperAdminDashboardPage = lazy(() => import('@/pages/super-admin/SuperAdminDashboardPage'));
+const TenantDetailPage = lazy(() => import('@/pages/super-admin/TenantDetailPage'));
+const PricingPlansPage = lazy(() => import('@/pages/super-admin/PricingPlansPage'));
+
+const SuperAdminProfilePage = lazy(() => import('@/pages/super-admin/SuperAdminProfilePage'));
+const AuditLogsPage = lazy(() => import('@/pages/super-admin/AuditLogsPage'));
+const SuperAdminApiKeysPage = lazy(() => import('@/pages/super-admin/ApiKeysPage'));
+const AnalyticsDashboardPage = lazy(() => import('@/pages/super-admin/AnalyticsDashboardPage'));
+const SystemHealthPage = lazy(() => import('@/pages/super-admin/SystemHealthPage'));
+const MagicLinkVerifyPage = lazy(() => import('@/pages/auth/MagicLinkVerifyPage'));
+const OnboardingSetupPage = lazy(() => import('@/pages/onboarding/OnboardingSetupPage'));
+const UserOnboardingPage = lazy(() => import('@/pages/onboarding/UserOnboardingPage'));
+const MyJobsPage = lazy(() => import('@/pages/technician/MyJobsPage'));
+const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
+const WhatsAppChannelSettingsPage = lazy(() => import('@/pages/settings/WhatsAppChannelSettingsPage'));
+const SlaConfigPage = lazy(() => import('@/pages/slas/SlaConfigPage'));
+const EmailChannelSettingsPage = lazy(() => import('@/pages/settings/EmailChannelSettingsPage'));
 
 function SuspenseWrapper({ children }: { children: ReactNode }) {
   return <Suspense fallback={null}>{children}</Suspense>;
@@ -145,16 +197,45 @@ function OpenRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function SuperAdminRoute({ children }: { children: ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!user?.is_super_admin) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
+function TechnicianGuard({ children }: { children: ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  const location = useLocation();
+
+  const roles: unknown[] = Array.isArray(user?.roles) ? (user.roles as unknown[]) : [];
+  const isTechnician =
+    !user?.is_super_admin &&
+    roles.some((r) => (typeof r === 'string' ? r : (r as { name?: string })?.name) === 'Technician');
+
+  if (!isTechnician) return <>{children}</>;
+
+  const path = location.pathname;
+  const allowed =
+    path === '/dashboard' ||
+    path === '/work-orders/my-jobs' ||
+    path.startsWith('/work-orders/') ||
+    path === '/scheduling/calendar' ||
+    path === '/timesheets' ||
+    path.startsWith('/timesheets/') ||
+    path === '/notifications' ||
+    path === '/profile' ||
+    path.startsWith('/profile/');
+
+  if (!allowed) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: (
-      <OpenRoute>
-        <SuspenseWrapper>
-          <LandingPage />
-        </SuspenseWrapper>
-      </OpenRoute>
-    ),
+    element: <Navigate to="/landing" replace />,
   },
   {
     path: '/login',
@@ -197,9 +278,21 @@ export const routes: RouteObject[] = [
     ),
   },
   {
+    path: '/auth/verify',
+    element: (
+      <PublicRoute>
+        <SuspenseWrapper>
+          <VerifyMagicLinkPage />
+        </SuspenseWrapper>
+      </PublicRoute>
+    ),
+  },
+  {
     element: (
       <PrivateRoute>
-        <AppLayout />
+        <TechnicianGuard>
+          <AppLayout />
+        </TechnicianGuard>
       </PrivateRoute>
     ),
     children: [
@@ -207,7 +300,7 @@ export const routes: RouteObject[] = [
         path: 'dashboard',
         element: (
           <SuspenseWrapper>
-            <DashboardPage />
+            <DashboardRouter />
           </SuspenseWrapper>
         ),
       },
@@ -227,38 +320,22 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
-      // Users
+      // Users Redirects
       {
         path: 'users',
-        element: (
-          <SuspenseWrapper>
-            <UserListPage />
-          </SuspenseWrapper>
-        ),
+        element: <RedirectToSettingsUsers />,
       },
       {
         path: 'users/create',
-        element: (
-          <SuspenseWrapper>
-            <UserFormPage />
-          </SuspenseWrapper>
-        ),
+        element: <Navigate to="/settings/users/create" replace />,
       },
       {
         path: 'users/:id',
-        element: (
-          <SuspenseWrapper>
-            <UserDetailPage />
-          </SuspenseWrapper>
-        ),
+        element: <RedirectToSettingsUsers />,
       },
       {
         path: 'users/:id/edit',
-        element: (
-          <SuspenseWrapper>
-            <UserFormPage />
-          </SuspenseWrapper>
-        ),
+        element: <RedirectToSettingsUsersEdit />,
       },
       // Contacts
       {
@@ -327,37 +404,22 @@ export const routes: RouteObject[] = [
         ),
       },
       // Service Locations
+      // Service Locations Redirects
       {
         path: 'service-locations',
-        element: (
-          <SuspenseWrapper>
-            <ServiceLocationListPage />
-          </SuspenseWrapper>
-        ),
+        element: <RedirectToSettingsServiceLocations />,
       },
       {
         path: 'service-locations/new',
-        element: (
-          <SuspenseWrapper>
-            <ServiceLocationFormPage />
-          </SuspenseWrapper>
-        ),
+        element: <Navigate to="/settings/service-locations/new" replace />,
       },
       {
         path: 'service-locations/:id',
-        element: (
-          <SuspenseWrapper>
-            <ServiceLocationDetailPage />
-          </SuspenseWrapper>
-        ),
+        element: <RedirectToSettingsServiceLocations />,
       },
       {
         path: 'service-locations/:id/edit',
-        element: (
-          <SuspenseWrapper>
-            <ServiceLocationFormPage />
-          </SuspenseWrapper>
-        ),
+        element: <RedirectToSettingsServiceLocationsEdit />,
       },
       // Assets
       {
@@ -508,6 +570,15 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
+      // SLAs
+      {
+        path: 'slas',
+        element: (
+          <SuspenseWrapper>
+            <SlaConfigPage />
+          </SuspenseWrapper>
+        ),
+      },
       // Estimates
       {
         path: 'estimates',
@@ -571,6 +642,14 @@ export const routes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <WorkOrderFormPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'work-orders/my-jobs',
+        element: (
+          <SuspenseWrapper>
+            <MyJobsPage />
           </SuspenseWrapper>
         ),
       },
@@ -750,6 +829,15 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
+      // Notifications
+      {
+        path: 'notifications',
+        element: (
+          <SuspenseWrapper>
+            <NotificationsPage />
+          </SuspenseWrapper>
+        ),
+      },
       // Trips
       {
         path: 'trips/history',
@@ -909,36 +997,108 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
-      // Webforms
+      // Super Admin
       {
-        path: 'webforms',
+        path: 'admin/tenants',
         element: (
-          <SuspenseWrapper>
-            <WebformListPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SuperAdminDashboardPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
-        path: 'webforms/new',
+        path: 'admin/tenants/:id',
         element: (
-          <SuspenseWrapper>
-            <WebformFormPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <TenantDetailPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
-        path: 'webforms/:id',
+        path: 'admin/pricing',
         element: (
-          <SuspenseWrapper>
-            <WebformDetailPage />
-          </SuspenseWrapper>
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <PricingPlansPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+
+      {
+        path: 'admin/platform-health',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SystemHealthPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
         ),
       },
       {
-        path: 'webforms/:id/edit',
+        path: 'admin/audit-logs',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <AuditLogsPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+      {
+        path: 'admin/api-keys',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SuperAdminApiKeysPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+      {
+        path: 'admin/analytics',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <AnalyticsDashboardPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+      {
+        path: 'admin/profile',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SuperAdminProfilePage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+      {
+        path: 'admin/magic-links',
+        element: (
+          <SuperAdminRoute>
+            <SuspenseWrapper>
+              <SubscriptionMagicLinksPage />
+            </SuspenseWrapper>
+          </SuperAdminRoute>
+        ),
+      },
+      // API Key Management (Company Admin)
+      {
+        path: 'integrations/api-keys',
+        element: <Navigate to="/settings/api-keys" replace />,
+      },
+      {
+        path: 'integrations/guide',
         element: (
           <SuspenseWrapper>
-            <WebformFormPage />
+            <IntegrationGuidePage />
           </SuspenseWrapper>
         ),
       },
@@ -1103,11 +1263,12 @@ export const routes: RouteObject[] = [
       // Security
       {
         path: 'security/audit-logs',
-        element: (
-          <SuspenseWrapper>
-            <AuditLogListPage />
-          </SuspenseWrapper>
-        ),
+        element: <Navigate to="/settings/audit-logs" replace />,
+      },
+      // Mobile Usage Logs (admin)
+      {
+        path: 'admin/mobile-logs',
+        element: <Navigate to="/settings/mobile-logs" replace />,
       },
       // Reports
       {
@@ -1184,54 +1345,256 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
-      // Settings
+      // Settings Parent and Children
       {
         path: 'settings',
         element: (
           <SuspenseWrapper>
-            <GeneralSettingsPage />
+            <SettingsLayout />
           </SuspenseWrapper>
         ),
-      },
-      {
-        path: 'settings/roles',
-        element: (
-          <SuspenseWrapper>
-            <RolesPermissionsPage />
-          </SuspenseWrapper>
-        ),
-      },
-      {
-        path: 'settings/payment-gateways',
-        element: (
-          <SuspenseWrapper>
-            <PaymentGatewaySettingsPage />
-          </SuspenseWrapper>
-        ),
-      },
-      {
-        path: 'settings/email-sms-templates',
-        element: (
-          <SuspenseWrapper>
-            <EmailSmsTemplateManagementPage />
-          </SuspenseWrapper>
-        ),
-      },
-      {
-        path: 'settings/notifications',
-        element: (
-          <SuspenseWrapper>
-            <NotificationPreferencesPage />
-          </SuspenseWrapper>
-        ),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="profile" replace />,
+          },
+          {
+            path: 'profile',
+            element: (
+              <SuspenseWrapper>
+                <GeneralSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'currency',
+            element: (
+              <SuspenseWrapper>
+                <CurrencySettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'service-locations',
+            element: (
+              <SuspenseWrapper>
+                <ServiceLocationListPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'service-locations/new',
+            element: (
+              <SuspenseWrapper>
+                <ServiceLocationFormPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'service-locations/:id',
+            element: (
+              <SuspenseWrapper>
+                <ServiceLocationDetailPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'service-locations/:id/edit',
+            element: (
+              <SuspenseWrapper>
+                <ServiceLocationFormPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'chatbot',
+            element: (
+              <SuspenseWrapper>
+                <ChatbotSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'users',
+            element: (
+              <SuspenseWrapper>
+                <UserListPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'users/create',
+            element: (
+              <SuspenseWrapper>
+                <UserFormPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'users/:id',
+            element: (
+              <SuspenseWrapper>
+                <UserDetailPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'users/:id/edit',
+            element: (
+              <SuspenseWrapper>
+                <UserFormPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'territories',
+            element: (
+              <SuspenseWrapper>
+                <TerritoriesSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'territories/new',
+            element: (
+              <SuspenseWrapper>
+                <TerritoryFormPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'territories/:id/edit',
+            element: (
+              <SuspenseWrapper>
+                <TerritoryFormPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'skills',
+            element: (
+              <SuspenseWrapper>
+                <SkillsSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'shifts',
+            element: (
+              <SuspenseWrapper>
+                <ShiftsSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'holidays',
+            element: (
+              <SuspenseWrapper>
+                <HolidaysSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'profiles',
+            element: (
+              <SuspenseWrapper>
+                <RolesPermissionsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'audit-logs',
+            element: (
+              <SuspenseWrapper>
+                <AuditLogListPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'channels/email',
+            element: (
+              <SuspenseWrapper>
+                <EmailChannelSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'channels/whatsapp',
+            element: (
+              <SuspenseWrapper>
+                <WhatsAppChannelSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'export',
+            element: (
+              <SuspenseWrapper>
+                <DataExportSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'payment-gateways',
+            element: (
+              <SuspenseWrapper>
+                <PaymentGatewaySettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'customer-payment',
+            element: (
+              <SuspenseWrapper>
+                <CustomerPaymentSettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'email-sms-templates',
+            element: (
+              <SuspenseWrapper>
+                <EmailSmsTemplateManagementPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'notifications',
+            element: (
+              <SuspenseWrapper>
+                <NotificationPreferencesPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'security',
+            element: (
+              <SuspenseWrapper>
+                <SecuritySettingsPage />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'mobile-logs',
+            element: (
+              <SuspenseWrapper>
+                <MobileUsageLogs />
+              </SuspenseWrapper>
+            ),
+          },
+          {
+            path: 'api-keys',
+            element: (
+              <SuspenseWrapper>
+                <ApiKeysPage />
+              </SuspenseWrapper>
+            ),
+          },
+        ],
       },
       {
         path: 'security/settings',
-        element: (
-          <SuspenseWrapper>
-            <SecuritySettingsPage />
-          </SuspenseWrapper>
-        ),
+        element: <Navigate to="/settings/security" replace />,
       },
       {
         path: 'reports/builder',
@@ -1244,18 +1607,33 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    path: '/landing',
-    element: <Navigate to="/" replace />,
-  },
-  // Customer Portal (Public)
-  {
-    path: '/portal',
+    path: '/auth/magic',
     element: (
       <OpenRoute>
         <SuspenseWrapper>
-          <PortalDashboardPage />
+          <MagicLinkVerifyPage />
         </SuspenseWrapper>
       </OpenRoute>
+    ),
+  },
+  {
+    path: '/onboarding/setup',
+    element: (
+      <PrivateRoute>
+        <SuspenseWrapper>
+          <OnboardingSetupPage />
+        </SuspenseWrapper>
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: '/onboarding/user-setup',
+    element: (
+      <PrivateRoute>
+        <SuspenseWrapper>
+          <UserOnboardingPage />
+        </SuspenseWrapper>
+      </PrivateRoute>
     ),
   },
   {
@@ -1264,6 +1642,46 @@ export const routes: RouteObject[] = [
       <OpenRoute>
         <SuspenseWrapper>
           <EstimatePublicSignPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/estimate/approve/:token',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <EstimateApprovalPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/invoice/view/:token',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <InvoicePortalPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/signup',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <SignupFromMagicLinkPage />
+        </SuspenseWrapper>
+      </OpenRoute>
+    ),
+  },
+  {
+    path: '/landing',
+    element: (
+      <OpenRoute>
+        <SuspenseWrapper>
+          <LandingPage />
         </SuspenseWrapper>
       </OpenRoute>
     ),

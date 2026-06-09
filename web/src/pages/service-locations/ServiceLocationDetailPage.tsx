@@ -1,11 +1,14 @@
+import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, Descriptions, Button, Space, Spin, Tag, Empty, Row, Col } from 'antd';
 import { EditOutlined, DeleteOutlined, EnvironmentOutlined, GlobalOutlined } from '@ant-design/icons';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import PageHeader from '@/components/common/PageHeader';
 import { useServiceLocation, useDeleteServiceLocation } from '@/hooks/use-service-locations';
+import { useSetting } from '@/hooks/use-settings';
 import { formatDateTime } from '@/utils/format-date';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PermissionGuard } from '@/components/permissions';
@@ -19,17 +22,24 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function ServiceLocationDetailPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const { data: location, isLoading } = useServiceLocation(id || '');
   const deleteServiceLocation = useDeleteServiceLocation();
 
+  // Load territories list to draw background boundaries on map
+  const { data: settingData } = useSetting('territories_settings');
+  const territories = useMemo(() => {
+    return (settingData?.value?.list as any[]) || [];
+  }, [settingData]);
+
   const handleDelete = () => {
     if (!location) return;
 
     showConfirmDialog({
-      title: 'Delete Service Location',
-      content: `Are you sure you want to delete this location at ${location.address}?`,
+      title: t('serviceLocationDetail.deleteTitle'),
+      content: t('serviceLocationDetail.deleteContent', { address: location.address }),
       onOk: async () => {
         await deleteServiceLocation.mutateAsync(location.id);
         navigate('/service-locations');
@@ -49,10 +59,10 @@ export default function ServiceLocationDetailPage() {
   if (!location) {
     return (
       <div style={{ padding: 100 }}>
-        <Empty description="Service location not found" />
+        <Empty description={t('serviceLocationDetail.notFound')} />
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <Button onClick={() => navigate('/service-locations')}>
-            Back to Service Locations
+            {t('serviceLocationDetail.backToList')}
           </Button>
         </div>
       </div>
@@ -62,8 +72,8 @@ export default function ServiceLocationDetailPage() {
   return (
     <div>
       <PageHeader
-        title="Service Location Details"
-        subtitle={`Viewing location at ${location.address}`}
+        title={t('serviceLocationDetail.title')}
+        subtitle={t('serviceLocationDetail.subtitle', { address: location.address })}
         onBack={() => navigate('/service-locations')}
         extra={
           <Space>
@@ -73,7 +83,7 @@ export default function ServiceLocationDetailPage() {
                 icon={<EditOutlined />}
                 onClick={() => navigate(`/service-locations/${id}/edit`)}
               >
-                Edit
+                {t('serviceLocationDetail.edit')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="service_locations:delete">
@@ -82,7 +92,7 @@ export default function ServiceLocationDetailPage() {
                 icon={<DeleteOutlined />}
                 onClick={handleDelete}
               >
-                Delete
+                {t('serviceLocationDetail.delete')}
               </Button>
             </PermissionGuard>
           </Space>
@@ -91,40 +101,40 @@ export default function ServiceLocationDetailPage() {
 
       <Row gutter={24}>
         <Col xs={24} lg={16}>
-          <Card title="Location Information" style={{ marginBottom: 24 }}>
+          <Card title={t('serviceLocationDetail.locationInformation')} style={{ marginBottom: 24 }}>
             <Descriptions bordered column={{ xs: 1, sm: 2 }}>
-              <Descriptions.Item label="Address" span={2}>
+              <Descriptions.Item label={t('serviceLocationDetail.address')} span={2}>
                 <Space>
                   <EnvironmentOutlined />
                   {location.address}
                 </Space>
               </Descriptions.Item>
 
-              <Descriptions.Item label="Access Notes">
-                {location.access_notes || <span style={{ color: '#999' }}>Not specified</span>}
+              <Descriptions.Item label={t('serviceLocationDetail.accessNotes')}>
+                {location.access_notes || <span style={{ color: '#999' }}>{t('serviceLocationDetail.notSpecified')}</span>}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Gate Code">
+              <Descriptions.Item label={t('serviceLocationDetail.gateCode')}>
                 {location.gate_code ? (
                   <Tag color="green">{location.gate_code}</Tag>
                 ) : (
-                  <span style={{ color: '#999' }}>Not specified</span>
+                  <span style={{ color: '#999' }}>{t('serviceLocationDetail.notSpecified')}</span>
                 )}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Latitude">
-                {location.lat ? Number(location.lat).toFixed(6) : <span style={{ color: '#999' }}>Not set</span>}
+              <Descriptions.Item label={t('serviceLocationDetail.latitude')}>
+                {location.lat ? Number(location.lat).toFixed(6) : <span style={{ color: '#999' }}>{t('serviceLocationDetail.notSet')}</span>}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Longitude">
-                {location.lng ? Number(location.lng).toFixed(6) : <span style={{ color: '#999' }}>Not set</span>}
+              <Descriptions.Item label={t('serviceLocationDetail.longitude')}>
+                {location.lng ? Number(location.lng).toFixed(6) : <span style={{ color: '#999' }}>{t('serviceLocationDetail.notSet')}</span>}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Created At">
+              <Descriptions.Item label={t('serviceLocationDetail.createdAt')}>
                 {formatDateTime(location.created_at)}
               </Descriptions.Item>
 
-              <Descriptions.Item label="Updated At">
+              <Descriptions.Item label={t('serviceLocationDetail.updatedAt')}>
                 {formatDateTime(location.updated_at)}
               </Descriptions.Item>
             </Descriptions>
@@ -132,13 +142,13 @@ export default function ServiceLocationDetailPage() {
         </Col>
 
         <Col xs={24} lg={8}>
-          <Card title="Map View" style={{ marginBottom: 24 }}>
+          <Card title={t('serviceLocationDetail.mapView')} style={{ marginBottom: 24 }}>
             {location.lat && location.lng ? (
               <div>
                 <div style={{ height: 250, borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
                   <MapContainer
                     center={[Number(location.lat), Number(location.lng)]}
-                    zoom={15}
+                    zoom={12}
                     style={{ height: '100%', width: '100%' }}
                     scrollWheelZoom={false}
                   >
@@ -146,6 +156,30 @@ export default function ServiceLocationDetailPage() {
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
+
+                    {/* Render all defined territory boundaries */}
+                    {territories.map((t: any) => {
+                      if (!t.coordinates || t.coordinates.length < 3) return null;
+                      return (
+                        <Polygon
+                          key={t.id}
+                          positions={t.coordinates}
+                          pathOptions={{
+                            color: t.color || '#3B82F6',
+                            fillColor: t.color || '#3B82F6',
+                            fillOpacity: 0.12,
+                            weight: 2,
+                            dashArray: '3 3',
+                          }}
+                        >
+                          <Popup>
+                            <div style={{ fontWeight: 600 }}>🗺️ {t.name}</div>
+                            {t.description && <div style={{ fontSize: 11, color: '#555', marginTop: 4 }}>{t.description}</div>}
+                          </Popup>
+                        </Polygon>
+                      );
+                    })}
+
                     <Marker position={[Number(location.lat), Number(location.lng)]}>
                       <Popup>{location.address}</Popup>
                     </Marker>
@@ -157,19 +191,19 @@ export default function ServiceLocationDetailPage() {
                   block
                   onClick={() => window.open(`https://maps.google.com/?q=${location.lat},${location.lng}`, '_blank')}
                 >
-                  View on Google Maps
+                  {t('serviceLocationDetail.viewOnGoogleMaps')}
                 </Button>
               </div>
             ) : (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="No coordinates set"
+                description={t('serviceLocationDetail.noCoordinatesSet')}
               />
             )}
           </Card>
 
           {location.custom_fields && Object.keys(location.custom_fields).length > 0 && (
-            <Card title="Custom Fields">
+            <Card title={t('serviceLocationDetail.customFields')}>
               <Descriptions column={1} size="small">
                 {Object.entries(location.custom_fields).map(([key, value]) => (
                   <Descriptions.Item key={key} label={key}>

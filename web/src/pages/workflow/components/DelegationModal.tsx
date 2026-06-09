@@ -1,4 +1,5 @@
 import { Modal, Select, Input, Form } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useUsers } from '@/hooks/use-users';
 import type { User } from '@/types/models.types';
 
@@ -15,6 +16,7 @@ export default function DelegationModal({
   onSubmit,
   loading,
 }: DelegationModalProps) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const { data: usersData } = useUsers({ take: 100 });
   const users = usersData?.data || [];
@@ -32,21 +34,21 @@ export default function DelegationModal({
 
   return (
     <Modal
-      title="Delegate Approval"
+      title={t('delegationModal.title')}
       open={open}
       onOk={handleOk}
       onCancel={handleCancel}
       confirmLoading={loading}
-      okText="Delegate"
+      okText={t('delegationModal.delegate')}
     >
       <Form form={form} layout="vertical">
         <Form.Item
           name="delegate_to_id"
-          label="Delegate To"
-          rules={[{ required: true, message: 'Please select a user' }]}
+          label={t('delegationModal.delegateTo')}
+          rules={[{ required: true, message: t('delegationModal.selectUserError') }]}
         >
           <Select
-            placeholder="Select user to delegate to"
+            placeholder={t('delegationModal.selectPlaceholder')}
             showSearch
             optionFilterProp="label"
             options={users.map((u: User) => ({
@@ -56,8 +58,8 @@ export default function DelegationModal({
           />
         </Form.Item>
 
-        <Form.Item name="comments" label="Reason for Delegation">
-          <Input.TextArea rows={3} placeholder="Explain why you're delegating (optional)" />
+        <Form.Item name="comments" label={t('delegationModal.reason')}>
+          <Input.TextArea rows={3} placeholder={t('delegationModal.reasonPlaceholder')} />
         </Form.Item>
       </Form>
     </Modal>

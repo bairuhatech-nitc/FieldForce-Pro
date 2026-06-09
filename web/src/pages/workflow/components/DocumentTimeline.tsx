@@ -10,6 +10,7 @@ import {
   FileAddOutlined,
   SendOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useApprovalsByDocument, useHistoryByDocument } from '@/hooks/use-workflow';
 import { formatDateTime } from '@/utils/format-date';
 import type { DocumentApproval, ApprovalHistory } from '@/types/workflow.types';
@@ -28,7 +29,7 @@ const actionIcons: Record<string, React.ReactNode> = {
   APPROVE: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
   REJECT: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
   REQUEST_CORRECTION: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
-  SKIP: <MinusCircleOutlined style={{ color: '#999' }} />,
+  SKIP: <MinusCircleOutlined style={{ opacity: 0.5 }} />,
   DELEGATE: <SwapOutlined style={{ color: '#1890ff' }} />,
   ESCALATE: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
 };
@@ -37,7 +38,7 @@ const statusIcons: Record<string, React.ReactNode> = {
   APPROVED: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
   REJECTED: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
   PENDING: <ClockCircleOutlined style={{ color: '#faad14' }} />,
-  SKIPPED: <MinusCircleOutlined style={{ color: '#999' }} />,
+  SKIPPED: <MinusCircleOutlined style={{ opacity: 0.5 }} />,
   CORRECTION_REQUIRED: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
 };
 
@@ -53,6 +54,7 @@ interface DocumentTimelineProps {
 }
 
 export default function DocumentTimeline({ documentId }: DocumentTimelineProps) {
+  const { t } = useTranslation();
   const { data: steps, isLoading: stepsLoading } = useApprovalsByDocument(documentId);
   const { data: history, isLoading: historyLoading } = useHistoryByDocument(documentId);
 
@@ -64,7 +66,6 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
     const entries: TimelineEntry[] = [];
     const sorted = [...steps].sort((a, b) => a.order_no - b.order_no);
 
-    // 1. "Document submitted for approval" — chain creation
     const firstStep = sorted[0];
     entries.push({
       type: 'created',
@@ -72,7 +73,6 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
       data: firstStep,
     });
 
-    // 2. "Sent for approval" — the chain was dispatched
     entries.push({
       type: 'submitted',
       timestamp: firstStep.created_at,
@@ -80,7 +80,6 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
       data: firstStep,
     });
 
-    // 3. History action events (actual approvals, rejections, delegations)
     if (history && history.length > 0) {
       for (const h of history) {
         entries.push({
@@ -91,7 +90,6 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
       }
     }
 
-    // 4. Pending steps that haven't been acted on yet
     for (const step of sorted) {
       if (step.status === 'PENDING') {
         entries.push({
@@ -103,12 +101,9 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
       }
     }
 
-    // Sort by timestamp (created first, then actions, then pending at end)
     entries.sort((a, b) => {
-      // Pending always goes last
       if (a.type === 'pending' && b.type !== 'pending') return 1;
       if (a.type !== 'pending' && b.type === 'pending') return -1;
-      // created/submitted always goes first
       if (a.type === 'created' && b.type !== 'created') return -1;
       if (a.type !== 'created' && b.type === 'created') return 1;
       if (a.type === 'submitted' && b.type !== 'submitted' && b.type !== 'created') return -1;
@@ -124,10 +119,10 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
   }
 
   if (!steps || steps.length === 0) {
-    return <Text type="secondary" style={{ padding: 16 }}>No approval steps found</Text>;
+    return <Text type="secondary" style={{ padding: 16 }}>{t('documentTimeline.noStepsFound')}</Text>;
   }
 
-  const docType = steps[0]?.document_type?.replace(/_/g, ' ') || 'Document';
+  const docType = steps[0]?.document_type?.replace(/_/g, ' ') || t('documentTimeline.document');
 
   return (
     <div style={{ padding: '12px 24px' }}>
@@ -138,7 +133,7 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
               dot: <FileAddOutlined style={{ color: '#1890ff' }} />,
               children: (
                 <div>
-                  <Text strong>{docType} submitted for approval</Text>
+                  <Text strong>{t('documentTimeline.submittedForApproval', { docType })}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     {formatDateTime(entry.timestamp)}
@@ -155,13 +150,13 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
               dot: <SendOutlined style={{ color: '#722ed1' }} />,
               children: (
                 <div>
-                  <Text strong>Approval chain started</Text>
+                  <Text strong>{t('documentTimeline.chainStarted')}</Text>
                   <Tag color="purple" style={{ marginLeft: 8 }}>
-                    {totalSteps} step{totalSteps > 1 ? 's' : ''}
+                    {t('documentTimeline.stepCount', { count: totalSteps })}
                   </Tag>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Workflow: {step.workflow_template?.name || 'Unknown'}
+                    {t('documentTimeline.workflow')}: {step.workflow_template?.name || t('documentTimeline.unknown')}
                   </Text>
                 </div>
               ),
@@ -181,7 +176,7 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
                 <div>
                   <div>
                     <Text strong>{actionLabel}</Text>
-                    <span style={{ marginLeft: 8, color: '#666' }}>by {actorName}</span>
+                    <span style={{ marginLeft: 8, opacity: 0.5 }}>{t('documentTimeline.by', { actorName })}</span>
                     <Tag
                       color={statusColors[h.new_status] || 'default'}
                       style={{ marginLeft: 8 }}
@@ -194,7 +189,7 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
                   </Text>
                   {h.comments && (
                     <div>
-                      <Text italic style={{ fontSize: 12, color: '#666' }}>
+                      <Text italic style={{ fontSize: 12, opacity: 0.5 }}>
                         &ldquo;{h.comments}&rdquo;
                       </Text>
                     </div>
@@ -204,7 +199,6 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
             };
           }
 
-          // pending step
           if (entry.type === 'pending') {
             const step = entry.data as DocumentApproval;
             const approverName = step.approver
@@ -216,16 +210,16 @@ export default function DocumentTimeline({ documentId }: DocumentTimelineProps) 
               children: (
                 <div>
                   <div>
-                    <Text strong>Step #{step.order_no} — {approverName}</Text>
-                    <Tag color="orange" style={{ marginLeft: 8 }}>PENDING</Tag>
+                    <Text strong>{t('documentTimeline.stepNumber', { number: step.order_no })} — {approverName}</Text>
+                    <Tag color="orange" style={{ marginLeft: 8 }}>{t('documentTimeline.pending')}</Tag>
                   </div>
                   <Text type="secondary" italic style={{ fontSize: 12 }}>
-                    Awaiting review
+                    {t('documentTimeline.awaitingReview')}
                   </Text>
                   {step.due_date && (
                     <div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        Due: {formatDateTime(step.due_date)}
+                        {t('documentTimeline.due')}: {formatDateTime(step.due_date)}
                       </Text>
                     </div>
                   )}

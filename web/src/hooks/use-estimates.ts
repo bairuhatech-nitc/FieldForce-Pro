@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { estimatesApi, CreateEstimatePayload, UpdateEstimatePayload } from '@/api/estimates.api';
 import type { PageOptions } from '@/types/api.types';
+import type { Invoice } from '@/types/models.types';
 import { useNotificationStore } from '@/store/notification.store';
 
-export function useEstimates(params?: PageOptions & { status?: string; excludeStatus?: string; createdBy?: string }, enabled = true) {
+export function useEstimates(params?: PageOptions & { status?: string; excludeStatus?: string; createdBy?: string; isTemplate?: boolean }, enabled = true) {
   return useQuery({
     queryKey: ['estimates', params],
     queryFn: async () => {
@@ -94,6 +95,22 @@ export function useCreateEstimate() {
   });
 }
 
+export function useCreateEstimateFromTemplate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ templateId, payload }: { templateId: string, payload?: Partial<CreateEstimatePayload> }) => estimatesApi.createFromTemplate(templateId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate created from template successfully' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to create estimate from template' });
+    },
+  });
+}
+
 export function useUpdateEstimate() {
   const queryClient = useQueryClient();
   const addNotification = useNotificationStore((s) => s.add);
@@ -160,6 +177,22 @@ export function useSendEstimate() {
   });
 }
 
+export function useSendEstimateWhatsApp() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.sendWhatsApp(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate sent via WhatsApp' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to send estimate via WhatsApp' });
+    },
+  });
+}
+
 export function useGenerateEstimateLink() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -215,6 +248,146 @@ export function useRejectEstimate() {
     },
     onError: () => {
       addNotification({ type: 'error', message: 'Failed to reject estimate' });
+    },
+  });
+}
+
+export function useEstimatesByWorkOrder(workOrderId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['estimates', 'work-order', workOrderId],
+    queryFn: async () => {
+      const response = await estimatesApi.getByWorkOrderId(workOrderId);
+      return response.data.data!;
+    },
+    enabled: enabled && !!workOrderId,
+  });
+}
+
+export function useEstimatesByServiceRequest(requestId: string, enabled = true) {
+  return useQuery({
+    queryKey: ['estimates', 'service-request', requestId],
+    queryFn: async () => {
+      const response = await estimatesApi.getByServiceRequestId(requestId);
+      return response.data.data!;
+    },
+    enabled: enabled && !!requestId,
+  });
+}
+
+export function usePendingInternalApprovals(params?: { page?: number; take?: number }, enabled = true) {
+  return useQuery({
+    queryKey: ['estimates', 'pending-internal', params],
+    queryFn: async () => {
+      const response = await estimatesApi.getPendingInternalApprovals(params);
+      return response.data.data!;
+    },
+    enabled,
+    refetchInterval: 60000,
+  });
+}
+
+export function useSubmitForInternalApproval() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.submitForInternalApproval(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate submitted for manager review' });
+    },
+    onError: () => addNotification({ type: 'error', message: 'Failed to submit estimate' }),
+  });
+}
+
+export function useInternalApproveEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.internalApprove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate approved and sent to customer' });
+    },
+    onError: () => addNotification({ type: 'error', message: 'Failed to approve estimate' }),
+  });
+}
+
+export function useInternalRejectEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => estimatesApi.internalReject(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate sent back for revision' });
+    },
+    onError: () => addNotification({ type: 'error', message: 'Failed to reject estimate' }),
+  });
+}
+
+export function useSubmitEstimateForApproval() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.submitForApproval(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate submitted for approval' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to submit estimate for approval' });
+    },
+  });
+}
+
+export function useAdminApproveEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.adminApprove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate approved' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to approve estimate' });
+    },
+  });
+}
+
+export function useAdminRejectEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      estimatesApi.adminReject(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      addNotification({ type: 'success', message: 'Estimate rejected' });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to reject estimate' });
+    },
+  });
+}
+
+export function useGenerateInvoiceFromEstimate() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => estimatesApi.generateInvoice(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['estimates'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      const inv = response.data.data as Invoice | undefined;
+      addNotification({ type: 'success', message: `Invoice ${inv?.invoice_number || ''} generated` });
+    },
+    onError: () => {
+      addNotification({ type: 'error', message: 'Failed to generate invoice' });
     },
   });
 }

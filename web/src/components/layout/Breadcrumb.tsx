@@ -1,58 +1,56 @@
 import { Breadcrumb as AntBreadcrumb } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
-const routeLabels: Record<string, string> = {
-  '': 'Dashboard',
-  users: 'Users',
-  contacts: 'Contacts',
-  companies: 'Companies',
-  assets: 'Assets',
-  'service-requests': 'Service Requests',
-  estimates: 'Estimates',
-  'work-orders': 'Work Orders',
-  'service-locations': 'Service Locations',
-  scheduling: 'Scheduling',
-  invoices: 'Invoices',
-  payments: 'Payments',
-  reports: 'Reports',
-  workforce: 'Workforce',
-  settings: 'Settings',
-  agreements: 'Agreements',
-  trips: 'Trips',
-  history: 'History',
-  notifications: 'Notifications',
-  profile: 'Profile',
-  create: 'Create',
-  edit: 'Edit',
+const routeLabelKeys: Record<string, string> = {
+  '': 'nav.dashboard',
+  users: 'nav.users',
+  contacts: 'nav.contacts',
+  companies: 'nav.companies',
+  assets: 'nav.assets',
+  'service-requests': 'nav.serviceRequests',
+  estimates: 'nav.estimates',
+  'work-orders': 'nav.workOrders',
+  'service-locations': 'nav.serviceLocations',
+  scheduling: 'nav.scheduling',
+  invoices: 'nav.invoices',
+  payments: 'nav.payments',
+  reports: 'nav.reports',
+  workforce: 'nav.workforce',
+  settings: 'nav.settings',
+  agreements: 'nav.agreements',
+  trips: 'nav.trips',
+  history: 'tracking.tripHistory',
+  notifications: 'sidebar.notifications',
+  profile: 'header.myProfile',
+  create: 'common.create',
+  edit: 'common.edit',
+};
+
+const detailLabelKeys: Record<string, string> = {
+  'work-orders': 'workOrders.details',
+  contacts: 'contacts.details',
+  companies: 'companies.details',
+  assets: 'common.details',
+  'service-requests': 'serviceRequests.details',
+  estimates: 'estimates.details',
+  invoices: 'invoices.details',
+  agreements: 'agreements.details',
+  'service-locations': 'common.details',
+  workforce: 'common.details',
 };
 
 /** Detect UUID v4 segments — these are entity detail pages */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Return a friendly label for a UUID segment based on the parent resource segment */
-function detailLabel(parentSegment: string): string {
-  const labels: Record<string, string> = {
-    'work-orders': 'Work Order Details',
-    contacts: 'Contact Details',
-    companies: 'Company Details',
-    assets: 'Asset Details',
-    'service-requests': 'Request Details',
-    estimates: 'Estimate Details',
-    invoices: 'Invoice Details',
-    agreements: 'Agreement Details',
-    'service-locations': 'Location Details',
-    workforce: 'Agent Details',
-  };
-  return labels[parentSegment] ?? 'Details';
-}
-
 export default function Breadcrumb() {
+  const { t } = useTranslation();
   const location = useLocation();
   const segments = location.pathname.split('/').filter(Boolean);
 
   const items = [
     {
-      title: <Link to="/dashboard">Dashboard</Link>,
+      title: <Link to="/dashboard">{t('nav.dashboard')}</Link>,
     },
     ...segments.map((segment, index) => {
       const path = '/' + segments.slice(0, index + 1).join('/');
@@ -62,9 +60,11 @@ export default function Breadcrumb() {
       if (UUID_RE.test(segment)) {
         // UUID — show a friendly detail label based on the parent resource
         const parent = segments[index - 1] ?? '';
-        label = detailLabel(parent);
+        const key = detailLabelKeys[parent] ?? 'common.details';
+        label = t(key);
       } else {
-        label = routeLabels[segment] ?? segment.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        const key = routeLabelKeys[segment];
+        label = key ? t(key) : segment.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
       }
 
       return {

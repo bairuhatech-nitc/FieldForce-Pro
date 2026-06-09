@@ -37,9 +37,9 @@ export class UpdateEstimateDto {
 
   @ApiPropertyOptional({
     description: 'Estimate status',
-    enum: ['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'],
+    enum: ['draft', 'pending_approval', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo', 'converted_to_invoice'],
   })
-  @IsEnum(['draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo'])
+  @IsEnum(['draft', 'pending_approval', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'converted_to_wo', 'converted_to_invoice'])
   @IsOptional()
   status?: string;
 

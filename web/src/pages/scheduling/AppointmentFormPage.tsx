@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Form, Input, Button, Card, Space, Row, Col, Spin, Select, DatePicker, Switch, Alert } from 'antd';
 import { SaveOutlined, CloseOutlined, CalendarOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import PageHeader from '@/components/common/PageHeader';
 import { useAppointment, useCreateAppointment, useUpdateAppointment } from '@/hooks/use-appointments';
@@ -12,6 +13,7 @@ import type { CreateAppointmentPayload, UpdateAppointmentPayload } from '@/api/a
 const { TextArea } = Input;
 
 export default function AppointmentFormPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -88,13 +90,13 @@ export default function AppointmentFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Service Appointment' : isFromWOApproval ? 'Schedule Service Appointment' : 'Add Service Appointment'}
+        title={isEdit ? t('appointmentForm.editTitle') : isFromWOApproval ? t('appointmentForm.scheduleTitle') : t('appointmentForm.addTitle')}
         subtitle={
           isEdit
-            ? `Editing appointment for ${appointment?.work_order?.wo_number || 'Work Order'}`
+            ? t('appointmentForm.editSubtitle', { wo: appointment?.work_order?.wo_number || t('appointmentForm.workOrder') })
             : isFromWOApproval && fromWorkOrder
-            ? `Scheduling for Work Order ${fromWorkOrder.wo_number || fromWorkOrder.id}`
-            : 'Create a new service appointment'
+            ? t('appointmentForm.scheduleSubtitle', { id: fromWorkOrder.wo_number || fromWorkOrder.id })
+            : t('appointmentForm.createSubtitle')
         }
         onBack={() => navigate(isFromWOApproval ? `/work-orders/${fromWorkOrderId}` : '/scheduling')}
       />
@@ -104,8 +106,8 @@ export default function AppointmentFormPage() {
           icon={<CalendarOutlined />}
           type="success"
           showIcon
-          message="Work Order Approved"
-          description={`Work order ${fromWorkOrder.wo_number || fromWorkOrder.id} has been approved. The scheduled dates have been pre-filled. Please assign a Technician / Agent to complete the schedule.`}
+          message={t('appointmentForm.woApproved')}
+          description={t('appointmentForm.woApprovedDesc', { id: fromWorkOrder.wo_number || fromWorkOrder.id })}
           style={{ marginBottom: 24 }}
         />
       )}
@@ -120,14 +122,14 @@ export default function AppointmentFormPage() {
       >
         <Row gutter={24}>
           <Col xs={24} lg={16}>
-            <Card title="Appointment Details" style={{ marginBottom: 24 }}>
+            <Card title={t('appointmentForm.details')} style={{ marginBottom: 24 }}>
               <Form.Item
                 name="work_order_id"
-                label="Work Order"
-                rules={[{ required: true, message: 'Work order is required' }]}
+                label={t('appointmentForm.workOrder')}
+                rules={[{ required: true, message: t('appointmentForm.workOrderRequired') }]}
               >
                 <Select
-                  placeholder="Select a work order"
+                  placeholder={t('appointmentForm.selectWorkOrder')}
                   showSearch
                   optionFilterProp="children"
                   disabled={isEdit || isFromWOApproval}
@@ -137,7 +139,6 @@ export default function AppointmentFormPage() {
                       {wo.wo_number} - {wo.summary}
                     </Select.Option>
                   ))}
-                  {/* Ensure fromWorkOrder is in the list even if not in paginated result */}
                   {isFromWOApproval && fromWorkOrder && !workOrders.find((wo) => wo.id === fromWorkOrder.id) && (
                     <Select.Option key={fromWorkOrder.id} value={fromWorkOrder.id}>
                       {fromWorkOrder.wo_number} - {fromWorkOrder.summary}
@@ -148,11 +149,11 @@ export default function AppointmentFormPage() {
 
               <Form.Item
                 name="agent_id"
-                label="Technician / Agent"
-                rules={[{ required: true, message: 'Agent is required' }]}
+                label={t('appointmentForm.agent')}
+                rules={[{ required: true, message: t('appointmentForm.agentRequired') }]}
               >
                 <Select
-                  placeholder="Select a technician"
+                  placeholder={t('appointmentForm.selectAgent')}
                   showSearch
                   optionFilterProp="children"
                 >
@@ -166,23 +167,23 @@ export default function AppointmentFormPage() {
 
               <Form.Item
                 name="crew_id"
-                label="Crew ID (Optional)"
+                label={t('appointmentForm.crewId')}
               >
-                <Input placeholder="Enter crew identifier" />
+                <Input placeholder={t('appointmentForm.enterCrewId')} />
               </Form.Item>
 
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="scheduled_start"
-                    label="Scheduled Start"
-                    rules={[{ required: true, message: 'Scheduled start is required' }]}
+                    label={t('appointmentForm.scheduledStart')}
+                    rules={[{ required: true, message: t('appointmentForm.startRequired') }]}
                   >
                     <DatePicker
                       showTime
                       style={{ width: '100%' }}
                       format="YYYY-MM-DD HH:mm"
-                      placeholder="Select start date & time"
+                      placeholder={t('appointmentForm.selectStartDate')}
                       disabled={isFromWOApproval}
                     />
                   </Form.Item>
@@ -190,14 +191,14 @@ export default function AppointmentFormPage() {
                 <Col span={12}>
                   <Form.Item
                     name="scheduled_end"
-                    label="Scheduled End"
-                    rules={[{ required: true, message: 'Scheduled end is required' }]}
+                    label={t('appointmentForm.scheduledEnd')}
+                    rules={[{ required: true, message: t('appointmentForm.endRequired') }]}
                   >
                     <DatePicker
                       showTime
                       style={{ width: '100%' }}
                       format="YYYY-MM-DD HH:mm"
-                      placeholder="Select end date & time"
+                      placeholder={t('appointmentForm.selectEndDate')}
                       disabled={isFromWOApproval}
                     />
                   </Form.Item>
@@ -206,24 +207,24 @@ export default function AppointmentFormPage() {
 
               <Form.Item
                 name="notes"
-                label="Notes"
+                label={t('appointmentForm.notes')}
               >
                 <TextArea
                   rows={4}
-                  placeholder="Enter any special instructions or notes for this appointment..."
+                  placeholder={t('appointmentForm.enterNotes')}
                 />
               </Form.Item>
             </Card>
           </Col>
 
           <Col xs={24} lg={8}>
-            <Card title="Recurrence Settings" style={{ marginBottom: 24 }}>
+            <Card title={t('appointmentForm.recurrenceSettings')} style={{ marginBottom: 24 }}>
               <Form.Item
                 name="is_recurring"
-                label="Recurring Appointment"
+                label={t('appointmentForm.recurringAppointment')}
                 valuePropName="checked"
               >
-                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+                <Switch checkedChildren={t('appointmentForm.yes')} unCheckedChildren={t('appointmentForm.no')} />
               </Form.Item>
 
               <Form.Item
@@ -236,8 +237,8 @@ export default function AppointmentFormPage() {
                   getFieldValue('is_recurring') ? (
                     <Form.Item
                       name="recurrence_rule"
-                      label="Recurrence Rule"
-                      tooltip="RRULE format (e.g., FREQ=WEEKLY;BYDAY=MO,WE,FR)"
+                      label={t('appointmentForm.recurrenceRule')}
+                      tooltip={t('appointmentForm.recurrenceTooltip')}
                     >
                       <TextArea
                         rows={3}
@@ -250,13 +251,13 @@ export default function AppointmentFormPage() {
 
               <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
                 <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
-                  📋 Recurrence Examples:
+                  {t('appointmentForm.recurrenceExamples')}
                 </div>
                 <div style={{ fontSize: 11, color: '#999' }}>
-                  <div>• Daily: FREQ=DAILY</div>
-                  <div>• Every weekday: FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR</div>
-                  <div>• Monthly: FREQ=MONTHLY</div>
-                  <div>• Every 2 weeks: FREQ=WEEKLY;INTERVAL=2</div>
+                  <div>• {t('appointmentForm.daily')}</div>
+                  <div>• {t('appointmentForm.everyWeekday')}</div>
+                  <div>• {t('appointmentForm.monthly')}</div>
+                  <div>• {t('appointmentForm.everyTwoWeeks')}</div>
                 </div>
               </div>
             </Card>
@@ -271,13 +272,13 @@ export default function AppointmentFormPage() {
               icon={<SaveOutlined />}
               loading={createAppointment.isPending || updateAppointment.isPending}
             >
-              {isEdit ? 'Update Appointment' : 'Create Appointment'}
+              {isEdit ? t('appointmentForm.updateAppointment') : t('appointmentForm.createAppointment')}
             </Button>
             <Button
               onClick={() => navigate('/scheduling')}
               icon={<CloseOutlined />}
             >
-              Cancel
+              {t('appointmentForm.cancel')}
             </Button>
           </Space>
         </Card>

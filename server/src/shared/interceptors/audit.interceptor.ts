@@ -116,7 +116,7 @@ export class AuditInterceptor implements NestInterceptor {
     const module = segments[0];
 
     // Filter out non-module paths
-    if (['auth', 'health', 'api'].includes(module)) {
+    if (['auth', 'health', 'api', 'audit-logs'].includes(module)) {
       return null;
     }
 

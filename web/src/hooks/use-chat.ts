@@ -6,7 +6,13 @@ export interface ChatMessage {
   content: string;
 }
 
-export const useChat = () => {
+/**
+ * Hook for the dual-persona AI chatbot.
+ *
+ * @param isAuthenticated - true → FSM Expert persona (in-app);
+ *                          false → Sales AI persona (landing page)
+ */
+export const useChat = (isAuthenticated: boolean = false) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -18,37 +24,33 @@ export const useChat = () => {
     setIsLoading(true);
 
     try {
-      // Send the current history excluding the new message
-      // Note: we might want to slice to last N messages if it gets too long
-      const history = messages; 
-      
       const response = await api.post('/ai/chat', {
         message: content,
-        history,
+        history: messages,       // send full history for multi-turn context
+        isAuthenticated,         // persona selector
       });
 
-      if (response.data && response.data.data) {
-        const assistantMessage: ChatMessage = {
-          role: 'assistant',
-          content: response.data.data.reply,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-      }
+      const reply: string =
+        response.data?.data?.reply ??
+        response.data?.reply ??
+        "I'm sorry, I couldn't process that. Please try again.";
+
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMessage: ChatMessage = {
-        role: 'assistant',
-        content: 'I am sorry, but I am currently experiencing technical difficulties connecting to my brain.',
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return {
-    messages,
-    isLoading,
-    sendMessage,
-  };
+  const clearMessages = () => setMessages([]);
+
+  return { messages, isLoading, sendMessage, clearMessages };
 };

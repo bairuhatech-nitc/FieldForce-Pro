@@ -12,6 +12,7 @@ export interface CreateServiceRequestPayload {
   category?: string;
   channel?: string;
   assigned_to?: string;
+  technician_ids?: string[];
   lat?: number;
   lng?: number;
 }
@@ -26,6 +27,7 @@ export interface UpdateServiceRequestPayload {
   category?: string;
   channel?: string;
   assigned_to?: string;
+  technician_ids?: string[];
   lat?: number;
   lng?: number;
 }
@@ -69,5 +71,28 @@ export const serviceRequestsApi = {
 
   processApproval(serviceRequestId: string, approvalId: string, payload: { action: string; comments?: string }) {
     return api.post<ApiResponse<unknown>>(`/service-requests/${serviceRequestId}/approvals/${approvalId}/process`, payload);
+  },
+
+  getQueue() {
+    return api.get<ApiResponse<ServiceRequest[]>>('/queue');
+  },
+
+  updatePriority(id: string, priority: string) {
+    return api.patch<ApiResponse<ServiceRequest>>(`/queue/${id}/priority`, { priority });
+  },
+
+  assignTechnician(id: string, technicianId: string, technicianName: string) {
+    return api.patch<ApiResponse<ServiceRequest>>(`/service-requests/${id}/assign`, {
+      technician_id: technicianId,
+      technician_name: technicianName,
+    });
+  },
+
+  convertToWorkOrder(id: string) {
+    return api.post<ApiResponse<{ workOrder: { id: string; wo_number: string }; serviceRequest: ServiceRequest }>>(`/service-requests/${id}/convert-to-work-order`);
+  },
+
+  approveAndConvert(id: string) {
+    return api.post<ApiResponse<{ workOrder: { id: string; wo_number: string }; serviceRequest: ServiceRequest }>>(`/service-requests/${id}/approve-and-convert`);
   },
 };

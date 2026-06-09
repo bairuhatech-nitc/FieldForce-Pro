@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Card, Row, Col, Statistic, Table, DatePicker, Select, Space, Button, Tag } from 'antd';
+import { Card, Row, Col, Statistic, Table, DatePicker, Select, Space, Button, Tag, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import type { ColumnsType } from 'antd/es/table';
 import {
   CarOutlined,
@@ -14,6 +15,7 @@ import { formatDateTime } from '@/utils/format-date';
 import { formatCurrency } from '@/utils/format-currency';
 
 const { RangePicker } = DatePicker;
+const { Text } = Typography;
 
 interface MileageStats {
   total_distance_km: number;
@@ -48,6 +50,7 @@ export default function MileageFuelReportsComponent({
   technicianId,
   vehicleId,
 }: MileageFuelReportsComponentProps) {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().subtract(30, 'days'),
     dayjs(),
@@ -103,30 +106,30 @@ export default function MileageFuelReportsComponent({
 
   const columns: ColumnsType<TripRecord> = [
     {
-      title: 'Trip ID',
+      title: t('mileageReports.columns.tripId'),
       dataIndex: 'trip_id',
       key: 'trip_id',
       render: (id: string) => <Tag color="blue">{id}</Tag>,
     },
     {
-      title: 'Date',
+      title: t('mileageReports.columns.date'),
       dataIndex: 'date',
       key: 'date',
       render: (date: string) => formatDateTime(date),
       sorter: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     },
     {
-      title: 'Technician',
+      title: t('mileageReports.columns.technician'),
       dataIndex: 'technician_name',
       key: 'technician_name',
     },
     {
-      title: 'Vehicle',
+      title: t('mileageReports.columns.vehicle'),
       dataIndex: 'vehicle',
       key: 'vehicle',
     },
     {
-      title: 'Route',
+      title: t('mileageReports.columns.route'),
       key: 'route',
       render: (_, record) => (
         <Space direction="vertical" size={2}>
@@ -140,7 +143,7 @@ export default function MileageFuelReportsComponent({
       ),
     },
     {
-      title: 'Distance (km)',
+      title: t('mileageReports.columns.distanceKm'),
       dataIndex: 'distance_km',
       key: 'distance_km',
       align: 'right',
@@ -148,21 +151,21 @@ export default function MileageFuelReportsComponent({
       sorter: (a, b) => a.distance_km - b.distance_km,
     },
     {
-      title: 'Fuel (L)',
+      title: t('mileageReports.columns.fuelL'),
       dataIndex: 'fuel_consumed_liters',
       key: 'fuel_consumed_liters',
       align: 'right',
       render: (fuel?: number) => (fuel ? fuel.toFixed(1) : '-'),
     },
     {
-      title: 'Fuel Cost',
+      title: t('mileageReports.columns.fuelCost'),
       dataIndex: 'fuel_cost',
       key: 'fuel_cost',
       align: 'right',
       render: (cost?: number) => (cost ? formatCurrency(cost) : '-'),
     },
     {
-      title: 'Efficiency (km/L)',
+      title: t('mileageReports.columns.efficiency'),
       dataIndex: 'fuel_efficiency',
       key: 'fuel_efficiency',
       align: 'right',
@@ -173,7 +176,7 @@ export default function MileageFuelReportsComponent({
       },
     },
     {
-      title: 'Purpose',
+      title: t('mileageReports.columns.purpose'),
       dataIndex: 'purpose',
       key: 'purpose',
       ellipsis: true,
@@ -182,7 +185,6 @@ export default function MileageFuelReportsComponent({
 
   return (
     <div>
-      {/* Filters */}
       <Card style={{ marginBottom: 24 }}>
         <Space wrap>
           <RangePicker
@@ -191,42 +193,41 @@ export default function MileageFuelReportsComponent({
             style={{ width: 300 }}
           />
           <Select
-            placeholder="Select technician"
+            placeholder={t('mileageReports.filters.selectTechnician')}
             allowClear
             value={selectedTechnician}
             onChange={setSelectedTechnician}
             style={{ width: 200 }}
             showSearch
             options={[
-              { label: 'All Technicians', value: undefined },
+              { label: t('mileageReports.filters.allTechnicians'), value: undefined },
               { label: 'John Doe', value: 'tech-1' },
               { label: 'Jane Smith', value: 'tech-2' },
             ]}
           />
           <Select
-            placeholder="Select vehicle"
+            placeholder={t('mileageReports.filters.selectVehicle')}
             allowClear
             value={selectedVehicle}
             onChange={setSelectedVehicle}
             style={{ width: 200 }}
             options={[
-              { label: 'All Vehicles', value: undefined },
+              { label: t('mileageReports.filters.allVehicles'), value: undefined },
               { label: 'Van 123', value: 'veh-1' },
               { label: 'Truck 456', value: 'veh-2' },
             ]}
           />
           <Button type="primary" icon={<DownloadOutlined />} onClick={handleExport}>
-            Export Report
+            {t('mileageReports.actions.export')}
           </Button>
         </Space>
       </Card>
 
-      {/* Statistics */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Total Distance"
+              title={t('mileageReports.stats.totalDistance')}
               value={stats.total_distance_km}
               precision={1}
               suffix="km"
@@ -238,7 +239,7 @@ export default function MileageFuelReportsComponent({
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Total Fuel Consumed"
+              title={t('mileageReports.stats.totalFuel')}
               value={stats.total_fuel_liters}
               precision={1}
               suffix="L"
@@ -250,7 +251,7 @@ export default function MileageFuelReportsComponent({
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Total Fuel Cost"
+              title={t('mileageReports.stats.fuelCost')}
               value={stats.total_fuel_cost}
               precision={2}
               prefix={<DollarOutlined />}
@@ -261,7 +262,7 @@ export default function MileageFuelReportsComponent({
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Average Efficiency"
+              title={t('mileageReports.stats.avgEfficiency')}
               value={stats.average_fuel_efficiency}
               precision={1}
               suffix="km/L"
@@ -273,7 +274,7 @@ export default function MileageFuelReportsComponent({
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Total Trips"
+              title={t('mileageReports.stats.totalTrips')}
               value={stats.total_trips}
               prefix={<EnvironmentOutlined />}
               valueStyle={{ color: '#722ed1' }}
@@ -283,7 +284,7 @@ export default function MileageFuelReportsComponent({
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Average Trip Distance"
+              title={t('mileageReports.stats.avgTripDistance')}
               value={stats.average_trip_distance}
               precision={1}
               suffix="km"
@@ -293,8 +294,7 @@ export default function MileageFuelReportsComponent({
         </Col>
       </Row>
 
-      {/* Trips Table */}
-      <Card title="Trip Details">
+      <Card title={t('mileageReports.detailsTitle')}>
         <Table
           columns={columns}
           dataSource={trips}
@@ -303,7 +303,7 @@ export default function MileageFuelReportsComponent({
           pagination={{
             pageSize: 20,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} trips`,
+            showTotal: (total) => t('mileageReports.table.totalTrips', { total }),
           }}
         />
       </Card>

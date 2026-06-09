@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, InputNumber, Select, Switch } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { useServiceCatalogItem, useCreateServiceCatalog, useUpdateServiceCatalog } from '@/hooks/use-services-catalog';
 import PageHeader from '@/components/common/PageHeader';
 
 const { TextArea } = Input;
 
 export default function ServiceFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -46,7 +48,7 @@ export default function ServiceFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('serviceForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -55,7 +57,7 @@ export default function ServiceFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Service' : 'Create Service'}
+        title={isEdit ? t('serviceForm.editService') : t('serviceForm.createService')}
         onBack={() => navigate('/catalog/services')}
       />
 
@@ -70,56 +72,56 @@ export default function ServiceFormPage() {
         >
           <Form.Item
             name="name"
-            label="Service Name"
-            rules={[{ required: true, message: 'Please enter service name' }]}
+            label={t('serviceForm.serviceName')}
+            rules={[{ required: true, message: t('serviceForm.pleaseEnterServiceName') }]}
           >
-            <Input placeholder="e.g. HVAC Installation" />
+            <Input placeholder={t('serviceForm.placeholderName')} />
           </Form.Item>
 
-          <Form.Item name="description" label="Description">
-            <TextArea rows={4} placeholder="Describe the service offering" />
+          <Form.Item name="description" label={t('serviceForm.description')}>
+            <TextArea rows={4} placeholder={t('serviceForm.placeholderDescription')} />
           </Form.Item>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="default_price" label="Default Price" style={{ flex: 1 }}>
+            <Form.Item name="default_price" label={t('serviceForm.defaultPrice')} style={{ flex: 1 }}>
               <InputNumber
                 min={0}
                 step={0.01}
                 precision={2}
                 prefix="$"
-                placeholder="0.00"
+                placeholder={t('serviceForm.placeholderPrice')}
                 style={{ width: '100%' }}
               />
             </Form.Item>
-            <Form.Item name="tax_rate" label="Tax Rate (%)" style={{ flex: 1 }}>
+            <Form.Item name="tax_rate" label={t('serviceForm.taxRate')} style={{ flex: 1 }}>
               <InputNumber
                 min={0}
                 max={100}
                 step={0.01}
                 precision={2}
-                placeholder="0.00"
+                placeholder={t('serviceForm.placeholderPrice')}
                 style={{ width: '100%' }}
               />
             </Form.Item>
           </Space>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="duration_minutes" label="Duration (minutes)" style={{ flex: 1 }}>
-              <InputNumber min={0} step={15} placeholder="60" style={{ width: '100%' }} />
+            <Form.Item name="duration_minutes" label={t('serviceForm.duration')} style={{ flex: 1 }}>
+              <InputNumber min={0} step={15} placeholder={t('serviceForm.placeholderDuration')} style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="category" label="Category" style={{ flex: 1 }}>
-              <Select placeholder="Select category" allowClear>
-                <Select.Option value="Installation">Installation</Select.Option>
-                <Select.Option value="Repair">Repair</Select.Option>
-                <Select.Option value="Maintenance">Maintenance</Select.Option>
-                <Select.Option value="Inspection">Inspection</Select.Option>
-                <Select.Option value="Consultation">Consultation</Select.Option>
-                <Select.Option value="Other">Other</Select.Option>
+            <Form.Item name="category" label={t('serviceForm.category')} style={{ flex: 1 }}>
+              <Select placeholder={t('serviceForm.selectCategory')} allowClear>
+                <Select.Option value="Installation">{t('serviceForm.categories.installation')}</Select.Option>
+                <Select.Option value="Repair">{t('serviceForm.categories.repair')}</Select.Option>
+                <Select.Option value="Maintenance">{t('serviceForm.categories.maintenance')}</Select.Option>
+                <Select.Option value="Inspection">{t('serviceForm.categories.inspection')}</Select.Option>
+                <Select.Option value="Consultation">{t('serviceForm.categories.consultation')}</Select.Option>
+                <Select.Option value="Other">{t('serviceForm.categories.other')}</Select.Option>
               </Select>
             </Form.Item>
           </Space>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked">
+          <Form.Item name="is_active" label={t('serviceForm.active')} valuePropName="checked">
             <Switch />
           </Form.Item>
 
@@ -130,9 +132,9 @@ export default function ServiceFormPage() {
                 htmlType="submit"
                 loading={createService.isPending || updateService.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('serviceForm.update') : t('serviceForm.create')}
               </Button>
-              <Button onClick={() => navigate('/catalog/services')}>Cancel</Button>
+              <Button onClick={() => navigate('/catalog/services')}>{t('serviceForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

@@ -2,7 +2,7 @@ import axios from 'axios';
 import api from './axios-instance';
 import { API_URL } from '@/utils/constants';
 import type { ApiResponse, PageOptions } from '@/types/api.types';
-import type { Estimate } from '@/types/models.types';
+import type { Estimate, Invoice } from '@/types/models.types';
 
 const publicAxios = axios.create({
   baseURL: API_URL,
@@ -12,6 +12,7 @@ const publicAxios = axios.create({
 export interface CreateEstimatePayload {
   contact_id?: string;
   request_id?: string;
+  work_order_id?: string;
   notes?: string;
   expiry_date?: string;
   subtotal?: number;
@@ -19,6 +20,8 @@ export interface CreateEstimatePayload {
   discount?: number;
   total?: number;
   custom_fields?: Record<string, unknown>;
+  is_template?: boolean;
+  template_name?: string;
 }
 
 export interface UpdateEstimatePayload {
@@ -42,7 +45,7 @@ export interface ConvertToWorkOrderPayload {
 }
 
 export const estimatesApi = {
-  getAll(params?: PageOptions & { status?: string; excludeStatus?: string; createdBy?: string }) {
+  getAll(params?: PageOptions & { status?: string; excludeStatus?: string; createdBy?: string; isTemplate?: boolean }) {
     return api.get<ApiResponse<Estimate[]>>('/estimates', { params });
   },
 
@@ -82,6 +85,14 @@ export const estimatesApi = {
     return api.post<ApiResponse<Estimate>>(`/estimates/${id}/send`);
   },
 
+  sendWhatsApp(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/send-whatsapp`);
+  },
+
+  createFromTemplate(templateId: string, payload?: Partial<CreateEstimatePayload>) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/create-from-template/${templateId}`, payload || {});
+  },
+
   generateLink(id: string) {
     return api.post<ApiResponse<Estimate>>(`/estimates/${id}/generate-link`);
   },
@@ -102,6 +113,47 @@ export const estimatesApi = {
     return api.post<ApiResponse<any>>(`/estimates/${id}/convert-to-work-order`, payload || {});
   },
 
+  getByWorkOrderId(workOrderId: string) {
+    return api.get<ApiResponse<Estimate[]>>(`/estimates/work-order/${workOrderId}`);
+  },
+
+  getByServiceRequestId(requestId: string) {
+    return api.get<ApiResponse<Estimate[]>>(`/estimates/service-request/${requestId}`);
+  },
+
+  // ── On-site estimate approval flow ──────────────────────────────────────
+  getPendingInternalApprovals(params?: PageOptions) {
+    return api.get<ApiResponse<Estimate[]>>('/estimates/pending-internal', { params });
+  },
+
+  submitForInternalApproval(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/submit-for-internal-approval`);
+  },
+
+  internalApprove(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/internal-approve`);
+  },
+
+  internalReject(id: string, reason: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/internal-reject`, { reason });
+  },
+
+  submitForApproval(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/submit-for-approval`);
+  },
+
+  adminApprove(id: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-approve`);
+  },
+
+  adminReject(id: string, reason?: string) {
+    return api.post<ApiResponse<Estimate>>(`/estimates/${id}/admin-reject`, { reason });
+  },
+
+  generateInvoice(id: string) {
+    return api.post<ApiResponse<Invoice>>(`/estimates/${id}/generate-invoice`);
+  },
+
   delete(id: string) {
     return api.delete<ApiResponse<null>>(`/estimates/${id}`);
   },
@@ -118,5 +170,12 @@ export const estimatesPublicApi = {
   },
   reject(token: string, reason?: string) {
     return publicAxios.post<ApiResponse<Estimate>>(`/estimates/public/${token}/reject`, { reason });
+  },
+  // On-site estimate customer approval endpoints
+  customerApprove(token: string, customer_name: string, signature: string) {
+    return publicAxios.post<ApiResponse<Estimate>>(`/estimates/public/${token}/approve`, { customer_name, signature });
+  },
+  customerReject(token: string, reason?: string) {
+    return publicAxios.post<ApiResponse<Estimate>>(`/estimates/public/${token}/customer-reject`, { reason });
   },
 };

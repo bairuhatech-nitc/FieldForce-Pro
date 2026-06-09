@@ -115,6 +115,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: payload.email,
       tenant_id: payload.tenant_id,
       session_id: payload.session_id,
+      is_super_admin: payload.is_super_admin ?? false,
+      primary_role: payload.primary_role ?? null,
       roles,
       permissions,
     };

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUUID, IsEnum, IsObject, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsEnum, IsObject, IsNumber, IsDateString, IsArray } from 'class-validator';
 
 export class UpdateServiceRequestDto {
   @ApiPropertyOptional({ description: 'Contact ID', example: 'uuid' })
@@ -25,19 +25,20 @@ export class UpdateServiceRequestDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({
-    description: 'Priority level',
-    enum: ['low', 'medium', 'high', 'urgent'],
-    example: 'medium',
-  })
-  @IsEnum(['low', 'medium', 'high', 'urgent'])
+  @ApiPropertyOptional({ description: 'Priority ID', example: 'uuid' })
+  @IsUUID()
   @IsOptional()
-  priority?: string;
+  priority_id?: string;
 
-  @ApiPropertyOptional({ description: 'Category', example: 'HVAC' })
-  @IsString()
+  @ApiPropertyOptional({ description: 'Category ID', example: 'uuid' })
+  @IsUUID()
   @IsOptional()
-  category?: string;
+  category_id?: string;
+
+  @ApiPropertyOptional({ description: 'Sub Category ID', example: 'uuid' })
+  @IsUUID()
+  @IsOptional()
+  sub_category_id?: string;
 
   @ApiPropertyOptional({
     description: 'Status',
@@ -61,6 +62,12 @@ export class UpdateServiceRequestDto {
   @IsUUID()
   @IsOptional()
   assigned_to?: string;
+
+  @ApiPropertyOptional({ description: 'List of assigned technician user IDs', type: [String], example: ['uuid1', 'uuid2'] })
+  @IsUUID('4', { each: true })
+  @IsArray()
+  @IsOptional()
+  technician_ids?: string[];
 
   @ApiPropertyOptional({ description: 'Latitude', example: 25.276987 })
   @IsNumber()

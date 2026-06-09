@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ServiceRequest } from './service_requests.entity';
 import { CreateServiceRequestDto } from './dto/service_requests_create.dto';
@@ -20,6 +21,14 @@ import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVAL
 import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templates.entity';
 import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
 import { DocumentTypeEnum } from '../shared/enums/workflow.enum';
+import { RequestAuditLog } from './request_audit_log.entity';
+import { User } from '../USERS/users.entity';
+import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
+import { WorkOrder } from '../WORK_ORDERS/work_orders.entity';
+import axios from 'axios';
+import { SlaService } from '../SLA_MODULE/sla.service';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { UsersService } from '../USERS/users.service';
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   new: ['triaged', 'rejected', 'closed', 'spam'],
@@ -41,7 +50,16 @@ export class ServiceRequestsService {
     private readonly serviceRequestRepository: typeof ServiceRequest,
     @Inject(KEYNAMES.WORKFLOW_TEMPLATES)
     private readonly templateRepository: typeof WorkflowTemplate,
+    @Inject(KEYNAMES.REQUEST_AUDIT_LOGS)
+    private readonly requestAuditLogRepository: typeof RequestAuditLog,
+    @Inject(KEYNAMES.WORK_ORDERS)
+    private readonly workOrderRepository: typeof WorkOrder,
+    @Inject(KEYNAMES.SERVICE_LOCATIONS)
+    private readonly serviceLocationRepository: typeof ServiceLocation,
     private readonly documentApprovalsService: DocumentApprovalsService,
+    private readonly notificationsService: NotificationsService,
+    private readonly slaService: SlaService,
+    private readonly usersService: UsersService,
   ) {}
 
   async findAllPaginated(
@@ -72,11 +90,21 @@ export class ServiceRequestsService {
       include: [
         {
           model: Contact,
-          attributes: ['id', 'first_name', 'last_name'],
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone'],
         },
         {
           model: ServiceLocation,
           attributes: ['id', 'address', 'lat', 'lng'],
+        },
+        {
+          model: User,
+          as: 'technicians',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+          through: { attributes: [] },
+        },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
         },
       ],
       order: [['created_at', pageOptionsDto.order]],
@@ -91,6 +119,7 @@ export class ServiceRequestsService {
   async findAll(tenantId: string): Promise<ServiceRequest[]> {
     return this.serviceRequestRepository.findAll({
       where: { tenant_id: tenantId, is_deleted: false },
+      include: [{ model: ServiceRequestSla, as: 'sla' }],
       order: [['created_at', 'DESC']],
     });
   }
@@ -164,11 +193,21 @@ export class ServiceRequestsService {
       include: [
         {
           model: Contact,
-          attributes: ['id', 'first_name', 'last_name'],
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone'],
         },
         {
           model: ServiceLocation,
           attributes: ['id', 'address', 'lat', 'lng'],
+        },
+        {
+          model: User,
+          as: 'technicians',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+          through: { attributes: [] },
+        },
+        {
+          model: ServiceRequestSla,
+          as: 'sla',
         },
       ],
     });
@@ -183,6 +222,27 @@ export class ServiceRequestsService {
     dto: CreateServiceRequestDto,
     creatorUserId?: string,
   ): Promise<ServiceRequest> {
+    // Spam / Duplicate Detection
+    let isSpamFlagged = false;
+    let spamReason = null;
+    let finalStatus = 'new';
+    
+    try {
+      const response = await axios.post(`${process.env.AI_ENGINE_URL || 'http://localhost:8000'}/nlp/similarity`, {
+        tenant_id: tenantId,
+        subject: dto.subject,
+        description: dto.description || '',
+      });
+      
+      if (response.data.is_duplicate) {
+        isSpamFlagged = true;
+        spamReason = `High similarity (${(response.data.similarity_score * 100).toFixed(1)}%) with recent request.`;
+        finalStatus = 'spam';
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to call AI engine for spam detection: ${error.message}`);
+    }
+
     // Auto-generate request_number: SR-YYYYMMDD-001 (resets daily)
     const today = new Date();
     const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
@@ -197,19 +257,67 @@ export class ServiceRequestsService {
     const shortTenant = tenantId.split('-')[0].toUpperCase();
     const requestNumber = `SR-${shortTenant}-${dateStr}-${String(todayCount + 1).padStart(3, '0')}`;
 
+    let primaryAssignee = dto.assigned_to;
+    if (dto.technician_ids && dto.technician_ids.length > 0) {
+      primaryAssignee = dto.technician_ids[0];
+    }
+
+    // Destructure technician_ids out so it is NOT passed to Sequelize .create()
+    // (it is not a DB column — it is handled separately via $set below)
+    const { technician_ids: technicianIds, ...createDto } = dto;
+
     let serviceRequest;
     try {
       serviceRequest = await this.serviceRequestRepository.create({
         tenant_id: tenantId,
         request_number: requestNumber,
-        ...dto,
+        status: finalStatus,
+        is_spam_flagged: isSpamFlagged,
+        spam_reason: spamReason,
+        ...createDto,
+        assigned_to: primaryAssignee,
       });
+
+      if (technicianIds && technicianIds.length > 0) {
+        await serviceRequest.$set('technicians', technicianIds, { through: { tenant_id: tenantId } });
+      }
     } catch (error: any) {
       this.logger.error('Full Error during creation:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       if (error.errors) {
         this.logger.error('Error Details:', JSON.stringify(error.errors, null, 2));
       }
       throw error;
+    }
+
+    // Create or reuse ServiceLocation if GPS coordinates were provided
+    if (dto.lat !== undefined && dto.lng !== undefined) {
+      try {
+        const address = (dto.custom_fields?.service_address as string) || 'Location from GPS';
+        
+        // If it's a generic GPS location, reuse it to prevent duplicates
+        if (address === 'Location from GPS') {
+          const [location] = await this.serviceLocationRepository.findOrCreate({
+            where: { tenant_id: tenantId, address: 'Location from GPS' },
+            defaults: {
+              tenant_id: tenantId,
+              address: 'Location from GPS',
+              lat: dto.lat,
+              lng: dto.lng,
+            },
+          });
+          await serviceRequest.update({ location_id: location.id });
+        } else {
+          const location = await this.serviceLocationRepository.create({
+            tenant_id: tenantId,
+            address,
+            lat: dto.lat,
+            lng: dto.lng,
+          });
+          await serviceRequest.update({ location_id: location.id });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to create/find ServiceLocation for SR ${serviceRequest.id}: ${(error as Error).message}`);
+      }
     }
 
     // Auto-trigger approval chain if an active template exists for SERVICE_REQUEST
@@ -222,7 +330,13 @@ export class ServiceRequestsService {
       );
     }
 
-    return serviceRequest;
+    try {
+      await this.slaService.attachSlaToServiceRequest(tenantId, serviceRequest);
+    } catch (error) {
+      this.logger.error(`Failed to attach SLA for SR ${serviceRequest.id}: ${(error as Error).message}`);
+    }
+
+    return this.findById(serviceRequest.id, tenantId);
   }
 
   private async triggerApprovalChain(
@@ -277,7 +391,128 @@ export class ServiceRequestsService {
     dto: UpdateServiceRequestDto,
   ): Promise<ServiceRequest> {
     const serviceRequest = await this.findById(id, tenantId);
-    await serviceRequest.update(dto);
+    
+    // Destructure technician_ids to prevent Sequelize from trying to write to a non-existent column
+    const { technician_ids: technicianIds, ...updateDto } = dto;
+
+    let primaryAssignee: string | null | undefined = updateDto.assigned_to;
+    if (technicianIds !== undefined) {
+      primaryAssignee = technicianIds.length > 0 ? technicianIds[0] : null;
+    }
+
+    await serviceRequest.update({ ...updateDto, assigned_to: primaryAssignee });
+
+    if (technicianIds !== undefined) {
+      await serviceRequest.$set('technicians', technicianIds, { through: { tenant_id: tenantId } });
+    } else if (updateDto.assigned_to !== undefined) {
+      await serviceRequest.$set('technicians', updateDto.assigned_to ? [updateDto.assigned_to] : [], { through: { tenant_id: tenantId } });
+    }
+
+    return serviceRequest;
+  }
+
+  async assignTechnician(
+    id: string,
+    tenantId: string,
+    technicianId: string,
+    technicianName: string,
+  ): Promise<ServiceRequest> {
+    const serviceRequest = await this.findById(id, tenantId);
+    await serviceRequest.update({ assigned_to: technicianId });
+    // Use $add to append the technician without removing existing ones
+    await serviceRequest.$add('technicians', [technicianId], { through: { tenant_id: tenantId } });
+
+    try {
+      await this.notificationsService.create(tenantId, {
+        user_id: technicianId,
+        type: 'service_request_assigned',
+        title: 'Service Request Assigned',
+        body: `You have been assigned to Service Request ${serviceRequest.request_number}`,
+        data: { service_request_id: id, navigate_to: 'service_request' },
+        channel: 'in_app',
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to notify technician ${technicianName} for SR ${id}: ${(err as Error).message}`);
+    }
+
+    return serviceRequest;
+  }
+
+  async acceptRequest(
+    id: string,
+    tenantId: string,
+    userId: string,
+  ): Promise<ServiceRequest> {
+    const serviceRequest = await this.findById(id, tenantId);
+    
+    // Check if the user is assigned
+    if (serviceRequest.assigned_to !== userId) {
+      throw new ForbiddenException('Only the assigned technician can accept this request');
+    }
+
+    // Update status
+    await serviceRequest.update({ status: 'approved' }); // Using 'approved' as the closest enum value for accepted
+
+    // Notify Admins
+    try {
+      const admins = await this.usersService.findAdmins(tenantId);
+      const technician = await this.usersService.findById(userId);
+      for (const admin of admins) {
+        await this.notificationsService.create(tenantId, {
+          user_id: admin.id,
+          type: 'service_request_accepted',
+          title: 'Request Accepted',
+          body: `Tech ${technician.first_name} ${technician.last_name} is en route for SR #${serviceRequest.request_number}.`,
+          data: { service_request_id: id, navigate_to: 'service_request' },
+          channel: 'in_app',
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify admins of SR acceptance for SR ${id}: ${(err as Error).message}`);
+    }
+
+    return serviceRequest;
+  }
+
+  async rejectRequest(
+    id: string,
+    tenantId: string,
+    userId: string,
+    reason?: string,
+  ): Promise<ServiceRequest> {
+    const serviceRequest = await this.findById(id, tenantId);
+
+    // Check if the user is assigned
+    if (serviceRequest.assigned_to !== userId) {
+      throw new ForbiddenException('Only the assigned technician can reject this request');
+    }
+
+    // Update status to triaged (open queue) and clear assigned_to
+    await serviceRequest.update({ status: 'triaged', assigned_to: null });
+    
+    // Remove technician from the many-to-many relationship as well
+    const techs = await serviceRequest.$get('technicians');
+    const remainingTechs = techs.filter(t => t.id !== userId);
+    await serviceRequest.$set('technicians', remainingTechs, { through: { tenant_id: tenantId } });
+
+    // Notify Admins
+    try {
+      const admins = await this.usersService.findAdmins(tenantId);
+      const technician = await this.usersService.findById(userId);
+      for (const admin of admins) {
+        await this.notificationsService.create(tenantId, {
+          user_id: admin.id,
+          type: 'service_request_rejected',
+          title: 'Request Rejected',
+          body: `Tech ${technician.first_name} ${technician.last_name} rejected SR #${serviceRequest.request_number}. Reassignment required.`,
+          data: { service_request_id: id, navigate_to: 'service_request' },
+          channel: 'in_app',
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify admins of SR rejection for SR ${id}: ${(err as Error).message}`);
+    }
+
     return serviceRequest;
   }
 
@@ -304,16 +539,202 @@ export class ServiceRequestsService {
     if (dto.category !== undefined) {
       updateData.category = dto.category;
     }
-    if (dto.assigned_to !== undefined) {
+    
+    if (dto.technician_ids !== undefined) {
+      updateData.assigned_to = dto.technician_ids.length > 0 ? dto.technician_ids[0] : null;
+    } else if (dto.assigned_to !== undefined) {
       updateData.assigned_to = dto.assigned_to;
     }
 
     await serviceRequest.update(updateData);
+
+    if (currentStatus !== newStatus) {
+      try {
+        await this.slaService.handleStatusChange(tenantId, serviceRequest, currentStatus, newStatus);
+      } catch (err) {
+        this.logger.warn(`Failed to handle SLA status change for SR ${id}: ${(err as Error).message}`);
+      }
+    }
+
+    if (dto.technician_ids !== undefined) {
+      await serviceRequest.$set('technicians', dto.technician_ids);
+    } else if (dto.assigned_to !== undefined) {
+      await serviceRequest.$set('technicians', dto.assigned_to ? [dto.assigned_to] : []);
+    }
+
     return serviceRequest;
   }
 
   async delete(id: string, tenantId: string): Promise<void> {
     const serviceRequest = await this.findById(id, tenantId);
     await serviceRequest.update({ is_deleted: true });
+  }
+
+  async convertToWorkOrder(
+    id: string,
+    tenantId: string,
+    managerId: string,
+  ): Promise<{ workOrder: WorkOrder; serviceRequest: ServiceRequest }> {
+    const serviceRequest = await this.findById(id, tenantId);
+
+    if (serviceRequest.status === 'converted_to_wo') {
+      throw new BadRequestException('This service request has already been converted to a work order');
+    }
+    if (['closed', 'spam'].includes(serviceRequest.status)) {
+      throw new BadRequestException(`Cannot convert a service request with status '${serviceRequest.status}' to a work order`);
+    }
+
+    // Auto-generate wo_number
+    const count = await this.workOrderRepository.count({ where: { tenant_id: tenantId } });
+    const woNumber = `WO-${String(count + 1).padStart(6, '0')}`;
+
+    const workOrder = await this.workOrderRepository.create({
+      tenant_id: tenantId,
+      wo_number: woNumber,
+      request_id: serviceRequest.id,
+      contact_id: serviceRequest.contact_id,
+      location_id: serviceRequest.location_id,
+      summary: serviceRequest.subject,
+      description: serviceRequest.description,
+      priority: serviceRequest.priority === 'CRITICAL' ? 'urgent' : (serviceRequest.priority?.toLowerCase() || 'medium'),
+      status: 'new',
+      assigned_to: serviceRequest.assigned_to || null,
+    });
+
+    await serviceRequest.update({ status: 'converted_to_wo' });
+
+    try {
+      if (serviceRequest.assigned_to && serviceRequest.assigned_to !== managerId) {
+        await this.notificationsService.create(tenantId, {
+          user_id: serviceRequest.assigned_to,
+          type: 'work_order_created',
+          title: 'Work Order Created',
+          body: `Service Request ${serviceRequest.request_number} has been converted to Work Order ${woNumber}`,
+          data: { work_order_id: workOrder.id, service_request_id: id, navigate_to: 'work_order' },
+          channel: 'in_app',
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify about SR-to-WO conversion for SR ${id}: ${(err as Error).message}`);
+    }
+
+    return { workOrder, serviceRequest };
+  }
+
+  async approveAndConvert(
+    id: string,
+    tenantId: string,
+    managerId: string,
+  ): Promise<{ workOrder: WorkOrder; serviceRequest: ServiceRequest }> {
+    const serviceRequest = await this.findById(id, tenantId);
+
+    if (['converted_to_wo', 'closed', 'spam'].includes(serviceRequest.status)) {
+      throw new BadRequestException(
+        `Cannot approve a service request with status '${serviceRequest.status}'`,
+      );
+    }
+
+    const count = await this.workOrderRepository.count({ where: { tenant_id: tenantId } });
+    const woNumber = `WO-${String(count + 1).padStart(6, '0')}`;
+
+    const workOrder = await this.workOrderRepository.create({
+      tenant_id: tenantId,
+      wo_number: woNumber,
+      request_id: serviceRequest.id,
+      contact_id: serviceRequest.contact_id,
+      location_id: serviceRequest.location_id,
+      summary: serviceRequest.subject,
+      description: serviceRequest.description,
+      priority: serviceRequest.priority === 'CRITICAL' ? 'urgent' : (serviceRequest.priority?.toLowerCase() || 'medium'),
+      status: 'new',
+      assigned_to: serviceRequest.assigned_to || null,
+    });
+
+    await serviceRequest.update({ status: 'converted_to_wo' });
+
+    try {
+      if (serviceRequest.assigned_to && serviceRequest.assigned_to !== managerId) {
+        await this.notificationsService.create(tenantId, {
+          user_id: serviceRequest.assigned_to,
+          type: 'work_order_created',
+          title: 'Work Order Created',
+          body: `Service Request ${serviceRequest.request_number} has been approved and converted to Work Order ${woNumber}`,
+          data: { work_order_id: workOrder.id, service_request_id: id, navigate_to: 'work_order' },
+          channel: 'in_app',
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify about SR approval+convert for SR ${id}: ${(err as Error).message}`);
+    }
+
+    return { workOrder, serviceRequest };
+  }
+
+  async getQueue(tenantId: string): Promise<ServiceRequest[]> {
+    // Custom sort: CRITICAL > HIGH > MEDIUM > LOW, then by created_at DESC
+    return this.serviceRequestRepository.findAll({
+      where: {
+        tenant_id: tenantId,
+        is_deleted: false,
+        status: { [Op.notIn]: ['closed', 'rejected', 'spam'] },
+      },
+      order: [
+        [
+          Sequelize.literal(`
+            CASE priority 
+              WHEN 'CRITICAL' THEN 1 
+              WHEN 'HIGH' THEN 2 
+              WHEN 'MEDIUM' THEN 3 
+              WHEN 'LOW' THEN 4 
+              ELSE 5 
+            END
+          `),
+          'ASC',
+        ],
+        ['created_at', 'ASC'],
+      ],
+      include: [
+        { model: Contact, attributes: ['id', 'first_name', 'last_name'] },
+        { model: ServiceLocation, attributes: ['id', 'address'] },
+        { model: ServiceRequestSla, as: 'sla' },
+      ],
+    });
+  }
+
+  async updatePriority(
+    id: string,
+    tenantId: string,
+    userId: string,
+    priority: string,
+  ): Promise<ServiceRequest> {
+    const request = await this.findById(id, tenantId);
+    const oldPriority = request.priority;
+
+    if (oldPriority === priority) {
+      return request;
+    }
+
+    const transaction = await this.serviceRequestRepository.sequelize!.transaction();
+    try {
+      await request.update({ priority }, { transaction });
+
+      await this.requestAuditLogRepository.create(
+        {
+          request_id: id,
+          tenant_id: tenantId,
+          changed_by: userId,
+          field_changed: 'priority',
+          old_value: oldPriority,
+          new_value: priority,
+        },
+        { transaction },
+      );
+
+      await transaction.commit();
+      return request;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 }

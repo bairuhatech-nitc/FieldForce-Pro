@@ -23,6 +23,7 @@ import {
   CloseCircleOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { estimatesPublicApi } from '@/api/estimates.api';
 import type { Estimate, EstimateLineItem } from '@/types/models.types';
 import { formatCurrency } from '@/utils/format-currency';
@@ -34,6 +35,7 @@ const { TextArea } = Input;
 type PageState = 'loading' | 'loadError' | 'idle' | 'signed' | 'declined';
 
 export default function EstimatePublicSignPage() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
@@ -62,15 +64,15 @@ export default function EstimatePublicSignPage() {
       .catch((err) => {
         const status = err?.response?.status;
         if (status === 410) {
-          setLoadErrorMsg('This link has expired. Please contact the service provider for a new link.');
+          setLoadErrorMsg(t('estimatePublicSign.error.linkExpired'));
         } else if (status === 404) {
-          setLoadErrorMsg('This link is invalid or could not be found.');
+          setLoadErrorMsg(t('estimatePublicSign.error.linkNotFound'));
         } else {
-          setLoadErrorMsg('Unable to load the estimate. Please try again later.');
+          setLoadErrorMsg(t('estimatePublicSign.error.loadFailed'));
         }
         setPageState('loadError');
       });
-  }, [token]);
+  }, [token, t]);
 
   // Non-passive touch listeners for canvas
   useEffect(() => {
@@ -164,7 +166,7 @@ export default function EstimatePublicSignPage() {
     } catch (err) {
       setSubmitError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to submit signature. Please try again.',
+          t('estimatePublicSign.error.submitSignatureFailed'),
       );
     } finally {
       setSubmitting(false);
@@ -181,7 +183,7 @@ export default function EstimatePublicSignPage() {
     } catch (err) {
       setSubmitError(
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Failed to decline. Please try again.',
+          t('estimatePublicSign.error.declineFailed'),
       );
     } finally {
       setDeclining(false);
@@ -190,42 +192,42 @@ export default function EstimatePublicSignPage() {
 
   const lineItemColumns: ColumnsType<EstimateLineItem> = [
     {
-      title: 'Type',
+      title: t('estimatePublicSign.lineItems.type'),
       dataIndex: 'type',
       key: 'type',
       render: (t: string) => <Tag>{t.charAt(0).toUpperCase() + t.slice(1)}</Tag>,
     },
     {
-      title: 'Name',
+      title: t('estimatePublicSign.lineItems.name'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
     },
     {
-      title: 'Qty',
+      title: t('estimatePublicSign.lineItems.qty'),
       dataIndex: 'quantity',
       key: 'quantity',
     },
     {
-      title: 'Unit Price',
+      title: t('estimatePublicSign.lineItems.unitPrice'),
       dataIndex: 'unit_price',
       key: 'unit_price',
       render: (p: number) => formatCurrency(p),
     },
     {
-      title: 'Tax',
+      title: t('estimatePublicSign.lineItems.tax'),
       dataIndex: 'tax_rate',
       key: 'tax_rate',
       render: (r: number) => `${r || 0}%`,
     },
     {
-      title: 'Discount',
+      title: t('estimatePublicSign.lineItems.discount'),
       dataIndex: 'discount',
       key: 'discount',
       render: (d: number) => formatCurrency(d || 0),
     },
     {
-      title: 'Total',
+      title: t('estimatePublicSign.lineItems.total'),
       dataIndex: 'total',
       key: 'total',
       render: (t: number) => <span style={{ fontWeight: 500 }}>{formatCurrency(t)}</span>,
@@ -245,7 +247,7 @@ export default function EstimatePublicSignPage() {
       >
         <div style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>FieldForce Pro</div>
         <Tag color="blue" style={{ marginLeft: 'auto' }}>
-          Estimate Review &amp; Sign
+          {t('estimatePublicSign.header.reviewSignTag')}
         </Tag>
       </div>
 
@@ -259,7 +261,7 @@ export default function EstimatePublicSignPage() {
 
         {/* ── Load error ── */}
         {pageState === 'loadError' && (
-          <Result status="error" title="Unable to Load Estimate" subTitle={loadErrorMsg} />
+          <Result status="error" title={t('estimatePublicSign.loadError.title')} subTitle={loadErrorMsg} />
         )}
 
         {/* ── Signed success ── */}
@@ -267,8 +269,8 @@ export default function EstimatePublicSignPage() {
           <Result
             status="success"
             icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-            title="Thank you! Your signature has been recorded."
-            subTitle="The estimate has been approved. The service provider will be in touch shortly."
+            title={t('estimatePublicSign.signedSuccess.title')}
+            subTitle={t('estimatePublicSign.signedSuccess.subTitle')}
           />
         )}
 
@@ -277,8 +279,8 @@ export default function EstimatePublicSignPage() {
           <Result
             status="info"
             icon={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
-            title="Estimate Declined"
-            subTitle="You have declined this estimate. The service provider has been notified and will contact you to discuss further."
+            title={t('estimatePublicSign.declinedSuccess.title')}
+            subTitle={t('estimatePublicSign.declinedSuccess.subTitle')}
           />
         )}
 
@@ -289,44 +291,44 @@ export default function EstimatePublicSignPage() {
             <Card
               title={
                 <Space>
-                  <span style={{ fontWeight: 600 }}>Estimate</span>
+                  <span style={{ fontWeight: 600 }}>{t('estimatePublicSign.estimateInfo.title')}</span>
                   <Tag color="blue">{estimate.estimate_number || estimate.id.slice(0, 8)}</Tag>
                   <Tag color={estimate.status === 'approved' ? 'green' : estimate.status === 'rejected' ? 'red' : 'processing'}>
-                    {estimate.status.replace(/_/g, ' ').toUpperCase()}
+                    {t(`estimatePublicSign.status.${estimate.status}`)}
                   </Tag>
                 </Space>
               }
             >
               <Row gutter={[16, 12]}>
                 <Col xs={24} sm={12}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Customer</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{t('estimatePublicSign.estimateInfo.customer')}</Text>
                   <div style={{ fontWeight: 600, marginTop: 2 }}>
                     {estimate.contact
                       ? `${estimate.contact.first_name} ${estimate.contact.last_name}`
-                      : '—'}
+                      : t('estimatePublicSign.common.notApplicable')}
                   </div>
                 </Col>
                 <Col xs={24} sm={12}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>Total Amount</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{t('estimatePublicSign.estimateInfo.totalAmount')}</Text>
                   <div style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e', marginTop: 2 }}>
                     {formatCurrency(estimate.total || 0)}
                   </div>
                 </Col>
                 {estimate.expiry_date && (
                   <Col xs={24} sm={12}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Valid Until</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('estimatePublicSign.estimateInfo.validUntil')}</Text>
                     <div style={{ marginTop: 2 }}>{formatDateTime(estimate.expiry_date)}</div>
                   </Col>
                 )}
                 {estimate.public_token_expires_at && (
                   <Col xs={24} sm={12}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Sign Link Expires</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('estimatePublicSign.estimateInfo.signLinkExpires')}</Text>
                     <div style={{ marginTop: 2 }}>{formatDateTime(estimate.public_token_expires_at)}</div>
                   </Col>
                 )}
                 {estimate.notes && (
                   <Col xs={24}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Notes</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{t('estimatePublicSign.estimateInfo.notes')}</Text>
                     <div style={{ marginTop: 2 }}>{estimate.notes}</div>
                   </Col>
                 )}
@@ -334,35 +336,35 @@ export default function EstimatePublicSignPage() {
             </Card>
 
             {/* Line items */}
-            <Card title="Items &amp; Pricing">
+            <Card title={t('estimatePublicSign.itemsPricing.title')}>
               <Table
                 columns={lineItemColumns}
                 dataSource={estimate.line_items || []}
                 rowKey="id"
                 pagination={false}
                 scroll={{ x: 600 }}
-                locale={{ emptyText: 'No items' }}
+                locale={{ emptyText: t('estimatePublicSign.itemsPricing.noItems') }}
                 summary={() => (
                   <Table.Summary>
                     <Table.Summary.Row>
                       <Table.Summary.Cell index={0} colSpan={6} align="right">
-                        <strong>Subtotal</strong>
+                        <strong>{t('estimatePublicSign.itemsPricing.subtotal')}</strong>
                       </Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>
                         <strong>{formatCurrency(estimate.subtotal || 0)}</strong>
                       </Table.Summary.Cell>
                     </Table.Summary.Row>
                     <Table.Summary.Row>
-                      <Table.Summary.Cell index={0} colSpan={6} align="right">Tax</Table.Summary.Cell>
+                      <Table.Summary.Cell index={0} colSpan={6} align="right">{t('estimatePublicSign.itemsPricing.tax')}</Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>{formatCurrency(estimate.tax || 0)}</Table.Summary.Cell>
                     </Table.Summary.Row>
                     <Table.Summary.Row>
-                      <Table.Summary.Cell index={0} colSpan={6} align="right">Discount</Table.Summary.Cell>
+                      <Table.Summary.Cell index={0} colSpan={6} align="right">{t('estimatePublicSign.itemsPricing.discount')}</Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>-{formatCurrency(estimate.discount || 0)}</Table.Summary.Cell>
                     </Table.Summary.Row>
                     <Table.Summary.Row>
                       <Table.Summary.Cell index={0} colSpan={6} align="right">
-                        <strong style={{ fontSize: 15 }}>Total</strong>
+                        <strong style={{ fontSize: 15 }}>{t('estimatePublicSign.itemsPricing.total')}</strong>
                       </Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>
                         <strong style={{ fontSize: 15, color: '#1a1a2e' }}>{formatCurrency(estimate.total || 0)}</strong>
@@ -376,14 +378,14 @@ export default function EstimatePublicSignPage() {
             {/* Action section */}
             {estimate.status === 'approved' && estimate.signature_url ? (
               <Alert
-                message="This estimate has already been signed and approved."
+                message={t('estimatePublicSign.alert.alreadySignedMessage')}
                 type="success"
                 showIcon
                 icon={<CheckCircleOutlined />}
               />
             ) : estimate.status === 'rejected' ? (
               <Alert
-                message="This estimate has been declined."
+                message={t('estimatePublicSign.alert.alreadyDeclinedMessage')}
                 type="error"
                 showIcon
                 icon={<CloseCircleOutlined />}
@@ -400,13 +402,12 @@ export default function EstimatePublicSignPage() {
                   title={
                     <Space>
                       <EditOutlined />
-                      <span>Digital Signature</span>
+                      <span>{t('estimatePublicSign.digitalSignature.title')}</span>
                     </Space>
                   }
                 >
                   <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                    Draw your signature below using your mouse or finger. By clicking{' '}
-                    <strong>Accept &amp; Sign</strong> you confirm your acceptance of this estimate.
+                    {t('estimatePublicSign.digitalSignature.description', { acceptAndSign: <strong>{t('estimatePublicSign.digitalSignature.acceptAndSignButton')}</strong> })}
                   </Text>
 
                   <div
@@ -444,14 +445,14 @@ export default function EstimatePublicSignPage() {
                           fontSize: 14,
                         }}
                       >
-                        Sign here
+                        {t('estimatePublicSign.digitalSignature.signHerePlaceholder')}
                       </div>
                     )}
                   </div>
 
                   <Space style={{ marginBottom: 16 }}>
                     <Button size="small" icon={<ClearOutlined />} onClick={handleClear} disabled={!hasDrawn}>
-                      Clear
+                      {t('estimatePublicSign.digitalSignature.clearButton')}
                     </Button>
                   </Space>
 
@@ -466,7 +467,7 @@ export default function EstimatePublicSignPage() {
                       loading={submitting}
                       onClick={() => void handleSign()}
                     >
-                      Accept &amp; Sign
+                      {t('estimatePublicSign.digitalSignature.acceptAndSignButton')}
                     </Button>
                   </Space>
                 </Card>
@@ -479,7 +480,7 @@ export default function EstimatePublicSignPage() {
                     <Space>
                       <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
                       <Title level={5} style={{ margin: 0, color: '#ff4d4f' }}>
-                        Decline this Estimate
+                        {t('estimatePublicSign.declineSection.title')}
                       </Title>
                     </Space>
                   }
@@ -487,34 +488,33 @@ export default function EstimatePublicSignPage() {
                   {!showDeclineForm ? (
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <Text type="secondary" style={{ fontSize: 13 }}>
-                        Not happy with this estimate? You can decline it and the service provider will be
-                        notified.
+                        {t('estimatePublicSign.declineSection.description')}
                       </Text>
                       <Button
                         danger
                         icon={<CloseCircleOutlined />}
                         onClick={() => setShowDeclineForm(true)}
                       >
-                        Decline Estimate
+                        {t('estimatePublicSign.declineSection.declineEstimateButton')}
                       </Button>
                     </Space>
                   ) : (
                     <Space direction="vertical" style={{ width: '100%' }} size="middle">
                       <Alert
-                        message="You are about to decline this estimate"
-                        description="The service provider will be notified and may reach out to revise the offer."
+                        message={t('estimatePublicSign.declineSection.alertMessage')}
+                        description={t('estimatePublicSign.declineSection.alertDescription')}
                         type="warning"
                         showIcon
                       />
                       <div>
                         <Text type="secondary" style={{ fontSize: 13 }}>
-                          Reason for declining (optional):
+                          {t('estimatePublicSign.declineSection.reasonLabel')}
                         </Text>
                         <TextArea
                           rows={3}
                           value={declineReason}
                           onChange={(e) => setDeclineReason(e.target.value)}
-                          placeholder="e.g. Price is too high, timeline doesn't work..."
+                          placeholder={t('estimatePublicSign.declineSection.reasonPlaceholder')}
                           style={{ marginTop: 6 }}
                         />
                       </div>
@@ -525,10 +525,10 @@ export default function EstimatePublicSignPage() {
                           icon={<CloseCircleOutlined />}
                           onClick={() => void handleDecline()}
                         >
-                          Confirm Decline
+                          {t('estimatePublicSign.declineSection.confirmDeclineButton')}
                         </Button>
                         <Button onClick={() => { setShowDeclineForm(false); setDeclineReason(''); }}>
-                          Cancel
+                          {t('estimatePublicSign.declineSection.cancelButton')}
                         </Button>
                       </Space>
                     </Space>

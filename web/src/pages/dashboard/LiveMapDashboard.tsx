@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, Select, Tag, Avatar, Button, Typography } from 'antd';
 import { EnvironmentOutlined, ClockCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
@@ -73,6 +74,7 @@ const STATUS_BG_COLORS: Record<string, string> = {
 };
 
 export default function LiveMapDashboard() {
+    const { t } = useTranslation();
     const [selectedCrew, setSelectedCrew] = useState<number | null>(null);
 
     return (
@@ -81,8 +83,8 @@ export default function LiveMapDashboard() {
             {/* Top Header Section */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                    <Title level={2} style={{ margin: 0, fontWeight: 700 }}>Field Crew Dashboard</Title>
-                    <Text type="secondary">Real-time crew location and status monitoring</Text>
+                    <Title level={2} style={{ margin: 0, fontWeight: 700 }}>{t('liveMapDashboard.fieldCrewDashboard')}</Title>
+                    <Text type="secondary">{t('liveMapDashboard.monitoringDescription')}</Text>
                 </div>
 
                 {/* Stats Card */}
@@ -96,29 +98,29 @@ export default function LiveMapDashboard() {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
                 }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Total Crew</div>
+                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>{t('liveMapDashboard.totalCrew')}</div>
                         <div style={{ fontSize: 24, fontWeight: 700 }}>8</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Active</div>
+                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>{t('liveMapDashboard.active')}</div>
                         <div style={{ fontSize: 24, fontWeight: 700 }}>4</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Emergency</div>
+                        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>{t('liveMapDashboard.emergency')}</div>
                         <div style={{ fontSize: 24, fontWeight: 700 }}>1</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <Tag color="#10b981" style={{ margin: 0, border: 'none', color: '#064e3b', fontWeight: 600 }}>• Live</Tag>
+                        <Tag color="#10b981" style={{ margin: 0, border: 'none', color: '#064e3b', fontWeight: 600 }}>• {t('liveMapDashboard.live')}</Tag>
                     </div>
                 </div>
             </div>
 
             {/* Filters */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <Select defaultValue="Active" style={{ width: 160 }} options={[{ value: 'Active', label: 'Crew Status: Active' }]} bordered={false} className="filter-select" />
-                <Select defaultValue="Select" style={{ width: 160 }} options={[{ value: 'Select', label: 'Job Status: Select' }]} bordered={false} className="filter-select" />
-                <Select defaultValue="Select" style={{ width: 150 }} options={[{ value: 'Select', label: 'Teams: Select' }]} bordered={false} className="filter-select" />
-                <Select defaultValue="Select" style={{ width: 180 }} options={[{ value: 'Select', label: 'Departments: Select' }]} bordered={false} className="filter-select" />
+                <Select defaultValue="Active" style={{ width: 160 }} options={[{ value: 'Active', label: t('liveMapDashboard.crewStatusActive') }]} bordered={false} className="filter-select" />
+                <Select defaultValue="Select" style={{ width: 160 }} options={[{ value: 'Select', label: t('liveMapDashboard.jobStatusSelect') }]} bordered={false} className="filter-select" />
+                <Select defaultValue="Select" style={{ width: 150 }} options={[{ value: 'Select', label: t('liveMapDashboard.teamsSelect') }]} bordered={false} className="filter-select" />
+                <Select defaultValue="Select" style={{ width: 180 }} options={[{ value: 'Select', label: t('liveMapDashboard.departmentsSelect') }]} bordered={false} className="filter-select" />
             </div>
 
             {/* Main Content Area */}
@@ -176,7 +178,7 @@ export default function LiveMapDashboard() {
                                 <ClockCircleOutlined style={{ fontSize: 12, color: '#9ca3af' }} />
                                 <span style={{ fontSize: 12, color: '#9ca3af' }}>{crew.time}</span>
                                 <Tag color={selectedCrew === crew.id ? 'blue' : 'default'} style={{ borderRadius: 12, marginLeft: 'auto' }}>
-                                    {selectedCrew === crew.id ? 'Selected' : 'View'}
+                                    {selectedCrew === crew.id ? t('liveMapDashboard.selected') : t('liveMapDashboard.view')}
                                 </Tag>
                             </div>
                         </Card>
@@ -189,11 +191,10 @@ export default function LiveMapDashboard() {
                     <div style={{
                         width: '100%',
                         height: '100%',
-                        background: 'url(https://api.mapbox.com/styles/v1/mapbox/light-v10/static/-74.006,40.7128,12,0/1000x800?access_token=Pk.mock) center/cover no-repeat', // Using a grey background mostly
+                        background: 'url(https://api.mapbox.com/styles/v1/mapbox/light-v10/static/-74.006,40.7128,12,0/1000x800?access_token=Pk.mock) center/cover no-repeat',
                         backgroundColor: '#f3f4f6',
                         position: 'relative'
                     }}>
-                        {/* Mock Map Grid/Roads (CSS Art) */}
                         <div style={{
                             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                             backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px)',
@@ -247,15 +248,15 @@ export default function LiveMapDashboard() {
                         }}>
                             <div style={{ display: 'flex', gap: 40 }}>
                                 <div>
-                                    <div style={{ fontSize: 12, color: '#6b7280' }}>Name</div>
+                                    <div style={{ fontSize: 12, color: '#6b7280' }}>{t('liveMapDashboard.name')}</div>
                                     <div style={{ fontWeight: 600 }}>James Wilson</div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: 12, color: '#6b7280' }}>Role</div>
+                                    <div style={{ fontSize: 12, color: '#6b7280' }}>{t('liveMapDashboard.role')}</div>
                                     <div style={{ fontWeight: 600 }}>Field Engineer</div>
                                 </div>
                                 <div>
-                                    <div style={{ fontSize: 12, color: '#6b7280' }}>Team</div>
+                                    <div style={{ fontSize: 12, color: '#6b7280' }}>{t('liveMapDashboard.team')}</div>
                                     <div style={{ fontWeight: 600 }}>Alpha</div>
                                 </div>
                             </div>

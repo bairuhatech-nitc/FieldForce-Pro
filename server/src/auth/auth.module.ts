@@ -12,12 +12,15 @@ import { REPOSITORY } from '../shared/constants/keynames';
 import { Role } from '../ROLES/roles.entity';
 import { Permission } from '../PERMISSIONS/permissions.entity';
 import { RolePermission } from '../ROLE_PERMISSION/role_permission.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 import { MFAModule } from '../MFA/mfa.module';
+import { SuperAdminModule } from '../SUPER_ADMIN/super_admin.module';
 
 const roleProviders = [
   { provide: REPOSITORY.ROLES, useValue: Role },
   { provide: REPOSITORY.PERMISSIONS, useValue: Permission },
   { provide: REPOSITORY.ROLE_PERMISSION, useValue: RolePermission },
+  { provide: REPOSITORY.SUBSCRIPTION_PLANS, useValue: SubscriptionPlan },
 ];
 
 @Module({
@@ -28,6 +31,7 @@ const roleProviders = [
     UserRolesModule,
     LoginSessionsModule,
     MFAModule,
+    SuperAdminModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LocalStrategy, ...roleProviders],

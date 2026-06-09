@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Alert, Card, Skeleton, Tag } from 'antd';
 import { CarOutlined, DownOutlined, RightOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useWorkOrderSession, useInitSession } from '@/hooks/use-work-order-technician';
 import { useWorkOrderAppointments } from '@/hooks/use-appointments';
 import { useMe } from '@/hooks/use-auth';
@@ -26,7 +27,7 @@ function formatStatus(status: string): string {
 }
 
 class FieldWorkflowErrorBoundary extends React.Component<
-  { children: React.ReactNode },
+  { children: React.ReactNode; t: any },
   { hasError: boolean; error: string | null }
 > {
   state = { hasError: false, error: null };
@@ -39,8 +40,8 @@ class FieldWorkflowErrorBoundary extends React.Component<
         <Alert
           type="error"
           showIcon
-          message="Field Workflow failed to load"
-          description={this.state.error ?? 'An unexpected error occurred. Try refreshing the page.'}
+          message={this.props.t('fieldWorkflow.errorTitle')}
+          description={this.state.error ?? this.props.t('fieldWorkflow.errorMessage')}
           style={{ margin: 16 }}
         />
       );
@@ -56,6 +57,7 @@ interface FieldWorkflowCardProps {
 }
 
 export default function FieldWorkflowCard({ workOrderId, workOrder, defaultExpanded = false }: FieldWorkflowCardProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const { data: me } = useMe();
   const { data: session, isLoading: sessionLoading } = useWorkOrderSession(workOrderId);
@@ -105,7 +107,7 @@ export default function FieldWorkflowCard({ workOrderId, workOrder, defaultExpan
           {expanded ? <DownOutlined style={{ fontSize: 12 }} /> : <RightOutlined style={{ fontSize: 12 }} />}
           <CarOutlined style={{ fontSize: 16, color: '#1677ff' }} />
           <span style={{ fontWeight: 600, fontSize: 14 }}>
-            {workOrder.wo_number || 'Work Order'}
+            {workOrder.wo_number || t('fieldWorkflow.workOrder')}
           </span>
           <Tag color={statusColors[workOrder.status] || 'default'}>
             {formatStatus(workOrder.status)}
@@ -115,7 +117,7 @@ export default function FieldWorkflowCard({ workOrderId, workOrder, defaultExpan
       </div>
 
       {expanded && (
-        <FieldWorkflowErrorBoundary>
+        <FieldWorkflowErrorBoundary t={t}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: isAssignedTechnician ? '280px 1fr' : '1fr',
@@ -145,8 +147,8 @@ export default function FieldWorkflowCard({ workOrderId, workOrder, defaultExpan
                       <Alert
                         type="info"
                         showIcon
-                        message="Ready to Begin Field Workflow"
-                        description="Tap the button below to start the step-by-step field workflow for this work order."
+                        message={t('fieldWorkflow.readyToBegin')}
+                        description={t('fieldWorkflow.tapToStart')}
                         style={{ marginBottom: 16, borderRadius: 8, textAlign: 'left' }}
                       />
                       <Button
@@ -157,7 +159,7 @@ export default function FieldWorkflowCard({ workOrderId, workOrder, defaultExpan
                         loading={initSession.isPending}
                         style={{ borderRadius: 8 }}
                       >
-                        Initialize Field Workflow
+                        {t('fieldWorkflow.initializeWorkflow')}
                       </Button>
                     </div>
                   </Card>

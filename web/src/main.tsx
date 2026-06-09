@@ -4,28 +4,26 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import HttpBackend from 'i18next-http-backend';
 import { migrateAuthStorage } from './utils/auth-migration';
 import App from './App';
 
 // Run auth storage migration on app initialization
 migrateAuthStorage();
 
-// Initialize i18next
-i18n.use(initReactI18next).init({
-  resources: {},
-  lng: 'en',
-  fallbackLng: 'en',
-  interpolation: { escapeValue: false },
-  backend: {
-    loadPath: '/locales/{{lng}}/{{ns}}.json',
-  },
-});
-
-// Load translations
-fetch('/locales/en/common.json')
-  .then((res) => res.json())
-  .then((translations) => {
-    i18n.addResourceBundle('en', 'translation', translations);
+// Initialize i18next with HTTP backend for dynamic locale loading
+i18n
+  .use(HttpBackend)
+  .use(initReactI18next)
+  .init({
+    lng: localStorage.getItem('i18nextLng') || 'en',
+    fallbackLng: 'en',
+    defaultNS: 'common',
+    ns: ['common'],
+    interpolation: { escapeValue: false },
+    backend: {
+      loadPath: '/locales/{{lng}}/{{ns}}.json',
+    },
   });
 
 const queryClient = new QueryClient({

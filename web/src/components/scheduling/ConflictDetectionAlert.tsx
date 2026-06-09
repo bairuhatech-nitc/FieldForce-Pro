@@ -6,6 +6,7 @@ import {
   ClockCircleOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useCheckAvailability, useDetectConflicts } from '@/hooks/use-scheduling';
 import { formatDateTime } from '@/utils/format-date';
 
@@ -49,6 +50,7 @@ export default function ConflictDetectionAlert({
   autoCheck = true,
   onConflictChange,
 }: ConflictDetectionAlertProps) {
+  const { t } = useTranslation();
   const availability = useCheckAvailability();
   const conflictCheck = useDetectConflicts();
 
@@ -91,7 +93,7 @@ export default function ConflictDetectionAlert({
       <Alert
         type="info"
         icon={<ClockCircleOutlined spin />}
-        message="Checking availability..."
+        message={t('conflictAlert.checkingAvailability')}
         showIcon
         style={{ marginBottom: 16 }}
       />
@@ -108,8 +110,8 @@ export default function ConflictDetectionAlert({
       <Alert
         type="success"
         icon={<CheckCircleOutlined />}
-        message="Technician is available"
-        description="No scheduling conflicts detected for this time window."
+        message={t('conflictAlert.technicianAvailable')}
+        description={t('conflictAlert.noConflicts')}
         showIcon
         style={{ marginBottom: 16 }}
       />
@@ -122,7 +124,7 @@ export default function ConflictDetectionAlert({
       <Alert
         type="error"
         icon={<WarningOutlined />}
-        message="Scheduling Conflict Detected"
+        message={t('conflictAlert.conflictDetected')}
         description={
           <Space direction="vertical" style={{ width: '100%' }} size="small">
             {result.reasons.map((reason, i) => (
@@ -135,12 +137,12 @@ export default function ConflictDetectionAlert({
             {conflicts && conflicts.conflicts.length > 0 && (
               <List
                 size="small"
-                header={<Text strong>Conflicting Appointments:</Text>}
+                header={<Text strong>{t('conflictAlert.conflictingAppointments')}</Text>}
                 dataSource={conflicts.conflicts}
                 renderItem={(item: any) => (
                   <List.Item>
                     <Space>
-                      <Tag color="red">Conflict</Tag>
+                      <Tag color="red">{t('conflictAlert.conflictTag')}</Tag>
                       <Text>
                         {formatDateTime(item.scheduled_start)} — {formatDateTime(item.scheduled_end)}
                       </Text>
@@ -148,7 +150,7 @@ export default function ConflictDetectionAlert({
                         <Tag>{item.status.replace(/_/g, ' ')}</Tag>
                       )}
                       {item.work_order_id && (
-                        <Tooltip title="Work Order ID">
+                        <Tooltip title={t('conflictAlert.workOrderIdTooltip')}>
                           <Text type="secondary" copyable={{ text: item.work_order_id }}>
                             {item.work_order_id.slice(0, 8)}...
                           </Text>

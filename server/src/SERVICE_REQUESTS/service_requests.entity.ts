@@ -5,11 +5,18 @@ import {
   DataType,
   ForeignKey,
   BelongsTo,
+  BelongsToMany,
 } from 'sequelize-typescript';
 import { Tenant } from '../TENANTS/tenants.entity';
 import { Contact } from '../CONTACTS/contacts.entity';
 import { ServiceLocation } from '../SERVICE_LOCATIONS/service_locations.entity';
 import { User } from '../USERS/users.entity';
+import { ServiceRequestTechnician } from './service_request_technician.entity';
+import { Category } from '../CATEGORIES/categories.entity';
+import { SubCategory } from '../SUB_CATEGORIES/sub_categories.entity';
+import { Priority } from '../PRIORITIES/priorities.entity';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { HasOne } from 'sequelize-typescript';
 
 @Table({
   tableName: 'service_requests',
@@ -73,18 +80,63 @@ export class ServiceRequest extends Model {
   })
   description: string;
 
+  // ── Feature 4: Priority-Based Queue ──
   @Column({
-    type: DataType.ENUM('low', 'medium', 'high', 'urgent'),
+    type: DataType.STRING(10),
     allowNull: false,
-    defaultValue: 'medium',
+    defaultValue: 'MEDIUM',
+    get() {
+      const val = this.getDataValue('priority');
+      if (!val) return val;
+      if (val === 'CRITICAL') return 'urgent';
+      return val.toLowerCase();
+    },
+    set(val: string) {
+      if (!val) return;
+      if (val.toLowerCase() === 'urgent') {
+        this.setDataValue('priority', 'CRITICAL');
+      } else {
+        this.setDataValue('priority', val.toUpperCase());
+      }
+    }
   })
   priority: string;
+
+  @ForeignKey(() => Priority)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  priority_id: string;
+
+  @BelongsTo(() => Priority)
+  priority_lookup: Priority;
 
   @Column({
     type: DataType.STRING(100),
     allowNull: true,
   })
   category: string;
+
+  @ForeignKey(() => Category)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  category_id: string;
+
+  @BelongsTo(() => Category)
+  category_lookup: Category;
+
+  @ForeignKey(() => SubCategory)
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+  })
+  sub_category_id: string;
+
+  @BelongsTo(() => SubCategory)
+  sub_category: SubCategory;
 
   @Column({
     type: DataType.ENUM(
@@ -127,6 +179,9 @@ export class ServiceRequest extends Model {
   @BelongsTo(() => User)
   assignee: User;
 
+  @BelongsToMany(() => User, () => ServiceRequestTechnician)
+  technicians: User[];
+
   @Column({
     type: DataType.JSONB,
     allowNull: true,
@@ -157,6 +212,22 @@ export class ServiceRequest extends Model {
     allowNull: true,
   })
   scheduled_end: Date;
+
+  @HasOne(() => ServiceRequestSla)
+  sla: ServiceRequestSla;
+
+  // ── Feature 5: Spam Prevention ──
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  is_spam_flagged: boolean;
+
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: true,
+  })
+  spam_reason: string;
 
   @Column({
     type: DataType.BOOLEAN,

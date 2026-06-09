@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, InputNumber, Select, Switch } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { usePartsCatalogItem, useCreatePartsCatalog, useUpdatePartsCatalog } from '@/hooks/use-parts-catalog';
 import PageHeader from '@/components/common/PageHeader';
 
 const { TextArea } = Input;
 
 export default function PartFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -48,7 +50,7 @@ export default function PartFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('partForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -57,7 +59,7 @@ export default function PartFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Part' : 'Create Part'}
+        title={isEdit ? t('partForm.editPart') : t('partForm.createPart')}
         onBack={() => navigate('/catalog/parts')}
       />
 
@@ -72,36 +74,36 @@ export default function PartFormPage() {
         >
           <Form.Item
             name="name"
-            label="Part Name"
-            rules={[{ required: true, message: 'Please enter part name' }]}
+            label={t('partForm.partName')}
+            rules={[{ required: true, message: t('partForm.pleaseEnterPartName') }]}
           >
-            <Input placeholder="e.g. Compressor Motor" />
+            <Input placeholder={t('partForm.placeholderName')} />
           </Form.Item>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="sku" label="SKU" style={{ flex: 1 }}>
-              <Input placeholder="e.g. COMP-MOT-001" />
+            <Form.Item name="sku" label={t('partForm.sku')} style={{ flex: 1 }}>
+              <Input placeholder={t('partForm.placeholderSku')} />
             </Form.Item>
-            <Form.Item name="category" label="Category" style={{ flex: 1 }}>
-              <Select placeholder="Select category" allowClear>
-                <Select.Option value="Electrical">Electrical</Select.Option>
-                <Select.Option value="Mechanical">Mechanical</Select.Option>
-                <Select.Option value="Plumbing">Plumbing</Select.Option>
-                <Select.Option value="HVAC">HVAC</Select.Option>
-                <Select.Option value="Filters">Filters</Select.Option>
-                <Select.Option value="Hardware">Hardware</Select.Option>
-                <Select.Option value="Safety">Safety</Select.Option>
-                <Select.Option value="Other">Other</Select.Option>
+            <Form.Item name="category" label={t('partForm.category')} style={{ flex: 1 }}>
+              <Select placeholder={t('partForm.selectCategory')} allowClear>
+                <Select.Option value="Electrical">{t('partForm.categories.electrical')}</Select.Option>
+                <Select.Option value="Mechanical">{t('partForm.categories.mechanical')}</Select.Option>
+                <Select.Option value="Plumbing">{t('partForm.categories.plumbing')}</Select.Option>
+                <Select.Option value="HVAC">{t('partForm.categories.hvac')}</Select.Option>
+                <Select.Option value="Filters">{t('partForm.categories.filters')}</Select.Option>
+                <Select.Option value="Hardware">{t('partForm.categories.hardware')}</Select.Option>
+                <Select.Option value="Safety">{t('partForm.categories.safety')}</Select.Option>
+                <Select.Option value="Other">{t('partForm.categories.other')}</Select.Option>
               </Select>
             </Form.Item>
           </Space>
 
-          <Form.Item name="description" label="Description">
-            <TextArea rows={4} placeholder="Describe the part" />
+          <Form.Item name="description" label={t('partForm.description')}>
+            <TextArea rows={4} placeholder={t('partForm.placeholderDescription')} />
           </Form.Item>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="unit_price" label="Unit Price" style={{ flex: 1 }}>
+            <Form.Item name="unit_price" label={t('partForm.unitPrice')} style={{ flex: 1 }}>
               <InputNumber
                 min={0}
                 step={0.01}
@@ -111,21 +113,21 @@ export default function PartFormPage() {
                 style={{ width: '100%' }}
               />
             </Form.Item>
-            <Form.Item name="supplier" label="Supplier" style={{ flex: 1 }}>
-              <Input placeholder="e.g. ACME Parts Co." />
+            <Form.Item name="supplier" label={t('partForm.supplier')} style={{ flex: 1 }}>
+              <Input placeholder={t('partForm.placeholderSupplier')} />
             </Form.Item>
           </Space>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="stock_qty" label="Stock Quantity" style={{ flex: 1 }}>
+            <Form.Item name="stock_qty" label={t('partForm.stockQuantity')} style={{ flex: 1 }}>
               <InputNumber min={0} step={1} placeholder="0" style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="reorder_level" label="Reorder Level" style={{ flex: 1 }}>
+            <Form.Item name="reorder_level" label={t('partForm.reorderLevel')} style={{ flex: 1 }}>
               <InputNumber min={0} step={1} placeholder="0" style={{ width: '100%' }} />
             </Form.Item>
           </Space>
 
-          <Form.Item name="is_active" label="Active" valuePropName="checked">
+          <Form.Item name="is_active" label={t('partForm.active')} valuePropName="checked">
             <Switch />
           </Form.Item>
 
@@ -136,9 +138,9 @@ export default function PartFormPage() {
                 htmlType="submit"
                 loading={createPart.isPending || updatePart.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('partForm.update') : t('partForm.create')}
               </Button>
-              <Button onClick={() => navigate('/catalog/parts')}>Cancel</Button>
+              <Button onClick={() => navigate('/catalog/parts')}>{t('partForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

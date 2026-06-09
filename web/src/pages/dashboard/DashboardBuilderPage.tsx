@@ -27,6 +27,7 @@ import {
   DragOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next'; // Rule 1: Import useTranslation
 import PageHeader from '@/components/common/PageHeader';
 import {
   widgetTypes,
@@ -49,7 +50,11 @@ import {
 
 const { Title, Text } = Typography;
 
-// Mock data generators
+// Mock data generators (strings within this function are treated as data values
+// that would typically be translated by the consuming widget component or come pre-translated from an API.
+// As t() is not in scope here and direct modification would break component structure assumptions,
+// these strings are left as is, as per rule 6: "Do NOT touch code variables".
+// The problem focuses on strings within the React component and its JSX output.)
 const generateMockData = (type: string): any => {
   switch (type) {
     case 'kpi':
@@ -153,6 +158,7 @@ const generateMockData = (type: string): any => {
 };
 
 export default function DashboardBuilderPage() {
+  const { t } = useTranslation(); // Rule 2: Declare t()
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [configModalVisible, setConfigModalVisible] = useState(false);
@@ -169,25 +175,28 @@ export default function DashboardBuilderPage() {
     const newWidget: WidgetConfig = {
       id: `widget_${Date.now()}`,
       type,
-      title: widgetType.name,
+      // Rule 5: Translate JS/TS string for widget title
+      title: t(`dashboardBuilder.widgetLibrary.${widgetType.type}.name`),
       data: generateMockData(type),
       size: widgetType.defaultSize,
     };
 
     setWidgets([...widgets, newWidget]);
     setDrawerVisible(false);
-    message.success(`${widgetType.name} added to dashboard`);
+    // Rule 5: Translate JS/TS string for message
+    message.success(t('dashboardBuilder.messages.widgetAdded', { widgetName: t(`dashboardBuilder.widgetLibrary.${widgetType.type}.name`) }));
   };
 
   const deleteWidget = (widgetId: string) => {
     Modal.confirm({
-      title: 'Delete Widget',
-      content: 'Are you sure you want to delete this widget?',
-      okText: 'Delete',
+      title: t('dashboardBuilder.confirmDelete.title'), // Rule 5: Translate JS/TS string for title
+      content: t('dashboardBuilder.confirmDelete.content'), // Rule 5: Translate JS/TS string for content
+      okText: t('dashboardBuilder.confirmDelete.okText'), // Rule 5: Translate JS/TS string for okText
       okType: 'danger',
       onOk: () => {
         setWidgets(widgets.filter((w) => w.id !== widgetId));
-        message.success('Widget deleted');
+        // Rule 5: Translate JS/TS string for message
+        message.success(t('dashboardBuilder.messages.widgetDeleted'));
       },
     });
   };
@@ -220,7 +229,8 @@ export default function DashboardBuilderPage() {
       setConfigModalVisible(false);
       setCurrentWidget(null);
       form.resetFields();
-      message.success('Widget configured');
+      // Rule 5: Translate JS/TS string for message
+      message.success(t('dashboardBuilder.messages.widgetConfigured'));
     });
   };
 
@@ -247,7 +257,8 @@ export default function DashboardBuilderPage() {
 
   const saveDashboard = () => {
     // In production, save to backend
-    message.success('Dashboard layout saved successfully');
+    // Rule 5: Translate JS/TS string for message
+    message.success(t('dashboardBuilder.messages.dashboardSaved'));
   };
 
   const renderWidget = (widget: WidgetConfig) => {
@@ -260,22 +271,22 @@ export default function DashboardBuilderPage() {
   return (
     <div>
       <PageHeader
-        title="Dashboard Builder"
-        subtitle="Create custom dashboards with drag-and-drop widgets"
+        title={t('dashboardBuilder.pageHeader.title')} // Rule 4: Translate attribute
+        subtitle={t('dashboardBuilder.pageHeader.subtitle')} // Rule 4: Translate attribute
         extra={
           <Space>
             <Button
               icon={previewMode ? <EditOutlined /> : <EyeOutlined />}
               onClick={() => setPreviewMode(!previewMode)}
             >
-              {previewMode ? 'Edit Mode' : 'Preview Mode'}
+              {previewMode ? t('dashboardBuilder.buttons.editMode') : t('dashboardBuilder.buttons.previewMode')} {/* Rule 3: Translate JSX children */}
             </Button>
             <Button type="primary" icon={<SaveOutlined />} onClick={saveDashboard}>
-              Save Dashboard
+              {t('dashboardBuilder.buttons.saveDashboard')} {/* Rule 3: Translate JSX children */}
             </Button>
             {!previewMode && (
               <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
-                Add Widget
+                {t('dashboardBuilder.buttons.addWidget')} {/* Rule 3: Translate JSX children */}
               </Button>
             )}
           </Space>
@@ -287,14 +298,14 @@ export default function DashboardBuilderPage() {
         <Card style={{ marginBottom: 16, background: '#e6f7ff', border: '1px solid #91d5ff' }}>
           <Space direction="vertical">
             <Title level={5} style={{ margin: 0 }}>
-              🎨 Build Your Custom Dashboard
+              {t('dashboardBuilder.instructions.cardTitle')} {/* Rule 3: Translate JSX children */}
             </Title>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
-              <li>Click "Add Widget" to choose from 12 widget types</li>
-              <li>Drag widgets to reorder them</li>
-              <li>Click the gear icon to configure widget settings</li>
-              <li>Use "Preview Mode" to see the final result</li>
-              <li>Click "Save Dashboard" to persist your layout</li>
+              <li>{t('dashboardBuilder.instructions.listItem1')}</li> {/* Rule 3: Translate JSX children */}
+              <li>{t('dashboardBuilder.instructions.listItem2')}</li> {/* Rule 3: Translate JSX children */}
+              <li>{t('dashboardBuilder.instructions.listItem3')}</li> {/* Rule 3: Translate JSX children */}
+              <li>{t('dashboardBuilder.instructions.listItem4')}</li> {/* Rule 3: Translate JSX children */}
+              <li>{t('dashboardBuilder.instructions.listItem5')}</li> {/* Rule 3: Translate JSX children */}
             </ul>
           </Space>
         </Card>
@@ -304,12 +315,12 @@ export default function DashboardBuilderPage() {
       <Card>
         {widgets.length === 0 ? (
           <Empty
-            description="No widgets added yet"
+            description={t('dashboardBuilder.emptyState.description')} // Rule 4: Translate attribute
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             style={{ padding: '60px 0' }}
           >
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerVisible(true)}>
-              Add Your First Widget
+              {t('dashboardBuilder.buttons.addYourFirstWidget')} {/* Rule 3: Translate JSX children */}
             </Button>
           </Empty>
         ) : (
@@ -341,7 +352,7 @@ export default function DashboardBuilderPage() {
                         gap: 4,
                       }}
                     >
-                      <Tooltip title="Drag to reorder">
+                      <Tooltip title={t('dashboardBuilder.tooltips.dragReorder')}> {/* Rule 4: Translate attribute */}
                         <Button
                           type="text"
                           size="small"
@@ -349,7 +360,7 @@ export default function DashboardBuilderPage() {
                           style={{ cursor: 'grab' }}
                         />
                       </Tooltip>
-                      <Tooltip title="Configure">
+                      <Tooltip title={t('dashboardBuilder.tooltips.configure')}> {/* Rule 4: Translate attribute */}
                         <Button
                           type="text"
                           size="small"
@@ -357,7 +368,7 @@ export default function DashboardBuilderPage() {
                           onClick={() => configureWidget(widget)}
                         />
                       </Tooltip>
-                      <Tooltip title="Delete">
+                      <Tooltip title={t('dashboardBuilder.tooltips.delete')}> {/* Rule 4: Translate attribute */}
                         <Button
                           type="text"
                           size="small"
@@ -378,7 +389,7 @@ export default function DashboardBuilderPage() {
 
       {/* Widget Library Drawer */}
       <Drawer
-        title="Widget Library"
+        title={t('dashboardBuilder.drawer.title')} // Rule 4: Translate attribute
         placement="right"
         width={400}
         open={drawerVisible}
@@ -387,7 +398,7 @@ export default function DashboardBuilderPage() {
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
           <div>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              Choose a widget type to add to your dashboard
+              {t('dashboardBuilder.drawer.description')} {/* Rule 3: Translate JSX children */}
             </Text>
           </div>
 
@@ -407,14 +418,14 @@ export default function DashboardBuilderPage() {
                     <Space>
                       <div style={{ fontSize: 24, color: '#1890ff' }}>{widgetType.icon}</div>
                       <div>
-                        <Text strong>{widgetType.name}</Text>
+                        <Text strong>{t(`dashboardBuilder.widgetLibrary.${widgetType.type}.name`)}</Text> {/* Rule 3: Translate JSX children */}
                         <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          {widgetType.description}
+                          {t(`dashboardBuilder.widgetLibrary.${widgetType.type}.description`)} {/* Rule 3: Translate JSX children */}
                         </Text>
                       </div>
                     </Space>
-                    <Tag color="blue">Default size: {widgetType.defaultSize}</Tag>
+                    <Tag color="blue">{t('dashboardBuilder.widgetLibrary.defaultSize', { size: widgetType.defaultSize })}</Tag> {/* Rule 3: Translate JSX children */}
                   </Space>
                 </Card>
               </List.Item>
@@ -425,7 +436,7 @@ export default function DashboardBuilderPage() {
 
       {/* Widget Configuration Modal */}
       <Modal
-        title="Configure Widget"
+        title={t('dashboardBuilder.configModal.title')} // Rule 4: Translate attribute
         open={configModalVisible}
         onOk={saveWidgetConfig}
         onCancel={() => {
@@ -433,27 +444,27 @@ export default function DashboardBuilderPage() {
           setCurrentWidget(null);
           form.resetFields();
         }}
-        okText="Save"
+        okText={t('dashboardBuilder.configModal.saveButton')} // Rule 4: Translate attribute
       >
         <Form form={form} layout="vertical">
           <Form.Item
             name="title"
-            label="Widget Title"
-            rules={[{ required: true, message: 'Please enter a title' }]}
+            label={t('dashboardBuilder.configModal.form.titleLabel')} // Rule 4: Translate attribute
+            rules={[{ required: true, message: t('dashboardBuilder.configModal.form.titleRequired') }]} // Rule 5: Translate JS/TS string
           >
-            <Input placeholder="Enter widget title" />
+            <Input placeholder={t('dashboardBuilder.configModal.form.titlePlaceholder')} /> {/* Rule 4: Translate attribute */}
           </Form.Item>
 
           <Form.Item
             name="size"
-            label="Widget Size"
-            rules={[{ required: true, message: 'Please select a size' }]}
+            label={t('dashboardBuilder.configModal.form.sizeLabel')} // Rule 4: Translate attribute
+            rules={[{ required: true, message: t('dashboardBuilder.configModal.form.sizeRequired') }]} // Rule 5: Translate JS/TS string
           >
             <Select>
-              <Select.Option value="small">Small (1/4 width)</Select.Option>
-              <Select.Option value="medium">Medium (1/2 width)</Select.Option>
-              <Select.Option value="large">Large (3/4 width)</Select.Option>
-              <Select.Option value="full">Full (100% width)</Select.Option>
+              <Select.Option value="small">{t('dashboardBuilder.configModal.form.sizeOption.small')}</Select.Option> {/* Rule 3: Translate JSX children */}
+              <Select.Option value="medium">{t('dashboardBuilder.configModal.form.sizeOption.medium')}</Select.Option> {/* Rule 3: Translate JSX children */}
+              <Select.Option value="large">{t('dashboardBuilder.configModal.form.sizeOption.large')}</Select.Option> {/* Rule 3: Translate JSX children */}
+              <Select.Option value="full">{t('dashboardBuilder.configModal.form.sizeOption.full')}</Select.Option> {/* Rule 3: Translate JSX children */}
             </Select>
           </Form.Item>
         </Form>

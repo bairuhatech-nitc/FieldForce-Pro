@@ -48,6 +48,11 @@ export function useRolePermissions(id: string) {
   });
 }
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const e = err as { response?: { data?: { message?: string } }; message?: string };
+  return e?.response?.data?.message || e?.message || fallback;
+}
+
 export function useCreateRole() {
   const queryClient = useQueryClient();
   const addNotification = useNotificationStore((s) => s.add);
@@ -58,8 +63,8 @@ export function useCreateRole() {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       addNotification({ type: 'success', message: 'Role created successfully' });
     },
-    onError: () => {
-      addNotification({ type: 'error', message: 'Failed to create role' });
+    onError: (err) => {
+      addNotification({ type: 'error', message: extractErrorMessage(err, 'Failed to create role') });
     },
   });
 }
@@ -75,8 +80,8 @@ export function useUpdateRole() {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       addNotification({ type: 'success', message: 'Role updated successfully' });
     },
-    onError: () => {
-      addNotification({ type: 'error', message: 'Failed to update role' });
+    onError: (err) => {
+      addNotification({ type: 'error', message: extractErrorMessage(err, 'Failed to update role') });
     },
   });
 }
@@ -91,8 +96,8 @@ export function useDeleteRole() {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       addNotification({ type: 'success', message: 'Role deleted successfully' });
     },
-    onError: () => {
-      addNotification({ type: 'error', message: 'Failed to delete role' });
+    onError: (err) => {
+      addNotification({ type: 'error', message: extractErrorMessage(err, 'Failed to delete role') });
     },
   });
 }

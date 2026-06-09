@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button, Table, Space, Tooltip, Tag, Select, Tabs, Modal, Input, Form, Avatar, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, TeamOutlined, UserOutlined, CarOutlined, CalendarOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, TeamOutlined, UserOutlined, CarOutlined, CalendarOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useWorkOrders, useDeleteWorkOrder } from '@/hooks/use-work-orders';
 import { useMyPendingApprovals, useProcessApproval } from '@/hooks/use-workflow';
 import { useMyAppointments } from '@/hooks/use-appointments';
+import { useSlaTimer } from '@/hooks/use-sla-timers';
+import { SlaTimerBadge } from '@/components/work-orders/SlaTimerBadge';
 import FieldWorkflowCard from '@/components/work-orders/FieldWorkflowCard';
 import type { WorkOrder } from '@/types/models.types';
 import type { DocumentApproval } from '@/types/workflow.types';
@@ -36,25 +38,6 @@ const statusColors: Record<string, string> = {
   cancelled: 'red',
 };
 
-const statusOptions = [
-  { value: 'new', label: 'New' },
-  { value: 'estimated', label: 'Estimated' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'scheduled', label: 'Scheduled' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'on_hold', label: 'On Hold' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'closed', label: 'Closed' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
-
-const priorityOptions = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
-];
-
 const { TextArea } = Input;
 
 function formatStatus(status: string): string {
@@ -68,12 +51,86 @@ const approvalStatusColors: Record<string, string> = {
   SKIPPED: 'default',
 };
 
-const approvalStatusLabels: Record<string, string> = {
-  APPROVED: 'Approved',
-  REJECTED: 'Rejected',
-  PENDING: 'Awaiting Review',
-  SKIPPED: 'Skipped',
-};
+function SlaTimerCell({ workOrderId }: { workOrderId: string }) {
+  const { data: slaTimer } = useSlaTimer(workOrderId);
+  if (!slaTimer) return <span style={{ color: '#999' }}>-</span>;
+  return <SlaTimerBadge timer={slaTimer} compact />;
+}
+function CountdownCell({
+  createdAt,
+  slaHours,
+  status,
+}: {
+  createdAt: string;
+  slaHours?: number;
+  status?: string;
+}) {
+  const [now, setNow] = React.useState(Date.now());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 60000); // update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!slaHours || !createdAt) {
+    return <span style={{ color: '#999' }}>-</span>;
+  }
+
+  // Stop showing countdown if WO already accepted/completed
+  const stoppedStatuses = ['accepted', 'completed', 'closed'];
+
+  if (stoppedStatuses.includes(status || '')) {
+    return <span>-</span>;
+  }
+
+  const deadline =
+    new Date(createdAt).getTime() + slaHours * 60 * 60 * 1000;
+
+  const diffMs = deadline - now;
+
+  const formatDuration = (ms: number) => {
+    const totalMinutes = Math.floor(Math.abs(ms) / (1000 * 60));
+
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    }
+
+    return `${hours}h ${minutes}m`;
+  };
+
+  // SLA breached
+  if (diffMs < 0) {
+    return (
+      <span
+        style={{
+          color: '#ff4d4f',
+          fontWeight: 600,
+        }}
+      >
+        Overdue: {formatDuration(diffMs)}
+      </span>
+    );
+  }
+
+  // SLA still running
+  return (
+    <span
+      style={{
+        color: '#52c41a',
+        fontWeight: 500,
+      }}
+    >
+      {formatDuration(diffMs)}
+    </span>
+  );
+}
 
 export default function WorkOrderListPage() {
   const { t } = useTranslation();
@@ -96,6 +153,44 @@ export default function WorkOrderListPage() {
   const deleteWorkOrder = useDeleteWorkOrder();
   const { data: pendingApprovalsData, isLoading: approvalsLoading } = useMyPendingApprovals({ page: 1, take: 100 });
   const processApproval = useProcessApproval();
+
+  const statusOptions = [
+    { value: 'new', label: t('workOrders.status.new') },
+    { value: 'estimated', label: t('workOrders.status.estimated') },
+    { value: 'approved', label: t('workOrders.status.approved') },
+    { value: 'scheduled', label: t('workOrders.status.scheduled') },
+    { value: 'in_progress', label: t('workOrders.status.inProgress') },
+    { value: 'on_hold', label: t('workOrders.status.onHold') },
+    { value: 'completed', label: t('workOrders.status.completed') },
+    { value: 'closed', label: t('workOrders.status.closed') },
+    { value: 'cancelled', label: t('workOrders.status.cancelled') },
+  ];
+
+  const priorityOptions = [
+    { value: 'low', label: t('workOrders.priority.low') },
+    { value: 'medium', label: t('workOrders.priority.medium') },
+    { value: 'high', label: t('workOrders.priority.high') },
+    { value: 'urgent', label: t('workOrders.priority.urgent') },
+  ];
+
+  const approvalStatusLabels: Record<string, string> = {
+    APPROVED: t('workOrders.approvalStatus.approved'),
+    REJECTED: t('workOrders.approvalStatus.rejected'),
+    PENDING: t('workOrders.approvalStatus.awaitingReview'),
+    SKIPPED: t('workOrders.approvalStatus.skipped'),
+  };
+
+  const statusKeyMap: Record<string, string> = {
+    new: 'new',
+    estimated: 'estimated',
+    approved: 'approved',
+    scheduled: 'scheduled',
+    in_progress: 'inProgress',
+    on_hold: 'onHold',
+    completed: 'completed',
+    closed: 'closed',
+    cancelled: 'cancelled'
+  };
 
   // Filter pending approvals for WORK_ORDER type only
   const woApprovals = (pendingApprovalsData?.data || []).filter(
@@ -174,8 +269,8 @@ export default function WorkOrderListPage() {
 
   const handleDelete = (workOrder: WorkOrder) => {
     showConfirmDialog({
-      title: 'Delete Work Order',
-      content: `Are you sure you want to delete work order ${workOrder.wo_number || workOrder.id}?`,
+      title: t('workOrders.delete.title'),
+      content: t('workOrders.delete.confirmContent', { id: workOrder.wo_number || workOrder.id }),
       onOk: async () => {
         await deleteWorkOrder.mutateAsync(workOrder.id);
       },
@@ -185,57 +280,57 @@ export default function WorkOrderListPage() {
 
   const columns: ColumnsType<WorkOrder> = [
     {
-      title: 'WO #',
+      title: t('workOrders.columns.woNumber'),
       dataIndex: 'wo_number',
       key: 'wo_number',
-      render: (num: string) => <span style={{ fontWeight: 500 }}>{num || '-'}</span>,
+      render: (num: string, record: any) => <Link to={`/work-orders/${record.id}`}><span style={{ fontWeight: 500 }}>{num || '-'}</span></Link>,
     },
     {
-      title: 'Summary',
+      title: t('workOrders.columns.summary'),
       dataIndex: 'summary',
       key: 'summary',
-      render: (summary: string) => <span style={{ fontWeight: 500 }}>{summary}</span>,
+      render: (summary: string, record: any) => <span style={{ fontWeight: 500 }}>{summary}</span>,
       sorter: (a, b) => a.summary.localeCompare(b.summary),
     },
     {
-      title: 'Priority',
+      title: t('workOrders.columns.priority'),
       dataIndex: 'priority',
       key: 'priority',
-      render: (priority: string) => (
+      render: (priority: string, record: any) => (
         <Tag color={priorityColors[priority] || 'default'}>
-          {priority?.charAt(0).toUpperCase() + priority?.slice(1)}
+          {t(`workOrders.priority.${priority}`, { defaultValue: priority })}
         </Tag>
       ),
     },
     {
-      title: 'Status',
+      title: t('workOrders.columns.status'),
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
+      render: (status: string, record: any) => (
         <Tag color={statusColors[status] || 'default'}>
-          {formatStatus(status)}
+          {t(`workOrders.status.${statusKeyMap[status] || status}`, { defaultValue: formatStatus(status) })}
         </Tag>
       ),
     },
     {
-      title: 'Customer',
+      title: t('workOrders.columns.customer'),
       key: 'contact',
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Category',
+      title: t('workOrders.columns.category'),
       dataIndex: 'category',
       key: 'category',
-      render: (category: string) => category ? <Tag>{category}</Tag> : <span style={{ color: '#999' }}>-</span>,
+      render: (category: string, record: any) => category ? <Tag>{category}</Tag> : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Scheduled Date',
+      title: t('workOrders.columns.scheduledDate'),
       dataIndex: 'scheduled_start',
       key: 'scheduled_start',
-      render: (date: string) => date ? formatDateTime(date) : <span style={{ color: '#999' }}>-</span>,
+      render: (date: string, record: any) => date ? formatDateTime(date) : <span style={{ opacity: 0.5 }}>-</span>,
       sorter: (a, b) => {
         if (!a.scheduled_start) return 1;
         if (!b.scheduled_start) return -1;
@@ -243,37 +338,51 @@ export default function WorkOrderListPage() {
       },
     },
     {
-      title: 'Assigned To',
+      title: t('workOrders.columns.assignedTo'),
       dataIndex: 'assigned_to',
       key: 'assigned_to',
-      render: (assignee: string) => assignee || <span style={{ color: '#999' }}>-</span>,
+      render: (assignee: string, record: any) => assignee || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Created',
+      title: t('workOrders.columns.created'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => formatDateTime(date),
+      render: (date: string, record: any) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('workOrders.columns.sla'),
+      key: 'sla',
+      render: (_, record) => (
+        <span>{record.slaHours ? `${record.slaHours} Hours` : '-'}</span>
+      ),
+    },
+    {
+      title: 'Countdown',
+      key: 'countdown',
+      width: 160,
+      render: (_, record) => (
+        <CountdownCell
+          createdAt={record.created_at}
+          slaHours={record.slaHours}
+          status={record.status}
+        />
+      ),
+    },
+    {
+      title: t('workOrders.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <PermissionGuard permission="work-orders:read">
-            <Tooltip title="View">
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/work-orders/${record.id}`)} />
-            </Tooltip>
-          </PermissionGuard>
           <PermissionGuard permission="work-orders:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('workOrders.tooltips.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/work-orders/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="work-orders:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('workOrders.tooltips.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -284,21 +393,21 @@ export default function WorkOrderListPage() {
 
   const approvalColumns: ColumnsType<DocumentApproval> = [
     {
-      title: 'Work Order',
+      title: t('workOrders.approvals.columns.workOrder'),
       dataIndex: 'document_id',
       key: 'document_id',
-      render: (docId: string) => (
+      render: (docId: string, record: any) => (
         <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/work-orders/${docId}`)}>
           {docId.slice(0, 8)}...
         </Button>
       ),
     },
     {
-      title: 'Approver',
+      title: t('workOrders.approvals.columns.approver'),
       key: 'approver',
       render: (_, record) => {
         const approver = record.approver;
-        if (!approver) return <span style={{ color: '#999' }}>-</span>;
+        if (!approver) return <span style={{ opacity: 0.5 }}>-</span>;
         const initials = `${(approver.first_name || '').charAt(0)}${(approver.last_name || '').charAt(0)}`.toUpperCase();
         return (
           <Space size={8}>
@@ -314,44 +423,41 @@ export default function WorkOrderListPage() {
       },
     },
     {
-      title: 'Workflow',
+      title: t('workOrders.approvals.columns.workflow'),
       key: 'workflow',
-      render: (_, record) => record.workflow_template?.name || <span style={{ color: '#999' }}>-</span>,
+      render: (_, record) => record.workflow_template?.name || <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Step',
+      title: t('workOrders.approvals.columns.step'),
       dataIndex: 'order_no',
       key: 'order_no',
       width: 80,
-      render: (step: number) => <Tag>{`Step ${step}`}</Tag>,
+      render: (step: number, record: any) => <Tag>{t('workOrders.approvals.step', { step })}</Tag>,
     },
     {
-      title: 'Status',
+      title: t('workOrders.approvals.columns.status'),
       dataIndex: 'status',
       key: 'status',
       width: 130,
-      render: (status: string) => (
+      render: (status: string, record: any) => (
         <Tag color={approvalStatusColors[status] || 'default'}>
           {approvalStatusLabels[status] || status}
         </Tag>
       ),
     },
     {
-      title: 'Requested',
+      title: t('workOrders.approvals.columns.requested'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => formatDateTime(date),
+      render: (date: string, record: any) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('workOrders.approvals.columns.actions'),
       key: 'actions',
       width: 240,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View Work Order">
-            <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/work-orders/${record.document_id}`)} />
-          </Tooltip>
           <Button
             type="primary"
             size="small"
@@ -367,7 +473,7 @@ export default function WorkOrderListPage() {
               }
             }}
           >
-            Approve
+            {t('workOrders.approvals.actions.approve')}
           </Button>
           <Button
             danger
@@ -379,7 +485,7 @@ export default function WorkOrderListPage() {
               setRejectOpen(true);
             }}
           >
-            Reject
+            {t('workOrders.approvals.actions.reject')}
           </Button>
         </Space>
       ),
@@ -388,10 +494,21 @@ export default function WorkOrderListPage() {
 
   return (
     <div>
-      <PageHeader
-        title={t('nav.workOrders')}
-        subtitle="Manage work orders"
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <PageHeader
+          title={t('nav.workOrders')}
+          subtitle={t('workOrders.subtitle')}
+        />
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
+          onClick={() => navigate('/work-orders/new')}
+          style={{ marginTop: 16 }}
+        >
+          {t('workOrders.actions.create')}
+        </Button>
+      </div>
 
       <Tabs
         activeKey={activeTab}
@@ -399,17 +516,17 @@ export default function WorkOrderListPage() {
         items={[
           {
             key: 'all',
-            label: 'All Work Orders',
+            label: t('workOrders.tabs.allWorkOrders'),
             children: (
               <>
                 <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <SearchFilter
-                    placeholder="Search work orders by summary or WO number"
+                    placeholder={t('workOrders.searchPlaceholder')}
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
                   <Select
-                    placeholder="Filter by status"
+                    placeholder={t('workOrders.filters.status')}
                     allowClear
                     value={statusFilter}
                     onChange={(value) => setStatusFilter(value)}
@@ -417,7 +534,7 @@ export default function WorkOrderListPage() {
                     style={{ width: 180 }}
                   />
                   <Select
-                    placeholder="Filter by priority"
+                    placeholder={t('workOrders.filters.priority')}
                     allowClear
                     value={priorityFilter}
                     onChange={(value) => setPriorityFilter(value)}
@@ -437,7 +554,7 @@ export default function WorkOrderListPage() {
                     pageSize,
                     total: meta?.itemCount || 0,
                     showSizeChanger: true,
-                    showTotal: (total) => `Total ${total} work orders`,
+                    showTotal: (total) => t('workOrders.pagination.total', { total }),
                     onChange: (newPage, newPageSize) => {
                       setPage(newPage);
                       setPageSize(newPageSize);
@@ -452,7 +569,7 @@ export default function WorkOrderListPage() {
             label: (
               <span>
                 <TeamOutlined style={{ marginRight: 4 }} />
-                Approvals
+                {t('workOrders.tabs.approvals')}
                 {woApprovals.length > 0 && (
                   <Tag color="warning" style={{ marginLeft: 6 }}>{woApprovals.length}</Tag>
                 )}
@@ -464,7 +581,7 @@ export default function WorkOrderListPage() {
                 dataSource={woApprovals}
                 rowKey="id"
                 loading={approvalsLoading}
-                locale={{ emptyText: 'No approvals for work orders' }}
+                locale={{ emptyText: t('workOrders.approvals.empty') }}
                 pagination={false}
               />
             ),
@@ -474,12 +591,12 @@ export default function WorkOrderListPage() {
             label: (
               <span>
                 <CarOutlined style={{ marginRight: 4 }} />
-                Field Workflow
+                {t('workOrders.tabs.fieldWorkflow')}
               </span>
             ),
             children: activeTab === 'field-workflow' ? (
               myAppointmentsLoading ? (
-                <div style={{ textAlign: 'center', padding: 48 }}>Loading...</div>
+                <div style={{ textAlign: 'center', padding: 48 }}>{t('workOrders.loading')}</div>
               ) : (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -514,12 +631,12 @@ export default function WorkOrderListPage() {
                       }}
                     />
                     <span style={{ color: '#999', fontSize: 13 }}>
-                      {filteredFieldWorkOrders.length} of {myWorkOrders.length} work order{myWorkOrders.length !== 1 ? 's' : ''}
+                      {t('workOrders.fieldWorkflow.countSummary', { count: filteredFieldWorkOrders.length, total: myWorkOrders.length })}
                     </span>
                   </div>
                   {filteredFieldWorkOrders.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: 48, color: '#999' }}>
-                      No work orders scheduled for {fieldWorkDate.format('MMMM D, YYYY')}
+                      {t('workOrders.fieldWorkflow.empty', { date: fieldWorkDate.format('MMMM D, YYYY') })}
                     </div>
                   ) : (
                     filteredFieldWorkOrders.map((appt) => (
@@ -539,7 +656,7 @@ export default function WorkOrderListPage() {
       />
 
       <Modal
-        title="Reject Work Order"
+        title={t('workOrders.rejectModal.title')}
         open={rejectOpen}
         onCancel={() => { setRejectOpen(false); setRejectApprovalId(null); setRejectComments(''); }}
         onOk={async () => {
@@ -553,14 +670,14 @@ export default function WorkOrderListPage() {
           setRejectApprovalId(null);
           setRejectComments('');
         }}
-        okText="Reject"
+        okText={t('workOrders.rejectModal.okText')}
         okButtonProps={{ danger: true, loading: processApproval.isPending }}
       >
         <Form layout="vertical">
-          <Form.Item label="Reason (optional)">
+          <Form.Item label={t('workOrders.rejectModal.reasonLabel')}>
             <TextArea
               rows={3}
-              placeholder="Enter rejection reason..."
+              placeholder={t('workOrders.rejectModal.reasonPlaceholder')}
               value={rejectComments}
               onChange={(e) => setRejectComments(e.target.value)}
             />

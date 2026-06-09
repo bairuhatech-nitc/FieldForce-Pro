@@ -2,8 +2,10 @@ import type { DeviceType, PermissionAction, SubscriptionPlan } from './enums';
 
 export interface User {
   id: string;
-  tenant_id: string;
+  tenant_id: string | null;
   email: string;
+  is_super_admin?: boolean;
+  primary_role?: string | null;
   first_name: string;
   last_name: string;
   phone: string | null;
@@ -20,6 +22,7 @@ export interface User {
   locked_until: string | null;
   created_at: string;
   updated_at: string;
+  onboarding_completed?: boolean;
   roles?: Role[] | string[];  // Can be full Role objects or just role name strings from JWT
   permissions?: string[];      // Flat array of permission strings from JWT
 }
@@ -31,7 +34,11 @@ export interface Tenant {
   domain: string | null;
   logo_url: string | null;
   settings: Record<string, unknown>;
-  subscription_plan: SubscriptionPlan;
+  subscription_plan: SubscriptionPlan | string;
+  subscription_plan_id: string | null;
+  subscription_status: 'trial' | 'active' | 'expired' | 'suspended' | 'cancelled' | string;
+  subscription_start: string | null;
+  subscription_end: string | null;
   max_users: number;
   is_active: boolean;
   created_at: string;
@@ -202,8 +209,11 @@ export interface ServiceRequest {
   location_id: string | null;
   subject: string;
   description: string | null;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: string | null;
+  priority_id: string | null;
+  category_id: string | null;
+  sub_category_id: string | null;
+  priority?: string | null; // Keep for legacy
+  category?: string | null; // Keep for legacy
   status: 'new' | 'triaged' | 'estimated' | 'approved' | 'converted_to_wo' | 'closed' | 'spam';
   channel: 'phone' | 'email' | 'portal' | 'webform' | 'api' | 'whatsapp' | 'sms';
   assigned_to: string | null;
@@ -212,20 +222,32 @@ export interface ServiceRequest {
   scheduled_start: string | null;
   scheduled_end: string | null;
   custom_fields: Record<string, unknown>;
+  is_spam?: boolean;
+  spam_reason?: string | null;
+  spam_confidence?: number | null;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
   contact?: Contact;
   location?: ServiceLocation;
+  technicians?: User[];
+  sla?: {
+    response_deadline: string | null;
+    response_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+    resolution_deadline: string | null;
+    resolution_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+  };
 }
 
 export interface Estimate {
   id: string;
   tenant_id: string;
   request_id: string | null;
+  work_order_id: string | null;
   contact_id: string | null;
   estimate_number: string | null;
-  status: 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo';
+  status: 'draft' | 'pending_approval' | 'sent' | 'viewed' | 'approved' | 'rejected' | 'expired' | 'converted_to_wo' | 'converted_to_invoice' | 'pending_internal_approval' | 'pending_customer_approval' | 'customer_approved' | 'customer_rejected' | 'revision_required';
+  estimate_type?: 'pre_visit' | 'on_site';
   subtotal: number;
   tax: number;
   discount: number;
@@ -236,8 +258,21 @@ export interface Estimate {
   signature_url: string | null;
   public_token?: string | null;
   public_token_expires_at?: string | null;
+  created_by?: string | null;
   notes: string | null;
   custom_fields: Record<string, unknown>;
+  // On-site approval flow fields
+  internal_approval_status?: string | null;
+  internal_approved_by?: string | null;
+  internal_approved_at?: string | null;
+  internal_rejection_reason?: string | null;
+  customer_approval_status?: string | null;
+  customer_approved_at?: string | null;
+  customer_rejection_reason?: string | null;
+  customer_signature?: string | null;
+  customer_name_signed?: string | null;
+  awaiting_internal_approval?: boolean;
+  awaiting_customer_approval?: boolean;
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
@@ -255,6 +290,7 @@ export interface EstimateLineItem {
   quantity: number;
   unit_price: number;
   tax_rate: number;
+  discount_type: 'fixed' | 'percentage';
   discount: number;
   total: number;
   sort_order: number;
@@ -292,6 +328,12 @@ export interface WorkOrder {
   contact?: Contact;
   location?: ServiceLocation;
   asset?: Asset;
+  sla?: {
+    response_deadline: string | null;
+    response_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+    resolution_deadline: string | null;
+    resolution_status: 'PENDING' | 'PAUSED' | 'MET' | 'BREACHED';
+  };
 }
 
 export interface WorkOrderLineItem {
@@ -304,6 +346,7 @@ export interface WorkOrderLineItem {
   quantity: number;
   unit_price: number;
   tax_rate: number;
+  discount_type: 'fixed' | 'percentage';
   discount: number;
   total: number;
   sort_order: number;
@@ -474,6 +517,7 @@ export interface Invoice {
   id: string;
   tenant_id: string;
   work_order_id: string | null;
+  estimate_id: string | null;
   contact_id: string | null;
   invoice_number: string | null;
   status: 'draft' | 'sent' | 'viewed' | 'partially_paid' | 'paid' | 'overdue' | 'void';
@@ -505,6 +549,7 @@ export interface InvoiceLineItem {
   quantity: number;
   unit_price: number;
   tax_rate: number;
+  discount_type: 'fixed' | 'percentage';
   discount: number;
   total: number;
   is_deleted: boolean;
@@ -517,9 +562,13 @@ export interface Payment {
   tenant_id: string;
   invoice_id: string;
   amount: number;
-  method: 'card' | 'cash' | 'bank_transfer' | 'online' | 'check' | 'other';
+  method: string; // cash | cheque | upi | card | bank_transfer | online | other
   gateway_transaction_id: string | null;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'confirmed' | 'pending_verification' | 'rejected';
+  source: 'manual' | 'portal';
+  received_by: string | null;
+  rejection_reason: string | null;
+  screenshot_url: string | null;
   paid_at: string | null;
   notes: string | null;
   custom_fields: Record<string, unknown>;

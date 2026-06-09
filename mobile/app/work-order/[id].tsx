@@ -23,7 +23,9 @@ import {
   workOrderNotesApi,
   workOrderAttachmentsApi,
   workOrderLineItemsApi,
+  estimatesApi,
 } from '@/api/endpoints';
+import AuditLogger, { AUDIT_ACTIONS, AUDIT_MODULES } from '@/utils/AuditLogger';
 import { StatusBadge } from '@/components/StatusBadge';
 import { MapNavigation } from '@/components/MapNavigation';
 import { WorkOrderToolsModal } from '@/components/WorkOrderToolsModal';
@@ -32,6 +34,7 @@ import { PRIORITY_COLORS, STATUS_TRANSITIONS, STATUS_LABELS, STATUS_COLORS } fro
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { goBack } from '@/utils/navigation';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { useAuthStore } from '@/store/auth.store';
 
 const ACCENT = '#4F6BF6';
 import type {
@@ -39,11 +42,12 @@ import type {
   WorkOrderNote,
   WorkOrderAttachment,
   WorkOrderLineItem,
+  Estimate,
 } from '@/types/models';
 
 // ─── Tab definition ───────────────────────────────────────────────────────────
 
-type Tab = 'details' | 'notes' | 'attachments' | 'line_items';
+type Tab = 'details' | 'notes' | 'attachments' | 'line_items' | 'estimates';
 
 interface TabConfig {
   key: Tab;
@@ -56,6 +60,7 @@ const TABS: TabConfig[] = [
   { key: 'notes', label: 'Notes', icon: 'chatbox-outline' },
   { key: 'attachments', label: 'Files', icon: 'attach-outline' },
   { key: 'line_items', label: 'Items', icon: 'list-outline' },
+  { key: 'estimates', label: 'Estimates', icon: 'document-text-outline' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -89,6 +94,9 @@ export default function WorkOrderDetailScreen() {
   const [notes, setNotes] = useState<WorkOrderNote[]>([]);
   const [attachments, setAttachments] = useState<WorkOrderAttachment[]>([]);
   const [lineItems, setLineItems] = useState<WorkOrderLineItem[]>([]);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [estimatesLoading, setEstimatesLoading] = useState(false);
+  const [estimateActionLoading, setEstimateActionLoading] = useState<string | null>(null);
 
   // Note compose
   const [newNote, setNewNote] = useState('');
@@ -97,6 +105,11 @@ export default function WorkOrderDetailScreen() {
   // Status update
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [acceptDeclineLoading, setAcceptDeclineLoading] = useState<'accept' | 'decline' | null>(null);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+
+  const currentUserId = useAuthStore((s) => s.user?.id);
 
   // Tools Modal
   const [showToolsModal, setShowToolsModal] = useState(false);
@@ -139,6 +152,16 @@ export default function WorkOrderDetailScreen() {
     } catch { /* silently fail */ }
   }, [id]);
 
+  const fetchEstimates = useCallback(async () => {
+    if (!id) return;
+    setEstimatesLoading(true);
+    try {
+      const res = await estimatesApi.getByWorkOrder(id);
+      setEstimates(res.data.data ?? []);
+    } catch { /* silently fail */ }
+    finally { setEstimatesLoading(false); }
+  }, [id]);
+
   useEffect(() => { fetchWorkOrder(); }, [fetchWorkOrder]);
 
   // Lazy-load tab data when switching tabs
@@ -146,7 +169,8 @@ export default function WorkOrderDetailScreen() {
     if (activeTab === 'notes') fetchNotes();
     if (activeTab === 'attachments') fetchAttachments();
     if (activeTab === 'line_items') fetchLineItems();
-  }, [activeTab, fetchNotes, fetchAttachments, fetchLineItems]);
+    if (activeTab === 'estimates') fetchEstimates();
+  }, [activeTab, fetchNotes, fetchAttachments, fetchLineItems, fetchEstimates]);
 
   // Android hardware back button
   useEffect(() => {
@@ -171,6 +195,12 @@ export default function WorkOrderDetailScreen() {
       const created = res.data.data;
       if (created) setNotes((prev) => [created, ...prev]);
       setNewNote('');
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_NOTE_ADDED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: id,
+        new_values: { work_order_id: id, note_id: created?.id },
+      });
     } catch {
       Alert.alert('Error', 'Failed to save note. Please try again.');
     } finally {
@@ -228,6 +258,12 @@ export default function WorkOrderDetailScreen() {
       });
       const created = res.data.data;
       if (created) setAttachments((prev) => [created, ...prev]);
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_PHOTO_UPLOADED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: id,
+        new_values: { work_order_id: id, file_name: fileName, file_type: mimeType },
+      });
     } catch {
       Alert.alert('Upload Failed', 'Could not save the attachment. Please try again.');
     } finally {
@@ -309,10 +345,18 @@ export default function WorkOrderDetailScreen() {
     if (!workOrder || updatingStatus) return;
     setShowStatusSheet(false);
     setUpdatingStatus(true);
+    const prevStatus = workOrder.status;
     try {
       await workOrdersApi.updateStatus(workOrder.id, nextStatus);
       // Re-fetch to get the latest server state
       await fetchWorkOrder();
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_STATUS_CHANGED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: workOrder.id,
+        old_values: { status: prevStatus },
+        new_values: { status: nextStatus, wo_number: workOrder.wo_number },
+      });
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? 'Failed to update status. Please try again.';
       Alert.alert('Status Update Failed', msg);
@@ -321,7 +365,51 @@ export default function WorkOrderDetailScreen() {
     }
   };
 
+  // ─── Accept / decline an assigned job (Step 3) ───────────────────────────────
+  const handleAccept = async () => {
+    if (!workOrder || acceptDeclineLoading) return;
+    setAcceptDeclineLoading('accept');
+    try {
+      await workOrdersApi.accept(workOrder.id);
+      await fetchWorkOrder();
+      AuditLogger.log({
+        action: AUDIT_ACTIONS.WO_STATUS_CHANGED,
+        module: AUDIT_MODULES.WORK_ORDERS,
+        record_id: workOrder.id,
+        new_values: { accepted: true, wo_number: workOrder.wo_number },
+      });
+    } catch (err: any) {
+      Alert.alert('Could not accept', err?.response?.data?.message ?? 'Please try again.');
+    } finally {
+      setAcceptDeclineLoading(null);
+    }
+  };
+
+  const submitDecline = async () => {
+    if (!workOrder) return;
+    if (!declineReason.trim()) {
+      Alert.alert('Reason required', 'Please enter a reason to decline this job.');
+      return;
+    }
+    setAcceptDeclineLoading('decline');
+    try {
+      await workOrdersApi.decline(workOrder.id, declineReason.trim());
+      setShowDeclineModal(false);
+      setDeclineReason('');
+      await fetchWorkOrder();
+    } catch (err: any) {
+      Alert.alert('Could not decline', err?.response?.data?.message ?? 'Please try again.');
+    } finally {
+      setAcceptDeclineLoading(null);
+    }
+  };
+
   const nextStatuses = workOrder ? (STATUS_TRANSITIONS[workOrder.status] ?? []) : [];
+  // The technician may accept/decline a job that is assigned to them and not yet started.
+  const canAcceptDecline =
+    !!workOrder &&
+    workOrder.assigned_to === currentUserId &&
+    ['new', 'approved', 'estimated'].includes(workOrder.status);
 
   // ─── Delete work order ───────────────────────────────────────────────────────
   const handleDeleteWorkOrder = () => {
@@ -426,6 +514,29 @@ export default function WorkOrderDetailScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
+        {/* Accept / decline an assigned, not-yet-started job (Step 3) */}
+        {canAcceptDecline && (
+          <>
+            <TouchableOpacity
+              style={[styles.successButton, acceptDeclineLoading === 'accept' && { opacity: 0.6 }]}
+              onPress={handleAccept}
+              disabled={!!acceptDeclineLoading}
+            >
+              {acceptDeclineLoading === 'accept'
+                ? <ActivityIndicator size="small" color={colors.textInverse} />
+                : <Ionicons name="checkmark-circle-outline" size={20} color={colors.textInverse} />}
+              <Text style={styles.primaryButtonText}>Accept Job</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.dangerButton, acceptDeclineLoading === 'decline' && { opacity: 0.6 }]}
+              onPress={() => setShowDeclineModal(true)}
+              disabled={!!acceptDeclineLoading}
+            >
+              <Ionicons name="close-circle-outline" size={20} color={colors.textInverse} />
+              <Text style={styles.primaryButtonText}>Decline Job</Text>
+            </TouchableOpacity>
+          </>
+        )}
         {/* Primary status action shortcuts */}
         {workOrder.status === 'scheduled' && (
           <TouchableOpacity
@@ -680,6 +791,157 @@ export default function WorkOrderDetailScreen() {
     </View>
   );
 
+  const renderEstimates = () => (
+    <View style={{ flex: 1 }}>
+      {/* Create Estimate button */}
+      <TouchableOpacity
+        style={[styles.addEstimateBtn, { backgroundColor: ACCENT }]}
+        onPress={() => router.push(`/estimates/new?work_order_id=${id}` as `/${string}`)}
+      >
+        <Ionicons name="add-circle-outline" size={18} color="#fff" />
+        <Text style={styles.addEstimateBtnText}>Create Estimate</Text>
+      </TouchableOpacity>
+
+      {estimatesLoading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator color={ACCENT} />
+        </View>
+      ) : (
+        <FlatList
+          data={estimates}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.tabContent, estimates.length === 0 && styles.emptyContent]}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={40} color={colors.textLight} />
+              <Text style={styles.emptyText}>No estimates yet</Text>
+              <Text style={styles.emptySubtext}>Create an estimate for this work order</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const estStatusColors: Record<string, string> = {
+              draft: colors.textSecondary, pending_approval: '#f59e0b', sent: '#0ea5e9',
+              viewed: '#6366f1', approved: '#22c55e', rejected: '#ef4444',
+              expired: '#f59e0b', converted_to_wo: '#10b981', converted_to_invoice: '#6366f1',
+            };
+            const sCol = estStatusColors[item.status] ?? colors.textSecondary;
+            return (
+              <TouchableOpacity
+                style={[styles.estimateCard, { backgroundColor: cardBg, borderColor }]}
+                onPress={() => router.push(`/estimates/${item.id}` as `/${string}`)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.estimateCardTop}>
+                  <Text style={styles.estimateNumber}>{item.estimate_number ?? 'Draft'}</Text>
+                  <View style={[styles.estimateStatusBadge, { backgroundColor: sCol + '18', borderColor: sCol + '40' }]}>
+                    <Text style={[styles.estimateStatusText, { color: sCol }]}>
+                      {item.status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.estimateTotal}>{formatCurrency(Number(item.total))}</Text>
+                {/* Inline Approve / Reject for pending_approval */}
+                {item.status === 'pending_approval' && (
+                  <View style={styles.estimateActions}>
+                    <TouchableOpacity
+                      style={[styles.estimateActionBtn, { backgroundColor: '#22c55e' }]}
+                      disabled={estimateActionLoading === item.id + '-approve'}
+                      onPress={() => {
+                        Alert.alert('Approve', `Approve estimate ${item.estimate_number ?? item.id.slice(0, 8)}?`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Approve',
+                            onPress: async () => {
+                              setEstimateActionLoading(item.id + '-approve');
+                              try {
+                                await estimatesApi.adminApprove(item.id);
+                                await fetchEstimates();
+                              } catch {
+                                Alert.alert('Error', 'Could not approve estimate.');
+                              } finally {
+                                setEstimateActionLoading(null);
+                              }
+                            },
+                          },
+                        ]);
+                      }}
+                    >
+                      {estimateActionLoading === item.id + '-approve'
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <Text style={styles.estimateActionBtnText}>Approve</Text>
+                      }
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.estimateActionBtn, { backgroundColor: '#ef4444' }]}
+                      disabled={estimateActionLoading === item.id + '-reject'}
+                      onPress={() => {
+                        Alert.alert('Reject', `Reject estimate ${item.estimate_number ?? item.id.slice(0, 8)}?`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Reject', style: 'destructive',
+                            onPress: async () => {
+                              setEstimateActionLoading(item.id + '-reject');
+                              try {
+                                await estimatesApi.adminReject(item.id);
+                                await fetchEstimates();
+                              } catch {
+                                Alert.alert('Error', 'Could not reject estimate.');
+                              } finally {
+                                setEstimateActionLoading(null);
+                              }
+                            },
+                          },
+                        ]);
+                      }}
+                    >
+                      {estimateActionLoading === item.id + '-reject'
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <Text style={styles.estimateActionBtnText}>Reject</Text>
+                      }
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {/* Generate Invoice for approved */}
+                {item.status === 'approved' && (
+                  <TouchableOpacity
+                    style={[styles.estimateActionBtn, { backgroundColor: ACCENT, marginTop: spacing.sm, width: '100%' }]}
+                    disabled={estimateActionLoading === item.id + '-invoice'}
+                    onPress={() => {
+                      Alert.alert('Generate Invoice', 'Create a draft invoice from this estimate?', [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Generate',
+                          onPress: async () => {
+                            setEstimateActionLoading(item.id + '-invoice');
+                            try {
+                              const res = await estimatesApi.generateInvoice(item.id);
+                              await fetchEstimates();
+                              const inv = res.data.data;
+                              if (inv?.id) router.push(`/invoices/${inv.id}` as `/${string}`);
+                            } catch {
+                              Alert.alert('Error', 'Could not generate invoice.');
+                            } finally {
+                              setEstimateActionLoading(null);
+                            }
+                          },
+                        },
+                      ]);
+                    }}
+                  >
+                    {estimateActionLoading === item.id + '-invoice'
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Text style={styles.estimateActionBtnText}>Generate Invoice</Text>
+                    }
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
+    </View>
+  );
+
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -773,6 +1035,7 @@ export default function WorkOrderDetailScreen() {
         {activeTab === 'notes' && renderNotes()}
         {activeTab === 'attachments' && renderAttachments()}
         {activeTab === 'line_items' && renderLineItems()}
+        {activeTab === 'estimates' && renderEstimates()}
       </View>
 
       <WorkOrderToolsModal
@@ -828,6 +1091,45 @@ export default function WorkOrderDetailScreen() {
               onPress={() => setShowStatusSheet(false)}
             >
               <Text style={styles.sheetCancelText}>Dismiss</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Decline reason modal (Step 3) */}
+      <Modal
+        visible={showDeclineModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDeclineModal(false)}
+      >
+        <Pressable style={styles.sheetOverlay} onPress={() => setShowDeclineModal(false)}>
+          <Pressable style={[styles.sheetContainer, { paddingBottom: insets.bottom + 8, backgroundColor: cardBg }]}>
+            <Text style={[styles.sheetTitle, { color: c.text }]}>Decline Job</Text>
+            <Text style={{ ...typography.bodySmall, color: c.textSecondary, marginBottom: spacing.md }}>
+              Let the dispatcher know why you can't take this job.
+            </Text>
+            <TextInput
+              style={[styles.declineInput, { color: c.text, borderColor, backgroundColor: inputBg }]}
+              value={declineReason}
+              onChangeText={setDeclineReason}
+              placeholder="Reason (e.g. double-booked, out of area)…"
+              placeholderTextColor={c.textLight}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[styles.dangerButton, { marginTop: spacing.md }, acceptDeclineLoading === 'decline' && { opacity: 0.6 }]}
+              onPress={submitDecline}
+              disabled={acceptDeclineLoading === 'decline'}
+            >
+              {acceptDeclineLoading === 'decline'
+                ? <ActivityIndicator size="small" color={colors.textInverse} />
+                : <Text style={styles.primaryButtonText}>Submit Decline</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.sheetCancelBtn} onPress={() => setShowDeclineModal(false)}>
+              <Text style={styles.sheetCancelText}>Cancel</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -1023,6 +1325,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    backgroundColor: '#DC3545',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  declineInput: {
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    minHeight: 80,
+    ...typography.body,
   },
   statusSheetButton: {
     flexDirection: 'row',
@@ -1258,4 +1576,68 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
   emptyText: { ...typography.h4, color: colors.textSecondary, textAlign: 'center' },
   emptySubtext: { ...typography.body, color: colors.textLight, textAlign: 'center' },
+
+  // ── Estimates tab ─────────────────────────────────────────────────────────
+  addEstimateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  addEstimateBtnText: {
+    ...typography.button,
+    color: '#fff',
+  },
+  estimateCard: {
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+  },
+  estimateCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  estimateNumber: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  estimateStatusBadge: {
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  estimateStatusText: {
+    ...typography.caption,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  estimateTotal: {
+    ...typography.h4,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  estimateActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  estimateActionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+  },
+  estimateActionBtnText: {
+    ...typography.label,
+    color: '#fff',
+    fontWeight: '700',
+  },
 });

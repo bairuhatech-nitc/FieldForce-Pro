@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Table, Space, Tag, Tooltip, Select, DatePicker } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
+import { useUsers } from '@/hooks/use-users';
 import PageHeader from '@/components/common/PageHeader';
 import { PermissionGuard } from '@/components/permissions';
 import SearchFilter from '@/components/common/SearchFilter';
@@ -43,12 +44,25 @@ export default function AuditLogListPage() {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState<string | undefined>(undefined);
   const [entityFilter, setEntityFilter] = useState<string | undefined>(undefined);
+  const [userFilter, setUserFilter] = useState<string | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<[any, any] | null>(null);
+
+  // Fetch users for filtering
+  const { data: usersData } = useUsers({ take: 100 });
+  const users = usersData?.data || [];
 
   const { data, isLoading } = useAuditLogs({ page, take: pageSize, search } as Record<string, unknown> & { page: number; take: number });
 
   const auditLogs = ((data?.data || []) as AuditLogRecord[]).filter((log) => {
     if (actionFilter && log.action !== actionFilter) return false;
     if (entityFilter && log.entity_type !== entityFilter) return false;
+    if (userFilter && log.user_id !== userFilter) return false;
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const logDate = new Date(log.created_at);
+      const start = dateRange[0].startOf('day').toDate();
+      const end = dateRange[1].endOf('day').toDate();
+      if (logDate < start || logDate > end) return false;
+    }
     return true;
   });
   const meta = data?.meta;
@@ -63,69 +77,64 @@ export default function AuditLogListPage() {
 
   const handleExport = () => {
     // TODO: Implement export functionality
-    console.log('Export audit logs');
+    console.log(t('auditLog.exportLog'));
   };
 
   const columns: ColumnsType<AuditLogRecord> = [
     {
-      title: 'User',
+      title: t('auditLog.columns.user'),
       key: 'user',
       render: (_, record) =>
         record.user
           ? `${record.user.first_name} ${record.user.last_name}`
-          : <span style={{ color: '#999' }}>System</span>,
+          : <span style={{ color: '#999' }}>{t('auditLog.system')}</span>,
     },
     {
-      title: 'Action',
+      title: t('auditLog.columns.action'),
       dataIndex: 'action',
       key: 'action',
-      render: (action: string) => (
+      render: (action: string, record: any) => (
         <Tag color={ACTION_COLORS[action] || 'default'}>
           {action ? action.toUpperCase() : '-'}
         </Tag>
       ),
     },
     {
-      title: 'Entity Type',
+      title: t('settings.submodules.subType', 'Sub Type'),
       dataIndex: 'entity_type',
       key: 'entity_type',
-      render: (type: string) => <Tag>{type}</Tag>,
+      render: (type: string, record: any) => <Tag>{type}</Tag>,
     },
     {
-      title: 'Entity ID',
+      title: t('auditLog.columns.entityId'),
       dataIndex: 'entity_id',
       key: 'entity_id',
-      render: (id: string) => (
+      render: (id: string, record: any) => (
         <code style={{ fontSize: '11px' }}>
           {id ? id.substring(0, 8) + '...' : '-'}
         </code>
       ),
     },
     {
-      title: 'IP Address',
+      title: t('auditLog.columns.ipAddress'),
       dataIndex: 'ip_address',
       key: 'ip_address',
-      render: (ip: string) => <code style={{ fontSize: '11px' }}>{ip || '-'}</code>,
+      render: (ip: string, record: any) => <code style={{ fontSize: '11px' }}>{ip || '-'}</code>,
     },
     {
-      title: 'Timestamp',
+      title: t('auditLog.columns.timestamp'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => formatDateTime(date),
+      render: (date: string, record: any) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
-      title: 'Actions',
+      title: t('auditLog.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 80,
       render: (_, record) => (
         <Space size="small">
-          <PermissionGuard permission="audit-logs:read">
-            <Tooltip title="View Details">
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/security/audit-logs/${record.id}`)} />
-            </Tooltip>
-          </PermissionGuard>
         </Space>
       ),
     },
@@ -134,12 +143,12 @@ export default function AuditLogListPage() {
   return (
     <div>
       <PageHeader
-        title="Audit Logs"
-        subtitle="System activity and security audit trail"
+        title={t('auditLog.title')}
+        subtitle="Track and monitor security events, configuration updates, and operational changes. Keep a chronological, immutable ledger of all system transactions to maintain regulatory compliance and operational visibility."
         extra={
           <PermissionGuard permission="audit-logs:export">
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
-              Export
+              {t('auditLog.export')}
             </Button>
           </PermissionGuard>
         }
@@ -147,40 +156,57 @@ export default function AuditLogListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <SearchFilter
-          placeholder="Search audit logs..."
+          placeholder={t('auditLog.searchPlaceholder')}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <Select
-          placeholder="Filter by action"
+          placeholder={t('auditLog.filterAction')}
           allowClear
           value={actionFilter}
           onChange={(value) => { setActionFilter(value); setPage(1); }}
-          style={{ width: 150 }}
+          style={{ width: 140 }}
           options={[
-            { value: 'create', label: 'Create' },
-            { value: 'update', label: 'Update' },
-            { value: 'delete', label: 'Delete' },
-            { value: 'read', label: 'Read' },
-            { value: 'login', label: 'Login' },
-            { value: 'logout', label: 'Logout' },
+            { value: 'create', label: t('auditLog.actions.create') },
+            { value: 'update', label: t('auditLog.actions.update') },
+            { value: 'delete', label: t('auditLog.actions.delete') },
+            { value: 'read', label: t('auditLog.actions.read') },
+            { value: 'login', label: t('auditLog.actions.login') },
+            { value: 'logout', label: t('auditLog.actions.logout') },
           ]}
         />
         <Select
-          placeholder="Filter by entity type"
+          placeholder={t('auditLog.filterUser', 'Filter By User')}
+          allowClear
+          value={userFilter}
+          onChange={(value) => { setUserFilter(value); setPage(1); }}
+          style={{ width: 180 }}
+          options={users.map((u) => ({
+            label: `${u.first_name} ${u.last_name}`,
+            value: u.id,
+          }))}
+          showSearch
+          optionFilterProp="label"
+        />
+        <Select
+          placeholder={t('auditLog.filterSubType', 'Filter By Sub Type')}
           allowClear
           value={entityFilter}
           onChange={(value) => { setEntityFilter(value); setPage(1); }}
-          style={{ width: 200 }}
+          style={{ width: 180 }}
           options={[
-            { value: 'work_order', label: 'Work Order' },
-            { value: 'contact', label: 'Contact' },
-            { value: 'user', label: 'User' },
-            { value: 'estimate', label: 'Estimate' },
-            { value: 'invoice', label: 'Invoice' },
+            { value: 'work_order', label: t('auditLog.entities.workOrder') },
+            { value: 'contact', label: t('auditLog.entities.contact') },
+            { value: 'user', label: t('auditLog.entities.user') },
+            { value: 'estimate', label: t('auditLog.entities.estimate') },
+            { value: 'invoice', label: t('auditLog.entities.invoice') },
           ]}
         />
-        <RangePicker style={{ width: 300 }} />
+        <RangePicker
+          style={{ width: 260 }}
+          value={dateRange}
+          onChange={(dates) => { setDateRange(dates as any); setPage(1); }}
+        />
       </div>
 
       <Table
@@ -193,7 +219,7 @@ export default function AuditLogListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} audit logs`,
+          showTotal: (total) => t('auditLog.totalLogs', { count: total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

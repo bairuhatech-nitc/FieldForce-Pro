@@ -39,6 +39,20 @@ export class Invoice extends Model {
   })
   work_order_id: string;
 
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+    comment: 'Reference to estimates (no formal FK)',
+  })
+  estimate_id: string;
+
+  @Column({
+    type: DataType.UUID,
+    allowNull: true,
+    comment: 'Reference to service_requests (no formal FK)',
+  })
+  service_request_id: string;
+
   @ForeignKey(() => Contact)
   @Column({
     type: DataType.UUID,
@@ -60,6 +74,9 @@ export class Invoice extends Model {
   @Column({
     type: DataType.ENUM(
       'draft',
+      'pending_approval',
+      'approved',
+      'rejected',
       'sent',
       'viewed',
       'partially_paid',
@@ -138,6 +155,22 @@ export class Invoice extends Model {
     defaultValue: {},
   })
   custom_fields: Record<string, unknown>;
+
+  @Column({ type: DataType.UUID, allowNull: true, unique: true })
+  public_token: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  public_token_expires_at: Date;
+
+  // ── Customer signature (captured on the technician's device) ──
+  @Column({ type: DataType.TEXT, allowNull: true })
+  signature_url: string;
+
+  @Column({ type: DataType.STRING(200), allowNull: true })
+  signed_by_name: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  signed_at: Date;
 
   @Column({
     type: DataType.BOOLEAN,

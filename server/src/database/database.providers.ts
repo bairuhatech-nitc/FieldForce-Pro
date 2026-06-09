@@ -54,6 +54,26 @@ import { WorkflowTemplate } from '../WORKFLOW/WORKFLOW_TEMPLATES/workflow_templa
 import { WorkflowApprover } from '../WORKFLOW/WORKFLOW_APPROVERS/workflow_approvers.entity';
 import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.entity';
 import { ApprovalHistory } from '../WORKFLOW/WORKFLOW_APPROVAL_HISTORY/approval_history.entity';
+import { SlaTimer } from '../SLA_TIMERS/sla_timers.entity';
+import { RequestAttachment } from '../ATTACHMENTS/request_attachments.entity';
+import { EstimateAttachment } from '../ATTACHMENTS/estimate_attachments.entity';
+import { SubscriptionMagicLink } from '../SUBSCRIPTION_MAGIC_LINKS/subscription_magic_links.entity';
+import { RequestAuditLog } from '../SERVICE_REQUESTS/request_audit_log.entity';
+import { ServiceRequestTechnician } from '../SERVICE_REQUESTS/service_request_technician.entity';
+import { TechnicianFeedback } from '../FEEDBACK/technician_feedback.entity';
+import { CustomerSatisfaction } from '../FEEDBACK/customer_satisfaction.entity';
+import { SuperAdminApiKey } from '../SUPER_ADMIN/SUPER_ADMIN_API_KEYS/super_admin_api_keys.entity';
+import { SuperAdminAuditLog } from '../SUPER_ADMIN/SUPER_ADMIN_AUDIT_LOGS/super_admin_audit_logs.entity';
+import { Category } from '../CATEGORIES/categories.entity';
+import { SubCategory } from '../SUB_CATEGORIES/sub_categories.entity';
+import { Priority } from '../PRIORITIES/priorities.entity';
+import { Location } from '../LOCATIONS/locations.entity';
+import { SlaPolicy } from '../SLA_MODULE/sla_policies.entity';
+import { ServiceRequestSla } from '../SLA_MODULE/service_request_slas.entity';
+import { SlaAuditLog } from '../SLA_MODULE/sla_audit_logs.entity';
+import { WorkingCalendar } from '../SLA_MODULE/working_calendars.entity';
+import { SlaEscalation } from '../SLA_MODULE/sla_escalations.entity';
+import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -111,4 +131,24 @@ export const databaseProviders = [
   { provide: REPOSITORY.WORKFLOW_APPROVERS, useValue: WorkflowApprover },
   { provide: REPOSITORY.WORKFLOW_DOCUMENT_APPROVALS, useValue: DocumentApproval },
   { provide: REPOSITORY.WORKFLOW_APPROVAL_HISTORY, useValue: ApprovalHistory },
+  { provide: REPOSITORY.SLA_TIMERS, useValue: SlaTimer },
+  { provide: REPOSITORY.REQUEST_ATTACHMENTS, useValue: RequestAttachment },
+  { provide: REPOSITORY.ESTIMATE_ATTACHMENTS, useValue: EstimateAttachment },
+  { provide: REPOSITORY.SUBSCRIPTION_MAGIC_LINKS, useValue: SubscriptionMagicLink },
+  { provide: REPOSITORY.REQUEST_AUDIT_LOGS, useValue: RequestAuditLog },
+  { provide: REPOSITORY.TECHNICIAN_FEEDBACK, useValue: TechnicianFeedback },
+  { provide: REPOSITORY.CUSTOMER_SATISFACTION, useValue: CustomerSatisfaction },
+  { provide: REPOSITORY.SUPER_ADMIN_API_KEYS, useValue: SuperAdminApiKey },
+  { provide: REPOSITORY.SUPER_ADMIN_AUDIT_LOGS, useValue: SuperAdminAuditLog },
+  { provide: REPOSITORY.SERVICE_REQUEST_TECHNICIANS, useValue: ServiceRequestTechnician },
+  { provide: REPOSITORY.CATEGORIES, useValue: Category },
+  { provide: REPOSITORY.SUB_CATEGORIES, useValue: SubCategory },
+  { provide: REPOSITORY.PRIORITIES, useValue: Priority },
+  { provide: REPOSITORY.LOCATIONS, useValue: Location },
+  { provide: REPOSITORY.SLA_POLICIES, useValue: SlaPolicy },
+  { provide: REPOSITORY.SERVICE_REQUEST_SLAS, useValue: ServiceRequestSla },
+  { provide: REPOSITORY.SLA_AUDIT_LOGS, useValue: SlaAuditLog },
+  { provide: REPOSITORY.WORKING_CALENDARS, useValue: WorkingCalendar },
+  { provide: REPOSITORY.SLA_ESCALATIONS, useValue: SlaEscalation },
+  { provide: REPOSITORY.SLA_PAUSE_TRIGGERS, useValue: SlaPauseTrigger },
 ];

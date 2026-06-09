@@ -7,6 +7,7 @@ import {
   CompassOutlined,
 } from '@ant-design/icons';
 import 'leaflet/dist/leaflet.css';
+import { useTranslation } from 'react-i18next';
 
 // Fix default marker icon for bundlers
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -74,6 +75,7 @@ interface Props {
 }
 
 export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, originLat, originLng, originLabel, onLocationDetected }: Props) {
+  const { t } = useTranslation();
   const [myLocation, setMyLocation] = useState<Coords | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -110,10 +112,10 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
           setResolvedLat(parseFloat(results[0].lat));
           setResolvedLng(parseFloat(results[0].lon));
         } else {
-          setGeocodeError('Could not find coordinates for this address.');
+          setGeocodeError(t('serviceLocationMap.geocodeNotFound'));
         }
       })
-      .catch(() => setGeocodeError('Geocoding failed. Check your connection.'))
+      .catch(() => setGeocodeError(t('serviceLocationMap.geocodeFailed')))
       .finally(() => setIsGeocoding(false));
   // Only run once when there are no coords
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,7 +123,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
 
   const getMyLocation = () => {
     if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by your browser');
+      setGeoError(t('serviceLocationMap.geolocationUnsupported'));
       return;
     }
     setIsLocating(true);
@@ -137,7 +139,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
         onLocationDetected?.(coords);
       },
       (err) => {
-        setGeoError(`Location error: ${err.message}`);
+        setGeoError(`${t('serviceLocationMap.locationError')}: ${err.message}`);
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -148,7 +150,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
   if (isGeocoding) {
     return (
       <div style={{ textAlign: 'center', padding: '32px 0' }}>
-        <Spin tip="Locating service address..." />
+        <Spin tip={t('serviceLocationMap.locatingAddress')} />
       </div>
     );
   }
@@ -165,8 +167,8 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
           type="info"
           message={
             geocodeError
-              ? `Could not locate address on map. ${geocodeError}`
-              : 'No map coordinates available for this service location.'
+              ? `${t('serviceLocationMap.geocodeFailedPrefix')} ${geocodeError}`
+              : t('serviceLocationMap.noCoordinatesAvailable')
           }
           description={serviceAddress ? <Text>{serviceAddress}</Text> : undefined}
           showIcon
@@ -181,7 +183,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
             rel="noopener noreferrer"
             size="small"
           >
-            Open in Google Maps
+            {t('serviceLocationMap.openInGoogleMaps')}
           </Button>
         )}
       </div>
@@ -219,7 +221,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
           {/* Destination — red marker */}
           <Marker position={servicePos} icon={serviceIcon}>
             <Popup>
-              <strong>📍 Destination</strong>
+              <strong>📍 {t('serviceLocationMap.destination')}</strong>
               {serviceAddress && <div style={{ fontSize: 12, marginTop: 4 }}>{serviceAddress}</div>}
             </Popup>
           </Marker>
@@ -229,7 +231,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
             <>
               <Marker position={originPos} icon={originIcon}>
                 <Popup>
-                  <strong>🟢 {originLabel ?? 'Trip Start'}</strong>
+                  <strong>🟢 {originLabel ?? t('serviceLocationMap.tripStart')}</strong>
                 </Popup>
               </Marker>
               {/* Route line: origin → destination */}
@@ -246,7 +248,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
           {myLocation && (
             <>
               <Marker position={[myLocation.lat, myLocation.lng]} icon={technicianIcon}>
-                <Popup>📱 Your current location</Popup>
+                <Popup>📱 {t('serviceLocationMap.yourCurrentLocation')}</Popup>
               </Marker>
               <Polyline
                 positions={[[myLocation.lat, myLocation.lng], servicePos]}
@@ -270,7 +272,7 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
           loading={isLocating}
           size="small"
         >
-          Get My Location
+          {t('serviceLocationMap.getMyLocation')}
         </Button>
         <Button
           icon={<CompassOutlined />}
@@ -280,14 +282,14 @@ export function ServiceLocationMap({ serviceLat, serviceLng, serviceAddress, ori
           rel="noopener noreferrer"
           size="small"
         >
-          Open Navigation
+          {t('serviceLocationMap.openNavigation')}
         </Button>
       </Space>
 
       {myLocation && (
         <div style={{ marginTop: 4 }}>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Your location: {myLocation.lat.toFixed(5)}, {myLocation.lng.toFixed(5)}
+            {t('serviceLocationMap.yourLocation')}: {myLocation.lat.toFixed(5)}, {myLocation.lng.toFixed(5)}
           </Text>
         </div>
       )}

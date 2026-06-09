@@ -7,6 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Op } from 'sequelize';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { REPOSITORY } from '../shared/constants/keynames';
@@ -19,6 +21,7 @@ import { Permission } from '../PERMISSIONS/permissions.entity';
 import { RolePermission } from '../ROLE_PERMISSION/role_permission.entity';
 import { UserRole } from '../USER_ROLES/user_roles.entity';
 import { LoginSession } from '../LOGIN_SESSIONS/login_sessions.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 import { UsersService } from '../USERS/users.service';
 import { TenantsService } from '../TENANTS/tenants.service';
 import { UserRolesService } from '../USER_ROLES/user_roles.service';
@@ -30,6 +33,9 @@ import {
   ResetPasswordDto,
   ChangePasswordDto,
   VerifyMFALoginDto,
+  RequestMagicLinkDto,
+  RegisterMagicLinkDto,
+  VerifyMagicLinkDto,
 } from './dto/auth.dto';
 import { MFAService } from '../MFA/mfa.service';
 import { EmailService } from '../shared/services/email.service';
@@ -54,6 +60,8 @@ export class AuthService {
     private readonly permissionRepository: typeof Permission,
     @Inject(REPOSITORY.ROLE_PERMISSION)
     private readonly rolePermissionRepository: typeof RolePermission,
+    @Inject(REPOSITORY.SUBSCRIPTION_PLANS)
+    private readonly subscriptionPlanRepository: typeof SubscriptionPlan,
   ) { }
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -101,15 +109,39 @@ export class AuthService {
     return user;
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, ip: string, userAgent: string) {
     // Check if user already exists
     const existingUser = await this.usersService.findByEmail(dto.email);
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
 
+    // Resolve subscription plan (default: Basic)
+    const planSlug = dto.plan_slug ?? 'basic';
+    const planNameMap: Record<string, string> = {
+      basic: 'Basic',
+      professional: 'Professional',
+      enterprise: 'Enterprise',
+    };
+    const planName = planNameMap[planSlug] ?? 'Basic';
+    const plan = await this.subscriptionPlanRepository.findOne({ where: { name: planName } });
+
     // Create tenant
     const tenant = await this.tenantsService.create({ name: dto.company_name });
+
+    // Wire up subscription: 15-day free trial
+    const now = new Date();
+    const trialEnd = new Date(now);
+    trialEnd.setDate(trialEnd.getDate() + 15);
+
+    await tenant.update({
+      subscription_plan: planName,
+      subscription_plan_id: plan?.id ?? null,
+      subscription_status: 'trial',
+      subscription_start: now,
+      subscription_end: trialEnd,
+      max_users: plan?.max_total_users ?? 10,
+    });
 
     // Create user
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -139,15 +171,76 @@ export class AuthService {
       });
     }
 
+    // Create default Technician role for tenant
+    const technicianPermissionNames = new Set([
+      'service_requests:read', 'work_orders:read', 'work_orders:update',
+      'service_appointments:read', 'job_sheets:read', 'job_sheets:update',
+      'timesheets:read', 'timesheets:create', 'timesheets:update',
+      'trips:read', 'trips:create', 'dashboard:read', 'notifications:read',
+      'documents:read', 'documents:create', 'contacts:read',
+      'service_locations:read', 'parts_catalog:read', 'services_catalog:read',
+      'scheduling:read', 'reviews:read', 'reviews:create',
+      'agent_locations:read', 'agent_locations:update',
+    ]);
+    const technicianRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Technician',
+      description: 'Field technician - performs on-site work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (technicianPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: technicianRole.id,
+          permission_id: permission.id,
+        });
+      }
+    }
+
+    // Create default Dispatcher role for tenant
+    const dispatcherPermissionNames = new Set([
+      'dashboard:read', 'notifications:read',
+      'service_requests:read', 'service_requests:create', 'service_requests:update',
+      'work_orders:read', 'work_orders:create', 'work_orders:update',
+      'scheduling:read', 'scheduling:create', 'scheduling:update',
+      'service_appointments:read', 'service_appointments:create', 'service_appointments:update',
+      'estimates:read', 'estimates:create', 'estimates:update',
+      'invoices:read', 'invoices:create', 'invoices:update',
+      'contacts:read', 'companies:read', 'service_locations:read',
+      'agent_locations:read',
+      'work_order_line_items:read', 'work_order_line_items:create', 'work_order_line_items:update',
+      'documents:read', 'documents:create',
+      'reports:read',
+    ]);
+    const dispatcherRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Dispatcher',
+      description: 'Dispatch coordinator - reviews service requests, assigns technicians, manages work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (dispatcherPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: dispatcherRole.id,
+          permission_id: permission.id,
+        });
+      }
+    }
+
     // Assign admin role to user
     await this.userRolesService.assignRole(user.id, adminRole.id);
 
-    // Return sanitized user
-    const { password_hash, password_reset_token, password_reset_expires, ...safeUser } =
-      user.toJSON();
+    // Auto-login: complete login process (same as successful login)
+    const userWithRoles = await this.usersService.findById(user.id);
+    const loginDto: LoginDto = {
+      email: dto.email,
+      password: '',
+      device_type: 'web',
+    };
+    const session = await this.completeLogin(userWithRoles, loginDto, ip, userAgent);
 
     return {
-      user: safeUser,
+      ...session,
       tenant: tenant.toJSON(),
     };
   }
@@ -222,6 +315,187 @@ export class AuthService {
     return this.completeLogin(user, loginDto, ip, userAgent);
   }
 
+  async requestMagicLink(dto: RequestMagicLinkDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) {
+      // Return generic success to prevent email enumeration
+      return { message: 'If an account exists, a magic link has been sent to your email.' };
+    }
+
+    if (!user.is_active) {
+      throw new UnauthorizedException('Account is deactivated. Please contact your administrator.');
+    }
+
+    const token = uuidv4();
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15); // 15 mins expiry
+
+    await user.update({
+      magic_link_token: tokenHash,
+      magic_link_expires: expires,
+    });
+
+    const userName = user.first_name || 'User';
+    await this.emailService.sendMagicLinkEmail(user.email, userName, token);
+
+    return { message: 'If an account exists, a magic link has been sent to your email.' };
+  }
+
+  async requestMagicLinkRegister(dto: RegisterMagicLinkDto) {
+    const existingUser = await this.usersService.findByEmail(dto.email);
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Create tenant
+    const tenant = await this.tenantsService.create({ name: dto.company_name });
+
+    // Create user (inactive until they click the link, optional but good practice, keeping it active for simplicity based on original flow)
+    const user = await User.create({
+      tenant_id: tenant.id,
+      email: dto.email,
+      password_hash: null, // No password for magic link
+      first_name: dto.first_name,
+      last_name: dto.last_name,
+      phone: dto.phone,
+    });
+
+    // Create default admin role for tenant
+    const adminRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Admin',
+      description: 'Full system administrator',
+      is_system: true,
+    });
+
+    // Assign ALL existing permissions to the Admin role
+    const allPermissions = await this.permissionRepository.findAll();
+    for (const permission of allPermissions) {
+      await this.rolePermissionRepository.create({
+        role_id: adminRole.id,
+        permission_id: permission.id,
+      });
+    }
+
+    // Create default Technician role for tenant
+    const technicianPermissionNames = new Set([
+      'service_requests:read', 'work_orders:read', 'work_orders:update',
+      'service_appointments:read', 'job_sheets:read', 'job_sheets:update',
+      'timesheets:read', 'timesheets:create', 'timesheets:update',
+      'trips:read', 'trips:create', 'dashboard:read', 'notifications:read',
+      'documents:read', 'documents:create', 'contacts:read',
+      'service_locations:read', 'parts_catalog:read', 'services_catalog:read',
+      'scheduling:read', 'reviews:read', 'reviews:create',
+      'agent_locations:read', 'agent_locations:update',
+    ]);
+    const technicianRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Technician',
+      description: 'Field technician - performs on-site work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (technicianPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: technicianRole.id,
+          permission_id: permission.id,
+        });
+      }
+    }
+
+    // Create default Dispatcher role for tenant
+    const dispatcherPermissionNames = new Set([
+      'dashboard:read', 'notifications:read',
+      'service_requests:read', 'service_requests:create', 'service_requests:update',
+      'work_orders:read', 'work_orders:create', 'work_orders:update',
+      'scheduling:read', 'scheduling:create', 'scheduling:update',
+      'service_appointments:read', 'service_appointments:create', 'service_appointments:update',
+      'estimates:read', 'estimates:create', 'estimates:update',
+      'invoices:read', 'invoices:create', 'invoices:update',
+      'contacts:read', 'companies:read', 'service_locations:read',
+      'agent_locations:read',
+      'work_order_line_items:read', 'work_order_line_items:create', 'work_order_line_items:update',
+      'documents:read', 'documents:create',
+      'reports:read',
+    ]);
+    const dispatcherRole = await this.roleRepository.create({
+      tenant_id: tenant.id,
+      name: 'Dispatcher',
+      description: 'Dispatch coordinator - reviews service requests, assigns technicians, manages work orders',
+      is_system: false,
+    });
+    for (const permission of allPermissions) {
+      if (dispatcherPermissionNames.has(permission.name)) {
+        await this.rolePermissionRepository.create({
+          role_id: dispatcherRole.id,
+          permission_id: permission.id,
+        });
+      }
+    }
+
+    // Assign admin role to user
+    await this.userRolesService.assignRole(user.id, adminRole.id);
+
+    const token = uuidv4();
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15);
+
+    await user.update({
+      magic_link_token: tokenHash,
+      magic_link_expires: expires,
+    });
+
+    const userName = user.first_name || 'User';
+    await this.emailService.sendMagicLinkEmail(user.email, userName, token);
+
+    return { message: 'A magic link has been sent to your email to complete registration.' };
+  }
+
+  async verifyMagicLink(dto: VerifyMagicLinkDto, ip: string, userAgent: string) {
+    // Find users with non-expired magic link tokens and check bcrypt match
+    const users = await User.findAll({
+      where: {
+        magic_link_token: { [require('sequelize').Op.ne]: null },
+      },
+    });
+
+    let matchedUser: User | null = null;
+    for (const user of users) {
+      if (user.magic_link_token) {
+        const isMatch = await bcrypt.compare(dto.token, user.magic_link_token);
+        if (isMatch && user.magic_link_expires && new Date(user.magic_link_expires) > new Date()) {
+          matchedUser = user;
+          break;
+        }
+      }
+    }
+
+    if (!matchedUser) {
+      throw new BadRequestException('Invalid or expired magic link');
+    }
+
+    if (!matchedUser.is_active) {
+      throw new UnauthorizedException('Account is deactivated. Please contact your administrator.');
+    }
+
+    // Clear the token
+    await matchedUser.update({
+      magic_link_token: null,
+      magic_link_expires: null,
+    });
+
+    const loginDto: LoginDto = {
+      email: matchedUser.email,
+      password: '',
+      device_name: dto.device_name,
+      device_type: dto.device_type,
+    };
+
+    return this.completeLogin(matchedUser, loginDto, ip, userAgent);
+  }
+
   private async completeLogin(user: User, loginDto: LoginDto, ip: string, userAgent: string) {
     // Get user roles and permissions
     const userWithRoles = await this.usersService.findById(user.id);
@@ -274,8 +548,10 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      tenant_id: user.tenant_id,
+      tenant_id: user.tenant_id ?? null,
       session_id: sessionId,
+      is_super_admin: user.is_super_admin ?? false,
+      primary_role: roleNames[0] ?? null,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -366,8 +642,10 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      tenant_id: user.tenant_id,
+      tenant_id: user.tenant_id ?? null,
       session_id: session.id,
+      is_super_admin: user.is_super_admin ?? false,
+      primary_role: (roles[0] as Role)?.name ?? null,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -563,5 +841,41 @@ export class AuthService {
     else if (userAgent.includes('Opera') || userAgent.includes('OPR')) browser = 'Opera';
 
     return { os, browser };
+  }
+
+  /**
+   * Runs every night at midnight.
+   * Suspends any tenant whose trial period has ended
+   * (subscription_status = 'trial' AND subscription_end < NOW()).
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async suspendExpiredTrials() {
+    this.logger.log('[Cron] Checking for expired trial tenants...');
+    try {
+      const [affected] = await Tenant.update(
+        { subscription_status: 'expired', is_active: false },
+        {
+          where: {
+            subscription_status: 'trial',
+            subscription_end: { [Op.lt]: new Date() },
+          },
+        },
+      );
+      if (affected > 0) {
+        this.logger.log(`[Cron] Suspended ${affected} expired trial tenant(s).`);
+      } else {
+        this.logger.debug('[Cron] No expired trials found.');
+      }
+    } catch (err) {
+      this.logger.error('[Cron] Failed to suspend expired trials', err);
+    }
+  }
+
+  async listSubscriptionPlans() {
+    return this.subscriptionPlanRepository.findAll({
+      where: { is_active: true },
+      order: [['price_monthly', 'ASC']],
+      attributes: ['id', 'name', 'max_total_users', 'max_appointments_monthly', 'price_monthly', 'price_yearly', 'currency', 'features'],
+    });
   }
 }

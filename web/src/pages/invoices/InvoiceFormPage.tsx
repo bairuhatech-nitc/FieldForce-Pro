@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Space, Skeleton, Select, DatePicker } from 'antd';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useInvoice, useCreateInvoice, useUpdateInvoice } from '@/hooks/use-invoices';
 import { useAllContacts } from '@/hooks/use-contacts';
@@ -10,6 +11,7 @@ import PageHeader from '@/components/common/PageHeader';
 const { TextArea } = Input;
 
 export default function InvoiceFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -56,7 +58,7 @@ export default function InvoiceFormPage() {
   if (isEdit && isLoading) {
     return (
       <div>
-        <PageHeader title="Loading..." />
+        <PageHeader title={t('invoiceForm.loading')} />
         <Card><Skeleton active /></Card>
       </div>
     );
@@ -65,7 +67,7 @@ export default function InvoiceFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Invoice' : 'Create Invoice'}
+        title={isEdit ? t('invoiceForm.editInvoice') : t('invoiceForm.createInvoice')}
         onBack={() => navigate('/invoices')}
       />
 
@@ -78,9 +80,9 @@ export default function InvoiceFormPage() {
           style={{ maxWidth: 800 }}
           initialValues={{ currency: 'USD' }}
         >
-          <Form.Item name="contact_id" label="Customer (Contact)">
+          <Form.Item name="contact_id" label={t('invoiceForm.customer')}>
             <Select
-              placeholder="Select customer"
+              placeholder={t('invoiceForm.selectCustomer')}
               allowClear
               showSearch
               optionFilterProp="label"
@@ -91,9 +93,9 @@ export default function InvoiceFormPage() {
             />
           </Form.Item>
 
-          <Form.Item name="work_order_id" label="Work Order">
+          <Form.Item name="work_order_id" label={t('invoiceForm.workOrder')}>
             <Select
-              placeholder="Select work order"
+              placeholder={t('invoiceForm.selectWorkOrder')}
               allowClear
               showSearch
               optionFilterProp="label"
@@ -105,11 +107,11 @@ export default function InvoiceFormPage() {
           </Form.Item>
 
           <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="due_date" label="Due Date" style={{ flex: 1 }}>
+            <Form.Item name="due_date" label={t('invoiceForm.dueDate')} style={{ flex: 1 }}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="currency" label="Currency" style={{ flex: 1 }}>
-              <Select placeholder="Select currency">
+            <Form.Item name="currency" label={t('invoiceForm.currency')} style={{ flex: 1 }}>
+              <Select placeholder={t('invoiceForm.selectCurrency')}>
                 <Select.Option value="USD">USD</Select.Option>
                 <Select.Option value="EUR">EUR</Select.Option>
                 <Select.Option value="GBP">GBP</Select.Option>
@@ -120,8 +122,8 @@ export default function InvoiceFormPage() {
             </Form.Item>
           </Space>
 
-          <Form.Item name="notes" label="Notes">
-            <TextArea rows={4} placeholder="Additional notes for this invoice" />
+          <Form.Item name="notes" label={t('invoiceForm.notes')}>
+            <TextArea rows={4} placeholder={t('invoiceForm.notesPlaceholder')} />
           </Form.Item>
 
           <Form.Item>
@@ -131,9 +133,9 @@ export default function InvoiceFormPage() {
                 htmlType="submit"
                 loading={createInvoice.isPending || updateInvoice.isPending}
               >
-                {isEdit ? 'Update' : 'Create'}
+                {isEdit ? t('invoiceForm.update') : t('invoiceForm.create')}
               </Button>
-              <Button onClick={() => navigate('/invoices')}>Cancel</Button>
+              <Button onClick={() => navigate('/invoices')}>{t('invoiceForm.cancel')}</Button>
             </Space>
           </Form.Item>
         </Form>

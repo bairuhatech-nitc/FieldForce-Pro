@@ -49,25 +49,26 @@ export class Payment extends Model {
   })
   amount: number;
 
-  @Column({
-    type: DataType.ENUM('card', 'cash', 'bank_transfer', 'online', 'check', 'other'),
-    allowNull: false,
-    defaultValue: 'card',
-  })
-  method: string;
+  @Column({ type: DataType.STRING(30), allowNull: false, defaultValue: 'cash' })
+  method: string; // cash | cheque | upi | card | bank_transfer | online | other
 
-  @Column({
-    type: DataType.STRING(200),
-    allowNull: true,
-  })
+  @Column({ type: DataType.STRING(200), allowNull: true })
   gateway_transaction_id: string;
 
-  @Column({
-    type: DataType.ENUM('pending', 'completed', 'failed', 'refunded'),
-    allowNull: false,
-    defaultValue: 'pending',
-  })
-  status: string;
+  @Column({ type: DataType.STRING(30), allowNull: false, defaultValue: 'confirmed' })
+  status: string; // confirmed | pending_verification | rejected | pending | completed | failed | refunded
+
+  @Column({ type: DataType.STRING(20), allowNull: false, defaultValue: 'manual' })
+  source: string; // manual | portal
+
+  @Column({ type: DataType.STRING(200), allowNull: true })
+  received_by: string; // name of dispatcher/person who recorded
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  rejection_reason: string;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  screenshot_url: string;
 
   @Column({
     type: DataType.DATE,

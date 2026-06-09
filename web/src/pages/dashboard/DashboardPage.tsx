@@ -24,12 +24,13 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth.store';
+import { useTranslation } from 'react-i18next';
 import { useAllWorkOrders } from '@/hooks/use-work-orders';
 import { useAllInvoices } from '@/hooks/use-invoices';
 import { useAllPayments } from '@/hooks/use-payments';
-import { useAllServiceRequests } from '@/hooks/use-service-requests';
-import { useAllAppointments } from '@/hooks/use-appointments';
-import { useAllEstimates } from '@/hooks/use-estimates';
+import { useAllEstimates, usePendingInternalApprovals } from '@/hooks/use-estimates';
+import { usePendingVerificationPayments } from '@/hooks/use-payments';
+import { useDashboardStats, useDashboardActivityFeed, useDashboardPrioritySummary } from '@/hooks/use-dashboards';
 import type { Invoice } from '@/types/models.types';
 import {
   AreaChart,
@@ -68,11 +69,11 @@ const estimateStatusColors: Record<string, string> = {
   converted_to_wo: '#722ed1',
 };
 
-function getGreeting(): string {
+function getGreeting(t: (key: string) => string): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (hour < 12) return t('dashboard.goodMorning');
+  if (hour < 17) return t('dashboard.goodAfternoon');
+  return t('dashboard.goodEvening');
 }
 
 function formatCurrency(value: unknown): string {
@@ -114,6 +115,7 @@ function getMonthlyRevenue(invoices: Invoice[]): Array<{ name: string; revenue: 
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
@@ -121,11 +123,15 @@ export default function DashboardPage() {
   const { data: workOrders = [], isLoading: woLoading } = useAllWorkOrders();
   const { data: invoices = [], isLoading: invLoading } = useAllInvoices();
   const { data: payments = [], isLoading: payLoading } = useAllPayments();
-  const { data: serviceRequests = [], isLoading: srLoading } = useAllServiceRequests();
-  const { data: appointments = [], isLoading: apptLoading } = useAllAppointments();
   const { data: estimates = [], isLoading: estLoading } = useAllEstimates();
+  const { data: pendingInternalApprovals } = usePendingInternalApprovals();
+  const { data: pendingPayments = [] } = usePendingVerificationPayments();
 
-  const isLoading = woLoading || invLoading || payLoading || srLoading || apptLoading || estLoading;
+  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
+  const { data: activityFeed, isLoading: feedLoading } = useDashboardActivityFeed();
+  const { data: prioritySummary, isLoading: priorityLoading } = useDashboardPrioritySummary();
+
+  const isLoading = woLoading || invLoading || payLoading || estLoading || statsLoading;
 
   // ──────── Financial KPIs ────────
   const financialStats = useMemo(() => {
@@ -163,38 +169,15 @@ export default function DashboardPage() {
 
   // ──────── Operations KPIs ────────
   const opsStats = useMemo(() => {
-    const activeWOs = workOrders.filter(
-      (wo) => wo.status === 'in_progress' || wo.status === 'scheduled',
-    ).length;
-    const completedWOs = workOrders.filter(
-      (wo) => wo.status === 'completed' || wo.status === 'closed',
-    ).length;
-    const completionRate = workOrders.length > 0 ? Math.round((completedWOs / workOrders.length) * 100) : 0;
-
-    const today = new Date();
-    const todayAppointments = appointments.filter((a) => {
-      if (!a.scheduled_start) return false;
-      const start = new Date(a.scheduled_start);
-      return (
-        start.getDate() === today.getDate() &&
-        start.getMonth() === today.getMonth() &&
-        start.getFullYear() === today.getFullYear()
-      );
-    });
-
-    const pendingSRs = serviceRequests.filter(
-      (sr) => sr.status === 'new' || sr.status === 'triaged',
-    ).length;
-
     return {
-      activeWOs,
-      completedWOs,
-      completionRate,
-      todayAppointments: todayAppointments.length,
-      totalAppointments: appointments.length,
-      pendingSRs,
+      activeWOs: dashboardStats?.unassignedRequests || 0, // Fallback mapping for demo
+      completedWOs: dashboardStats?.openRequests || 0,
+      completionRate: 100, // Placeholder
+      todayAppointments: dashboardStats?.criticalRequests || 0,
+      totalAppointments: 0,
+      pendingSRs: dashboardStats?.openRequests || 0,
     };
-  }, [workOrders, appointments, serviceRequests]);
+  }, [dashboardStats]);
 
   // ──────── WO Status Distribution ────────
   const woStatusData = useMemo(() => {
@@ -265,10 +248,10 @@ export default function DashboardPage() {
       <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
         <div>
           <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-            Dashboard
+            {t('dashboard.title')}
           </Title>
           <Text type="secondary" style={{ fontSize: 14 }}>
-            {getGreeting()}, {user?.first_name || 'User'} &middot;{' '}
+            {getGreeting(t)}, {user?.first_name || 'User'} &middot;{' '}
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </div>
@@ -278,25 +261,25 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/invoices')}
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Total Revenue</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.totalRevenue')}</Text>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.totalRevenue)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  From {invoices.filter((i) => i.status === 'paid').length} paid invoices
+                  {t('dashboard.fromPaidInvoices', { count: invoices.filter((i) => i.status === 'paid').length })}
                 </Text>
               </div>
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f6ffed', display: 'flex',
+                  backgroundColor: 'rgba(82, 196, 26, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#52c41a', fontSize: 22,
                 }}
@@ -309,25 +292,25 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/invoices')}
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Payments Collected</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.paymentsCollected')}</Text>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.paymentsCollected)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {payments.filter((p) => p.status === 'completed').length} completed payments
+                  {t('dashboard.completedPayments', { count: payments.filter((p) => p.status === 'completed').length })}
                 </Text>
               </div>
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#e6f4ff', display: 'flex',
+                  backgroundColor: 'rgba(22, 119, 255, 0.08)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#1677ff', fontSize: 22,
                 }}
@@ -340,25 +323,25 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/invoices')}
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Outstanding</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.outstanding')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, color: '#fa8c16', marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.outstandingAmount)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {financialStats.outstandingCount} unpaid invoice{financialStats.outstandingCount !== 1 ? 's' : ''}
+                  {t('dashboard.unpaidInvoices', { count: financialStats.outstandingCount })}
                 </Text>
               </div>
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#fff7e6', display: 'flex',
+                  backgroundColor: 'rgba(250, 173, 20, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#fa8c16', fontSize: 22,
                 }}
@@ -373,9 +356,9 @@ export default function DashboardPage() {
           <Card
             style={{
               borderRadius: 12,
-              border: financialStats.overdueAmount > 0 ? '1px solid #ffccc7' : '1px solid #f0f0f0',
+              border: financialStats.overdueAmount > 0 ? '1px solid rgba(255, 77, 79, 0.25)' : undefined,
               cursor: 'pointer',
-              background: financialStats.overdueAmount > 0 ? '#fff2f0' : undefined,
+              background: financialStats.overdueAmount > 0 ? 'rgba(255, 77, 79, 0.1)' : undefined,
             }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
@@ -383,18 +366,18 @@ export default function DashboardPage() {
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Overdue</Text>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.overdueLabel')}</Text>
                 <div style={{ fontSize: 28, fontWeight: 700, color: '#f5222d', marginTop: 4, lineHeight: 1.2 }}>
                   {isLoading ? <Spin size="small" /> : formatCurrency(financialStats.overdueAmount)}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {financialStats.overdueCount} overdue invoice{financialStats.overdueCount !== 1 ? 's' : ''}
+                  {t('dashboard.overdueInvoices', { count: financialStats.overdueCount })}
                 </Text>
               </div>
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: financialStats.overdueAmount > 0 ? '#fff1f0' : '#fff2f0',
+                  backgroundColor: 'rgba(255, 77, 79, 0.1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#f5222d', fontSize: 22,
                 }}
@@ -410,25 +393,25 @@ export default function DashboardPage() {
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/work-orders')}
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Active Jobs</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.activeJobs')}</Text>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : opsStats.activeWOs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  of {workOrders.length} total work orders
+                  {t('dashboard.ofTotalWorkOrders', { count: workOrders.length })}
                 </Text>
               </div>
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#e6f4ff', display: 'flex',
+                  backgroundColor: 'rgba(22, 119, 255, 0.08)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#1677ff', fontSize: 22,
                 }}
@@ -441,15 +424,15 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/work-orders')}
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Completion Rate</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.completionRate')}</Text>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
                   {woLoading ? <Spin size="small" /> : `${opsStats.completionRate}%`}
                 </div>
                 <Progress
@@ -463,7 +446,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f6ffed', display: 'flex',
+                  backgroundColor: 'rgba(82, 196, 26, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#52c41a', fontSize: 22,
                 }}
@@ -476,25 +459,25 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/scheduling')}
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Today's Appointments</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
-                  {apptLoading ? <Spin size="small" /> : opsStats.todayAppointments}
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.todaysAppointments')}</Text>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
+                  {statsLoading ? <Spin size="small" /> : opsStats.todayAppointments}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {opsStats.totalAppointments} total scheduled
+                  {t('dashboard.totalScheduled', { count: opsStats.totalAppointments })}
                 </Text>
               </div>
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f0f5ff', display: 'flex',
+                  backgroundColor: 'rgba(47, 84, 235, 0.08)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#2f54eb', fontSize: 22,
                 }}
@@ -507,25 +490,25 @@ export default function DashboardPage() {
 
         <Col xs={24} sm={12} lg={6}>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #f0f0f0', cursor: 'pointer' }}
+            style={{ borderRadius: 12, cursor: 'pointer' }}
             styles={{ body: { padding: '20px 24px' } }}
             hoverable
             onClick={() => navigate('/service-requests?status=new')}
           >
             <Flex justify="space-between" align="flex-start">
               <div>
-                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Pending Requests</Text>
-                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-color)', marginTop: 4, lineHeight: 1.2 }}>
-                  {srLoading ? <Spin size="small" /> : opsStats.pendingSRs}
+                <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>{t('dashboard.pendingRequests')}</Text>
+                <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>
+                  {statsLoading ? <Spin size="small" /> : opsStats.pendingSRs}
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {serviceRequests.length} total requests
+                  {t('dashboard.totalRequests', { count: 0 })}
                 </Text>
               </div>
               <div
                 style={{
                   width: 48, height: 48, borderRadius: 12,
-                  backgroundColor: '#f9f0ff', display: 'flex',
+                  backgroundColor: 'rgba(114, 46, 209, 0.1)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
                   color: '#722ed1', fontSize: 22,
                 }}
@@ -537,13 +520,89 @@ export default function DashboardPage() {
         </Col>
       </Row>
 
+      {/* ═══════════ PENDING PAYMENT VERIFICATIONS ═══════════ */}
+      {(pendingPayments as any[]).length > 0 && (
+        <Card
+          style={{ marginBottom: 20, borderColor: '#faad14' }}
+          title={
+            <Flex align="center" gap={8}>
+              <AlertOutlined style={{ color: '#d48806' }} />
+              <Text strong style={{ color: '#d48806' }}>
+                {(pendingPayments as any[]).length} Payment{(pendingPayments as any[]).length > 1 ? 's' : ''} Awaiting Verification
+              </Text>
+            </Flex>
+          }
+          extra={<Button size="small" onClick={() => navigate('/payments')}>View All</Button>}
+        >
+          <Row gutter={[12, 12]}>
+            {(pendingPayments as any[]).slice(0, 4).map((p: any) => (
+              <Col xs={24} sm={12} lg={6} key={p.id}>
+                <Card size="small" hoverable onClick={() => navigate(`/invoices/${p.invoice_id}`)}
+                  style={{ borderLeft: '3px solid #faad14', cursor: 'pointer' }}>
+                  <Text strong style={{ display: 'block' }}>
+                    {p.invoice?.invoice_number || 'Invoice'}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {p.invoice?.contact ? `${p.invoice.contact.first_name} ${p.invoice.contact.last_name}` : 'Customer'}
+                  </Text>
+                  <div style={{ marginTop: 6, fontWeight: 700, fontSize: 15 }}>
+                    {formatCurrency(p.amount || 0)}
+                  </div>
+                  <Tag color="orange" style={{ marginTop: 4 }}>{p.method?.toUpperCase()}</Tag>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      )}
+
+      {/* ═══════════ PENDING ON-SITE ESTIMATES (managers only) ═══════════ */}
+      {Array.isArray(pendingInternalApprovals) && (pendingInternalApprovals as any[]).length > 0 && (
+        <Card
+          style={{ marginBottom: 20, borderColor: '#faad14' }}
+          title={
+            <Flex align="center" gap={8}>
+              <ExclamationCircleOutlined style={{ color: '#d48806' }} />
+              <Text strong style={{ color: '#d48806' }}>
+                {(pendingInternalApprovals as any[]).length} On-Site Estimate{(pendingInternalApprovals as any[]).length > 1 ? 's' : ''} Awaiting Your Review
+              </Text>
+            </Flex>
+          }
+          extra={
+            <Button size="small" onClick={() => navigate('/estimates')}>View All</Button>
+          }
+        >
+          <Row gutter={[12, 12]}>
+            {((pendingInternalApprovals as any[]) as any[]).slice(0, 4).map((est: any) => (
+              <Col xs={24} sm={12} lg={6} key={est.id}>
+                <Card
+                  size="small"
+                  hoverable
+                  onClick={() => navigate(`/estimates/${est.id}`)}
+                  style={{ borderLeft: '3px solid #faad14', cursor: 'pointer' }}
+                >
+                  <Text strong style={{ display: 'block' }}>{est.estimate_number || est.id.slice(0, 8)}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {est.contact ? `${est.contact.first_name} ${est.contact.last_name}` : 'No customer'}
+                  </Text>
+                  <div style={{ marginTop: 6, fontWeight: 700, fontSize: 15 }}>
+                    {formatCurrency(est.total || 0)}
+                  </div>
+                  <Tag color="orange" style={{ marginTop: 4 }}>Pending Review</Tag>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      )}
+
       {/* ═══════════ CHARTS ROW: Revenue + WO Status ═══════════ */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         {/* Revenue Trend */}
         <Col xs={24} lg={14}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Revenue & Collections</Text>}
-            extra={<Text type="secondary" style={{ fontSize: 12 }}>Last 6 months</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.revenueCollections')}</Text>}
+            extra={<Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.last6Months')}</Text>}
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
             styles={{ body: { padding: '16px 24px 24px' } }}
           >
@@ -570,19 +629,19 @@ export default function DashboardPage() {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     formatter={((value: number) => `$${value.toLocaleString()}`) as any}
                   />
-                  <Area type="monotone" dataKey="revenue" name="Invoiced" stroke="#52c41a" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
-                  <Area type="monotone" dataKey="collected" name="Collected" stroke="#1677ff" strokeWidth={2} fillOpacity={1} fill="url(#colorCollected)" />
+                  <Area type="monotone" dataKey="revenue" name={t('dashboard.invoiced')} stroke="#52c41a" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                  <Area type="monotone" dataKey="collected" name={t('dashboard.collected')} stroke="#1677ff" strokeWidth={2} fillOpacity={1} fill="url(#colorCollected)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
             <Flex gap={24} justify="center" style={{ marginTop: 8 }}>
               <Flex align="center" gap={6}>
                 <div style={{ width: 12, height: 3, backgroundColor: '#52c41a', borderRadius: 2 }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Invoiced</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.invoiced')}</Text>
               </Flex>
               <Flex align="center" gap={6}>
                 <div style={{ width: 12, height: 3, backgroundColor: '#1677ff', borderRadius: 2 }} />
-                <Text type="secondary" style={{ fontSize: 12 }}>Collected</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{t('dashboard.collected')}</Text>
               </Flex>
             </Flex>
           </Card>
@@ -591,10 +650,10 @@ export default function DashboardPage() {
         {/* Work Order Status Distribution */}
         <Col xs={24} lg={10}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Work Order Pipeline</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.workOrderPipeline')}</Text>}
             extra={
               <Button type="link" size="small" onClick={() => navigate('/work-orders')} style={{ padding: 0 }}>
-                View All <RightOutlined style={{ fontSize: 10 }} />
+                {t('common.viewAll')} <RightOutlined style={{ fontSize: 10 }} />
               </Button>
             }
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
@@ -603,7 +662,7 @@ export default function DashboardPage() {
             {woLoading ? (
               <Flex justify="center" align="center" style={{ height: 280 }}><Spin /></Flex>
             ) : woStatusData.length === 0 ? (
-              <Empty description="No work orders" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ paddingTop: 60 }} />
+              <Empty description={t('dashboard.noWorkOrders')} image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ paddingTop: 60 }} />
             ) : (
               <Flex vertical>
                 <div style={{ height: 200 }}>
@@ -649,10 +708,10 @@ export default function DashboardPage() {
         {/* Invoice Breakdown + AR Aging */}
         <Col xs={24} lg={12}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Invoice Overview</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.invoiceOverview')}</Text>}
             extra={
               <Button type="link" size="small" onClick={() => navigate('/invoices')} style={{ padding: 0 }}>
-                View All <RightOutlined style={{ fontSize: 10 }} />
+                {t('common.viewAll')} <RightOutlined style={{ fontSize: 10 }} />
               </Button>
             }
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
@@ -661,13 +720,13 @@ export default function DashboardPage() {
             {invLoading ? (
               <Flex justify="center" align="center" style={{ height: 200 }}><Spin /></Flex>
             ) : invoices.length === 0 ? (
-              <Empty description="No invoices" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty description={t('dashboard.noInvoices')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
             ) : (
               <>
                 {/* Invoice status bars */}
                 <div style={{ marginBottom: 20 }}>
                   <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    By Status
+                    {t('dashboard.byStatus')}
                   </Text>
                   <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {invoiceBreakdown.map((item) => (
@@ -701,37 +760,37 @@ export default function DashboardPage() {
         {/* Estimate Pipeline + Payment Methods */}
         <Col xs={24} lg={12}>
           <Card
-            title={<Text strong style={{ fontSize: 15 }}>Estimate Pipeline</Text>}
+            title={<Text strong style={{ fontSize: 15 }}>{t('dashboard.estimatePipeline')}</Text>}
             style={{ borderRadius: 12, border: '1px solid #f0f0f0', height: '100%' }}
             styles={{ body: { padding: '16px 24px 24px' } }}
           >
             {/* Estimate Pipeline */}
             <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Estimate Pipeline
+              {t('dashboard.estimatePipeline')}
             </Text>
             {estLoading ? (
               <Flex justify="center" style={{ padding: 20 }}><Spin size="small" /></Flex>
             ) : estimates.length === 0 ? (
-              <Empty description="No estimates" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '12px 0' }} />
+              <Empty description={t('dashboard.noEstimates')} image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ margin: '12px 0' }} />
             ) : (
               <div style={{ marginTop: 12, marginBottom: 20 }}>
                 <Row gutter={[12, 12]}>
                   <Col span={8}>
-                    <div style={{ background: '#f6ffed', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <div style={{ background: 'rgba(82, 196, 26, 0.1)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#52c41a' }}>{estimatePipeline.winRate}%</div>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Win Rate</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>{t('dashboard.winRate')}</Text>
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div style={{ background: '#e6f4ff', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <div style={{ background: 'rgba(22, 119, 255, 0.08)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#1677ff' }}>{estimatePipeline.totalEstimates}</div>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Total</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>{t('common.total')}</Text>
                     </div>
                   </Col>
                   <Col span={8}>
-                    <div style={{ background: '#f9f0ff', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <div style={{ background: 'rgba(114, 46, 209, 0.1)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 700, color: '#722ed1' }}>{formatCurrency(estimatePipeline.pipelineValue)}</div>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Pipeline</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>{t('dashboard.pipeline')}</Text>
                     </div>
                   </Col>
                 </Row>

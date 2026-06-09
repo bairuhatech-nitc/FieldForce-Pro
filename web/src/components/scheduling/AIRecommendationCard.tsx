@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   Button,
@@ -68,6 +69,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
   onReject,
   onModify,
 }) => {
+  const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
   const [selectedTechnician, setSelectedTechnician] = useState<string | null>(null);
   const applyOptimization = useApplyOptimization();
@@ -98,9 +100,9 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
       title={
         <Space>
           <RobotOutlined style={{ fontSize: 20, color: '#1890ff' }} />
-          <Text strong>AI Schedule Recommendation</Text>
+          <Text strong>{t('aiRecommendation.title')}</Text>
           <Badge
-            count={`Score: ${(optimization.optimization_score * 100).toFixed(0)}%`}
+            count={`${t('aiRecommendation.score')}: ${(optimization.optimization_score * 100).toFixed(0)}%`}
             style={{
               backgroundColor: getScoreColor(optimization.optimization_score),
             }}
@@ -115,20 +117,20 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
             onClick={handleAccept}
             loading={applyOptimization.isPending}
           >
-            Accept & Apply
+            {t('aiRecommendation.acceptAndApply')}
           </Button>
           <Button
             icon={<EditOutlined />}
             onClick={onModify}
           >
-            Modify
+            {t('aiRecommendation.modify')}
           </Button>
           <Button
             danger
             icon={<CloseOutlined />}
             onClick={onReject}
           >
-            Reject
+            {t('aiRecommendation.reject')}
           </Button>
         </Space>
       }
@@ -140,7 +142,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
           <Col span={6}>
             <Card size="small" bordered={false}>
               <Statistic
-                title="Jobs Scheduled"
+                title={t('aiRecommendation.stats.jobsScheduled')}
                 value={optimization.schedule.reduce((sum, s) => sum + s.total_stops, 0)}
                 suffix={`/ ${optimization.schedule.reduce((sum, s) => sum + s.total_stops, 0) + optimization.unassigned.length}`}
                 valueStyle={{ color: '#3f8600' }}
@@ -150,7 +152,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
           <Col span={6}>
             <Card size="small" bordered={false}>
               <Statistic
-                title="Total Distance"
+                title={t('aiRecommendation.stats.totalDistance')}
                 value={optimization.total_distance_km?.toFixed(1) || 0}
                 suffix="km"
                 prefix={<CarOutlined />}
@@ -160,7 +162,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
           <Col span={6}>
             <Card size="small" bordered={false}>
               <Statistic
-                title="Total Duration"
+                title={t('aiRecommendation.stats.totalDuration')}
                 value={formatDuration(optimization.total_duration_minutes || 0)}
                 prefix={<ClockCircleOutlined />}
               />
@@ -169,7 +171,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
           <Col span={6}>
             <Card size="small" bordered={false}>
               <Statistic
-                title="Optimization Score"
+                title={t('aiRecommendation.stats.optimizationScore')}
                 value={(optimization.optimization_score * 100).toFixed(0)}
                 suffix="%"
                 valueStyle={{ color: getScoreColor(optimization.optimization_score) }}
@@ -182,8 +184,8 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
         {/* Unassigned Jobs Alert */}
         {optimization.unassigned.length > 0 && (
           <Alert
-            message={`${optimization.unassigned.length} Unassigned Jobs`}
-            description="These jobs could not be scheduled due to constraints. Consider adding more technicians or adjusting time windows."
+            message={`${optimization.unassigned.length} ${t('aiRecommendation.unassignedJobs')}`}
+            description={t('aiRecommendation.unassignedDescription')}
             type="warning"
             showIcon
             action={
@@ -191,7 +193,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
                 size="small"
                 onClick={() => {
                   Modal.info({
-                    title: 'Unassigned Jobs',
+                    title: t('aiRecommendation.unassignedJobs'),
                     content: (
                       <List
                         dataSource={optimization.unassigned}
@@ -205,7 +207,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
                   });
                 }}
               >
-                View Details
+                {t('aiRecommendation.viewDetails')}
               </Button>
             }
           />
@@ -213,7 +215,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
 
         {/* Technician Routes */}
         <div>
-          <Title level={5}>Technician Routes</Title>
+          <Title level={5}>{t('aiRecommendation.technicianRoutes')}</Title>
           <List
             dataSource={optimization.schedule}
             renderItem={(schedule) => (
@@ -234,7 +236,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
                         <Text strong>{schedule.technician_name}</Text>
                         <br />
                         <Text type="secondary">
-                          {schedule.total_stops} stops • {formatDuration(schedule.estimated_duration)}
+                          {schedule.total_stops} {t('aiRecommendation.stops')} • {formatDuration(schedule.estimated_duration)}
                         </Text>
                       </div>
                     </Space>
@@ -244,12 +246,12 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
                       {schedule.route.slice(0, 3).map((stop, index) => (
                         <Tooltip key={stop.work_order_id} title={stop.address}>
                           <Tag icon={<EnvironmentOutlined />}>
-                            Stop {index + 1}
+                            {t('aiRecommendation.stop')} {index + 1}
                           </Tag>
                         </Tooltip>
                       ))}
                       {schedule.route.length > 3 && (
-                        <Tag>+{schedule.route.length - 3} more</Tag>
+                        <Tag>+{schedule.route.length - 3} {t('aiRecommendation.more')}</Tag>
                       )}
                     </Space>
                   </Col>
@@ -263,23 +265,23 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
         <Card size="small" style={{ backgroundColor: '#f0f5ff' }}>
           <Space>
             <SwapOutlined style={{ fontSize: 16, color: '#1890ff' }} />
-            <Text strong>Improvements vs Current Schedule</Text>
+            <Text strong>{t('aiRecommendation.improvements')}</Text>
           </Space>
           <Divider style={{ margin: '8px 0' }} />
           <Row gutter={16}>
             <Col span={8}>
               <Text type="success">
-                <ArrowDownOutlined /> 25% less travel time
+                <ArrowDownOutlined /> 25% {t('aiRecommendation.lessTravelTime')}
               </Text>
             </Col>
             <Col span={8}>
               <Text type="success">
-                <ArrowUpOutlined /> 15% better utilization
+                <ArrowUpOutlined /> 15% {t('aiRecommendation.betterUtilization')}
               </Text>
             </Col>
             <Col span={8}>
               <Text type="success">
-                <CheckOutlined /> All SLAs met
+                <CheckOutlined /> {t('aiRecommendation.allSlaMet')}
               </Text>
             </Col>
           </Row>
@@ -288,7 +290,7 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
 
       {/* Detailed Route Modal */}
       <Modal
-        title={`Route Details - ${optimization.schedule.find(s => s.technician_id === selectedTechnician)?.technician_name}`}
+        title={`${t('aiRecommendation.routeDetails')} - ${optimization.schedule.find(s => s.technician_id === selectedTechnician)?.technician_name}`}
         open={showDetails}
         onCancel={() => setShowDetails(false)}
         footer={null}
@@ -317,16 +319,16 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
                 >
                   <Card size="small">
                     <Descriptions size="small" column={1}>
-                      <Descriptions.Item label="Work Order">
+                      <Descriptions.Item label={t('aiRecommendation.workOrder')}>
                         {stop.work_order_id}
                       </Descriptions.Item>
-                      <Descriptions.Item label="Address">
+                      <Descriptions.Item label={t('aiRecommendation.address')}>
                         {stop.address}
                       </Descriptions.Item>
-                      <Descriptions.Item label="Duration">
+                      <Descriptions.Item label={t('aiRecommendation.duration')}>
                         {formatDuration(stop.duration)}
                       </Descriptions.Item>
-                      <Descriptions.Item label="Arrival">
+                      <Descriptions.Item label={t('aiRecommendation.arrival')}>
                         {new Date(stop.arrival_time).toLocaleString()}
                       </Descriptions.Item>
                     </Descriptions>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Form, Input, Button, Card, Space, Row, Col, Spin, Select, Switch, DatePicker, Divider } from 'antd';
 import { SaveOutlined, CloseOutlined, CalendarOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import PageHeader from '@/components/common/PageHeader';
 import { useMaintenancePlan, useCreateMaintenancePlan, useUpdateMaintenancePlan } from '@/hooks/use-maintenance-plans';
@@ -11,6 +12,7 @@ import type { CreateMaintenancePlanPayload, UpdateMaintenancePlanPayload } from 
 const { TextArea } = Input;
 
 export default function MaintenancePlanFormPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -48,14 +50,12 @@ export default function MaintenancePlanFormPage() {
       };
 
       if (isEdit) {
-        // Update allows last_completed_date and is_active
         formattedValues.last_completed_date = values.last_completed_date
           ? values.last_completed_date.format('YYYY-MM-DD')
           : undefined;
         const payload: UpdateMaintenancePlanPayload = formattedValues;
         await updateMaintenancePlan.mutateAsync({ id: id!, ...payload });
       } else {
-        // Create DTO doesn't accept last_completed_date or is_active
         delete formattedValues.last_completed_date;
         delete formattedValues.is_active;
         const payload: CreateMaintenancePlanPayload = formattedValues;
@@ -103,8 +103,8 @@ export default function MaintenancePlanFormPage() {
   return (
     <div>
       <PageHeader
-        title={isEdit ? 'Edit Maintenance Plan' : 'Add Maintenance Plan'}
-        subtitle={isEdit ? `Editing "${plan?.name}"` : 'Create a new maintenance plan'}
+        title={isEdit ? t('maintenancePlans.editTitle') : t('maintenancePlans.addTitle')}
+        subtitle={isEdit ? t('maintenancePlans.editing', { name: plan?.name }) : t('maintenancePlans.createSubtitle')}
         onBack={() => navigate('/maintenance-plans')}
       />
 
@@ -121,14 +121,14 @@ export default function MaintenancePlanFormPage() {
       >
         <Row gutter={24}>
           <Col xs={24} lg={16}>
-            <Card title="Plan Details" style={{ marginBottom: 24 }}>
+            <Card title={t('maintenancePlans.planDetails')} style={{ marginBottom: 24 }}>
               <Form.Item
                 name="asset_id"
-                label="Asset"
-                rules={[{ required: true, message: 'Asset is required' }]}
+                label={t('maintenancePlans.asset')}
+                rules={[{ required: true, message: t('maintenancePlans.assetRequired') }]}
               >
                 <Select
-                  placeholder="Select an asset"
+                  placeholder={t('maintenancePlans.selectAsset')}
                   showSearch
                   optionFilterProp="children"
                 >
@@ -142,19 +142,19 @@ export default function MaintenancePlanFormPage() {
 
               <Form.Item
                 name="name"
-                label="Plan Name"
-                rules={[{ required: true, message: 'Plan name is required' }]}
+                label={t('maintenancePlans.planName')}
+                rules={[{ required: true, message: t('maintenancePlans.nameRequired') }]}
               >
-                <Input placeholder="e.g., Monthly HVAC Inspection" />
+                <Input placeholder={t('maintenancePlans.namePlaceholder')} />
               </Form.Item>
 
               <Form.Item
                 name="description"
-                label="Description"
+                label={t('maintenancePlans.description')}
               >
                 <TextArea
                   rows={4}
-                  placeholder="Describe what maintenance activities should be performed..."
+                  placeholder={t('maintenancePlans.descriptionPlaceholder')}
                 />
               </Form.Item>
 
@@ -162,18 +162,18 @@ export default function MaintenancePlanFormPage() {
                 <Col span={12}>
                   <Form.Item
                     name="frequency"
-                    label="Frequency"
-                    rules={[{ required: true, message: 'Frequency is required' }]}
+                    label={t('maintenancePlans.frequency')}
+                    rules={[{ required: true, message: t('maintenancePlans.frequencyRequired') }]}
                   >
                     <Select
-                      placeholder="Select frequency"
+                      placeholder={t('maintenancePlans.selectFrequency')}
                       onChange={handleFrequencyChange}
                     >
-                      <Select.Option value="daily">Daily</Select.Option>
-                      <Select.Option value="weekly">Weekly</Select.Option>
-                      <Select.Option value="monthly">Monthly</Select.Option>
-                      <Select.Option value="quarterly">Quarterly</Select.Option>
-                      <Select.Option value="yearly">Yearly</Select.Option>
+                      <Select.Option value="daily">{t('maintenancePlans.daily')}</Select.Option>
+                      <Select.Option value="weekly">{t('maintenancePlans.weekly')}</Select.Option>
+                      <Select.Option value="monthly">{t('maintenancePlans.monthly')}</Select.Option>
+                      <Select.Option value="quarterly">{t('maintenancePlans.quarterly')}</Select.Option>
+                      <Select.Option value="yearly">{t('maintenancePlans.yearly')}</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
@@ -182,26 +182,26 @@ export default function MaintenancePlanFormPage() {
           </Col>
 
           <Col xs={24} lg={8}>
-            <Card title="Schedule Settings" style={{ marginBottom: 24 }}>
+            <Card title={t('maintenancePlans.scheduleSettings')} style={{ marginBottom: 24 }}>
               <Form.Item
                 name="next_due_date"
-                label="Next Due Date"
+                label={t('maintenancePlans.nextDueDate')}
               >
                 <DatePicker
                   style={{ width: '100%' }}
                   format="YYYY-MM-DD"
-                  placeholder="Select next due date"
+                  placeholder={t('maintenancePlans.selectNextDueDate')}
                 />
               </Form.Item>
 
               <Form.Item
                 name="last_completed_date"
-                label="Last Completed Date"
+                label={t('maintenancePlans.lastCompletedDate')}
               >
                 <DatePicker
                   style={{ width: '100%' }}
                   format="YYYY-MM-DD"
-                  placeholder="Select last completed date"
+                  placeholder={t('maintenancePlans.selectLastCompletedDate')}
                   disabledDate={(current) => current && current > dayjs()}
                 />
               </Form.Item>
@@ -210,34 +210,34 @@ export default function MaintenancePlanFormPage() {
 
               <Form.Item
                 name="auto_create_wo"
-                label="Auto Create Work Order"
+                label={t('maintenancePlans.autoCreateWo')}
                 valuePropName="checked"
               >
-                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+                <Switch checkedChildren={t('maintenancePlans.yes')} unCheckedChildren={t('maintenancePlans.no')} />
               </Form.Item>
 
               <Form.Item
                 name="is_active"
-                label="Active"
+                label={t('maintenancePlans.active')}
                 valuePropName="checked"
               >
-                <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+                <Switch checkedChildren={t('maintenancePlans.active')} unCheckedChildren={t('maintenancePlans.inactive')} />
               </Form.Item>
 
               <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
                 <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
-                  <CalendarOutlined /> Schedule Preview
+                  <CalendarOutlined /> {t('maintenancePlans.schedulePreview')}
                 </div>
                 <div style={{ fontSize: 11, color: '#999' }}>
                   {form.getFieldValue('frequency') && (
                     <>
-                      This plan will run <strong>{form.getFieldValue('frequency')}</strong>
+                      {t('maintenancePlans.planWillRun', { frequency: form.getFieldValue('frequency') })}
                       {form.getFieldValue('next_due_date') && (
-                        <>, next due on <strong>{form.getFieldValue('next_due_date')?.format('YYYY-MM-DD')}</strong></>
+                        <>{t('maintenancePlans.nextDueOn', { date: form.getFieldValue('next_due_date')?.format('YYYY-MM-DD') })}</>
                       )}
                       {form.getFieldValue('auto_create_wo') && (
                         <div style={{ marginTop: 4 }}>
-                          Work orders will be created automatically
+                          {t('maintenancePlans.workOrdersCreatedAutomatically')}
                         </div>
                       )}
                     </>
@@ -256,13 +256,13 @@ export default function MaintenancePlanFormPage() {
               icon={<SaveOutlined />}
               loading={createMaintenancePlan.isPending || updateMaintenancePlan.isPending}
             >
-              {isEdit ? 'Update Plan' : 'Create Plan'}
+              {isEdit ? t('maintenancePlans.updatePlan') : t('maintenancePlans.createPlan')}
             </Button>
             <Button
               onClick={() => navigate('/maintenance-plans')}
               icon={<CloseOutlined />}
             >
-              Cancel
+              {t('maintenancePlans.cancel')}
             </Button>
           </Space>
         </Card>

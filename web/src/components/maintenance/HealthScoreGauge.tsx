@@ -1,5 +1,6 @@
 import { Card, Progress, Typography, Space, Tag } from 'antd';
 import { HeartOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -10,26 +11,28 @@ interface HealthScoreGaugeProps {
   loading?: boolean;
 }
 
-const RISK_CONFIG: Record<string, { color: string; strokeColor: string; label: string }> = {
-  low: { color: 'green', strokeColor: '#52c41a', label: 'Low Risk' },
-  medium: { color: 'orange', strokeColor: '#faad14', label: 'Medium Risk' },
-  high: { color: 'red', strokeColor: '#ff4d4f', label: 'High Risk' },
-  critical: { color: 'magenta', strokeColor: '#cf1322', label: 'Critical' },
-};
-
-function getRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
-  if (score >= 80) return 'low';
-  if (score >= 60) return 'medium';
-  if (score >= 40) return 'high';
-  return 'critical';
-}
-
 export default function HealthScoreGauge({
   score,
   equipmentName,
   riskLevel,
   loading = false,
 }: HealthScoreGaugeProps) {
+  const { t } = useTranslation();
+
+  const RISK_CONFIG: Record<string, { color: string; strokeColor: string; label: string }> = {
+    low: { color: 'green', strokeColor: '#52c41a', label: t('healthScoreGauge.riskLevel.low') },
+    medium: { color: 'orange', strokeColor: '#faad14', label: t('healthScoreGauge.riskLevel.medium') },
+    high: { color: 'red', strokeColor: '#ff4d4f', label: t('healthScoreGauge.riskLevel.high') },
+    critical: { color: 'magenta', strokeColor: '#cf1322', label: t('healthScoreGauge.riskLevel.critical') },
+  };
+
+  function getRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
+    if (score >= 80) return 'low';
+    if (score >= 60) return 'medium';
+    if (score >= 40) return 'high';
+    return 'critical';
+  }
+
   const effectiveRisk = riskLevel || getRiskLevel(score);
   const config = RISK_CONFIG[effectiveRisk];
 

@@ -7,9 +7,10 @@ import { invoiceLineItemsProviders } from '../INVOICE_LINE_ITEMS/invoice_line_it
 import { workOrdersProviders } from '../WORK_ORDERS/work_orders.provider';
 import { workOrderLineItemsProviders } from '../WORK_ORDER_LINE_ITEMS/work_order_line_items.provider';
 import { DatabaseModule } from '../database/database.module';
+import { DocumentApprovalsModule } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, DocumentApprovalsModule],
   controllers: [InvoicesController],
   providers: [
     InvoicesService,

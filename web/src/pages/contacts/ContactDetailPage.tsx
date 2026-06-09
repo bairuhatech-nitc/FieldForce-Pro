@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, Descriptions, Tag, Button, Space, Skeleton } from 'antd';
 import { EditOutlined, DeleteOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useContact, useDeleteContact } from '@/hooks/use-contacts';
@@ -8,6 +9,7 @@ import { PermissionGuard } from '@/components/permissions';
 import { formatDateTime } from '@/utils/format-date';
 
 export default function ContactDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: contact, isLoading } = useContact(id!);
@@ -16,8 +18,8 @@ export default function ContactDetailPage() {
   const handleDelete = () => {
     if (!contact) return;
     showConfirmDialog({
-      title: 'Delete Contact',
-      content: `Are you sure you want to delete ${contact.first_name} ${contact.last_name}?`,
+      title: t('contactDetail.deleteContact'),
+      content: t('contactDetail.deleteConfirm', { name: `${contact.first_name} ${contact.last_name}` }),
       onOk: async () => {
         await deleteContact.mutateAsync(contact.id);
         navigate('/contacts');
@@ -29,7 +31,7 @@ export default function ContactDetailPage() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Contact Details" />
+        <PageHeader title={t('contactDetail.contactDetails')} />
         <Card>
           <Skeleton active />
         </Card>
@@ -40,8 +42,8 @@ export default function ContactDetailPage() {
   if (!contact) {
     return (
       <div>
-        <PageHeader title="Contact Not Found" />
-        <Card>Contact not found</Card>
+        <PageHeader title={t('contactDetail.contactNotFound')} />
+        <Card>{t('contactDetail.contactNotFoundMessage')}</Card>
       </div>
     );
   }
@@ -58,57 +60,57 @@ export default function ContactDetailPage() {
                 icon={<EditOutlined />}
                 onClick={() => navigate(`/contacts/${contact.id}/edit`)}
               >
-                Edit
+                {t('contactDetail.edit')}
               </Button>
             </PermissionGuard>
             <PermissionGuard permission="contacts:delete">
               <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-                Delete
+                {t('contactDetail.delete')}
               </Button>
             </PermissionGuard>
           </Space>
         }
       />
 
-      <Card title="Contact Information">
+      <Card title={t('contactDetail.contactInformation')}>
         <Descriptions column={2} bordered>
-          <Descriptions.Item label="First Name">{contact.first_name}</Descriptions.Item>
-          <Descriptions.Item label="Last Name">{contact.last_name}</Descriptions.Item>
+          <Descriptions.Item label={t('contactDetail.firstName')}>{contact.first_name}</Descriptions.Item>
+          <Descriptions.Item label={t('contactDetail.lastName')}>{contact.last_name}</Descriptions.Item>
 
-          <Descriptions.Item label="Email" span={2}>
+          <Descriptions.Item label={t('contactDetail.email')} span={2}>
             {contact.email ? (
               <Space>
                 <MailOutlined />
                 <a href={`mailto:${contact.email}`}>{contact.email}</a>
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Phone" span={2}>
+          <Descriptions.Item label={t('contactDetail.phone')} span={2}>
             {contact.phone ? (
               <Space>
                 <PhoneOutlined />
                 <a href={`tel:${contact.phone}`}>{contact.phone}</a>
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Address" span={2}>
+          <Descriptions.Item label={t('contactDetail.address')} span={2}>
             {contact.address ? (
               <Space>
                 <EnvironmentOutlined />
                 {contact.address}
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>-</span>
+              <span style={{ opacity: 0.5 }}>-</span>
             )}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Tags" span={2}>
+          <Descriptions.Item label={t('contactDetail.tags')} span={2}>
             {contact.tags && contact.tags.length > 0 ? (
               <Space wrap>
                 {contact.tags.map((tag) => (
@@ -118,21 +120,21 @@ export default function ContactDetailPage() {
                 ))}
               </Space>
             ) : (
-              <span style={{ color: '#999' }}>No tags</span>
+              <span style={{ color: '#999' }}>{t('contactDetail.noTags')}</span>
             )}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Created At">
+          <Descriptions.Item label={t('contactDetail.createdAt')}>
             {formatDateTime(contact.created_at)}
           </Descriptions.Item>
-          <Descriptions.Item label="Updated At">
+          <Descriptions.Item label={t('contactDetail.updatedAt')}>
             {formatDateTime(contact.updated_at)}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
       {contact.custom_fields && Object.keys(contact.custom_fields).length > 0 && (
-        <Card title="Custom Fields" style={{ marginTop: 16 }}>
+        <Card title={t('contactDetail.customFields')} style={{ marginTop: 16 }}>
           <Descriptions column={2} bordered>
             {Object.entries(contact.custom_fields).map(([key, value]) => (
               <Descriptions.Item key={key} label={key}>

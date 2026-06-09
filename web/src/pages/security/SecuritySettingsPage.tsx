@@ -27,6 +27,7 @@ import {
   ClockCircleOutlined,
   KeyOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -85,6 +86,7 @@ type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 // --- Active Sessions Tab ---
 
 function ActiveSessionsTab() {
+  const { t } = useTranslation();
   const { data: sessions = [], isLoading } = useSessions();
   const terminateMutation = useTerminateSession();
   const logoutAllMutation = useLogoutAll();
@@ -92,8 +94,8 @@ function ActiveSessionsTab() {
 
   const handleTerminate = (session: LoginSession) => {
     showConfirmDialog({
-      title: 'Terminate Session',
-      content: `Are you sure you want to terminate this session${session.device_name ? ` (${session.device_name})` : ''}?`,
+      title: t('security.terminateSession'),
+      content: t('security.confirmTerminate', { device: session.device_name ? ` (${session.device_name})` : '' }),
       onOk: async () => {
         await terminateMutation.mutateAsync(session.id).catch(() => { });
       },
@@ -103,13 +105,12 @@ function ActiveSessionsTab() {
 
   const handleTerminateAll = () => {
     showConfirmDialog({
-      title: 'Terminate All Sessions',
-      content:
-        'This will log out all devices including the current one. You will be redirected to the login page. Continue?',
+      title: t('security.terminateAllSessions'),
+      content: t('security.confirmTerminateAll'),
       onOk: async () => {
         await logoutAllMutation.mutateAsync().catch(() => { });
       },
-      okText: 'Logout All Devices',
+      okText: t('security.logoutAllDevices'),
       danger: true,
     });
   };
@@ -123,11 +124,11 @@ function ActiveSessionsTab() {
     const diffDays = Math.floor(diffMs / 86400000);
     const diffWeeks = Math.floor(diffMs / 604800000);
 
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
+    if (diffMins < 1) return t('security.justNow');
+    if (diffMins < 60) return t('security.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('security.hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('security.daysAgo', { count: diffDays });
+    return t('security.weeksAgo', { count: diffWeeks });
   };
 
   const getSessionExpiry = (createdAt: string) => {
@@ -138,21 +139,19 @@ function ActiveSessionsTab() {
     const diffDays = Math.floor(diffMs / 86400000);
     const diffHours = Math.floor(diffMs / 3600000);
 
-    if (diffMs < 0) return 'Expired';
-    if (diffDays > 0) return `Expires in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-    if (diffHours > 0) return `Expires in ${diffHours} hour${diffHours > 1 ? 's' : ''}`;
-    return 'Expires soon';
+    if (diffMs < 0) return t('security.expired');
+    if (diffDays > 0) return t('security.expiresInDays', { count: diffDays });
+    if (diffHours > 0) return t('security.expiresInHours', { count: diffHours });
+    return t('security.expiresSoon');
   };
 
   const cleanIpAddress = (ip: string | null | undefined): string => {
     if (!ip) return '';
 
-    // Remove IPv6-mapped IPv4 prefix (::ffff:)
     if (ip.startsWith('::ffff:')) {
       return ip.replace('::ffff:', '');
     }
 
-    // Convert IPv6 localhost to readable format
     if (ip === '::1') {
       return 'localhost';
     }
@@ -165,10 +164,8 @@ function ActiveSessionsTab() {
     const deviceName = session.device_name || '';
     const os = session.os || '';
 
-    // Determine device name
     let name = browser || deviceName || session.device_type || 'Web';
 
-    // Add OS if available and not already in the name
     if (os && !name.toLowerCase().includes(os.toLowerCase())) {
       name = `${name} on ${os}`;
     }
@@ -182,10 +179,10 @@ function ActiveSessionsTab() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
           <div>
             <Title level={4} style={{ margin: 0, marginBottom: 4, fontSize: 20, fontWeight: 600 }}>
-              Active sessions
+              {t('security.activeSessions')}
             </Title>
             <Text type="secondary" style={{ fontSize: 14 }}>
-              Manage devices logged into your account
+              {t('security.manageDevices')}
             </Text>
           </div>
           {sessions.length > 1 && (
@@ -195,7 +192,7 @@ function ActiveSessionsTab() {
               loading={logoutAllMutation.isPending}
               size="small"
             >
-              Terminate All
+              {t('security.terminateAll')}
             </Button>
           )}
         </div>
@@ -204,13 +201,13 @@ function ActiveSessionsTab() {
       {isLoading ? (
         <Card style={{ borderRadius: 12 }}>
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <Text type="secondary">Loading sessions...</Text>
+            <Text type="secondary">{t('security.loadingSessions')}</Text>
           </div>
         </Card>
       ) : sessions.length === 0 ? (
         <Card style={{ borderRadius: 12 }}>
           <Empty
-            description="No active sessions found"
+            description={t('security.noActiveSessions')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             style={{ padding: 40 }}
           />
@@ -219,11 +216,10 @@ function ActiveSessionsTab() {
         <Card style={{ borderRadius: 12, overflow: 'hidden' }} bodyStyle={{ padding: 0 }}>
           {sessions.map((session, index) => {
             const Icon = DEVICE_ICONS[session.device_type] || LaptopOutlined;
-            // Current session is the most recently active (first in list)
             const isCurrent = index === 0;
             const deviceInfo = getDeviceInfo(session);
             const cleanIp = cleanIpAddress(session.ip_address);
-            const location = session.location || cleanIp || 'Unknown location';
+            const location = session.location || cleanIp || t('security.unknownLocation');
             const lastSeen = session.last_activity_at || session.created_at;
 
             return (
@@ -236,14 +232,12 @@ function ActiveSessionsTab() {
                     gap: 10,
                   }}
                 >
-                  {/* Device Icon */}
                   <div
                     style={{
                       width: 34,
                       height: 34,
                       borderRadius: 10,
                       backgroundColor: '#fafafa',
-                      // border: '1px solid #f0f0f0',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -253,7 +247,6 @@ function ActiveSessionsTab() {
                     <Icon style={{ fontSize: 20, color: '#595959' }} />
                   </div>
 
-                  {/* Session Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div >
                       <Text strong style={{ fontSize: 12, color: '#262626' }}>
@@ -277,7 +270,7 @@ function ActiveSessionsTab() {
                                 backgroundColor: '#52c41a',
                                 marginRight: 6,
                               }}></span>
-                              Current session
+                              {t('security.currentSession')}
                             </span>
                             {location && (
                               <>
@@ -290,14 +283,13 @@ function ActiveSessionsTab() {
                       ) : (
                         <div style={{ fontSize: 12 }}>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            {location} · Last seen {getRelativeTime(lastSeen)}
+                            {t('security.locationLastSeen', { location, time: getRelativeTime(lastSeen) })}
                           </Text>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Terminate Button */}
                   <Button
                     type="text"
                     danger
@@ -306,7 +298,7 @@ function ActiveSessionsTab() {
                     loading={terminateMutation.isPending}
                     style={{ flexShrink: 0 }}
                   >
-                    {isCurrent ? 'Sign out' : 'Revoke'}
+                    {isCurrent ? t('security.signOut') : t('security.revoke')}
                   </Button>
                 </div>
                 {index < sessions.length - 1 && (
@@ -324,6 +316,7 @@ function ActiveSessionsTab() {
 // --- Change Password Tab ---
 
 function ChangePasswordTab() {
+  const { t } = useTranslation();
   const changePasswordMutation = useChangePassword();
   const [submitted, setSubmitted] = useState(false);
 
@@ -350,7 +343,7 @@ function ChangePasswordTab() {
   };
 
   if (submitted && changePasswordMutation.isSuccess) {
-    return null; // User will be redirected to login page by the hook
+    return null;
   }
 
   return (
@@ -359,12 +352,12 @@ function ChangePasswordTab() {
         title={
           <Space>
             <KeyOutlined />
-            <span>Change Password</span>
+            <span>{t('security.changePassword')}</span>
           </Space>
         }
       >
         <Alert
-          message="Changing your password will terminate all active sessions on all devices. You will need to log in again."
+          message={t('security.passwordWarning')}
           type="warning"
           showIcon
           style={{ marginBottom: 24 }}
@@ -373,7 +366,7 @@ function ChangePasswordTab() {
         <div style={{ maxWidth: 480 }}>
           <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
             <Form.Item
-              label="Current Password"
+              label={t('security.currentPassword')}
               validateStatus={errors.old_password ? 'error' : ''}
               help={errors.old_password?.message}
             >
@@ -384,7 +377,7 @@ function ChangePasswordTab() {
                   <Input.Password
                     {...field}
                     prefix={<LockOutlined />}
-                    placeholder="Enter current password"
+                    placeholder={t('security.enterCurrentPassword')}
                     size="large"
                   />
                 )}
@@ -392,7 +385,7 @@ function ChangePasswordTab() {
             </Form.Item>
 
             <Form.Item
-              label="New Password"
+              label={t('security.newPassword')}
               validateStatus={errors.new_password ? 'error' : ''}
               help={errors.new_password?.message}
             >
@@ -403,7 +396,7 @@ function ChangePasswordTab() {
                   <Input.Password
                     {...field}
                     prefix={<LockOutlined />}
-                    placeholder="Enter new password"
+                    placeholder={t('security.enterNewPassword')}
                     size="large"
                   />
                 )}
@@ -411,7 +404,7 @@ function ChangePasswordTab() {
             </Form.Item>
 
             <Form.Item
-              label="Confirm New Password"
+              label={t('security.confirmNewPassword')}
               validateStatus={errors.confirm_password ? 'error' : ''}
               help={errors.confirm_password?.message}
             >
@@ -422,7 +415,7 @@ function ChangePasswordTab() {
                   <Input.Password
                     {...field}
                     prefix={<LockOutlined />}
-                    placeholder="Confirm new password"
+                    placeholder={t('security.confirmNewPassword')}
                     size="large"
                   />
                 )}
@@ -437,7 +430,7 @@ function ChangePasswordTab() {
                 size="large"
                 icon={<KeyOutlined />}
               >
-                Change Password
+                {t('security.changePassword')}
               </Button>
             </Form.Item>
           </Form>
@@ -450,13 +443,14 @@ function ChangePasswordTab() {
 // --- Main Page ---
 
 export default function SecuritySettingsPage() {
+  const { t } = useTranslation();
   const tabItems = [
     {
       key: 'sessions',
       label: (
         <Space>
           <LaptopOutlined />
-          Active Sessions
+          {t('security.activeSessions')}
         </Space>
       ),
       children: <ActiveSessionsTab />,
@@ -466,7 +460,7 @@ export default function SecuritySettingsPage() {
       label: (
         <Space>
           <KeyOutlined />
-          Change Password
+          {t('security.changePassword')}
         </Space>
       ),
       children: <ChangePasswordTab />,
@@ -476,14 +470,14 @@ export default function SecuritySettingsPage() {
       label: (
         <Space>
           <SafetyOutlined />
-          Multi-Factor Auth
+          {t('security.mfa')}
         </Space>
       ),
       children: (
         <div>
           <Alert
-            message="Multi-Factor Authentication"
-            description="Add an extra layer of security to user accounts"
+            message={t('security.mfaTitle')}
+            description={t('security.mfaDescription')}
             type="info"
             showIcon
             style={{ marginBottom: 24 }}
@@ -497,14 +491,14 @@ export default function SecuritySettingsPage() {
       label: (
         <Space>
           <GlobalOutlined />
-          IP Whitelisting
+          {t('security.ipWhitelisting')}
         </Space>
       ),
       children: (
         <div>
           <Alert
-            message="IP Whitelisting"
-            description="Restrict access to specific IP addresses or ranges"
+            message={t('security.ipWhitelisting')}
+            description={t('security.ipWhitelistDescription')}
             type="info"
             showIcon
             style={{ marginBottom: 24 }}
@@ -518,8 +512,8 @@ export default function SecuritySettingsPage() {
   return (
     <div>
       <PageHeader
-        title="Security Settings"
-        subtitle="Manage sessions, passwords, and security policies"
+        title={t('security.securitySettings')}
+        subtitle={t('security.manageSecurityPolicy')}
       />
 
       <Tabs items={tabItems} defaultActiveKey="sessions" />

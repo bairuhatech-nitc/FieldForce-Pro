@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Button, Table, Space, Tooltip, Tag, Select, Tabs, Modal, Input, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useServiceRequests, useDeleteServiceRequest, useMyPendingApprovals, useProcessServiceRequestApproval } from '@/hooks/use-service-requests';
+import { useServiceRequests, useDeleteServiceRequest, useMyPendingApprovals, useProcessServiceRequestApproval, useQueue, useUpdatePriority, useApproveAndConvert, useUpdateServiceRequestStatus } from '@/hooks/use-service-requests';
 import { serviceRequestsApi } from '@/api/service-requests.api';
 import { usePermission } from '@/components/permissions/usePermission';
 import { useAuthStore } from '@/store/auth.store';
@@ -14,6 +14,7 @@ import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PermissionGuard } from '@/components/permissions';
 import { formatDateTime } from '@/utils/format-date';
 import SearchFilter from '@/components/common/SearchFilter';
+import { SlaCountdownCell } from '@/components/common/SlaCountdownCell';
 
 const priorityColors: Record<string, string> = {
   urgent: 'red',
@@ -24,15 +25,14 @@ const priorityColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   new: 'blue',
+  triaged: 'cyan',
+  estimated: 'gold',
   approved: 'green',
+  converted_to_wo: 'purple',
   rejected: 'red',
+  closed: 'default',
+  spam: 'red',
 };
-
-const statusOptions = [
-  { value: 'new', label: 'New' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-];
 
 interface ApprovalRecord {
   id: string;
@@ -75,13 +75,42 @@ export default function RequestListPage() {
 
   const deleteRequest = useDeleteServiceRequest();
   const processApproval = useProcessServiceRequestApproval();
+  const approveAndConvert = useApproveAndConvert();
+  const rejectSr = useUpdateServiceRequestStatus();
 
-  const currentQuery = activeTab === 'all' ? allRequestsQuery : myApprovalsQuery;
-  const requests = currentQuery.data?.data || [];
-  const meta = currentQuery.data?.meta;
-  const isLoading = currentQuery.isLoading;
+  const { data: queueData = [], isLoading: queueLoading } = useQueue();
+  const updatePriority = useUpdatePriority();
+
+  const currentQuery = activeTab === 'all' || activeTab === 'spam' ? allRequestsQuery : myApprovalsQuery;
+  const requests = activeTab === 'queue' ? queueData : currentQuery.data?.data || [];
+  const meta = activeTab === 'queue' ? { itemCount: queueData.length } : currentQuery.data?.meta;
+  const isLoading = activeTab === 'queue' ? queueLoading : currentQuery.isLoading;
+
+  const statusLabelsMap: Record<string, string> = {
+    new: t('serviceRequests.status.new'),
+    triaged: t('serviceRequests.status.triaged'),
+    estimated: t('serviceRequests.status.estimated'),
+    approved: t('serviceRequests.status.approved'),
+    converted_to_wo: t('serviceRequests.status.convertedToWo'),
+    rejected: t('serviceRequests.status.rejected'),
+    closed: t('serviceRequests.status.closed'),
+    spam: t('serviceRequests.status.flagged'),
+  };
+
+  const statusOptions = [
+    { value: 'new', label: t('serviceRequests.statusOptions.new') },
+    { value: 'approved', label: t('serviceRequests.statusOptions.approved') },
+    { value: 'rejected', label: t('serviceRequests.statusOptions.rejected') },
+  ];
 
   // Status filter is now handled server-side via the API query param
+  useEffect(() => {
+    if (activeTab === 'spam') {
+      setStatusFilter('spam');
+    } else if (activeTab === 'all') {
+      setStatusFilter(searchParams.get('status') || undefined);
+    }
+  }, [activeTab, searchParams]);
 
   // Debounce search input
   useEffect(() => {
@@ -104,8 +133,8 @@ export default function RequestListPage() {
 
   const handleDelete = (request: ServiceRequest) => {
     showConfirmDialog({
-      title: 'Delete Service Request',
-      content: `Are you sure you want to delete "${request.subject}"?`,
+      title: t('serviceRequests.deleteRequestTitle'),
+      content: t('serviceRequests.deleteRequestContent', { subject: request.subject }),
       onOk: async () => {
         await deleteRequest.mutateAsync(request.id);
       },
@@ -133,7 +162,7 @@ export default function RequestListPage() {
       );
 
       if (!myPending) {
-        message.warning('No pending approval found for this request. It may have already been processed.');
+        message.warning(t('serviceRequests.noPendingApprovalWarning'));
         setApprovalModalOpen(false);
         myApprovalsQuery.refetch();
         return;
@@ -144,7 +173,7 @@ export default function RequestListPage() {
         (a) => a.order_no < myPending.order_no && a.status === 'PENDING',
       );
       if (hasPriorPending) {
-        message.warning('A previous approver has not yet acted. Please wait for your turn.');
+        message.warning(t('serviceRequests.previousApproverWarning'));
         setApprovalModalOpen(false);
         return;
       }
@@ -160,16 +189,16 @@ export default function RequestListPage() {
           onSuccess: () => {
             setApprovalModalOpen(false);
             setApprovalProcessing(false);
-            message.success('Approval processed successfully');
+            message.success(t('serviceRequests.approvalSuccess'));
           },
           onError: () => {
-            message.error('Failed to process approval');
+            message.error(t('serviceRequests.approvalError'));
             setApprovalProcessing(false);
           },
         },
       );
     } catch {
-      message.error('Failed to process approval');
+      message.error(t('serviceRequests.approvalError'));
       setApprovalProcessing(false);
     }
   };
@@ -177,69 +206,105 @@ export default function RequestListPage() {
   // Shared columns (everything except Actions)
   const sharedColumns: ColumnsType<ServiceRequest> = [
     {
-      title: 'Request ID',
+      title: t('serviceRequests.table.requestId'),
       dataIndex: 'request_number',
       key: 'request_number',
       width: 140,
-      render: (num: string) => (
-        <span style={{ fontWeight: 600, fontFamily: 'monospace', color: '#1890ff' }}>
-          {num || '-'}
-        </span>
+      render: (num: string, record: any) => (
+        <Link to={`/service-requests/${record.id}`}>
+          <span style={{ fontWeight: 600, fontFamily: 'monospace', color: '#1890ff' }}>
+            {num || '-'}
+          </span>
+        </Link>
       ),
       sorter: (a, b) => (a.request_number || '').localeCompare(b.request_number || ''),
     },
     {
-      title: 'Subject',
+      title: t('serviceRequests.table.subject'),
       dataIndex: 'subject',
       key: 'subject',
-      render: (subject: string) => <span style={{ fontWeight: 500 }}>{subject}</span>,
+      render: (subject: string, record: any) => <span style={{ fontWeight: 500 }}>{subject}</span>,
       sorter: (a, b) => a.subject.localeCompare(b.subject),
     },
     {
-      title: 'Priority',
+      title: t('serviceRequests.table.priority'),
       dataIndex: 'priority',
       key: 'priority',
-      render: (priority: string) => (
+      render: (priority: string, record: any) => (
         <Tag color={priorityColors[priority] || 'default'}>
-          {priority?.charAt(0).toUpperCase() + priority?.slice(1)}
+          {priority ? t(`priorities.${priority.charAt(0).toUpperCase() + priority.slice(1)}`, priority.charAt(0).toUpperCase() + priority.slice(1)) : '-'}
         </Tag>
       ),
     },
     {
-      title: 'Status',
+      title: t('serviceRequests.table.status'),
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => (
-        <Tag color={statusColors[status] || 'default'}>
-          {status?.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+      width: 160,
+      render: (status: string, record: any) => (
+        <Tag color={statusColors[status] || 'default'} style={{ whiteSpace: 'nowrap' }}>
+          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\\b\\w/g, (l) => l.toUpperCase())}
         </Tag>
       ),
     },
     {
-      title: 'Channel',
+      title: t('serviceRequests.table.channel'),
       dataIndex: 'channel',
       key: 'channel',
-      render: (channel: string) =>
+      width: 120,
+      render: (channel: string, record: any) =>
         channel ? (
-          <Tag>{channel.charAt(0).toUpperCase() + channel.slice(1)}</Tag>
+          <Tag style={{ whiteSpace: 'nowrap' }}>{channel.charAt(0).toUpperCase() + channel.slice(1)}</Tag>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ opacity: 0.5 }}>-</span>
         ),
     },
     {
-      title: 'Customer',
+      title: t('serviceRequests.table.customer'),
       key: 'contact',
       render: (_, record) =>
         record.contact
           ? `${record.contact.first_name} ${record.contact.last_name}`
-          : <span style={{ color: '#999' }}>-</span>,
+          : <span style={{ opacity: 0.5 }}>-</span>,
     },
     {
-      title: 'Created',
+      title: t('serviceRequests.table.technicians'),
+      key: 'technicians',
+      render: (_, record) =>
+        record.technicians && record.technicians.length > 0 ? (
+          <Space wrap size={[0, 4]}>
+            {record.technicians.map((t) => (
+              <Tooltip key={t.id} title={`${t.first_name} ${t.last_name}`}>
+                <Tag color="blue" style={{ borderRadius: '50%', width: 24, height: 24, textAlign: 'center', lineHeight: '22px', padding: 0 }}>
+                  {t.first_name?.charAt(0)}{t.last_name?.charAt(0)}
+                </Tag>
+              </Tooltip>
+            ))}
+          </Space>
+        ) : (
+          <span style={{ opacity: 0.5 }}>-</span>
+        ),
+    },
+    {
+      title: t('serviceRequests.table.created'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date: string) => formatDateTime(date),
+      render: (date: string, record: any) => formatDateTime(date),
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    },
+    {
+      title: 'Response SLA',
+      key: 'response_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.response_deadline} status={record.sla.response_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
+    },
+    {
+      title: 'Completion SLA',
+      key: 'resolution_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.resolution_deadline} status={record.sla.resolution_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
     },
   ];
 
@@ -247,21 +312,18 @@ export default function RequestListPage() {
   const allRequestsColumns: ColumnsType<ServiceRequest> = [
     ...sharedColumns,
     {
-      title: 'Actions',
+      title: t('serviceRequests.table.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View">
-            <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
-          </Tooltip>
           {isAdmin && (
             <>
-              <Tooltip title="Edit">
+              <Tooltip title={t('common.edit')}>
                 <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}/edit`)} />
               </Tooltip>
-              <Tooltip title="Delete">
+              <Tooltip title={t('common.delete')}>
                 <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
               </Tooltip>
             </>
@@ -271,20 +333,32 @@ export default function RequestListPage() {
     },
   ];
 
+  // "Flagged (Spam)" tab actions — View, Restore (admin)
+  const spamRequestsColumns: ColumnsType<ServiceRequest> = [
+    ...sharedColumns,
+    {
+      title: t('serviceRequests.table.actions'),
+      key: 'actions',
+      fixed: 'right',
+      width: 150,
+      render: (_, record) => (
+        <Space size="small">
+        </Space>
+      ),
+    },
+  ];
+
   // "My Approvals" tab actions — View, Approve, Reject
   const myApprovalsColumns: ColumnsType<ServiceRequest> = [
     ...sharedColumns,
     {
-      title: 'Actions',
+      title: t('serviceRequests.table.actions'),
       key: 'actions',
       fixed: 'right',
       width: 200,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View">
-            <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/service-requests/${record.id}`)} />
-          </Tooltip>
-          <Tooltip title="Approve">
+          <Tooltip title={t('common.approve')}>
             <Button
               type="text"
               icon={<CheckCircleOutlined />}
@@ -293,7 +367,7 @@ export default function RequestListPage() {
               onClick={() => openApprovalModal(record, 'APPROVE')}
             />
           </Tooltip>
-          <Tooltip title="Reject">
+          <Tooltip title={t('common.reject')}>
             <Button
               type="text"
               icon={<CloseCircleOutlined />}
@@ -307,28 +381,173 @@ export default function RequestListPage() {
     },
   ];
 
-  const columns = activeTab === 'my-approvals' ? myApprovalsColumns : allRequestsColumns;
-
   const tabItems = [
     {
       key: 'all',
-      label: 'All Requests',
+      label: t('serviceRequests.tabs.allRequests'),
     },
     {
       key: 'my-approvals',
-      label: 'My Approvals',
+      label: t('serviceRequests.tabs.myApprovals'),
+    },
+    {
+      key: 'queue',
+      label: t('serviceRequests.tabs.priorityQueue'),
+    }
+  ];
+
+  if (isAdmin) {
+    tabItems.push({
+      key: 'spam',
+      label: t('serviceRequests.tabs.flaggedRequests'),
+    });
+  }
+
+  const handlePriorityChange = (id: string, priority: string) => {
+    updatePriority.mutate({ id, priority });
+  };
+
+  const handleApproveFromQueue = (record: ServiceRequest) => {
+    showConfirmDialog({
+      title: t('serviceRequests.approveAndConvertTitle'),
+      content: t('serviceRequests.approveAndConvertContent', { subject: record.subject }),
+      onOk: async () => {
+        const response = await approveAndConvert.mutateAsync(record.id);
+        const wo = response.data.data?.workOrder;
+        if (wo) {
+          navigate(`/work-orders/${wo.id}`);
+        }
+      },
+    });
+  };
+
+  const handleRejectFromQueue = (record: ServiceRequest) => {
+    showConfirmDialog({
+      title: t('serviceRequests.rejectRequestTitle'),
+      content: t('serviceRequests.rejectRequestContent', { subject: record.subject }),
+      onOk: async () => {
+        await rejectSr.mutateAsync({ id: record.id, status: 'rejected' });
+      },
+      danger: true,
+    });
+  };
+
+  const queueColumns: ColumnsType<ServiceRequest> = [
+    {
+      title: t('serviceRequests.table.requestId'),
+      dataIndex: 'request_number',
+      key: 'request_number',
+      width: 140,
+      render: (num: string, record: any) => (
+        <Link to={`/service-requests/${record.id}`}>
+          <span style={{ fontWeight: 600, fontFamily: 'monospace', color: '#1890ff' }}>
+            {num || '-'}
+          </span>
+        </Link>
+      ),
+    },
+    {
+      title: t('serviceRequests.table.subject'),
+      dataIndex: 'subject',
+      key: 'subject',
+      render: (subject: string, record: any) => <span style={{ fontWeight: 500 }}>{subject}</span>,
+    },
+    {
+      title: t('serviceRequests.table.priority'),
+      dataIndex: 'priority',
+      key: 'priority',
+      render: (priority: string, record: ServiceRequest) => (
+        <Select
+          value={priority}
+          onChange={(value) => handlePriorityChange(record.id, value)}
+          style={{ width: 120 }}
+          loading={updatePriority.isPending}
+          options={[
+            { value: 'low', label: t('serviceRequests.priorityOptions.low') },
+            { value: 'medium', label: t('serviceRequests.priorityOptions.medium') },
+            { value: 'high', label: t('serviceRequests.priorityOptions.high') },
+            { value: 'urgent', label: t('serviceRequests.priorityOptions.urgent') },
+          ]}
+        />
+      ),
+    },
+    {
+      title: t('serviceRequests.table.status'),
+      dataIndex: 'status',
+      key: 'status',
+      width: 160,
+      render: (status: string, record: any) => (
+        <Tag color={statusColors[status] || 'default'} style={{ whiteSpace: 'nowrap' }}>
+          {statusLabelsMap[status] || status?.replace(/_/g, ' ').replace(/\\b\\w/g, (l) => l.toUpperCase())}
+        </Tag>
+      ),
+    },
+    {
+      title: t('serviceRequests.table.created'),
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string, record: any) => formatDateTime(date),
+    },
+    {
+      title: 'Response SLA',
+      key: 'response_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.response_deadline} status={record.sla.response_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
+    },
+    {
+      title: 'Completion SLA',
+      key: 'resolution_sla',
+      render: (_, record: any) => (
+        record.sla ? <SlaCountdownCell deadline={record.sla.resolution_deadline} status={record.sla.resolution_status} /> : <span style={{ opacity: 0.5 }}>-</span>
+      ),
+    },
+    {
+      title: t('serviceRequests.table.actions'),
+      key: 'actions',
+      fixed: 'right',
+      width: 160,
+      render: (_, record) => (
+        <Space size="small">
+          {isAdmin && !['converted_to_wo', 'closed', 'spam', 'rejected'].includes(record.status) && (
+            <>
+              <Tooltip title={t('serviceRequests.approveAndConvertTooltip')}>
+                <Button
+                  type="text"
+                  icon={<CheckCircleOutlined />}
+                  size="small"
+                  style={{ color: '#52c41a' }}
+                  loading={approveAndConvert.isPending}
+                  onClick={() => handleApproveFromQueue(record)}
+                />
+              </Tooltip>
+              <Tooltip title={t('common.reject')}>
+                <Button
+                  type="text"
+                  icon={<CloseCircleOutlined />}
+                  size="small"
+                  danger
+                  onClick={() => handleRejectFromQueue(record)}
+                />
+              </Tooltip>
+            </>
+          )}
+        </Space>
+      ),
     },
   ];
+
+  const columns = activeTab === 'queue' ? queueColumns : activeTab === 'spam' ? spamRequestsColumns : activeTab === 'my-approvals' ? myApprovalsColumns : allRequestsColumns;
 
   return (
     <div>
       <PageHeader
         title={t('nav.serviceRequests')}
-        subtitle="Manage incoming service requests"
+        subtitle={t('serviceRequests.pageSubtitle')}
         extra={
           <PermissionGuard permission="service_requests:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/service-requests/new')}>
-              Add Request
+              {t('serviceRequests.addRequest')}
             </Button>
           </PermissionGuard>
         }
@@ -343,7 +562,7 @@ export default function RequestListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search requests by subject"
+          placeholder={t('serviceRequests.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
@@ -351,7 +570,7 @@ export default function RequestListPage() {
         />
         {activeTab === 'all' && (
           <Select
-            placeholder="Filter by status"
+            placeholder={t('serviceRequests.filterByStatusPlaceholder')}
             allowClear
             value={statusFilter}
             onChange={(value) => {
@@ -369,44 +588,47 @@ export default function RequestListPage() {
         )}
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={requests}
-        rowKey="id"
-        loading={isLoading}
+      <div style={{ overflowX: 'auto' }}>
+        <Table
+          columns={columns}
+          dataSource={requests}
+          scroll={{ x: 1200 }}
+          rowKey="id"
+          loading={isLoading}
         pagination={{
           current: page,
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} requests`,
+          showTotal: (total) => t('serviceRequests.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);
           },
         }}
-      />
+        />
+      </div>
 
       {/* Approval Action Modal */}
       <Modal
-        title={approvalAction === 'APPROVE' ? 'Approve Service Request' : 'Reject Service Request'}
+        title={approvalAction === 'APPROVE' ? t('serviceRequests.approveRequestTitle') : t('serviceRequests.rejectRequestTitle')}
         open={approvalModalOpen}
         onOk={handleProcessApproval}
         onCancel={() => setApprovalModalOpen(false)}
         confirmLoading={approvalProcessing}
-        okText={approvalAction === 'APPROVE' ? 'Approve' : 'Reject'}
+        okText={approvalAction === 'APPROVE' ? t('common.approve') : t('common.reject')}
         okButtonProps={{
           danger: approvalAction === 'REJECT',
         }}
       >
         <p style={{ marginBottom: 12 }}>
           {approvalAction === 'APPROVE'
-            ? <>Are you sure you want to approve <strong>{approvalSrSubject}</strong>?</>
-            : <>Are you sure you want to reject <strong>{approvalSrSubject}</strong>? This will skip all remaining approvers.</>}
+            ? <>{t('serviceRequests.approveModalContent', { subject: <strong>{approvalSrSubject}</strong> })}</>
+            : <>{t('serviceRequests.rejectModalContent', { subject: <strong>{approvalSrSubject}</strong> })}</>}
         </p>
         <Input.TextArea
           rows={3}
-          placeholder="Add comments (optional)"
+          placeholder={t('common.addCommentsPlaceholder')}
           value={approvalComments}
           onChange={(e) => setApprovalComments(e.target.value)}
         />

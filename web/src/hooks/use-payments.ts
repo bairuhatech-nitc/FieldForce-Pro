@@ -105,6 +105,44 @@ export function useDeletePayment() {
   });
 }
 
+export function usePendingVerificationPayments() {
+  return useQuery({
+    queryKey: ['payments', 'pending-verification'],
+    queryFn: async () => {
+      const res = await paymentsApi.getPendingVerification();
+      return res.data.data || [];
+    },
+    refetchInterval: 30000, // poll every 30 seconds
+  });
+}
+
+export function useConfirmPayment() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+  return useMutation({
+    mutationFn: (id: string) => paymentsApi.confirm(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      addNotification({ type: 'success', message: 'Payment confirmed and invoice updated' });
+    },
+    onError: () => addNotification({ type: 'error', message: 'Failed to confirm payment' }),
+  });
+}
+
+export function useRejectPayment() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => paymentsApi.reject(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments', 'pending-verification'] });
+      addNotification({ type: 'success', message: 'Payment rejected' });
+    },
+    onError: () => addNotification({ type: 'error', message: 'Failed to reject payment' }),
+  });
+}
+
 // Payment Gateways
 export function usePaymentGateways(params?: PageOptions) {
   return useQuery({

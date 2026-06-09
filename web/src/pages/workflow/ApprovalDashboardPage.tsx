@@ -11,35 +11,37 @@ import { formatDateTime } from '@/utils/format-date';
 import { useApprovalDashboard, useMyPendingApprovals } from '@/hooks/use-workflow';
 import type { DocumentApproval } from '@/types/workflow.types';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
 export default function ApprovalDashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: stats, isLoading: statsLoading } = useApprovalDashboard();
   const { data: pendingData, isLoading: pendingLoading } = useMyPendingApprovals({ take: 10 });
 
   const pendingColumns: ColumnsType<DocumentApproval> = [
     {
-      title: 'Document Type',
+      title: t('approvalDashboard.documentType'),
       dataIndex: 'document_type',
       key: 'document_type',
       render: (type: string) => <Tag>{type.replace(/_/g, ' ')}</Tag>,
     },
     {
-      title: 'Workflow',
+      title: t('approvalDashboard.workflow'),
       key: 'workflow',
       render: (_: unknown, record) => record.workflow_template?.name || '-',
     },
     {
-      title: 'Step',
+      title: t('approvalDashboard.step'),
       dataIndex: 'order_no',
       key: 'order_no',
       width: 70,
       render: (v: number) => `#${v}`,
     },
     {
-      title: 'Due Date',
+      title: t('approvalDashboard.dueDate'),
       dataIndex: 'due_date',
       key: 'due_date',
       render: (date: string) => {
@@ -48,13 +50,13 @@ export default function ApprovalDashboardPage() {
         return (
           <Text type={isOverdue ? 'danger' : undefined}>
             {formatDateTime(date)}
-            {isOverdue && <Tag color="red" style={{ marginLeft: 4 }}>Overdue</Tag>}
+            {isOverdue && <Tag color="red" style={{ marginLeft: 4 }}>{t('approvalDashboard.overdue')}</Tag>}
           </Text>
         );
       },
     },
     {
-      title: 'Created',
+      title: t('approvalDashboard.created'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => formatDateTime(date),
@@ -63,14 +65,14 @@ export default function ApprovalDashboardPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2 style={{ marginBottom: 16 }}>Approval Dashboard</h2>
+      <h2 style={{ marginBottom: 16 }}>{t('approvalDashboard.title')}</h2>
 
       {/* Stats Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={8} lg={4}>
           <Card>
             <Statistic
-              title="Total"
+              title={t('approvalDashboard.total')}
               value={stats?.total || 0}
               loading={statsLoading}
               prefix={<CheckCircleOutlined />}
@@ -80,7 +82,7 @@ export default function ApprovalDashboardPage() {
         <Col xs={24} sm={12} md={8} lg={4}>
           <Card>
             <Statistic
-              title="Pending"
+              title={t('approvalDashboard.pending')}
               value={stats?.pending || 0}
               loading={statsLoading}
               valueStyle={{ color: '#faad14' }}
@@ -91,7 +93,7 @@ export default function ApprovalDashboardPage() {
         <Col xs={24} sm={12} md={8} lg={4}>
           <Card>
             <Statistic
-              title="Approved"
+              title={t('approvalDashboard.approved')}
               value={stats?.approved || 0}
               loading={statsLoading}
               valueStyle={{ color: '#52c41a' }}
@@ -102,7 +104,7 @@ export default function ApprovalDashboardPage() {
         <Col xs={24} sm={12} md={8} lg={4}>
           <Card>
             <Statistic
-              title="Rejected"
+              title={t('approvalDashboard.rejected')}
               value={stats?.rejected || 0}
               loading={statsLoading}
               valueStyle={{ color: '#ff4d4f' }}
@@ -113,7 +115,7 @@ export default function ApprovalDashboardPage() {
         <Col xs={24} sm={12} md={8} lg={4}>
           <Card>
             <Statistic
-              title="Overdue"
+              title={t('approvalDashboard.overdue')}
               value={stats?.overdue || 0}
               loading={statsLoading}
               valueStyle={{ color: '#ff4d4f' }}
@@ -124,7 +126,7 @@ export default function ApprovalDashboardPage() {
         <Col xs={24} sm={12} md={8} lg={4}>
           <Card>
             <Statistic
-              title="Approval Rate"
+              title={t('approvalDashboard.approvalRate')}
               value={stats?.approval_rate || 0}
               loading={statsLoading}
               valueStyle={{ color: '#1890ff' }}
@@ -137,9 +139,9 @@ export default function ApprovalDashboardPage() {
 
       {/* Pending Approvals */}
       <Card
-        title="My Pending Approvals"
+        title={t('approvalDashboard.myPendingApprovals')}
         extra={
-          <a onClick={() => navigate('/workflow/approvals')}>View All</a>
+          <a onClick={() => navigate('/workflow/approvals')}>{t('approvalDashboard.viewAll')}</a>
         }
       >
         <Table
@@ -148,7 +150,7 @@ export default function ApprovalDashboardPage() {
           loading={pendingLoading}
           rowKey="id"
           pagination={false}
-          locale={{ emptyText: 'No pending approvals' }}
+          locale={{ emptyText: t('approvalDashboard.noPendingApprovals') }}
         />
       </Card>
     </div>

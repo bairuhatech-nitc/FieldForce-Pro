@@ -16,6 +16,8 @@ import { Tenant } from '../TENANTS/tenants.entity';
 import { UserRole } from '../USER_ROLES/user_roles.entity';
 import { Role } from '../ROLES/roles.entity';
 import { LoginSession } from '../LOGIN_SESSIONS/login_sessions.entity';
+import { ServiceRequest } from '../SERVICE_REQUESTS/service_requests.entity';
+import { ServiceRequestTechnician } from '../SERVICE_REQUESTS/service_request_technician.entity';
 
 @Table({ tableName: 'users', timestamps: true, underscored: true })
 export class User extends Model {
@@ -25,13 +27,13 @@ export class User extends Model {
   id: string;
 
   @ForeignKey(() => Tenant)
-  @Column({ type: DataType.UUID, allowNull: false })
+  @Column({ type: DataType.UUID, allowNull: true })
   tenant_id: string;
 
   @Column({ type: DataType.STRING(255), allowNull: false })
   email: string;
 
-  @Column({ type: DataType.STRING(255), allowNull: false })
+  @Column({ type: DataType.STRING(255), allowNull: true })
   password_hash: string;
 
   @Column({ type: DataType.STRING(100), allowNull: false })
@@ -111,6 +113,30 @@ export class User extends Model {
   @Column({ type: DataType.JSONB, allowNull: true, defaultValue: null })
   recovery_codes: Array<{ code: string; used: boolean }> | null;
 
+  // ── Feature 1: Onboarding ──
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  onboarding_completed: boolean;
+
+  // ── Feature 5: Spam Prevention ──
+  @Default(0)
+  @Column({ type: DataType.INTEGER, allowNull: false })
+  spam_flag_count: number;
+
+  @Default('ACTIVE')
+  @Column({ type: DataType.STRING(20), allowNull: false })
+  status: string;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  magic_link_token: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  magic_link_expires: Date;
+
+  @Default(false)
+  @Column({ type: DataType.BOOLEAN, allowNull: false })
+  is_super_admin: boolean;
+
   @CreatedAt
   created_at: Date;
 
@@ -128,6 +154,9 @@ export class User extends Model {
 
   @HasMany(() => LoginSession)
   loginSessions: LoginSession[];
+
+  @BelongsToMany(() => ServiceRequest, () => ServiceRequestTechnician)
+  serviceRequests: ServiceRequest[];
 
   get fullName(): string {
     return `${this.first_name} ${this.last_name}`;

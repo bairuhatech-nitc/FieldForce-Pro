@@ -17,6 +17,8 @@ import { NotificationsService } from '../NOTIFICATIONS/notifications.service';
 import { DocumentApprovalsService } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.service';
 import { DocumentApproval } from '../WORKFLOW/WORKFLOW_DOCUMENT_APPROVALS/document_approvals.entity';
 import { DocumentTypeEnum, ApprovalStatusEnum } from '../shared/enums/workflow.enum';
+import { Tenant } from '../TENANTS/tenants.entity';
+import { SubscriptionPlan } from '../SUBSCRIPTION_PLANS/subscription_plans.entity';
 
 // Valid status transitions for service appointments
 const STATUS_TRANSITIONS: Record<string, string[]> = {
@@ -38,6 +40,10 @@ export class ServiceAppointmentsService implements OnModuleInit {
     private readonly serviceAppointmentRepository: typeof ServiceAppointment,
     @Inject(KEYNAMES.WORKFLOW_DOCUMENT_APPROVALS)
     private readonly approvalRepository: typeof DocumentApproval,
+    @Inject(KEYNAMES.TENANTS)
+    private readonly tenantRepository: typeof Tenant,
+    @Inject(KEYNAMES.SUBSCRIPTION_PLANS)
+    private readonly subscriptionPlanRepository: typeof SubscriptionPlan,
     private readonly notificationsService: NotificationsService,
     private readonly documentApprovalsService: DocumentApprovalsService,
   ) { }
@@ -283,7 +289,44 @@ export class ServiceAppointmentsService implements OnModuleInit {
   }
 
 
+  async checkAppointmentLimit(tenantId: string): Promise<void> {
+    const tenant = await this.tenantRepository.findByPk(tenantId);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const customMax = (tenant.custom_limits as Record<string, number | null> | null)?.max_appointments_monthly ?? null;
+    let limit: number | null = customMax;
+
+    if (limit === null && tenant.subscription_plan_id) {
+      const plan = await this.subscriptionPlanRepository.findByPk(tenant.subscription_plan_id);
+      limit = plan?.max_appointments_monthly ?? null;
+    }
+
+    if (limit === null) return;
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const currentCount = await this.serviceAppointmentRepository.count({
+      where: {
+        tenant_id: tenantId,
+        is_deleted: false,
+        created_at: {
+          [Op.gte]: startOfMonth,
+        },
+      },
+    });
+
+    if (currentCount >= limit) {
+      throw new BadRequestException(
+        `Service appointment limit reached (${currentCount}/${limit} appointments this month). Please upgrade your plan to schedule more appointments.`,
+      );
+    }
+  }
+
+
   async create(tenantId: string, dto: CreateServiceAppointmentDto): Promise<any> {
+    await this.checkAppointmentLimit(tenantId);
+
     const appointment = await this.serviceAppointmentRepository.create({
       tenant_id: tenantId,
       ...dto,
@@ -490,7 +533,7 @@ export class ServiceAppointmentsService implements OnModuleInit {
     if (pendingApprovals.length === 0) return;
 
     // Determine approval outcome based on the new appointment status
-    const isAccepted = ['in_progress', 'completed'].includes(newStatus);
+    const isAccepted = ['en_route', 'on_site', 'in_progress', 'completed'].includes(newStatus);
     const resolvedStatus = isAccepted ? ApprovalStatusEnum.APPROVED : ApprovalStatusEnum.SKIPPED;
 
     for (const approval of pendingApprovals) {

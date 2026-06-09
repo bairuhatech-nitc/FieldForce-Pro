@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button, Table, Space, Tag, Tooltip, Select, Switch } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
@@ -28,6 +29,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 export default function PricebookListPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -55,8 +57,8 @@ export default function PricebookListPage() {
 
   const handleDelete = (record: PricebookRecord) => {
     showConfirmDialog({
-      title: 'Delete Pricebook Item',
-      content: `Are you sure you want to delete "${record.name}"?`,
+      title: t('pricebook.deleteTitle'),
+      content: t('pricebook.deleteContent', { name: record.name }),
       onOk: async () => {
         await deletePricebookItem.mutateAsync(record.id);
       },
@@ -70,71 +72,66 @@ export default function PricebookListPage() {
 
   const columns: ColumnsType<PricebookRecord> = [
     {
-      title: 'Name',
+      title: t('pricebook.columns.name'),
       dataIndex: 'name',
       key: 'name',
-      render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
+      render: (name: string, record: any) => <Link to={`/pricebook/${record.id}`}><span style={{ fontWeight: 500 }}>{name}</span></Link>,
       sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Tier',
+      title: t('pricebook.columns.tier'),
       dataIndex: 'tier',
       key: 'tier',
-      render: (tier: string) => (
+      render: (tier: string, record: any) => (
         <Tag color={TIER_COLORS[tier] || 'default'}>
           {tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : '-'}
         </Tag>
       ),
     },
     {
-      title: 'Price',
+      title: t('pricebook.columns.price'),
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      render: (price: number, record: any) => `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       sorter: (a, b) => a.price - b.price,
     },
     {
-      title: 'Description',
+      title: t('pricebook.columns.description'),
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string) => (
+      render: (desc: string, record: any) => (
         <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {desc || <span style={{ color: '#999' }}>-</span>}
+          {desc || <span style={{ opacity: 0.5 }}>-</span>}
         </div>
       ),
     },
     {
-      title: 'Status',
+      title: t('pricebook.columns.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean, record) => (
         <Switch
           checked={isActive}
           onChange={(checked) => handleToggleActive(record, checked)}
-          checkedChildren="Active"
-          unCheckedChildren="Inactive"
+          checkedChildren={t('pricebook.statusActive')}
+          unCheckedChildren={t('pricebook.statusInactive')}
         />
       ),
     },
     {
-      title: 'Actions',
+      title: t('pricebook.columns.actions'),
       key: 'actions',
       fixed: 'right',
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <PermissionGuard permission="pricebook:read">
-            <Tooltip title="View">
-              <Button type="text" icon={<EyeOutlined />} size="small" onClick={() => navigate(`/pricebook/${record.id}`)} />
-            </Tooltip>
-          </PermissionGuard>
           <PermissionGuard permission="pricebook:update">
-            <Tooltip title="Edit">
+            <Tooltip title={t('common.edit')}>
               <Button type="text" icon={<EditOutlined />} size="small" onClick={() => navigate(`/pricebook/${record.id}/edit`)} />
             </Tooltip>
           </PermissionGuard>
           <PermissionGuard permission="pricebook:delete">
-            <Tooltip title="Delete">
+            <Tooltip title={t('common.delete')}>
               <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => handleDelete(record)} />
             </Tooltip>
           </PermissionGuard>
@@ -146,12 +143,12 @@ export default function PricebookListPage() {
   return (
     <div>
       <PageHeader
-        title="Pricebook"
-        subtitle="Manage tiered pricing for services (Good/Better/Best)"
+        title={t('pricebook.title')}
+        subtitle={t('pricebook.subtitle')}
         extra={
           <PermissionGuard permission="pricebook:create">
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/pricebook/new')}>
-              Add Pricebook Item
+              {t('pricebook.add')}
             </Button>
           </PermissionGuard>
         }
@@ -159,22 +156,22 @@ export default function PricebookListPage() {
 
       <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
         <SearchFilter
-          placeholder="Search pricebook items..."
+          placeholder={t('pricebook.searchPlaceholder')}
           allowClear
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           style={{ width: 400 }}
         />
         <Select
-          placeholder="Filter by tier"
+          placeholder={t('pricebook.filterPlaceholder')}
           allowClear
           value={tierFilter}
           onChange={(value) => { setTierFilter(value); setPage(1); }}
           style={{ width: 200 }}
           options={[
-            { value: 'good', label: 'Good' },
-            { value: 'better', label: 'Better' },
-            { value: 'best', label: 'Best' },
+            { value: 'good', label: t('pricebook.tiers.good') },
+            { value: 'better', label: t('pricebook.tiers.better') },
+            { value: 'best', label: t('pricebook.tiers.best') },
           ]}
         />
       </div>
@@ -189,7 +186,7 @@ export default function PricebookListPage() {
           pageSize,
           total: meta?.itemCount || 0,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} items`,
+          showTotal: (total) => t('pricebook.paginationTotal', { total }),
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             if (newPageSize !== pageSize) {

@@ -50,6 +50,11 @@ export class RegisterDto {
   @IsString()
   @MaxLength(20)
   phone?: string;
+
+  @ApiPropertyOptional({ example: 'professional', enum: ['basic', 'professional', 'enterprise'] })
+  @IsOptional()
+  @IsString()
+  plan_slug?: 'basic' | 'professional' | 'enterprise';
 }
 
 export class LoginDto {
@@ -157,4 +162,59 @@ export class AuthResponseDto {
 
   @ApiProperty()
   user: Record<string, unknown>;
+}
+
+export class RegisterMagicLinkDto {
+  @ApiProperty({ example: 'john@example.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({ example: 'John' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  first_name: string;
+
+  @ApiProperty({ example: 'Doe' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  last_name: string;
+
+  @ApiProperty({ example: 'Acme Corp' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  company_name: string;
+
+  @ApiPropertyOptional({ example: '+1234567890' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+}
+
+export class RequestMagicLinkDto {
+  @ApiProperty({ example: 'john@example.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+
+export class VerifyMagicLinkDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
+  @ApiPropertyOptional({ example: 'Chrome on MacOS' })
+  @IsOptional()
+  @IsString()
+  device_name?: string;
+
+  @ApiPropertyOptional({ enum: ['web', 'mobile', 'tablet', 'desktop'] })
+  @IsOptional()
+  @IsString()
+  device_type?: 'web' | 'mobile' | 'tablet' | 'desktop';
 }
