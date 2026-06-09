@@ -108,9 +108,26 @@ const menuSections: MenuSection[] = [
         ],
       },
       { key: '/job-sheets', icon: <FormOutlined />, labelKey: 'nav.jobSheets', permission: 'job_sheets:read' },
-      // { key: '/timesheets', icon: <ClockCircleOutlined />, labelKey: 'nav.timesheets', permission: 'timesheets:read' },
-      // { key: '/workforce', icon: <TeamOutlined />, labelKey: 'nav.workforce', permission: 'workforce:read' },
       { key: '/trips/history', icon: <CompassOutlined />, labelKey: 'sidebar.tripHistory', permission: 'trips:read' },
+    ],
+  },
+  {
+    section: 'Workforce',
+    items: [
+      {
+        key: 'workforce-submenu',
+        icon: <TeamOutlined />,
+        labelKey: 'nav.workforce',
+        permission: 'users:read',
+        children: [
+          { key: '/workforce/users', labelKey: 'Users' },
+          { key: '/workforce/crew', labelKey: 'Crew' },
+          { key: '/workforce/equipment', labelKey: 'Equipment' },
+          { key: '/workforce/attendance', labelKey: 'Attendance' },
+          { key: '/workforce/time-off', labelKey: 'Time Off' },
+          { key: '/workforce/trips', labelKey: 'Trips' },
+        ],
+      },
     ],
   },
   {

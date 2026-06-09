@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: Noe@1234
       POSTGRES_DB: fieldforce_pro
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -48,6 +48,11 @@ services:
     env_file:
       - .env
     environment:
+      - DB_HOST=fsm-db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=Noe@1234
+      - DB_NAME=fieldforce_pro
       - REDIS_HOST=fsm-redis
       - REDIS_PORT=6379
     ports:

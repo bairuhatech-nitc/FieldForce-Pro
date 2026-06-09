@@ -85,6 +85,7 @@ import { WhatsAppChannelsModule } from './WHATSAPP_CHANNELS/whatsapp_channels.mo
 import { SlaModule } from './SLA_MODULE/sla.module';
 import { LookupsModule } from './LOOKUPS/lookups.module';
 import { EmailChannelsModule } from './EMAIL_CHANNELS/email_channels.module';
+import { CrewsModule } from './CREWS/crews.module';
 
 @Module({
   imports: [
@@ -170,6 +171,7 @@ import { EmailChannelsModule } from './EMAIL_CHANNELS/email_channels.module';
     SlaModule,
     LookupsModule,
     EmailChannelsModule,
+    CrewsModule,
   ],
   providers: [
     {

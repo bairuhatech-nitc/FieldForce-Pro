@@ -88,6 +88,10 @@ import { SlaEscalation } from '../SLA_MODULE/sla_escalations.entity';
 import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
 import { EmailChannel } from '../EMAIL_CHANNELS/email_channels.entity';
 import { EmailThread } from '../EMAIL_CHANNELS/email_threads.entity';
+import { Crew } from '../CREWS/crews.entity';
+import { CrewMember } from '../CREWS/crew_members.entity';
+import { CrewSkill } from '../CREWS/crew_skills.entity';
+import { CrewEquipment } from '../CREWS/crew_equipment.entity';
 
 @Module({
   imports: [
@@ -128,7 +132,8 @@ import { EmailThread } from '../EMAIL_CHANNELS/email_threads.entity';
           Category, SubCategory, Priority, Location,
           SlaPolicy, ServiceRequestSla, SlaAuditLog,
           WorkingCalendar, SlaEscalation, SlaPauseTrigger,
-          EmailChannel, EmailThread
+          EmailChannel, EmailThread,
+          Crew, CrewMember, CrewSkill, CrewEquipment,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

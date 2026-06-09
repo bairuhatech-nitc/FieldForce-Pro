@@ -74,6 +74,10 @@ import { SlaAuditLog } from '../SLA_MODULE/sla_audit_logs.entity';
 import { WorkingCalendar } from '../SLA_MODULE/working_calendars.entity';
 import { SlaEscalation } from '../SLA_MODULE/sla_escalations.entity';
 import { SlaPauseTrigger } from '../SLA_MODULE/sla_pause_triggers.entity';
+import { Crew } from '../CREWS/crews.entity';
+import { CrewMember } from '../CREWS/crew_members.entity';
+import { CrewSkill } from '../CREWS/crew_skills.entity';
+import { CrewEquipment } from '../CREWS/crew_equipment.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -151,4 +155,8 @@ export const databaseProviders = [
   { provide: REPOSITORY.WORKING_CALENDARS, useValue: WorkingCalendar },
   { provide: REPOSITORY.SLA_ESCALATIONS, useValue: SlaEscalation },
   { provide: REPOSITORY.SLA_PAUSE_TRIGGERS, useValue: SlaPauseTrigger },
+  { provide: REPOSITORY.CREWS, useValue: Crew },
+  { provide: REPOSITORY.CREW_MEMBERS, useValue: CrewMember },
+  { provide: REPOSITORY.CREW_SKILLS, useValue: CrewSkill },
+  { provide: REPOSITORY.CREW_EQUIPMENT, useValue: CrewEquipment },
 ];

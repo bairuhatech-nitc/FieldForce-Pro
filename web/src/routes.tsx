@@ -124,6 +124,11 @@ const MobileUsageLogs = lazy(() => import('@/pages/admin/MobileUsageLogs'));
 const ReportListPage = lazy(() => import('@/pages/reports/ReportListPage'));
 const ReportDetailPage = lazy(() => import('@/pages/reports/ReportDetailPage'));
 const AgentListPage = lazy(() => import('@/pages/workforce/AgentListPage'));
+const WorkforceUsersPage = lazy(() => import('@/pages/workforce/WorkforceUsersPage'));
+const WorkforceCrewPage = lazy(() => import('@/pages/workforce/WorkforceCrewPage'));
+const WorkforceEquipmentPage = lazy(() => import('@/pages/workforce/WorkforceEquipmentPage'));
+const WorkforceAttendancePage = lazy(() => import('@/pages/workforce/WorkforceAttendancePage'));
+const WorkforceTimeOffPage = lazy(() => import('@/pages/workforce/WorkforceTimeOffPage'));
 const CalendarViewPage = lazy(() => import('@/pages/scheduling/CalendarViewPage'));
 const MapViewPage = lazy(() => import('@/pages/scheduling/MapViewPage'));
 const SLAComplianceDashboard = lazy(() => import('@/pages/agreements/SLAComplianceDashboard'));
@@ -1287,7 +1292,7 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
-      // Workforce
+      // Workforce (legacy)
       {
         path: 'workforce',
         element: (
@@ -1295,6 +1300,51 @@ export const routes: RouteObject[] = [
             <AgentListPage />
           </SuspenseWrapper>
         ),
+      },
+      // Workforce section
+      {
+        path: 'workforce/users',
+        element: (
+          <SuspenseWrapper>
+            <WorkforceUsersPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/crew',
+        element: (
+          <SuspenseWrapper>
+            <WorkforceCrewPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/equipment',
+        element: (
+          <SuspenseWrapper>
+            <WorkforceEquipmentPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/attendance',
+        element: (
+          <SuspenseWrapper>
+            <WorkforceAttendancePage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/time-off',
+        element: (
+          <SuspenseWrapper>
+            <WorkforceTimeOffPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/trips',
+        element: <Navigate to="/trips/history" replace />,
       },
       // Workflow & Approvals
       {

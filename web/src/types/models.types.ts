@@ -9,6 +9,13 @@ export interface User {
   first_name: string;
   last_name: string;
   phone: string | null;
+  mobile: string | null;
+  employee_id: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  country: string | null;
   avatar_url: string | null;
   timezone: string;
   language: string;
@@ -379,6 +386,58 @@ export interface WorkOrderAttachment {
   is_deleted: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// Crew Management
+export interface CrewMember {
+  id: string;
+  tenant_id: string;
+  crew_id: string;
+  technician_id: string;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  technician?: User;
+}
+
+export interface CrewSkill {
+  id: string;
+  crew_id: string;
+  category_id: string;
+  created_at: string;
+  category?: { id: string; name: string };
+}
+
+export interface CrewEquipment {
+  id: string;
+  crew_id: string;
+  asset_id: string;
+  created_at: string;
+  asset?: {
+    id: string;
+    name: string;
+    model: string | null;
+    serial_number: string | null;
+    category: string | null;
+  };
+}
+
+export interface Crew {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  crew_leader_id: string | null;
+  territory_id: string | null;
+  shift_id: string | null;
+  is_active: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  crew_leader?: User;
+  members?: CrewMember[];
+  skills?: CrewSkill[];
+  equipment?: CrewEquipment[];
 }
 
 // Phase 10: Service Appointments
