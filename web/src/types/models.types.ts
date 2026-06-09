@@ -388,6 +388,69 @@ export interface WorkOrderAttachment {
   updated_at: string;
 }
 
+// Workforce Equipment (internal assets — separate from customer Assets)
+export type EquipmentStatus = 'available' | 'assigned' | 'in_maintenance' | 'retired';
+export type EquipmentAction =
+  | 'assigned'
+  | 'returned'
+  | 'sent_for_maintenance'
+  | 'maintenance_completed'
+  | 'retired'
+  | 'created';
+
+export interface EquipmentCategory {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EquipmentHistory {
+  id: string;
+  equipment_id: string;
+  action: EquipmentAction;
+  assigned_to_user_id: string | null;
+  assigned_to_crew_id: string | null;
+  performed_by_id: string | null;
+  expected_return_date: string | null;
+  notes: string | null;
+  action_date: string;
+  created_at: string;
+  assigned_to_user?: Pick<User, 'id' | 'first_name' | 'last_name' | 'email'>;
+  assigned_to_crew?: { id: string; name: string };
+  performed_by?: Pick<User, 'id' | 'first_name' | 'last_name'>;
+}
+
+export interface Equipment {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  equipment_category_id: string | null;
+  serial_number: string | null;
+  barcode: string | null;
+  manufacturer: string | null;
+  model_number: string | null;
+  purchase_date: string | null;
+  last_maintenance_date: string | null;
+  status: EquipmentStatus;
+  assigned_technician_id: string | null;
+  assigned_crew_id: string | null;
+  expected_return_date: string | null;
+  notes: string | null;
+  custom_fields: Record<string, unknown>;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  category?: EquipmentCategory;
+  assigned_technician?: Pick<User, 'id' | 'first_name' | 'last_name' | 'email' | 'avatar_url'>;
+  assigned_crew?: { id: string; name: string };
+  history?: EquipmentHistory[];
+}
+
 // Crew Management
 export interface CrewMember {
   id: string;

@@ -92,6 +92,9 @@ import { Crew } from '../CREWS/crews.entity';
 import { CrewMember } from '../CREWS/crew_members.entity';
 import { CrewSkill } from '../CREWS/crew_skills.entity';
 import { CrewEquipment } from '../CREWS/crew_equipment.entity';
+import { Equipment } from '../EQUIPMENT/equipment.entity';
+import { EquipmentHistory } from '../EQUIPMENT/equipment_history.entity';
+import { EquipmentCategory } from '../EQUIPMENT/equipment_category.entity';
 
 @Module({
   imports: [
@@ -134,6 +137,7 @@ import { CrewEquipment } from '../CREWS/crew_equipment.entity';
           WorkingCalendar, SlaEscalation, SlaPauseTrigger,
           EmailChannel, EmailThread,
           Crew, CrewMember, CrewSkill, CrewEquipment,
+          Equipment, EquipmentHistory, EquipmentCategory,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

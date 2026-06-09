@@ -86,6 +86,7 @@ import { SlaModule } from './SLA_MODULE/sla.module';
 import { LookupsModule } from './LOOKUPS/lookups.module';
 import { EmailChannelsModule } from './EMAIL_CHANNELS/email_channels.module';
 import { CrewsModule } from './CREWS/crews.module';
+import { EquipmentModule } from './EQUIPMENT/equipment.module';
 
 @Module({
   imports: [
@@ -172,6 +173,7 @@ import { CrewsModule } from './CREWS/crews.module';
     LookupsModule,
     EmailChannelsModule,
     CrewsModule,
+    EquipmentModule,
   ],
   providers: [
     {

@@ -78,6 +78,9 @@ import { Crew } from '../CREWS/crews.entity';
 import { CrewMember } from '../CREWS/crew_members.entity';
 import { CrewSkill } from '../CREWS/crew_skills.entity';
 import { CrewEquipment } from '../CREWS/crew_equipment.entity';
+import { Equipment } from '../EQUIPMENT/equipment.entity';
+import { EquipmentHistory } from '../EQUIPMENT/equipment_history.entity';
+import { EquipmentCategory } from '../EQUIPMENT/equipment_category.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -159,4 +162,7 @@ export const databaseProviders = [
   { provide: REPOSITORY.CREW_MEMBERS, useValue: CrewMember },
   { provide: REPOSITORY.CREW_SKILLS, useValue: CrewSkill },
   { provide: REPOSITORY.CREW_EQUIPMENT, useValue: CrewEquipment },
+  { provide: REPOSITORY.EQUIPMENT, useValue: Equipment },
+  { provide: REPOSITORY.EQUIPMENT_HISTORY, useValue: EquipmentHistory },
+  { provide: REPOSITORY.EQUIPMENT_CATEGORIES, useValue: EquipmentCategory },
 ];
