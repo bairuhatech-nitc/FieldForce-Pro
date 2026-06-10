@@ -6,7 +6,7 @@ export interface CreateCrewPayload {
   name: string;
   description?: string;
   crew_leader_id?: string;
-  territory_id?: string;
+  territory_ids?: string[];
   shift_id?: string;
   member_ids?: string[];
   skill_ids?: string[];

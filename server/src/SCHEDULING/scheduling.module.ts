@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { TimeOffModule } from '../TIME_OFF/time_off.module';
 import { SCHEDULINGController } from './scheduling.controller';
 import { SCHEDULINGService } from './scheduling.service';
 import { SCHEDULING_PROVIDERS } from './scheduling.provider';
@@ -23,7 +24,7 @@ const USERS_PROVIDER = {
 };
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, TimeOffModule],
   controllers: [SCHEDULINGController],
   providers: [
     SCHEDULINGService,

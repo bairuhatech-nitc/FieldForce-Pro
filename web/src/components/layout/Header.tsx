@@ -16,6 +16,7 @@ import { useUiStore } from '@/store/ui.store';
 import { useLogout } from '@/hooks/use-auth';
 import { useUnreadNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/use-notifications';
 import { useTranslation } from 'react-i18next';
+import CheckInWidget from '@/components/attendance/CheckInWidget';
 
 const { Text } = Typography;
 
@@ -187,6 +188,9 @@ export default function Header() {
             <MoonOutlined />
           </div>
         </div>
+
+        {/* Attendance Check-In Widget */}
+        <CheckInWidget />
 
         {/* Notifications */}
         <Dropdown

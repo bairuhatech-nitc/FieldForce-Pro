@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Alert, Button, Table, Space, Tooltip, Tag, Tabs, Card, Descriptions, Skeleton, Modal, Select, Divider, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, UserAddOutlined, ReloadOutlined, CalendarOutlined, FileTextOutlined, TeamOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { EyeOutlined, UserAddOutlined, ReloadOutlined, CalendarOutlined, FileTextOutlined, TeamOutlined, EnvironmentOutlined, WarningOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -44,6 +44,7 @@ import {
   useUpdateAppointmentStatus,
 } from '@/hooks/use-appointments';
 import { useAgents } from '@/hooks/use-users';
+import { useIsOnLeave } from '@/hooks/use-time-off';
 import { useAuthStore } from '@/store/auth.store';
 import type { ServiceAppointment } from '@/types/models.types';
 import PageHeader from '@/components/common/PageHeader';
@@ -112,6 +113,19 @@ export default function DispatchBoardPage() {
   const updateStatus = useUpdateAppointmentStatus();
   const { data: agents = [] } = useAgents();
   const { data: scheduleAssignerId } = useScheduleAssigner();
+
+  // Time-off leave check for currently selected technician in the assign modal
+  const assignStartDate = assignTarget?.scheduled_start
+    ? assignTarget.scheduled_start.slice(0, 10)
+    : '';
+  const assignEndDate = assignTarget?.scheduled_end
+    ? assignTarget.scheduled_end.slice(0, 10)
+    : assignStartDate;
+  const { data: selectedAgentOnLeave } = useIsOnLeave(
+    selectedAgentId ?? '',
+    assignStartDate,
+    assignEndDate,
+  );
 
   // Only the designated schedule assigner (from SCHEDULE workflow) can assign techs
   const canAssign = user?.id != null && user.id === scheduleAssignerId;
@@ -538,6 +552,17 @@ export default function DispatchBoardPage() {
                 label: `${agent.first_name} ${agent.last_name} (${agent.email})`,
               }))}
             />
+
+            {selectedAgentOnLeave && (
+              <Alert
+                type="error"
+                showIcon
+                icon={<WarningOutlined />}
+                message="Technician is on approved leave during this appointment's dates"
+                description="Assigning this technician may conflict with their approved time-off. Consider choosing another technician."
+                style={{ marginTop: 12 }}
+              />
+            )}
           </div>
         )}
       </Modal>

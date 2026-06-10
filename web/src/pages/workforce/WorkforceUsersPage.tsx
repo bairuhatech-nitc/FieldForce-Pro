@@ -4,7 +4,7 @@ import {
   Row, Col, Input, Select, Checkbox,
 } from 'antd';
 import {
-  PlusOutlined, EyeOutlined, TeamOutlined, LinkOutlined,
+  PlusOutlined, TeamOutlined, LinkOutlined,
   UserAddOutlined, ReloadOutlined, FilterOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -194,7 +194,14 @@ export default function WorkforceUsersPage() {
     {
       title: t('users.name'),
       key: 'name',
-      render: (_, record) => `${record.first_name} ${record.last_name}`,
+      render: (_, record) => (
+        <span
+          style={{ color: '#1677ff', cursor: 'pointer', fontWeight: 500 }}
+          onClick={() => navigate(`/users/${record.id}`)}
+        >
+          {record.first_name} {record.last_name}
+        </span>
+      ),
       sorter: true,
     },
     { title: t('users.email'), dataIndex: 'email', key: 'email' },
@@ -224,9 +231,6 @@ export default function WorkforceUsersPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Tooltip title={t('users.viewDetails')}>
-            <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/settings/users/${record.id}`)} />
-          </Tooltip>
           <PermissionGuard permission="users:update">
             <Tooltip title={t('users.assignRoles')}>
               <Button type="link" icon={<TeamOutlined />} onClick={() => handleAssignRoles(record.id)} />

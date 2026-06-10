@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useUser, useCreateUser, useUpdateUser, useCompanyUsage } from '@/hooks/use-users';
 import { useAllRoles } from '@/hooks/use-roles';
+import { useSetting } from '@/hooks/use-settings';
 import PageHeader from '@/components/common/PageHeader';
 
 const baseSchema = z.object({
@@ -15,6 +16,7 @@ const baseSchema = z.object({
   email: z.string().email('userForm.validation.invalidEmail'),
   employee_id: z.string().max(50).optional().or(z.literal('')),
   role_id: z.string().optional().or(z.literal('')),
+  territory_ids: z.array(z.string()).optional(),
   phone: z.string().max(20).optional().or(z.literal('')),
   mobile: z.string().max(20).optional().or(z.literal('')),
   street: z.string().max(200).optional().or(z.literal('')),
@@ -74,6 +76,9 @@ export default function UserFormPage() {
   const updateMutation = useUpdateUser();
   const { data: usage } = useCompanyUsage();
   const { data: allRoles } = useAllRoles();
+  const { data: territoriesSettingData } = useSetting('territories_settings');
+  const territories: { id: string; name: string }[] =
+    (territoriesSettingData?.value?.list as { id: string; name: string }[]) ?? [];
 
   const usageCurrent = usage?.usage?.total_users?.current;
   const usageLimit = usage?.usage?.total_users?.limit;
@@ -93,6 +98,7 @@ export default function UserFormPage() {
       password: '',
       employee_id: '',
       role_id: '',
+      territory_ids: [],
       phone: '',
       mobile: '',
       street: '',
@@ -115,6 +121,7 @@ export default function UserFormPage() {
         password: '',
         employee_id: user.employee_id || '',
         role_id: firstRole?.id || '',
+        territory_ids: user.territory_ids ?? [],
         phone: user.phone || '',
         mobile: user.mobile || '',
         street: user.street || '',
@@ -237,6 +244,26 @@ export default function UserFormPage() {
                       placeholder="Select a profile / role"
                       allowClear
                       options={(allRoles ?? []).map((r) => ({ value: r.id, label: r.name }))}
+                    />
+                  )}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24}>
+              <Form.Item label="Territories" style={formItemStyle}>
+                <Controller
+                  name="territory_ids"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      mode="multiple"
+                      placeholder="Select territories (optional)"
+                      allowClear
+                      options={territories.map((t) => ({ value: t.id, label: t.name }))}
                     />
                   )}
                 />

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, IsEmail } from 'class-validator';
+import { IsOptional, IsString, MaxLength, IsEmail, IsArray } from 'class-validator';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'john@example.com' })
@@ -39,4 +39,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @ApiPropertyOptional({ description: 'Territory IDs from settings', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  territory_ids?: string[];
 }

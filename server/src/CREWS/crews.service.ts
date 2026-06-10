@@ -42,7 +42,7 @@ export class CrewsService {
       is_deleted: false,
     };
 
-    if (filters?.territory_id) where['territory_id'] = filters.territory_id;
+    if (filters?.territory_id) where['territory_ids'] = { [Op.contains]: [filters.territory_id] };
     if (filters?.shift_id) where['shift_id'] = filters.shift_id;
     if (filters?.is_active !== undefined) where['is_active'] = filters.is_active;
 
@@ -301,7 +301,7 @@ export class CrewsService {
   async getCrewsForDispatch(tenantId: string): Promise<Crew[]> {
     return this.crewRepo.findAll({
       where: { tenant_id: tenantId, is_deleted: false, is_active: true },
-      attributes: ['id', 'name', 'territory_id', 'shift_id', 'crew_leader_id'],
+      attributes: ['id', 'name', 'territory_ids', 'shift_id', 'crew_leader_id'],
       include: [
         {
           model: User,

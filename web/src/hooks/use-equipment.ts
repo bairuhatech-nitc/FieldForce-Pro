@@ -55,6 +55,23 @@ export function useCreateEquipmentCategory() {
   });
 }
 
+export function useDeleteEquipmentCategory() {
+  const queryClient = useQueryClient();
+  const addNotification = useNotificationStore((s) => s.add);
+
+  return useMutation({
+    mutationFn: (id: string) => equipmentApi.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['equipment-categories'] });
+      addNotification({ type: 'success', message: 'Category deleted' });
+    },
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      addNotification({ type: 'error', message: err?.response?.data?.message || 'Failed to delete category' });
+    },
+  });
+}
+
 export function useCreateEquipment() {
   const queryClient = useQueryClient();
   const addNotification = useNotificationStore((s) => s.add);

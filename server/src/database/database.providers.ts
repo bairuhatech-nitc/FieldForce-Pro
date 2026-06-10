@@ -81,6 +81,10 @@ import { CrewEquipment } from '../CREWS/crew_equipment.entity';
 import { Equipment } from '../EQUIPMENT/equipment.entity';
 import { EquipmentHistory } from '../EQUIPMENT/equipment_history.entity';
 import { EquipmentCategory } from '../EQUIPMENT/equipment_category.entity';
+import { AttendanceLog } from '../ATTENDANCE/attendance_log.entity';
+import { AttendancePunch } from '../ATTENDANCE/attendance_punch.entity';
+import { TimeOffRequest } from '../TIME_OFF/time_off_requests.entity';
+import { TimeOffBalance } from '../TIME_OFF/time_off_balances.entity';
 
 export const databaseProviders = [
   { provide: REPOSITORY.USERS, useValue: User },
@@ -165,4 +169,8 @@ export const databaseProviders = [
   { provide: REPOSITORY.EQUIPMENT, useValue: Equipment },
   { provide: REPOSITORY.EQUIPMENT_HISTORY, useValue: EquipmentHistory },
   { provide: REPOSITORY.EQUIPMENT_CATEGORIES, useValue: EquipmentCategory },
+  { provide: REPOSITORY.ATTENDANCE_LOGS, useValue: AttendanceLog },
+  { provide: REPOSITORY.ATTENDANCE_PUNCHES, useValue: AttendancePunch },
+  { provide: REPOSITORY.TIME_OFF_REQUESTS, useValue: TimeOffRequest },
+  { provide: REPOSITORY.TIME_OFF_BALANCES, useValue: TimeOffBalance },
 ];

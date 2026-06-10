@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Inject, Logger, HttpException, HttpStatus, Optional } from '@nestjs/common';
 import { SCHEDULING } from './scheduling.entity';
 import {
   OptimizeScheduleDto,
@@ -19,6 +19,7 @@ import { ConfigService } from '@nestjs/config';
 import { WorkOrder } from '../WORK_ORDERS/work_orders.entity';
 import { ServiceAppointment } from '../SERVICE_APPOINTMENTS/service_appointments.entity';
 import { User } from '../USERS/users.entity';
+import { TimeOffService } from '../TIME_OFF/time_off.service';
 
 @Injectable()
 export class SCHEDULINGService {
@@ -35,6 +36,7 @@ export class SCHEDULINGService {
     @Inject('USERS_REPOSITORY')
     private usersRepository: typeof User,
     private configService: ConfigService,
+    @Optional() private timeOffService?: TimeOffService,
   ) {
     // Initialize AI service client
     const aiServiceUrl = this.configService.get<string>('AI_SERVICE_URL', 'http://localhost:8000');
@@ -601,7 +603,17 @@ export class SCHEDULINGService {
       reasons.push('Technician account is inactive');
     }
 
-    // 2. Conflict detection — find overlapping appointments
+    // 2. Time-off check — block if technician has approved leave
+    if (this.timeOffService) {
+      const startDate = dto.start_time.slice(0, 10);
+      const endDate = dto.end_time.slice(0, 10);
+      const onLeave = await this.timeOffService.isOnLeave(dto.agent_id, tenantId, startDate, endDate);
+      if (onLeave) {
+        reasons.push('Technician has approved time-off covering this period');
+      }
+    }
+
+    // 3. Conflict detection — find overlapping appointments
     const conflicts = await this.detectConflicts(
       { agent_id: dto.agent_id, start_time: dto.start_time, end_time: dto.end_time },
       tenantId,
@@ -736,9 +748,22 @@ export class SCHEDULINGService {
       }
 
       // --- Time-off availability ---
-      // Without a time-off entity, we skip this check but log it
-      score += 5;
-      reasons.push('Time-off check: assumed available (no time-off entity yet)');
+      if (this.timeOffService) {
+        const startDate = new Date(dto.scheduled_start).toISOString().slice(0, 10);
+        const endDate = dto.scheduled_end
+          ? new Date(dto.scheduled_end).toISOString().slice(0, 10)
+          : startDate;
+        const onLeave = await this.timeOffService.isOnLeave(agent.id, tenantId, startDate, endDate);
+        if (onLeave) {
+          score -= 100; // disqualify
+          reasons.push('Technician is on approved time-off');
+        } else {
+          score += 10;
+          reasons.push('Not on approved time-off');
+        }
+      } else {
+        score += 5;
+      }
 
       // --- Conflict detection ---
       const conflicts = await this.detectConflicts(

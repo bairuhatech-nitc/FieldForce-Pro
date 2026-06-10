@@ -30,6 +30,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   onboarding_completed?: boolean;
+  territory_ids?: string[];
   roles?: Role[] | string[];  // Can be full Role objects or just role name strings from JWT
   permissions?: string[];      // Flat array of permission strings from JWT
 }
@@ -491,7 +492,7 @@ export interface Crew {
   name: string;
   description: string | null;
   crew_leader_id: string | null;
-  territory_id: string | null;
+  territory_ids: string[];
   shift_id: string | null;
   is_active: boolean;
   is_deleted: boolean;
@@ -501,6 +502,83 @@ export interface Crew {
   members?: CrewMember[];
   skills?: CrewSkill[];
   equipment?: CrewEquipment[];
+}
+
+// Time Off Management
+export type TimeOffLeaveType = 'vacation' | 'sick' | 'personal' | 'unpaid' | 'other';
+export type TimeOffDurationType = 'full_day' | 'morning_half' | 'afternoon_half' | 'multi_day';
+export type TimeOffStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+export interface TimeOffBalance {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  leave_type: TimeOffLeaveType;
+  total_allowance: number;
+  used_days: number;
+  year: number;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TimeOffRequest {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  leave_type: TimeOffLeaveType;
+  start_date: string;
+  end_date: string;
+  duration_type: TimeOffDurationType;
+  total_days_deducted: number;
+  status: TimeOffStatus;
+  reason: string | null;
+  approved_by: string | null;
+  manager_notes: string | null;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  user?: Pick<User, 'id' | 'first_name' | 'last_name' | 'email' | 'avatar_url'>;
+  approved_by_user?: Pick<User, 'id' | 'first_name' | 'last_name'>;
+}
+
+// Attendance Management
+export type AttendanceStatus = 'present' | 'absent' | 'half_day';
+
+export interface AttendancePunch {
+  id: string;
+  attendance_log_id: string;
+  punch_in_time: string;
+  punch_out_time: string | null;
+  punch_in_location: { lat: number; lng: number } | null;
+  punch_out_location: { lat: number; lng: number } | null;
+  device_info: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceLog {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  date: string;
+  status: AttendanceStatus;
+  total_regular_hours: number;
+  total_overtime_hours: number;
+  manager_adjusted: boolean;
+  adjustment_reason: string | null;
+  adjusted_by: string | null;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  user?: Pick<User, 'id' | 'first_name' | 'last_name' | 'email' | 'avatar_url'>;
+  adjusted_by_user?: Pick<User, 'id' | 'first_name' | 'last_name'>;
+  punches?: AttendancePunch[];
+}
+
+export interface MyTodayResponse {
+  log: AttendanceLog | null;
+  active_punch: AttendancePunch | null;
 }
 
 // Phase 10: Service Appointments

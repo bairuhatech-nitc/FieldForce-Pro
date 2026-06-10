@@ -26,10 +26,11 @@ export class CreateCrewDto {
   @IsUUID()
   crew_leader_id?: string;
 
-  @ApiPropertyOptional({ description: 'Territory ID from settings' })
+  @ApiPropertyOptional({ description: 'Territory IDs from settings', type: [String] })
   @IsOptional()
-  @IsString()
-  territory_id?: string;
+  @IsArray()
+  @IsString({ each: true })
+  territory_ids?: string[];
 
   @ApiPropertyOptional({ description: 'Shift ID from settings' })
   @IsOptional()

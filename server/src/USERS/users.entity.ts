@@ -113,6 +113,10 @@ export class User extends Model {
   @Column({ type: DataType.JSONB, allowNull: true, defaultValue: null })
   recovery_codes: Array<{ code: string; used: boolean }> | null;
 
+  @Default([])
+  @Column({ type: DataType.ARRAY(DataType.STRING), allowNull: true, comment: 'Territory IDs from settings' })
+  territory_ids: string[];
+
   // ── Feature 1: Onboarding ──
   @Default(false)
   @Column(DataType.BOOLEAN)

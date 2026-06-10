@@ -30,11 +30,12 @@ const HolidaysSettingsPage = lazy(() => import('@/pages/settings/HolidaysSetting
 const DataExportSettingsPage = lazy(() => import('@/pages/settings/DataExportSettingsPage'));
 const ChatbotSettingsPage = lazy(() => import('@/pages/settings/ChatbotSettingsPage'));
 
-// Redirect Helpers
-function RedirectToSettingsUsers() {
+// settings/users/:id → standalone detail page
+function RedirectToUsers() {
   const { id } = useParams();
-  return <Navigate to={id ? `/settings/users/${id}` : '/settings/users'} replace />;
+  return <Navigate to={`/users/${id}`} replace />;
 }
+// top-level /users/:id/edit → settings form
 function RedirectToSettingsUsersEdit() {
   const { id } = useParams();
   return <Navigate to={`/settings/users/${id}/edit`} replace />;
@@ -126,9 +127,15 @@ const ReportDetailPage = lazy(() => import('@/pages/reports/ReportDetailPage'));
 const AgentListPage = lazy(() => import('@/pages/workforce/AgentListPage'));
 const WorkforceUsersPage = lazy(() => import('@/pages/workforce/WorkforceUsersPage'));
 const WorkforceCrewPage = lazy(() => import('@/pages/workforce/WorkforceCrewPage'));
+const CrewDetailPage = lazy(() => import('@/pages/workforce/CrewDetailPage'));
+const CrewFormPage = lazy(() => import('@/pages/workforce/CrewFormPage'));
 const WorkforceEquipmentPage = lazy(() => import('@/pages/workforce/WorkforceEquipmentPage'));
+const EquipmentDetailPage = lazy(() => import('@/pages/workforce/EquipmentDetailPage'));
+const EquipmentFormPage = lazy(() => import('@/pages/workforce/EquipmentFormPage'));
 const WorkforceAttendancePage = lazy(() => import('@/pages/workforce/WorkforceAttendancePage'));
+const AttendanceDetailPage = lazy(() => import('@/pages/workforce/AttendanceDetailPage'));
 const WorkforceTimeOffPage = lazy(() => import('@/pages/workforce/WorkforceTimeOffPage'));
+const TimeOffDetailPage = lazy(() => import('@/pages/workforce/TimeOffDetailPage'));
 const CalendarViewPage = lazy(() => import('@/pages/scheduling/CalendarViewPage'));
 const MapViewPage = lazy(() => import('@/pages/scheduling/MapViewPage'));
 const SLAComplianceDashboard = lazy(() => import('@/pages/agreements/SLAComplianceDashboard'));
@@ -325,23 +332,18 @@ export const routes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
-      // Users Redirects
-      {
-        path: 'users',
-        element: <RedirectToSettingsUsers />,
-      },
-      {
-        path: 'users/create',
-        element: <Navigate to="/settings/users/create" replace />,
-      },
+      // Users — list/create/edit live in settings; detail is standalone
+      { path: 'users', element: <Navigate to="/settings/users" replace /> },
+      { path: 'users/create', element: <Navigate to="/settings/users/create" replace /> },
       {
         path: 'users/:id',
-        element: <RedirectToSettingsUsers />,
+        element: (
+          <SuspenseWrapper>
+            <UserDetailPage />
+          </SuspenseWrapper>
+        ),
       },
-      {
-        path: 'users/:id/edit',
-        element: <RedirectToSettingsUsersEdit />,
-      },
+      { path: 'users/:id/edit', element: <RedirectToSettingsUsersEdit /> },
       // Contacts
       {
         path: 'contacts',
@@ -1319,10 +1321,58 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'workforce/crew/new',
+        element: (
+          <SuspenseWrapper>
+            <CrewFormPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/crew/:id',
+        element: (
+          <SuspenseWrapper>
+            <CrewDetailPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/crew/:id/edit',
+        element: (
+          <SuspenseWrapper>
+            <CrewFormPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'workforce/equipment',
         element: (
           <SuspenseWrapper>
             <WorkforceEquipmentPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/equipment/new',
+        element: (
+          <SuspenseWrapper>
+            <EquipmentFormPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/equipment/:id',
+        element: (
+          <SuspenseWrapper>
+            <EquipmentDetailPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/equipment/:id/edit',
+        element: (
+          <SuspenseWrapper>
+            <EquipmentFormPage />
           </SuspenseWrapper>
         ),
       },
@@ -1335,10 +1385,26 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'workforce/attendance/user/:userId',
+        element: (
+          <SuspenseWrapper>
+            <AttendanceDetailPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'workforce/time-off',
         element: (
           <SuspenseWrapper>
             <WorkforceTimeOffPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'workforce/time-off/:id',
+        element: (
+          <SuspenseWrapper>
+            <TimeOffDetailPage />
           </SuspenseWrapper>
         ),
       },
@@ -1482,11 +1548,7 @@ export const routes: RouteObject[] = [
           },
           {
             path: 'users/:id',
-            element: (
-              <SuspenseWrapper>
-                <UserDetailPage />
-              </SuspenseWrapper>
-            ),
+            element: <RedirectToUsers />,
           },
           {
             path: 'users/:id/edit',

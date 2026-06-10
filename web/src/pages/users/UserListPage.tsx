@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Button, Space, Tooltip, Progress, Tag, Typography, Alert } from 'antd';
-import { PlusOutlined, EyeOutlined, TeamOutlined, LinkOutlined, UserAddOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, TeamOutlined, LinkOutlined, UserAddOutlined, ReloadOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
-import { useUsers, useCompanyUsage } from '@/hooks/use-users';
+import { useUsers, useCompanyUsage, useDeleteUser } from '@/hooks/use-users';
 import type { User, Role } from '@/types/models.types';
 import type { PageOptions } from '@/types/api.types';
 import { Order } from '@/types/enums';
@@ -17,6 +17,7 @@ import InviteUserModal from '@/components/users/InviteUserModal';
 import { useAuthStore } from '@/store/auth.store';
 import { useGenerateMagicLink } from '@/hooks/use-magic-links';
 import MagicLinkModal from '@/components/magic-links/MagicLinkModal';
+import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 import type { InviteResult } from '@/api/users.api';
 
 const { Text } = Typography;
@@ -39,6 +40,7 @@ export default function UserListPage() {
 
   const { data, isLoading } = useUsers(params);
   const { data: usage } = useCompanyUsage();
+  const deleteUser = useDeleteUser();
 
   const isCompanyAdmin =
     !currentUser?.is_super_admin &&
@@ -103,7 +105,14 @@ export default function UserListPage() {
     {
       title: t('users.name'),
       key: 'name',
-      render: (_, record) => `${record.first_name} ${record.last_name}`,
+      render: (_, record) => (
+        <span
+          style={{ color: '#1677ff', cursor: 'pointer', fontWeight: 500 }}
+          onClick={() => navigate(`/users/${record.id}`)}
+        >
+          {record.first_name} {record.last_name}
+        </span>
+      ),
       sorter: true,
     },
     {
@@ -141,13 +150,15 @@ export default function UserListPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Tooltip title={t('users.viewDetails')}>
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/users/${record.id}`)}
-            />
-          </Tooltip>
+          <PermissionGuard permission="users:update">
+            <Tooltip title={t('common.edit')}>
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/settings/users/${record.id}/edit`)}
+              />
+            </Tooltip>
+          </PermissionGuard>
           <PermissionGuard permission="users:update">
             <Tooltip title={t('users.assignRoles')}>
               <Button
@@ -177,6 +188,24 @@ export default function UserListPage() {
               />
             </Tooltip>
           )}
+          <PermissionGuard permission="users:delete">
+            <Tooltip title={t('common.delete')}>
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                loading={deleteUser.isPending}
+                onClick={() =>
+                  showConfirmDialog({
+                    title: 'Delete User',
+                    content: `Are you sure you want to delete ${record.first_name} ${record.last_name}? This cannot be undone.`,
+                    onOk: async () => { await deleteUser.mutateAsync(record.id); },
+                    danger: true,
+                  })
+                }
+              />
+            </Tooltip>
+          </PermissionGuard>
         </Space>
       ),
     },
@@ -207,7 +236,7 @@ export default function UserListPage() {
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
-                  onClick={() => navigate('/users/create')}
+                  onClick={() => navigate('/settings/users/create')}
                   disabled={isLimitReached}
                 >
                   {t('users.createUser')}

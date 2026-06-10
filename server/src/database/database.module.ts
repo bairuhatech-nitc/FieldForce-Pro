@@ -95,6 +95,10 @@ import { CrewEquipment } from '../CREWS/crew_equipment.entity';
 import { Equipment } from '../EQUIPMENT/equipment.entity';
 import { EquipmentHistory } from '../EQUIPMENT/equipment_history.entity';
 import { EquipmentCategory } from '../EQUIPMENT/equipment_category.entity';
+import { AttendanceLog } from '../ATTENDANCE/attendance_log.entity';
+import { AttendancePunch } from '../ATTENDANCE/attendance_punch.entity';
+import { TimeOffRequest } from '../TIME_OFF/time_off_requests.entity';
+import { TimeOffBalance } from '../TIME_OFF/time_off_balances.entity';
 
 @Module({
   imports: [
@@ -138,6 +142,8 @@ import { EquipmentCategory } from '../EQUIPMENT/equipment_category.entity';
           EmailChannel, EmailThread,
           Crew, CrewMember, CrewSkill, CrewEquipment,
           Equipment, EquipmentHistory, EquipmentCategory,
+          AttendanceLog, AttendancePunch,
+          TimeOffRequest, TimeOffBalance,
         ],
         autoLoadModels: true,
         synchronize: !configService.isProduction,

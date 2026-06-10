@@ -87,6 +87,8 @@ import { LookupsModule } from './LOOKUPS/lookups.module';
 import { EmailChannelsModule } from './EMAIL_CHANNELS/email_channels.module';
 import { CrewsModule } from './CREWS/crews.module';
 import { EquipmentModule } from './EQUIPMENT/equipment.module';
+import { AttendanceModule } from './ATTENDANCE/attendance.module';
+import { TimeOffModule } from './TIME_OFF/time_off.module';
 
 @Module({
   imports: [
@@ -174,6 +176,8 @@ import { EquipmentModule } from './EQUIPMENT/equipment.module';
     EmailChannelsModule,
     CrewsModule,
     EquipmentModule,
+    AttendanceModule,
+    TimeOffModule,
   ],
   providers: [
     {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   Button,
@@ -9,20 +10,15 @@ import {
   Form,
   Input,
   Select,
-  Drawer,
   Avatar,
-  Badge,
   Typography,
   Row,
   Col,
   Card,
-  Tabs,
-  Timeline,
   DatePicker,
   Divider,
   Radio,
   Empty,
-  Descriptions,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -35,7 +31,6 @@ import {
   SwapOutlined,
   RollbackOutlined,
   CheckCircleOutlined,
-  EyeOutlined,
   SettingOutlined,
   TagOutlined,
 } from '@ant-design/icons';
@@ -43,25 +38,21 @@ import dayjs from 'dayjs';
 import PageHeader from '@/components/common/PageHeader';
 import {
   useEquipmentList,
-  useEquipment,
   useEquipmentCategories,
-  useCreateEquipment,
-  useUpdateEquipment,
   useDeleteEquipment,
   useAssignEquipment,
   useReturnEquipment,
   useSendEquipmentToMaintenance,
   useCompleteEquipmentMaintenance,
   useCreateEquipmentCategory,
+  useDeleteEquipmentCategory,
 } from '@/hooks/use-equipment';
 import { useAgents } from '@/hooks/use-users';
 import { useCrews } from '@/hooks/use-crews';
-import type { Equipment, EquipmentHistory } from '@/types/models.types';
-import type { CreateEquipmentPayload } from '@/api/equipment.api';
+import type { Equipment } from '@/types/models.types';
 import { showConfirmDialog } from '@/components/common/ConfirmDialog';
 
 const { Text } = Typography;
-const { TabPane } = Tabs;
 
 // ── Status badge ─────────────────────────────────────────────────────────────
 
@@ -90,176 +81,10 @@ const ACTION_LABELS: Record<string, { color: string; label: string }> = {
   retired: { color: 'red', label: 'Retired' },
 };
 
-// ── Detail drawer ─────────────────────────────────────────────────────────────
-
-function EquipmentDetailDrawer({
-  equipmentId,
-  open,
-  onClose,
-  onEdit,
-}: {
-  equipmentId: string | null;
-  open: boolean;
-  onClose: () => void;
-  onEdit: (equip: Equipment) => void;
-}) {
-  const { data: equipment, isLoading } = useEquipment(equipmentId ?? '');
-
-  if (!open || !equipmentId) return null;
-
-  return (
-    <Drawer
-      title={
-        <Space>
-          <Avatar icon={<ToolOutlined />} style={{ backgroundColor: '#fa8c16' }} />
-          <span>{equipment?.name ?? 'Equipment Detail'}</span>
-          {equipment && <StatusBadge status={equipment.status} />}
-        </Space>
-      }
-      open={open}
-      onClose={onClose}
-      width={560}
-      loading={isLoading}
-      extra={
-        equipment && (
-          <Button icon={<EditOutlined />} onClick={() => onEdit(equipment)}>
-            Edit
-          </Button>
-        )
-      }
-    >
-      {equipment && (
-        <Tabs defaultActiveKey="overview">
-          <TabPane tab="Overview" key="overview">
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Name">{equipment.name}</Descriptions.Item>
-              <Descriptions.Item label="Category">
-                {equipment.category?.name ?? '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Serial Number">
-                {equipment.serial_number ?? '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Barcode">{equipment.barcode ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Manufacturer">
-                {equipment.manufacturer ?? '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Model">{equipment.model_number ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Purchase Date">
-                {equipment.purchase_date ?? '—'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Last Maintenance">
-                {equipment.last_maintenance_date ?? '—'}
-              </Descriptions.Item>
-              {equipment.notes && (
-                <Descriptions.Item label="Notes">{equipment.notes}</Descriptions.Item>
-              )}
-            </Descriptions>
-
-            {equipment.status === 'assigned' && (
-              <>
-                <Divider>Current Assignment</Divider>
-                <Card size="small" style={{ backgroundColor: '#e6f7ff', borderColor: '#91d5ff' }}>
-                  {equipment.assigned_technician && (
-                    <Space>
-                      <Avatar icon={<UserOutlined />} />
-                      <div>
-                        <Text strong>
-                          {equipment.assigned_technician.first_name}{' '}
-                          {equipment.assigned_technician.last_name}
-                        </Text>
-                        <br />
-                        <Text type="secondary">{equipment.assigned_technician.email}</Text>
-                      </div>
-                    </Space>
-                  )}
-                  {equipment.assigned_crew && (
-                    <Space>
-                      <Avatar icon={<TeamOutlined />} style={{ backgroundColor: '#1677ff' }} />
-                      <Text strong>{equipment.assigned_crew.name}</Text>
-                    </Space>
-                  )}
-                  {equipment.expected_return_date && (
-                    <div style={{ marginTop: 8 }}>
-                      <Text type="secondary">
-                        Expected return:{' '}
-                        {dayjs(equipment.expected_return_date).format('MMM D, YYYY')}
-                      </Text>
-                    </div>
-                  )}
-                </Card>
-              </>
-            )}
-          </TabPane>
-
-          <TabPane
-            tab={
-              <Space>
-                History
-                <Badge count={equipment.history?.length ?? 0} style={{ backgroundColor: '#722ed1' }} />
-              </Space>
-            }
-            key="history"
-          >
-            {equipment.history && equipment.history.length > 0 ? (
-              <Timeline
-                mode="left"
-                items={equipment.history.map((h: EquipmentHistory) => {
-                  const cfg = ACTION_LABELS[h.action] ?? { color: 'gray', label: h.action };
-                  const who = h.assigned_to_user
-                    ? `${h.assigned_to_user.first_name} ${h.assigned_to_user.last_name}`
-                    : h.assigned_to_crew
-                    ? h.assigned_to_crew.name
-                    : null;
-
-                  return {
-                    key: h.id,
-                    color: cfg.color,
-                    label: dayjs(h.action_date).format('MMM D, YYYY HH:mm'),
-                    children: (
-                      <div>
-                        <Text strong>{cfg.label}</Text>
-                        {who && (
-                          <Text type="secondary"> → {who}</Text>
-                        )}
-                        {h.performed_by && (
-                          <div>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              by {h.performed_by.first_name} {h.performed_by.last_name}
-                            </Text>
-                          </div>
-                        )}
-                        {h.notes && (
-                          <div>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {h.notes}
-                            </Text>
-                          </div>
-                        )}
-                        {h.expected_return_date && (
-                          <div>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              Expected return: {dayjs(h.expected_return_date).format('MMM D, YYYY')}
-                            </Text>
-                          </div>
-                        )}
-                      </div>
-                    ),
-                  };
-                })}
-              />
-            ) : (
-              <Empty description="No history yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
-          </TabPane>
-        </Tabs>
-      )}
-    </Drawer>
-  );
-}
-
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function WorkforceEquipmentPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [search, setSearch] = useState('');
@@ -267,17 +92,12 @@ export default function WorkforceEquipmentPage() {
   const [filterCategory, setFilterCategory] = useState<string | undefined>();
 
   // Modals state
-  const [formModalOpen, setFormModalOpen] = useState(false);
-  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignTarget, setAssignTarget] = useState<Equipment | null>(null);
   const [maintenanceModalOpen, setMaintenanceModalOpen] = useState(false);
   const [maintenanceTarget, setMaintenanceTarget] = useState<Equipment | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
-  const [form] = Form.useForm();
   const [assignForm] = Form.useForm();
   const [maintenanceForm] = Form.useForm();
   const [categoryForm] = Form.useForm();
@@ -297,68 +117,31 @@ export default function WorkforceEquipmentPage() {
   const { data: crewsData } = useCrews({ take: 100 });
   const crews = crewsData?.data ?? [];
 
+  // Server-side status counts (take: 1 → only metadata is returned, not rows)
+  const { data: availableCount } = useEquipmentList({ status: 'available', take: 1 });
+  const { data: assignedCount } = useEquipmentList({ status: 'assigned', take: 1 });
+  const { data: maintenanceCount } = useEquipmentList({ status: 'in_maintenance', take: 1 });
+  const { data: retiredCount } = useEquipmentList({ status: 'retired', take: 1 });
+  const statusCounts: Record<string, number> = {
+    available: availableCount?.meta?.itemCount ?? 0,
+    assigned: assignedCount?.meta?.itemCount ?? 0,
+    in_maintenance: maintenanceCount?.meta?.itemCount ?? 0,
+    retired: retiredCount?.meta?.itemCount ?? 0,
+  };
+
   // Mutations
-  const createMutation = useCreateEquipment();
-  const updateMutation = useUpdateEquipment();
   const deleteMutation = useDeleteEquipment();
   const assignMutation = useAssignEquipment();
   const returnMutation = useReturnEquipment();
   const maintenanceMutation = useSendEquipmentToMaintenance();
   const completeMaintenanceMutation = useCompleteEquipmentMaintenance();
   const createCategoryMutation = useCreateEquipmentCategory();
+  const deleteCategoryMutation = useDeleteEquipmentCategory();
 
   const equipmentList = equipmentData?.data ?? [];
   const meta = equipmentData?.meta;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-
-  const openCreate = () => {
-    setEditingEquipment(null);
-    form.resetFields();
-    setFormModalOpen(true);
-  };
-
-  const openEdit = (equip: Equipment) => {
-    setDetailOpen(false);
-    setEditingEquipment(equip);
-    form.setFieldsValue({
-      name: equip.name,
-      description: equip.description,
-      equipment_category_id: equip.equipment_category_id,
-      serial_number: equip.serial_number,
-      barcode: equip.barcode,
-      manufacturer: equip.manufacturer,
-      model_number: equip.model_number,
-      purchase_date: equip.purchase_date ? dayjs(equip.purchase_date) : undefined,
-      notes: equip.notes,
-    });
-    setFormModalOpen(true);
-  };
-
-  const openDetail = (equip: Equipment) => {
-    setDetailId(equip.id);
-    setDetailOpen(true);
-  };
-
-  const handleFormSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      const payload: CreateEquipmentPayload = {
-        ...values,
-        purchase_date: values.purchase_date ? values.purchase_date.format('YYYY-MM-DD') : undefined,
-      };
-
-      if (editingEquipment) {
-        await updateMutation.mutateAsync({ id: editingEquipment.id, ...payload });
-      } else {
-        await createMutation.mutateAsync(payload);
-      }
-      setFormModalOpen(false);
-      form.resetFields();
-    } catch {
-      // form validation errors handled by antd
-    }
-  };
 
   const openAssign = (equip: Equipment) => {
     setAssignTarget(equip);
@@ -436,11 +219,18 @@ export default function WorkforceEquipmentPage() {
     try {
       const values = await categoryForm.validateFields();
       await createCategoryMutation.mutateAsync(values);
-      setCategoryModalOpen(false);
       categoryForm.resetFields();
     } catch {
       // validation
     }
+  };
+
+  const handleDeleteCategory = (id: string, name: string) => {
+    showConfirmDialog({
+      title: `Delete category "${name}"?`,
+      content: 'Equipment using this category will have their category cleared.',
+      onOk: () => deleteCategoryMutation.mutateAsync(id),
+    });
   };
 
   // ── Table columns ─────────────────────────────────────────────────────────
@@ -454,7 +244,7 @@ export default function WorkforceEquipmentPage() {
           <Avatar icon={<ToolOutlined />} style={{ backgroundColor: '#fa8c16' }} />
           <span
             style={{ fontWeight: 500, cursor: 'pointer', color: '#1677ff' }}
-            onClick={() => openDetail(record)}
+            onClick={() => navigate(`/workforce/equipment/${record.id}`)}
           >
             {record.name}
           </span>
@@ -486,13 +276,6 @@ export default function WorkforceEquipmentPage() {
       title: 'Status',
       key: 'status',
       render: (_, record) => <StatusBadge status={record.status} />,
-      filters: [
-        { text: 'Available', value: 'available' },
-        { text: 'Assigned', value: 'assigned' },
-        { text: 'In Maintenance', value: 'in_maintenance' },
-        { text: 'Retired', value: 'retired' },
-      ],
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: 'Assigned To',
@@ -525,14 +308,11 @@ export default function WorkforceEquipmentPage() {
       width: 160,
       render: (_, record) => (
         <Space wrap>
-          <Tooltip title="View details">
-            <Button size="small" icon={<EyeOutlined />} onClick={() => openDetail(record)} />
-          </Tooltip>
           <Tooltip title="Edit">
             <Button
               size="small"
               icon={<EditOutlined />}
-              onClick={() => openEdit(record)}
+              onClick={() => navigate(`/workforce/equipment/${record.id}/edit`)}
               disabled={record.status === 'retired'}
             />
           </Tooltip>
@@ -590,8 +370,6 @@ export default function WorkforceEquipmentPage() {
     },
   ];
 
-  const isMutating = createMutation.isPending || updateMutation.isPending;
-
   return (
     <div>
       <PageHeader
@@ -602,7 +380,7 @@ export default function WorkforceEquipmentPage() {
             <Button icon={<TagOutlined />} onClick={() => setCategoryModalOpen(true)}>
               Manage Categories
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/workforce/equipment/new')}>
               Add Equipment
             </Button>
           </Space>
@@ -627,7 +405,7 @@ export default function WorkforceEquipmentPage() {
               style={{ width: 180 }}
               allowClear
               value={filterStatus}
-              onChange={setFilterStatus}
+              onChange={(v) => { setFilterStatus(v); setPage(1); }}
               options={[
                 { label: 'Available', value: 'available' },
                 { label: 'Assigned', value: 'assigned' },
@@ -642,25 +420,33 @@ export default function WorkforceEquipmentPage() {
               style={{ width: 200 }}
               allowClear
               value={filterCategory}
-              onChange={setFilterCategory}
+              onChange={(v) => { setFilterCategory(v); setPage(1); }}
               options={(categories ?? []).map((c) => ({ label: c.name, value: c.id }))}
             />
           </Col>
         </Row>
       </Card>
 
-      {/* Stats row */}
+      {/* Stats row — counts are server-side totals, tiles act as status filters */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
         {Object.entries(STATUS_CONFIG).map(([status, cfg]) => {
-          const count = equipmentList.filter((e) => e.status === status).length;
+          const isActive = filterStatus === status;
           return (
             <Col span={6} key={status}>
-              <Card size="small" style={{ borderRadius: 8, cursor: 'pointer' }}
-                onClick={() => setFilterStatus(filterStatus === status ? undefined : status)}>
+              <Card
+                size="small"
+                style={{
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  border: isActive ? `2px solid ${cfg.color}` : '1px solid #f0f0f0',
+                  transition: 'border 0.15s',
+                }}
+                onClick={() => { setFilterStatus(isActive ? undefined : status); setPage(1); }}
+              >
                 <Space>
                   <Tag color={cfg.color}>{cfg.icon}</Tag>
                   <div>
-                    <Text strong style={{ fontSize: 20 }}>{count}</Text>
+                    <Text strong style={{ fontSize: 20 }}>{statusCounts[status] ?? 0}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>{cfg.label}</Text>
                   </div>
@@ -690,84 +476,6 @@ export default function WorkforceEquipmentPage() {
           }}
         />
       </Card>
-
-      {/* ── Add / Edit Equipment Modal ──────────────────────────────────────── */}
-      <Modal
-        title={editingEquipment ? `Edit: ${editingEquipment.name}` : 'Add Equipment'}
-        open={formModalOpen}
-        onCancel={() => setFormModalOpen(false)}
-        onOk={handleFormSubmit}
-        okText={editingEquipment ? 'Save Changes' : 'Add Equipment'}
-        confirmLoading={isMutating}
-        width={600}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
-          <Form.Item
-            name="name"
-            label="Equipment Name"
-            rules={[{ required: true, message: 'Name is required' }]}
-          >
-            <Input placeholder="e.g. Ford Transit Van #3" />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="equipment_category_id" label="Category">
-                <Select
-                  placeholder="Select category"
-                  allowClear
-                  options={(categories ?? []).map((c) => ({ label: c.name, value: c.id }))}
-                  notFoundContent={
-                    <Text type="secondary" style={{ padding: 8, display: 'block' }}>
-                      No categories yet. Click "Manage Categories".
-                    </Text>
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="manufacturer" label="Manufacturer">
-                <Input placeholder="e.g. Ford" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="model_number" label="Model / Model Number">
-                <Input placeholder="e.g. Transit 250" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="purchase_date" label="Purchase Date">
-                <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="serial_number" label="Serial Number">
-                <Input placeholder="Unique serial number" prefix={<TagOutlined />} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="barcode" label="Barcode">
-                <Input placeholder="Barcode / QR value" prefix={<TagOutlined />} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={2} placeholder="Optional description" />
-          </Form.Item>
-
-          <Form.Item name="notes" label="Notes">
-            <Input.TextArea rows={2} placeholder="Internal notes" />
-          </Form.Item>
-        </Form>
-      </Modal>
 
       {/* ── Assign Equipment Modal ──────────────────────────────────────────── */}
       <Modal
@@ -875,7 +583,15 @@ export default function WorkforceEquipmentPage() {
           ) : (
             <Space wrap>
               {(categories ?? []).map((c) => (
-                <Tag key={c.id} icon={<TagOutlined />} closable onClose={() => {}}>
+                <Tag
+                  key={c.id}
+                  icon={<TagOutlined />}
+                  closable
+                  onClose={(e) => {
+                    e.preventDefault();
+                    handleDeleteCategory(c.id, c.name);
+                  }}
+                >
                   {c.name}
                 </Tag>
               ))}
@@ -903,13 +619,6 @@ export default function WorkforceEquipmentPage() {
         </Form>
       </Modal>
 
-      {/* ── Equipment Detail Drawer ─────────────────────────────────────────── */}
-      <EquipmentDetailDrawer
-        equipmentId={detailId}
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        onEdit={openEdit}
-      />
     </div>
   );
 }

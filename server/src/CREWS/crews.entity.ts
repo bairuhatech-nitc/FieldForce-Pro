@@ -44,8 +44,9 @@ export class Crew extends Model {
   @BelongsTo(() => User, 'crew_leader_id')
   crew_leader: User;
 
-  @Column({ type: DataType.STRING(100), allowNull: true, comment: 'Territory ID from settings' })
-  territory_id: string;
+  @Default([])
+  @Column({ type: DataType.ARRAY(DataType.STRING), allowNull: true, comment: 'Territory IDs from settings' })
+  territory_ids: string[];
 
   @Column({ type: DataType.STRING(100), allowNull: true, comment: 'Shift ID from settings' })
   shift_id: string;
