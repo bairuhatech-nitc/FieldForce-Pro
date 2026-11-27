@@ -7,7 +7,7 @@ import { PageMetaDto } from '../shared/dto/page-meta.dto';
 import { Op } from 'sequelize';
 import axios, { AxiosInstance } from 'axios';
 import { ConfigService } from '@nestjs/config';
-import * as FormData from 'form-data';
+import FormData = require('form-data');
 
 @Injectable()
 export class DocumentsService {
